@@ -1,0 +1,373 @@
+# 开发环境配置
+server:
+  # 服务器的HTTP端口，默认为8080
+  port: 8088
+  servlet:
+    # 应用的访问路径
+    context-path: /
+  # undertow 配置
+  undertow:
+    # HTTP post内容的最大大小。当值为-1时，默认值为大小是无限的
+    max-http-post-size: -1
+    # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+    # 每块buffer的空间大小,越小的空间被利用越充分
+    buffer-size: 512
+    # 是否分配的直接内存
+    direct-buffers: true
+    threads:
+      # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接, 默认设置每个CPU核心一个线程
+      io: 8
+      # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
+      worker: 256
+
+
+spring:
+  application:
+    name: ai-mental-care
+  servlet:
+    multipart:
+      max-file-size: 100MB  # 单个文件最大限制
+      max-request-size: 200MB  # 整个请求的最大限制（适用于多文件上传）
+  profiles:
+    active: @profiles.active@
+  # 资源信息
+  messages:
+    # 国际化资源文件路径
+    basename: i18n/messages
+  mvc:
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+  jackson:
+    # 日期格式化
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      # 格式化输出
+      indent_output: false
+      # 忽略无法转换的对象
+      fail_on_empty_beans: false
+    deserialization:
+      # 允许对象忽略json中不存在的属性
+      fail_on_unknown_properties: false
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
+    dynamic:
+      # 性能分析插件(有性能损耗 不建议生产环境使用)
+      p6spy: ${db.p6spy.enabled:localhost}
+      # 设置默认的数据源或者数据源组,默认值即为 master
+      primary: master
+      # 严格模式 匹配不到数据源则报错
+      strict: true
+      datasource:
+        # 主库数据源
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://${db.host:localhost}:${db.port:3306}/${db.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT
+          username: ${db.username}
+          password: ${db.password}
+      hikari:
+        # 最大连接池数量
+        maxPoolSize: 20
+        # 最小空闲线程数量
+        minIdle: 10
+        # 配置获取连接等待超时的时间
+        connectionTimeout: 30000
+        # 校验超时时间
+        validationTimeout: 5000
+        # 空闲连接存活最大时间，默认10分钟
+        idleTimeout: 600000
+        # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+        maxLifetime: 1800000
+        # 连接测试query（配置检测连接是否有效）
+        connectionTestQuery: SELECT 1
+        # 多久检查一次连接的活性
+        keepaliveTime: 30000
+  data:
+    redis:
+      host: ${redis.host} # Redis服务器地址
+      port: ${redis.port} # Redis服务器端口
+#      password: ${redis.password}
+      database: ${redis.database}
+      timeout: 60000ms  # 超时时间
+      lettuce:
+        pool:
+          # 允许最大连接数，默认8（负值表示没有限制），推荐值：大于cpu * 2，通常为(cpu * 2) + 2
+          max-active: 10
+          # 最大空闲连接数，默认8，推荐值：cpu * 2
+          max-idle: 8
+          # 最小空闲连接数，默认0，推荐值：0
+          min-idle: 0
+          # 连接用完时，新的请求等待的时间（s秒，ms毫秒），超过该时间抛出异常，默认-1（负值表示没有限制）
+          max-wait: 5s
+  mail:
+    host: ${mail.host}  # 设置邮件服务器的主机地址，这里使用的是QQ邮箱的SMTP服务器
+    port: ${mail.port}  # 设置邮件服务器的端口号，465是QQ邮箱SSL加密协议使用的端口
+    username: ${mail.username}  # 发送邮件的QQ邮箱账号
+    password: ${mail.password}  # QQ邮箱的SMTP授权码，需在QQ邮箱中开启SMTP服务后获取，非邮箱登录密码
+    default-encoding: UTF-8  # 设置邮件发送时内容的默认编码格式为UTF-8，确保支持中文等字符集
+    properties:
+      mail:
+        smtp:
+          auth: false  # 禁用SMTP身份验证，发送邮件时将不进行身份验证，这会带来安全风险，可能导致他人滥用邮件服务发送垃圾邮件或恶意邮件。
+          ssl:
+            enable: true  # 启用SSL加密传输，提高邮件传输安全性
+          starttls:
+            enable: true  # 启用STARTTLS加密机制，使连接升级为加密连接
+            required: true  # 要求必须使用STARTTLS加密，否则连接失败
+  security:
+    oauth2:
+      client:
+        registration: # 定义OAuth2客户端注册信息
+          github:
+            client-id: ${oauth2.client.registration.github.client-id}
+            client-secret: ${oauth2.client.registration.github.client-secret}
+            scope: ${oauth2.client.registration.github.scope}
+            redirect-uri: ${oauth2.client.registration.github.redirect-uri}
+  ai:
+    chat:
+      client:
+        enabled: false   # 禁用 ChatClient.Builder bean 的自动配置
+        observations:
+          log-prompt: true
+      memory:
+        repository:
+          # 用于存储聊天记忆的组件，关系型数据库(三选一)
+          jdbc:
+            initialize-schema: never  # 控制何时初始化架构。值：embedded (default), always, never.
+    vectorstore:
+      # 示例：Milvus向量库配置
+      milvus:
+        database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
+        collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
+        initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
+        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
+        index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
+        metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
+        index-parameters: {“nlist”：1024}  # 要用于 Milvus 集合的索引参数。
+        id-field-name: id    # 集合的 ID 字段名称
+        auto-id: true        # 布尔标志，指示是否将自动 ID 用于 ID 字段
+        content-field-name: ${milvus.content-field-name}      # 集合的内容字段名称
+        metadata-field-name: ${milvus.metadata-field-name}    # 集合的元数据字段名称
+        embedding-field-name: ${milvus.embedding-field-name}  # 集合的嵌入字段名称
+        client:
+          host: ${milvus.host}    # 主机的名称或地址
+          port: ${milvus.port}        # 连接端口。
+          username: ${milvus.username}     # 此连接的用户名。
+          password: ${milvus.password}   # 此连接的密码。
+          #          uri:        # Milvus 实例的 uri
+          #          token:      #令牌作为识别和身份验证目的的密钥。
+          connect-timeout-ms: 10000    # 客户端通道的连接超时值。超时值必须大于零。
+          keep-alive-time-ms: 55000    # 客户端通道的保持活动时间值。keep-alive 值必须大于零。
+          keep-alive-timeout-ms: 20000 # 客户端通道的保持活动超时值。超时值必须大于零。
+          # 您愿意等待服务器回复多长时间的截止日期。
+          # 通过截止时间设置，客户端会在遇到网络波动导致的快速 RPC 失败时等待。截止值必须大于或等于零。
+          rpc-deadline-ms: 0
+          #          client-key-path:       # tls 双向身份验证的 client.key 路径，仅在“安全”为真时生效
+          client-pem-path:        # tls 双向身份验证的 client.pem 路径仅在“secure”为 true 时生效
+          ca-pem-path:            # tls 双向身份验证的 ca.pem 路径，仅在“secure”为真时生效
+          server-pem-path:         # server.pem 路径，仅在“secure”为真时生效
+          # 设置 SSL 主机名检查的目标名称覆盖，仅当“安全”为 True 时才生效。注意：此值传递给 grpc.ssl_target_name_override
+          server-name:
+          secure: false   # 保护此连接的授权，设置为 True 以启用 TLS。
+          idle-timeout-ms: 86400000   # 客户端通道的空闲超时值。超时值必须大于零。24h
+    deepseek:
+      api-key: ${modules.deepseek.api}   # 要连接到的 URL
+      chat:
+        enabled: true             # 启用 DeepSeek 聊天模型。
+    dashscope:
+      api-key: ${modules.dashscope.api}  # 阿里云DashScope API密钥（必填）
+      embedding:
+        enabled: false   # 是否启用嵌入模块，默认为false。设置为true时才会激活嵌入功能
+        options:
+          model: text-embedding-v4
+          dimensions: 1024
+    mcp:
+      client:
+        enabled: true  # 启用/禁用 MCP 客户端
+        name: financial-knowledge-ai  # MCP 客户端实例的名称（用于兼容性检查）
+        initialized: true   # 是否在创建时初始化客户端
+        request-timeout: 30s   # MCP 客户端请求的超时持续时间
+        type: ASYNC   # 客户端类型（SYNC 或 ASYNC）。所有客户端必须是同步或异步的;不支持混合
+        root-change-notification: true    # 为所有客户端启用/禁用根更改通知
+        toolcallback:
+          enabled: true  # 启用/禁用 MCP 工具回调与 Spring AI 的工具执行框架的集成
+        sse:
+          connections: # 命名 SSE 连接配置的映射
+            #            mcp_query_table: # 服务别名
+            #              url: http://127.0.0.1:8000/sse
+            #              sse-endpoint: /custom-sse
+            #              [name].url:   # 用于与 MCP 服务器进行 SSE 通信的基本 URL 端点,无默认值
+            #                [name].sse-endpoint: /sse    # 用于连接的 SSE 端点（作为 URL 后缀）
+            mcp-qieman:
+              #              url: https://stargate.yingmi.com/mcp/sse?apiKey=JHYtenPtV7hAo4DRn4qQlQ
+#              url: https://dashscope.aliyuncs.com/api/v1/mcps/Qieman
+              # 股票实时行情查询
+    #            market-cmapi:
+    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/market-cmapi00065924
+    #            # 股票数据
+    #            qtf_mcp:
+    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/qtf_mcp
+    #            # 证券之星
+    #            stockstar:
+    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/stockstar
+    ollama:
+      base-url: ${modules.ollama.url}
+      embedding:
+        options:
+          model: ${modules.ollama.embedding-model}
+      chat:
+        model: ${modules.ollama.chat-model}
+
+mybatis:
+  mapper-locations: classpath:mapper/**.xml
+  type-aliases-package: ${mybatis-package}
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  config: classpath:logback-plus.xml
+
+
+# Swagger3 / SpringDoc 基本配置 (OpenAPI 规范)
+springdoc:
+  api-docs:
+    path: ${springdoc.api-docs.path} # 默认即为 /v3/api-docs，可自定义
+    groups:
+      enabled: true
+  swagger-ui:
+    path: /swagger-ui/index.html # Swagger UI 的访问路径
+    tags-sorter: alpha # 接口排序依据，alpha:按字母，method:按方法
+    operations-sorter: alpha # 接口排序依据，alpha:按字母，method:按方法
+    display-request-duration: true  # 是否在 "Try it out" 后显示接口请求的耗时（单位：毫秒）。
+    default-model-expand-depth: 10  # 默认展开的模型深度。
+    default-models-expand-depth: 10
+    deep-linking: true
+  group-configs: # 分组配置（可选）
+    - group: ${springdoc.group} # 分组名
+      paths-to-match: '/**' # 要匹配的路径
+      packages-to-scan: ${springdoc.packages-to-scan} # 要扫描的包
+
+# Knife4j 增强配置
+knife4j:
+  enable: false # 开启 Knife4j 增强功能
+  setting:
+    language: zh_cn # 界面语言，简体中文
+    enable-swagger-models: true # 是否显示模型
+    swagger-model-name: ${knife4j.setting.swagger-model-name}
+    enable-document-manage: true # 是否开启文档管理
+    enable-request-cache: true # 是否开启请求缓存
+    enable-filter-multipart-apis: false # 是否过滤Multipart类型接口
+    enable-filter-multipart-api-method-type: POST # 过滤的Multipart请求类型
+  production: ${knife4j.production} # 生产环境是否屏蔽（true则禁止访问）
+  basic: # 开启基础认证（可选，按需配置）
+    enable: false # 是否开启基础认证
+    username: admin # 用户名
+    password: 123456 # 密码
+
+
+jwt:
+  # 设置jwt签名加密时使用的秘钥
+  user-secret-key: lixiyun-hearawerjhawerhyawueT%Juaet5hyuaez5kjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKMASZ4REJIwsskjkjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKkjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UMASZ4REJIwsstujsu5h3ea5sjua35yh5Uiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5Utujsu5h3ea5sjua35yh5UEWA5TJ55hyresjhsue5hysejhesu5uhae5husejues5juse65yhe5sjkies6ujea5syhser456kjiser65thygse5ju
+  # 设置jwt过期时间,两小时(秒)
+  user-ttl: 7200000
+  # 设置前端传递过来的令牌名称
+  user-token-name: financial-basic-token
+
+basic:
+  url: http://localhost:8088
+
+file-url:
+  upload:
+    images: "images/"
+    videos: "videos/"
+    files: "files/"
+    conversations: "conversations/"
+  request:
+    images: "${basic.url}/images/"
+    videos: "${basic.url}/videos/"
+    files: "${basic.url}/files/"
+    conversations: "${basic.url}/conversations/"
+
+url:
+  permit-all-urls:
+    - /user/account/register
+    - /user/account/login/**
+    - /common/**
+    - /user/account/forgetPassword
+    - /v3/**
+    - /webjars/**
+    - /doc.html
+    - /oauth2/authorization/**
+    - /login/oauth2/code/**
+    - /images/**
+    - ${basic.url}/images/**
+    - ${basic.url}/files/**
+    - ${basic.url}/conversations/**
+    - /swagger-ui/**
+    - /swagger-ui.html/**
+
+--- # sms 短信
+sms:
+  enabled: false
+  # 阿里云 dysmsapi.aliyuncs.com
+  # 腾讯云 sms.tencentcloudapi.com
+  endpoint: "dysmsapi.aliyuncs.com"
+  accessKeyId: xxxxxxx
+  accessKeySecret: xxxxxx
+  signName: 测试
+  # 腾讯专用
+  sdkAppId:
+
+
+# 防止XSS攻击
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接（多个用逗号分隔）
+  excludes: /system/notice,/v3/api-docs/**,/doc.html,/swagger-ui/**,/swagger-ui.html,/swagger-resources/**,/webjars/**,/druid/**,/actuator/**,/favicon.ico
+  # 匹配链接
+  urlPatterns: /system/*,/monitor/*,/tool/*
+
+# 全局线程池相关配置
+thread-pool:
+  # 是否开启线程池
+  enabled: true
+  # 队列最大长度
+  queueCapacity: 128
+  # 线程池维护线程所允许的空闲时间
+  keepAliveSeconds: 300
+
+--- # 分布式锁 lock4j 全局配置
+lock4j:
+  # 获取分布式锁超时时间，默认为 3000 毫秒
+  acquire-timeout: 3000
+  # 分布式锁的超时时间，默认为 30 秒
+  expire: 30000
+
+--- # Actuator 监控端点的配置项
+management:
+  endpoints:
+    web:
+      exposure:
+        # 暴露所有可用的 Actuator 端点
+        include: '*'
+  endpoint:
+    health:
+      # 总是显示健康检查的详细信息
+      show-details: ALWAYS
+    logfile:
+      # 使得 /actuator/logfile 端点能够读取并返回指定的日志文件内容。
+      # 通过这个端点，可以在线查看应用的日志文件，而不需要登录服务器查看文件系统
+      external-file: ./logs/sys-console.log
+
+# websocket
+websocket:
+  enabled: true
+  # 路径
+  path: '/resource/websocket'
+  # 设置访问源地址
+  allowedOrigins: '*'
+

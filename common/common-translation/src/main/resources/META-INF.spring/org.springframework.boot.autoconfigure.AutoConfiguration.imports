@@ -1,0 +1,5 @@
+org.lixiyun.common.translation.config.TranslationConfig
+org.lixiyun.common.translation.core.impl.DeptNameTranslationImpl
+org.lixiyun.common.translation.core.impl.DictTypeTranslationImpl
+org.lixiyun.common.translation.core.impl.OssUrlTranslationImpl
+org.lixiyun.common.translation.core.impl.UserNameTranslationImpl

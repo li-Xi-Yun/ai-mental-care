@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.lixiyun.server.mapper.PermissionMapper">
+    <select id="queryPermsByPersonId" resultType="java.lang.String">
+        select permission.perms from permission
+            join role_permission on permission.id = role_permission.permission_id
+            join person_role on role_permission.role_id = person_role.role_id
+        where person_role.person_id = #{personId}
+    </select>
+</mapper>

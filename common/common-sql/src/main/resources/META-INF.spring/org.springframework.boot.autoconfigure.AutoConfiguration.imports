@@ -1,0 +1,2 @@
+org.lixiyun.common.sql.config.MyBatisConfig
+org.lixiyun.common.sql.handler.InjectionMetaObjectHandler

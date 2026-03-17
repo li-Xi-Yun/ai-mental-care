@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--  定义变量，name为变量名，value为变量值  -->
+    <property name="log.path" value="./logs"/>
+    <property name="console.log.pattern"
+              value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- 控制台输出 -->
+    <!--  定义一个名为 console 的 Appender，class="ch.qos.logback.core.ConsoleAppender" 表示使用 Logback 内置的 控制台输出组  -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${console.log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 有之后的分级日志存储配置，就可以不需要这个统一的日志记录配置了 -->
+    <!-- 把 INFO 级别及以上的日志，以纯文本格式写入 ./logs/sys-console.log 文件，并每天生成一个新日志文件，最多保留 30 天的历史日志。 -->
+    <!--    <appender name="file_console" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+    <!--        &lt;!&ndash; 当前正在写入的 活动日志文件路径 &ndash;&gt;-->
+    <!--        <file>${log.path}/sys-console.log</file>-->
+    <!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+    <!-- 定义归档日志文件的命名格式，指定 滚动策略为“基于时间”（每天切分一次） -->
+    <!--            <fileNamePattern>${log.path}/sys-console.%d{yyyy-MM-dd}.log</fileNamePattern>-->
+    <!-- 归档日志最大保留 30 天，不算当天正在写入的活动日志 -->
+    <!--            <maxHistory>30</maxHistory>-->
+    <!--        </rollingPolicy>-->
+    <!--        <encoder>-->
+    <!--            &lt;!&ndash; 使用 纯文本日志格式（无颜色） &ndash;&gt;-->
+    <!--            <pattern>${log.pattern}</pattern>-->
+    <!--            <charset>utf-8</charset>-->
+    <!--        </encoder>-->
+    <!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
+    <!--            &lt;!&ndash; 过滤的级别，只记录 INFO 级别及以上的日志（INFO, WARN, ERROR） &ndash;&gt;-->
+    <!--            <level>INFO</level>-->
+    <!--        </filter>-->
+    <!--    </appender>-->
+
+    <!-- 系统日志输出 -->
+    <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-info.log</file>
+        <!-- 循环政策：基于时间创建日志文件 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 定义归档日志文件的命名格式，指定 滚动策略为“基于时间”（每天切分一次），.gz会将自动将文件进行压缩打包 -->
+            <fileNamePattern>${log.path}/sys-info.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <!-- 归档日志最大保留 60 天，不算当天正在写入的活动日志 -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 使用 LevelFilter（精确级别过滤器） -->
+            <!-- 这里只记录日志级别为info的日志 -->
+            <!-- 过滤的级别 -->
+            <level>INFO</level>
+            <!-- 匹配时的操作：接收（记录） -->
+            <onMatch>ACCEPT</onMatch>
+            <!-- 不匹配时的操作：拒绝（不记录） -->
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 系统日志输出 -->
+    <appender name="file_warn" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-warn.log</file>
+        <!-- 循环政策：基于时间创建日志文件 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${log.path}/sys-warn.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <!-- 日志最大的历史 60天 -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 使用 LevelFilter（精确级别过滤器） -->
+            <!-- 这里只记录日志级别为info的日志 -->
+            <!-- 过滤的级别 -->
+            <level>WARN</level>
+            <!-- 匹配时的操作：接收（记录） -->
+            <onMatch>ACCEPT</onMatch>
+            <!-- 不匹配时的操作：拒绝（不记录） -->
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/sys-error.log</file>
+        <!-- 循环政策：基于时间创建日志文件 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${log.path}/sys-error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <!-- 日志最大的历史 60天 -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <!-- 这里只记录日志级别为 error 的日志 -->
+            <!-- 过滤的级别 -->
+            <level>ERROR</level>
+            <!-- 匹配时的操作：接收（记录） -->
+            <onMatch>ACCEPT</onMatch>
+            <!-- 不匹配时的操作：拒绝（不记录） -->
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- info异步输出 -->
+    <!-- 将 INFO 级别日志的写入操作从主线程“卸载”到后台线程，避免 I/O 阻塞业务逻辑，提升系统性能。 -->
+    <appender name="async_info" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>512</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="file_info"/>
+    </appender>
+
+    <!-- warn异步输出 -->
+    <appender name="async_warn" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>512</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="file_warn"/>
+    </appender>
+
+    <!-- error异步输出 -->
+    <appender name="async_error" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>512</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="file_error"/>
+    </appender>
+
+    <!-- 用于集成 Apache SkyWalking 分布式追踪系统 的日志增强功能。
+    它们的作用是在每条日志中自动注入 当前请求的链路追踪 ID（Trace ID），从而实现 日志与调用链的关联。 -->
+    <!-- 整合 skywalking 控制台输出 tid -->
+    <!--    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">-->
+    <!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
+    <!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
+    <!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
+    <!--            </layout>-->
+    <!--            <charset>utf-8</charset>-->
+    <!--        </encoder>-->
+    <!--    </appender>-->
+
+    <!-- 整合 skywalking 推送采集日志 -->
+    <!--    <appender name="sky_log" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">-->
+    <!--        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">-->
+    <!--            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">-->
+    <!--                <pattern>[%tid] ${console.log.pattern}</pattern>-->
+    <!--            </layout>-->
+    <!--            <charset>utf-8</charset>-->
+    <!--        </encoder>-->
+    <!--    </appender>-->
+
+    <!-- 以下配置用于单独指定某一个文件夹下的文件日志级别 -->
+    <!-- 这些 logger 的 level 会覆盖 root，且优先级高于 root -->
+    <!--    <logger name="com.maple.mapper" level="DEBUG"/>-->
+    <!--    <logger name="com.maple.service" level="INFO"/>-->
+    <!--    <logger name="com.maple.controller" level="INFO"/>-->
+
+    <!--    <logger name="org.springframework.security" level="DEBUG"/>-->
+    <!--    <logger loose="true" name="org.springframework.ai.mcp" level="DEBUG"/>-->
+    <!--    <logger name="io.modelcontextprotocol.client" level="DEBUG"/>-->
+    <!--    <logger name="io.modelcontextprotocol.spec" level="DEBUG"/>-->
+
+    <!--    <logger name="org.springframework" level="WARN"/>-->
+    <!--    <logger name="org.mybatis.spring.mapper" level="ERROR"/>-->
+    <!--    <logger name="org.apache.fury" level="WARN"/>-->
+
+    <!--系统操作日志，info意味：INFO、WARN、ERROR 级别的日志会被处理，DEBUG、TRACE 级别的日志 会被直接丢弃-->
+    <root level="info">
+        <appender-ref ref="console" />
+        <appender-ref ref="async_info" />
+        <appender-ref ref="async_warn" />
+        <appender-ref ref="async_error" />
+        <!--        <appender-ref ref="file_console" />-->
+        <!--        <appender-ref ref="sky_log"/>-->
+    </root>
+
+</configuration>

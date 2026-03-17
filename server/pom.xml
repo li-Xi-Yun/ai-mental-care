@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.lixiyun</groupId>
+        <artifactId>ai-mental-care</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>server</artifactId>
+    <name>server</name>
+    <description>server 业务服务模块</description>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.lixiyun.pojo</groupId>
+            <artifactId>pojo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-authentication</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-aop</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-json</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-mail</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-sql</artifactId>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.lixiyun</groupId>-->
+<!--            <artifactId>common-oss</artifactId>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.lixiyun</groupId>-->
+<!--            <artifactId>common-sensitive</artifactId>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.lixiyun</groupId>-->
+<!--            <artifactId>common-sms</artifactId>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-translation</artifactId>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.lixiyun</groupId>-->
+<!--            <artifactId>common-vector</artifactId>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-verification-code</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-web</artifactId>
+        </dependency>
+
+        <!-- 添加 SpringDoc OpenAPI UI 依赖以启用 Swagger UI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
+
+        <!-- 自定义数据库时，在yaml文件中填写对应数据库的 datasource 配置项 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
+        </dependency>
+
+        <!-- 必选：Agent 核心 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+        </dependency>
+
+        <!-- 如果你用 StateGraph（几乎肯定用） -->
+        <!--		<dependency>-->
+        <!--			<groupId>com.alibaba.cloud.ai</groupId>-->
+        <!--			<artifactId>spring-ai-alibaba-graph</artifactId>-->
+        <!--		</dependency>-->
+
+        <!--		<dependency>-->
+        <!--			<groupId>org.springframework.ai</groupId>-->
+        <!--			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>-->
+        <!--		</dependency>-->
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

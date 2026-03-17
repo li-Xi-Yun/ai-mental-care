@@ -1,0 +1,10 @@
+verification:
+  code:
+    enable: true
+    properties:
+      width: 130
+      height: 48
+      code-count: 4
+      num-len: 3
+      num-max: 10
+      expire-time: 300  # 过期时间，单位秒
