@@ -7,12 +7,15 @@ import org.lixiyun.common.core.error.ErrorCode;
  * @author lixiyun
  * @since 2026-03-16 17:33
  */
-public enum ConversationException implements ErrorCode {
+public enum ConversationExceptionEnum implements ErrorCode {
     // 状态码从3000开始
 
     CONVERSATION_NOT_EXIST("会话不存在", 3000),
     CONVERSATION_PARAM_ERROR("会话参数错误", 3001),
     CONVERSATION_NOT_FOUND("会话未找到", 3002),
+    MODEL_NOT_EXIST("模型不存在", 3003),
+    CONVERSATION_NAME_EXTRACTION_ERROR("会话名称提取错误", 3004),
+    SEMANTIC_COMPRESSION_ERROR("语义压缩错误", 3005),
 
 
 
@@ -23,7 +26,7 @@ public enum ConversationException implements ErrorCode {
     @Getter
     private int code;
 
-    ConversationException(String msg, int code){
+    ConversationExceptionEnum(String msg, int code){
         this.msg = msg;
         this.code = code;
     }

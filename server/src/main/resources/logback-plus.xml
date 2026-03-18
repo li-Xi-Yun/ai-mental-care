@@ -77,7 +77,7 @@
             <charset>utf-8</charset>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 使用 LevelFilter（精确级别过滤器） -->
-            <!-- 这里只记录日志级别为info的日志 -->
+            <!-- 这里只记录日志级别为warn的日志 -->
             <!-- 过滤的级别 -->
             <level>WARN</level>
             <!-- 匹配时的操作：接收（记录） -->
@@ -178,8 +178,10 @@
     <!--    <logger name="org.springframework" level="WARN"/>-->
     <!--    <logger name="org.mybatis.spring.mapper" level="ERROR"/>-->
     <!--    <logger name="org.apache.fury" level="WARN"/>-->
+        <logger name="org.lixiyun" level="debug"/>
 
     <!--系统操作日志，info意味：INFO、WARN、ERROR 级别的日志会被处理，DEBUG、TRACE 级别的日志 会被直接丢弃-->
+    <!--  项目中所有未单独配置日志级别的类 / 模块，都会继承这个根节点的配置  -->
     <root level="info">
         <appender-ref ref="console" />
         <appender-ref ref="async_info" />

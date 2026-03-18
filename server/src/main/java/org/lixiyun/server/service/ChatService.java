@@ -2,6 +2,7 @@ package org.lixiyun.server.service;
 
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.lixiyun.pojo.dto.chat.ChatDTO;
+import reactor.core.publisher.Flux;
 
 /**
  * @author lixiyun
@@ -9,5 +10,5 @@ import org.lixiyun.pojo.dto.chat.ChatDTO;
  */
 public interface ChatService {
 
-    void chat(ChatDTO chatDTO) throws GraphStateException;
+    Flux<String> chat(ChatDTO chatDTO) throws GraphStateException;
 }

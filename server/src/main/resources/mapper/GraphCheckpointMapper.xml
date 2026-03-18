@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.lixiyun.server.mapper.GraphCheckpointMapper">
+    <select id="loadCheckpointList" resultType="org.lixiyun.pojo.entity.GraphCheckpoint">
+        SELECT
+            c.checkpoint_id,
+            c.node_id,
+            c.next_node_id,
+            JSON_UNQUOTE(JSON_EXTRACT(c.state_data, '$.binaryPayload')) AS state_data
+        FROM graph_checkpoint c
+        where c.conversation_id = #{conversationId} and c.deleted = 0
+        ORDER BY c.created_time DESC
+    </select>
+
+</mapper>

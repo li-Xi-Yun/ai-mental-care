@@ -1,6 +1,8 @@
 package org.lixiyun.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Builder;
 import lombok.Data;
 
@@ -51,12 +53,6 @@ public class Conversation implements Serializable {
      * 记录创建时间
      */
     private LocalDateTime createdTime;
-    
-    /**
-     * 创建人用户ID
-     */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Long createdBy;
     
     /**
      * 最后更新时间

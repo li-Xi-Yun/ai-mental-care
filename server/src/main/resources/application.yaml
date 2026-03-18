@@ -135,53 +135,42 @@ spring:
           # 用于存储聊天记忆的组件，关系型数据库(三选一)
           jdbc:
             initialize-schema: never  # 控制何时初始化架构。值：embedded (default), always, never.
-    vectorstore:
-      # 示例：Milvus向量库配置
-      milvus:
-        database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
-        collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
-        initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
-        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
-        index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
-        metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
-        index-parameters: {“nlist”：1024}  # 要用于 Milvus 集合的索引参数。
-        id-field-name: id    # 集合的 ID 字段名称
-        auto-id: true        # 布尔标志，指示是否将自动 ID 用于 ID 字段
-        content-field-name: ${milvus.content-field-name}      # 集合的内容字段名称
-        metadata-field-name: ${milvus.metadata-field-name}    # 集合的元数据字段名称
-        embedding-field-name: ${milvus.embedding-field-name}  # 集合的嵌入字段名称
-        client:
-          host: ${milvus.host}    # 主机的名称或地址
-          port: ${milvus.port}        # 连接端口。
-          username: ${milvus.username}     # 此连接的用户名。
-          password: ${milvus.password}   # 此连接的密码。
-          #          uri:        # Milvus 实例的 uri
-          #          token:      #令牌作为识别和身份验证目的的密钥。
-          connect-timeout-ms: 10000    # 客户端通道的连接超时值。超时值必须大于零。
-          keep-alive-time-ms: 55000    # 客户端通道的保持活动时间值。keep-alive 值必须大于零。
-          keep-alive-timeout-ms: 20000 # 客户端通道的保持活动超时值。超时值必须大于零。
-          # 您愿意等待服务器回复多长时间的截止日期。
-          # 通过截止时间设置，客户端会在遇到网络波动导致的快速 RPC 失败时等待。截止值必须大于或等于零。
-          rpc-deadline-ms: 0
-          #          client-key-path:       # tls 双向身份验证的 client.key 路径，仅在“安全”为真时生效
-          client-pem-path:        # tls 双向身份验证的 client.pem 路径仅在“secure”为 true 时生效
-          ca-pem-path:            # tls 双向身份验证的 ca.pem 路径，仅在“secure”为真时生效
-          server-pem-path:         # server.pem 路径，仅在“secure”为真时生效
-          # 设置 SSL 主机名检查的目标名称覆盖，仅当“安全”为 True 时才生效。注意：此值传递给 grpc.ssl_target_name_override
-          server-name:
-          secure: false   # 保护此连接的授权，设置为 True 以启用 TLS。
-          idle-timeout-ms: 86400000   # 客户端通道的空闲超时值。超时值必须大于零。24h
-    deepseek:
-      api-key: ${modules.deepseek.api}   # 要连接到的 URL
-      chat:
-        enabled: true             # 启用 DeepSeek 聊天模型。
-    dashscope:
-      api-key: ${modules.dashscope.api}  # 阿里云DashScope API密钥（必填）
-      embedding:
-        enabled: false   # 是否启用嵌入模块，默认为false。设置为true时才会激活嵌入功能
-        options:
-          model: text-embedding-v4
-          dimensions: 1024
+#    vectorstore:
+#      # 示例：Milvus向量库配置
+#      milvus:
+#        database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
+#        collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
+#        initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
+#        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
+#        index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
+#        metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
+#        index-parameters: {“nlist”：1024}  # 要用于 Milvus 集合的索引参数。
+#        id-field-name: id    # 集合的 ID 字段名称
+#        auto-id: true        # 布尔标志，指示是否将自动 ID 用于 ID 字段
+#        content-field-name: ${milvus.content-field-name}      # 集合的内容字段名称
+#        metadata-field-name: ${milvus.metadata-field-name}    # 集合的元数据字段名称
+#        embedding-field-name: ${milvus.embedding-field-name}  # 集合的嵌入字段名称
+#        client:
+#          host: ${milvus.host}    # 主机的名称或地址
+#          port: ${milvus.port}        # 连接端口。
+#          username: ${milvus.username}     # 此连接的用户名。
+#          password: ${milvus.password}   # 此连接的密码。
+#          #          uri:        # Milvus 实例的 uri
+#          #          token:      #令牌作为识别和身份验证目的的密钥。
+#          connect-timeout-ms: 10000    # 客户端通道的连接超时值。超时值必须大于零。
+#          keep-alive-time-ms: 55000    # 客户端通道的保持活动时间值。keep-alive 值必须大于零。
+#          keep-alive-timeout-ms: 20000 # 客户端通道的保持活动超时值。超时值必须大于零。
+#          # 您愿意等待服务器回复多长时间的截止日期。
+#          # 通过截止时间设置，客户端会在遇到网络波动导致的快速 RPC 失败时等待。截止值必须大于或等于零。
+#          rpc-deadline-ms: 0
+#          #          client-key-path:       # tls 双向身份验证的 client.key 路径，仅在“安全”为真时生效
+#          client-pem-path:        # tls 双向身份验证的 client.pem 路径仅在“secure”为 true 时生效
+#          ca-pem-path:            # tls 双向身份验证的 ca.pem 路径，仅在“secure”为真时生效
+#          server-pem-path:         # server.pem 路径，仅在“secure”为真时生效
+#          # 设置 SSL 主机名检查的目标名称覆盖，仅当“安全”为 True 时才生效。注意：此值传递给 grpc.ssl_target_name_override
+#          server-name:
+#          secure: false   # 保护此连接的授权，设置为 True 以启用 TLS。
+#          idle-timeout-ms: 86400000   # 客户端通道的空闲超时值。超时值必须大于零。24h
     mcp:
       client:
         enabled: true  # 启用/禁用 MCP 客户端
@@ -211,13 +200,29 @@ spring:
     #            # 证券之星
     #            stockstar:
     #              url: https://dashscope.aliyuncs.com/api/v1/mcps/stockstar
+    deepseek:
+      api-key: ${ai-model-config.deepseek.api}   # 要连接到的 URL
+      chat:
+        enabled: true             # 启用 DeepSeek 聊天模型。
+        options:
+          model: ${ai-model-config.deepseek.chat-model}
+    dashscope:
+      api-key: ${ai-model-config.dashscope.api}  # 阿里云DashScope API密钥（必填）
+      embedding:
+        enabled: false   # 是否启用嵌入模块，默认为false。设置为true时才会激活嵌入功能
+        options:
+          model: ${ai-model-config.dashscope.embedding-model}
+          dimensions: 1024
+      chat:
+        options:
+          model: ${ai-model-config.dashscope.chat-model}
     ollama:
-      base-url: ${modules.ollama.url}
+      base-url: ${ai-model-config.ollama.url}
       embedding:
         options:
-          model: ${modules.ollama.embedding-model}
+          model: ${ai-model-config.ollama.embedding-model}
       chat:
-        model: ${modules.ollama.chat-model}
+        model: ${ai-model-config.ollama.chat-model}
 
 mybatis:
   mapper-locations: classpath:mapper/**.xml

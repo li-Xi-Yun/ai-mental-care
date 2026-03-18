@@ -4,27 +4,26 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
-import org.lixiyun.common.core.error.enums.ConversationException;
+import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
+import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.pojo.entity.GraphCheckpoint;
+import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.storage.ConversationHistoryMessagesStorage;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.GraphCheckpointMapper;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.stereotype.Component;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -34,47 +33,32 @@ import static java.util.Objects.requireNonNull;
  * @since 2026-03-15 13:51
  */
 @Slf4j
-@Component
-@RequiredArgsConstructor
 public class CustomMysqlSaver extends MemorySaver {
 
-    private final ConversationMapper conversationMapper;
+    private final ConversationMapper conversationMapper = SpringUtils.getBean(ConversationMapper.class);
 
-    private final GraphCheckpointMapper graphCheckpointMapper;
+    private final GraphCheckpointMapper graphCheckpointMapper = SpringUtils.getBean(GraphCheckpointMapper.class);
 
-    private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
+    private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage = SpringUtils.getBean(ConversationHistoryMessagesStorage.class);
+
+    private final TransactionTemplate transactionTemplate = SpringUtils.getBean(TransactionTemplate.class);
 
     // 序列化器（默认使用Spring AI Alibaba的默认序列化器，也可通过setter自定义）
     private final StateSerializer stateSerializer = com.alibaba.cloud.ai.graph.StateGraph.DEFAULT_JACKSON_SERIALIZER;
 
-    @PostConstruct
-    private void init(){
-        try {
-            // 获取父类的私有_lock字段
-            Field lockField = MemorySaver.class.getDeclaredField("_lock");
-            lockField.setAccessible(true); // 突破私有访问限制
-
-            ReentrantLock parentLock = (ReentrantLock) lockField.get(this);
-            // 如果父类的_lock为null，初始化它
-            if (parentLock == null) {
-                parentLock = new ReentrantLock();
-                lockField.set(this, parentLock); // 给父类的_lock赋值
-            }
-        } catch (Exception e) {
-            log.error("修复父类锁失败", e);
-        }
+    public static Builder builder() {
+        return new Builder();
     }
 
     private String encodeState(Map<String, Object> data) throws IOException {
         var binaryData = stateSerializer.dataToBytes(data);
         var base64Data = Base64.getEncoder().encodeToString(binaryData);
-//        return format("""
-//				{"binaryPayload": "%s"}
-//				""", base64Data);
-        return base64Data;
+        return format("""
+				{"binaryPayload": "%s"}
+				""", base64Data);
     }
 
-    private Map<String, Object> decodeState(byte[] binaryPayload) throws IOException, ClassNotFoundException {
+    private Map<String, Object> decodeState(String binaryPayload) throws IOException, ClassNotFoundException {
         byte[] bytes = Base64.getDecoder().decode(binaryPayload);
         return stateSerializer.dataFromBytes(bytes);
     }
@@ -98,36 +82,39 @@ public class CustomMysqlSaver extends MemorySaver {
 
         if(conversationId.equals(THREAD_ID_DEFAULT)){
             // 说明是该会话的第一次对话，创建对应的会话表数据
-            Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+            Optional<Object> currentIdOpl = config.metadata(GraphConstant.USER_ID);
+            Long currentId = (Long) currentIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
             Conversation conversation = Conversation.builder()
-                    .userId(currentId).build();
+                    .userId(currentId)
+                    .build();
             conversationMapper.insert(conversation);
             Field nameField = config.getClass().getDeclaredField("threadId");
             // 关闭访问权限检查
             nameField.setAccessible(true);
             // 为user实例的name属性赋值
-            nameField.set(config, conversation.getId());
-            config.context().put(Conversation.CURRENT_ROUND, conversation.getCurrentRound());
-            return checkpoints;
+            conversationId = conversation.getId().toString();
+            nameField.set(config, conversationId);
+
+            config.context().put(GraphConstant.CONVERSATION_FIRST, true);
         }
-        // 传入的是上一次对话时的轮次，需要加1，表示当前轮次
-//        config.context().put(Conversation.CURRENT_ROUND, (Integer) config.context().get(Conversation.CURRENT_ROUND) + 1);
 
         try {
-            // 1. 查询指定会话的检查点（按创建时间倒序，同原逻辑）
-            LambdaQueryWrapper<GraphCheckpoint> queryWrapper = new LambdaQueryWrapper<GraphCheckpoint>()
-                    .eq(GraphCheckpoint::getConversationId, conversationId)
-                    .eq(GraphCheckpoint::getDeleted, 0) // 未删除
-                    .orderByDesc(GraphCheckpoint::getCreatedTime);
+            // 插入用户输入信息到上下文中
+            Optional<Object> userInput = config.metadata(GraphConstant.USER_INPUT);
+            userInput.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
+            ArrayList<Message> conversationMessageList = new ArrayList<>();
+            conversationMessageList.add(new UserMessage((String) userInput.get()));
+            config.context().put(GraphConstant.CONVERSATION_MESSAGES, conversationMessageList);
 
-            // 2. 转换为Checkpoint对象（适配原逻辑）
-            for (GraphCheckpoint dbCheckpoint : graphCheckpointMapper.selectList(queryWrapper)) {
+            // 转换为Checkpoint对象（适配原逻辑）
+            List<GraphCheckpoint> graphCheckpointList = graphCheckpointMapper.loadCheckpointList(conversationId);
+            for (GraphCheckpoint dbCheckpoint : graphCheckpointList) {
                 Checkpoint checkpoint = Checkpoint.builder()
                         .id(dbCheckpoint.getCheckpointId())
                         .nodeId(dbCheckpoint.getNodeId())
                         .nextNodeId(dbCheckpoint.getNextNodeId())
                         // 反序列化stateData（原二进制数据）
-                        .state(decodeState((byte[]) dbCheckpoint.getStateData()))
+                        .state(decodeState((String) dbCheckpoint.getStateData()))
                         .build();
                 checkpoints.add(checkpoint);
             }
@@ -164,15 +151,21 @@ public class CustomMysqlSaver extends MemorySaver {
                     .stateData(encodeState(checkpoint.getState())) // 序列化state数据
                     .build();
 
-            // 插入检查点
-            graphCheckpointMapper.insert(graphCheckpoint);
-            log.debug("检查点{}插入成功，会话ID：{}", checkpoint.getId(), conversationId);
+            transactionTemplate.execute(status -> {
+                // 插入检查点
+                graphCheckpointMapper.insert(graphCheckpoint);
+                log.debug("检查点{}插入成功，会话ID：{}", checkpoint.getId(), conversationId);
 
-            Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
-            int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationException.CONVERSATION_PARAM_ERROR));
+                Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+                int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
 
-            List<Message> messages = (List<Message>) checkpoint.getState().get("messages");
-            conversationHistoryMessagesStorage.save(Long.parseLong(conversationId), currentRound, messages.get(messages.size() - 1));
+                // 保存会话历史消息
+                ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
+                conversationHistoryMessagesStorage.save(Long.parseLong(conversationId), currentRound, conversationMessageList);
+                conversationMessageList.clear();
+
+                return null;
+            });
 
 
         } catch (IOException | RuntimeException e) {
@@ -252,6 +245,13 @@ public class CustomMysqlSaver extends MemorySaver {
             throw new Exception("Unable to update checkpoint", e);
         }
 
+    }
+
+
+    public static class Builder extends MemorySaver.Builder {
+        public CustomMysqlSaver build() {
+            return new CustomMysqlSaver();
+        }
     }
 
 }

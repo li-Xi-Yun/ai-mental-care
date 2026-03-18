@@ -31,10 +31,14 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         try {
-            Long userId = getCurrentId(metaObject);
-
-            this.strictInsertFill(metaObject, CREATED_BY, Long.class, userId);
-            this.strictInsertFill(metaObject, UPDATED_BY, Long.class, userId);
+            if (!isFieldHasValue(metaObject, CREATED_BY)) {
+                Long userId = getCurrentId(metaObject);
+                this.strictInsertFill(metaObject, CREATED_BY, Long.class, userId);
+            }
+            if (!isFieldHasValue(metaObject, UPDATED_BY)) {
+                Long userId = getCurrentId(metaObject);
+                this.strictInsertFill(metaObject, UPDATED_BY, Long.class, userId);
+            }
         } catch (Exception e) {
             throw new MyBatisException(HttpStatus.HTTP_UNAUTHORIZED, "自动注入异常 => " + e.getMessage());
         }
@@ -49,9 +53,10 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void updateFill(MetaObject metaObject) {
         try {
-            Long userId = getCurrentId(metaObject);
-
-            this.strictUpdateFill(metaObject, UPDATED_BY, Long.class, userId);
+            if (!isFieldHasValue(metaObject, UPDATED_BY)) {
+                Long userId = getCurrentId(metaObject);
+                this.strictUpdateFill(metaObject, UPDATED_BY, Long.class, userId);
+            }
         } catch (Exception e) {
             throw new MyBatisException(HttpStatus.HTTP_UNAUTHORIZED, "自动注入异常 => " + e.getMessage());
         }
@@ -81,6 +86,22 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                     }
                 }
         );
+    }
+
+    /**
+     * 核心新增方法：判断指定字段是否已有值（非null）
+     * @param metaObject 元对象
+     * @param fieldName  字段名
+     * @return true=字段有值，false=字段无值（需填充）
+     */
+    private boolean isFieldHasValue(MetaObject metaObject, String fieldName) {
+        // 1. 先检查字段是否存在（避免字段不存在导致的异常）
+        if (!metaObject.hasGetter(fieldName)) {
+            return false;
+        }
+        // 2. 获取字段当前值，判断是否非null
+        Object fieldValue = getFieldValByName(fieldName, metaObject);
+        return fieldValue != null;
     }
 
 }

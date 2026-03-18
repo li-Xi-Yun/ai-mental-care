@@ -1,11 +1,11 @@
 package org.lixiyun.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GraphCheckpoint implements Serializable {
     private static final long serialVersionUID = -68530311004080644L;
     
@@ -45,18 +47,12 @@ public class GraphCheckpoint implements Serializable {
     /**
      * 存储state中的数据信息
      */
-    private Object stateData;
+    private String stateData;
     
     /**
      * 记录创建时间
      */
     private LocalDateTime createdTime;
-    
-    /**
-     * 创建人用户ID
-     */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Long createdBy;
     
     /**
      * 是否删除，0-否，1-是
