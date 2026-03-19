@@ -224,9 +224,6 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
             return Map.of();
         }
 
-        // 存储上下文
-//        ConversationHistoryMessagesStorage.storeDataToConfig(config, modelOutput, MessageType.ASSISTANT);
-
         return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutput));
     }
 

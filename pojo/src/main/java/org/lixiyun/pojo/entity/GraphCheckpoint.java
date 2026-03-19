@@ -48,6 +48,11 @@ public class GraphCheckpoint implements Serializable {
      * 存储state中的数据信息
      */
     private String stateData;
+
+    /**
+     * 轮次
+     */
+    private Integer roundNum;
     
     /**
      * 记录创建时间

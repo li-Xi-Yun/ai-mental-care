@@ -10,6 +10,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -75,16 +77,28 @@ public class ThreadPoolConfig {
     // 默认的线程池有以下缺点：
     // 每次执行都创建新线程：它不会重用线程，而是为每个任务创建新线程
     // 无限制创建线程：没有线程池机制，可能导致系统资源耗尽
-//    @Bean
-//    public WebMvcConfigurer webMvcConfigurer() {
-//        return new WebMvcConfigurer() {
-//            @Override
-//            public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-//                // 使用已定义的线程池作为异步请求处理的执行器
-//                configurer.setTaskExecutor(threadPoolTaskExecutor(null));
-//                // 设置异步请求的超时时间(毫秒)
-//                configurer.setDefaultTimeout(30000);
-//            }
-//        };
-//    }
+
+
+    // 这是一个Spring MVC配置类，用于配置异步请求处理。
+    @Bean
+    public WebMvcConfigurer webMvcConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+                // 使用已定义的线程池作为异步请求处理的执行器
+                configurer.setTaskExecutor(threadPoolTaskExecutor());
+                // 设置异步请求的超时时间(毫秒)
+                configurer.setDefaultTimeout(30000);
+            }
+        };
+    }
+    // 这是为了解决以下警告信息的
+    //  - !!!
+    //Performing asynchronous handling through the default Spring MVC SimpleAsyncTaskExecutor.
+    //This executor is not suitable for production use under load.
+    //Please, configure an AsyncTaskExecutor through the WebMvc config.
+    //-------------------------------
+    //!!!
+
+
 }

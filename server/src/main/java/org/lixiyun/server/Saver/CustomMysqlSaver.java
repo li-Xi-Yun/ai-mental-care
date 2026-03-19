@@ -17,7 +17,6 @@ import org.lixiyun.server.infrastructure.storage.ConversationHistoryMessagesStor
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.GraphCheckpointMapper;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -99,13 +98,6 @@ public class CustomMysqlSaver extends MemorySaver {
         }
 
         try {
-            // 插入用户输入信息到上下文中
-            Optional<Object> userInput = config.metadata(GraphConstant.USER_INPUT);
-            userInput.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
-            ArrayList<Message> conversationMessageList = new ArrayList<>();
-            conversationMessageList.add(new UserMessage((String) userInput.get()));
-            config.context().put(GraphConstant.CONVERSATION_MESSAGES, conversationMessageList);
-
             // 转换为Checkpoint对象（适配原逻辑）
             List<GraphCheckpoint> graphCheckpointList = graphCheckpointMapper.loadCheckpointList(conversationId);
             for (GraphCheckpoint dbCheckpoint : graphCheckpointList) {
@@ -141,6 +133,10 @@ public class CustomMysqlSaver extends MemorySaver {
         requireNonNull(checkpoint, "checkpoint cannot be null");
         String conversationId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
+        // 获取当前轮数
+        Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+        int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
+
         try {
             // 构建自定义GraphCheckpoint实体（映射原检查点数据）
             GraphCheckpoint graphCheckpoint = GraphCheckpoint.builder()
@@ -149,6 +145,7 @@ public class CustomMysqlSaver extends MemorySaver {
                     .nodeId(checkpoint.getNodeId())
                     .nextNodeId(checkpoint.getNextNodeId())
                     .stateData(encodeState(checkpoint.getState())) // 序列化state数据
+                    .roundNum(currentRound)
                     .build();
 
             transactionTemplate.execute(status -> {
@@ -156,11 +153,13 @@ public class CustomMysqlSaver extends MemorySaver {
                 graphCheckpointMapper.insert(graphCheckpoint);
                 log.debug("检查点{}插入成功，会话ID：{}", checkpoint.getId(), conversationId);
 
-                Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
-                int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
-
                 // 保存会话历史消息
-                ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
+                Optional<Map<String, Object>> metadata = config.metadata();
+                Map<String, Object> map = metadata.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
+                ArrayList<Message> conversationMessageList = (ArrayList<Message>) map.get(GraphConstant.CONVERSATION_MESSAGES);
+                if(conversationMessageList == null){
+                    throw new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED);
+                }
                 conversationHistoryMessagesStorage.save(Long.parseLong(conversationId), currentRound, conversationMessageList);
                 conversationMessageList.clear();
 

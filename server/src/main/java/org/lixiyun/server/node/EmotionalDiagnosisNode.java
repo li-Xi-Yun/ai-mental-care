@@ -213,7 +213,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         if(beforeDiagnosis != null){
             prompt = String.format(EmotionPromptWord.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS, beforeDiagnosis) + input;
         } else {
-            prompt = String.format(EmotionPromptWord.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS, null) + input;
+            prompt = String.format(EmotionPromptWord.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS, "") + input;
         }
 
         // 模型调用生成完整数据信息
@@ -253,6 +253,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
 
         diagnosis.setConversationId(Long.valueOf(threadId));
         diagnosis.setUserId(currentId);
+        diagnosis.setRoundNum(currentRound);
         log.debug("情感诊断节点：转换结果:{}", diagnosis);
         if(currentRound == 5){
             // 初始化诊断书数据

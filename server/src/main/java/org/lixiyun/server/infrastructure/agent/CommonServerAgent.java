@@ -22,14 +22,14 @@ import java.util.List;
 @Builder
 public class CommonServerAgent {
 
-    private static ChatModel chatModel;
+    private ChatModel chatModel;
 
     /**
      * 语义压缩
      * @param messages 会话上下文信息
      * @return 压缩后的语义文本
      */
-    public static String semanticCompression(List<Message> messages) {
+    public String semanticCompression(List<Message> messages) {
         ReactAgent semanticCompressionAgent = ReactAgent.builder()
                 .model(chatModel)
                 .name("semantic-compression")
@@ -59,7 +59,7 @@ public class CommonServerAgent {
      * @param messages 第一次对话时的用户输入与模型输出
      * @return 会话名称
      */
-    public static String conversationNameExtraction(List<String> messages){
+    public String conversationNameExtraction(List<String> messages){
         ReactAgent conversationNameExtractionAgent = ReactAgent.builder()
                 .model(chatModel)
                 .name("conversation-name-extraction")

@@ -194,7 +194,7 @@ public class FinalAnswerNode implements NodeActionWithConfig {
                 .stream(userMessages);
         log.debug("专业情感陪伴师节点：结束执行");
 
-        return Map.of(GraphConstant.STREAM_RESULT, stream);
+        return Map.of(GraphConstant.STREAM_FLAT, stream);
     }
 
 }

@@ -36,6 +36,11 @@ public class EmotionDiagnosis implements Serializable {
      * 用户ID（冗余存储，便于单独查询）
      */
     private Long userId;
+
+    /**
+     * 该诊断数据创建或更新时的轮次
+     */
+    private Integer roundNum;
     
     /**
      * 诊断书核心内容（自然语言总结）

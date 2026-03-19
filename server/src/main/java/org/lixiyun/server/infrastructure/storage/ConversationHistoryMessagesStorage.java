@@ -3,6 +3,8 @@ package org.lixiyun.server.infrastructure.storage;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.entity.ConversationMemory;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.enums.MessageType;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -67,7 +71,14 @@ public class ConversationHistoryMessagesStorage {
     }
 
     public static void storeDataToConfig(RunnableConfig config, String data, MessageType messageType){
-        ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
+        Optional<Map<String, Object>> metadata = config.metadata();
+        Map<String, Object> map = metadata.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
+        ArrayList<Message> conversationMessageList = (ArrayList<Message>) map.get(GraphConstant.CONVERSATION_MESSAGES);
+        if(conversationMessageList == null){
+            throw new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED);
+        }
+
+//        ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
         switch (messageType) {
             case USER -> {
                 conversationMessageList.add(new UserMessage(data));
@@ -85,7 +96,14 @@ public class ConversationHistoryMessagesStorage {
     }
 
     public static void storeDataToConfig(RunnableConfig config, Message data){
-        ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
+        Optional<Map<String, Object>> metadata = config.metadata();
+        Map<String, Object> map = metadata.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
+        ArrayList<Message> conversationMessageList = (ArrayList<Message>) map.get(GraphConstant.CONVERSATION_MESSAGES);
+        if(conversationMessageList == null){
+            throw new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED);
+        }
+
+//        ArrayList<Message> conversationMessageList = (ArrayList<Message>) config.context().get(GraphConstant.CONVERSATION_MESSAGES);
         conversationMessageList.add(data);
     }
 }

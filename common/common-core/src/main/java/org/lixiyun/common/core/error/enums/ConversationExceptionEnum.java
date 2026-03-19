@@ -16,6 +16,7 @@ public enum ConversationExceptionEnum implements ErrorCode {
     MODEL_NOT_EXIST("模型不存在", 3003),
     CONVERSATION_NAME_EXTRACTION_ERROR("会话名称提取错误", 3004),
     SEMANTIC_COMPRESSION_ERROR("语义压缩错误", 3005),
+    CONVERSATION_METADATA_NOT_CONFIGURED("未配置对话元数据信息", 3006),
 
 
 
