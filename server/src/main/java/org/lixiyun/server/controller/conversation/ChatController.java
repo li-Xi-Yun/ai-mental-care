@@ -1,4 +1,4 @@
-package org.lixiyun.server.controller.chat;
+package org.lixiyun.server.controller.conversation;
 
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,13 +24,13 @@ import reactor.core.publisher.Flux;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/ai")
+@RequestMapping("/conversaion/ai-chat")
 @Tag(name = "AI问答相关接口", description = "AI问答相关接口")
 public class ChatController {
 
     private final ChatService chatService;
 
-    @PostMapping(value = "/emotion-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/emotion-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "情绪分析接口", description = "分析用户每次输入时的情绪内容并进行回复")
     @RateLimit(type = RateLimit.RateLimitType.USER, key = "emotion-chat", maxRequests = 1, windowSizeInMillis = 1000)
     public Flux<String> chat(@RequestBody @Validated ChatDTO chatDTO) throws GraphStateException {

@@ -15,8 +15,6 @@ import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.pojo.dto.chat.ChatDTO;
 import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.pojo.entity.ConversationMemory;
-import org.lixiyun.pojo.entity.GraphCheckpoint;
-import org.lixiyun.server.Saver.CustomMysqlSaver;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.mapper.ConversationMapper;
@@ -26,6 +24,7 @@ import org.lixiyun.server.node.EmotionRecognitionNode;
 import org.lixiyun.server.node.EmotionalDiagnosisNode;
 import org.lixiyun.server.node.FinalAnswerNode;
 import org.lixiyun.server.node.SummaryNode;
+import org.lixiyun.server.saver.CustomMysqlSaver;
 import org.lixiyun.server.service.ChatService;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -50,16 +49,16 @@ import java.util.*;
 public class ChatServiceImpl implements ChatService {
 
     @Autowired
-//    @Qualifier("ollamaChatModel")
     @Qualifier("deepSeekChatModel")
-//    @Qualifier("dashScopeChatModel")
     private ChatModel deepSeekChatModel;
 
     @Autowired
-//    @Qualifier("ollamaChatModel")
-//    @Qualifier("deepSeekChatModel")
     @Qualifier("dashScopeChatModel")
     private ChatModel dashScopeChatModel;
+
+    @Autowired
+    @Qualifier("ollamaChatModel")
+    private ChatModel ollamaChatModel;
 
     @Autowired
     private ConversationMapper conversationMapper;
@@ -223,12 +222,13 @@ public class ChatServiceImpl implements ChatService {
                                 .build());
                     }
 
-                    if (currentRound > 2) {
-                        // 将上上次的检查点数据进行删除状态设置
-                        graphCheckpointMapper.delete(new LambdaQueryWrapper<GraphCheckpoint>()
-                                .eq(GraphCheckpoint::getConversationId, conversationId)
-                                .lt(GraphCheckpoint::getRoundNum, currentRound - 1)); // 删除小于当前轮次的检查点数据
-                    }
+                    // todo 暂不删除，后续再考虑
+//                    if (currentRound > 2) {
+//                        // 将上上次的检查点数据进行删除状态设置
+//                        graphCheckpointMapper.delete(new LambdaQueryWrapper<GraphCheckpoint>()
+//                                .eq(GraphCheckpoint::getConversationId, conversationId)
+//                                .lt(GraphCheckpoint::getRoundNum, currentRound - 1)); // 删除小于当前轮次的检查点数据
+//                    }
                 }
         );
 

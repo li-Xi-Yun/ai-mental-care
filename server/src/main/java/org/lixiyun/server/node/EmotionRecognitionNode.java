@@ -224,7 +224,9 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
             return Map.of();
         }
 
-        return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutput));
+        log.debug("情感识别节点结束执行");
+        String modelOutputResult = "第" + currentRound + "轮情绪识别结果：" + call.getText();
+        return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutputResult));
     }
 
 
