@@ -1,6 +1,7 @@
 package org.lixiyun.common.sql.config;
 
 import cn.hutool.core.net.NetUtil;
+import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.core.handlers.PostInitTableInfoHandler;
 import com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator;
@@ -17,6 +18,7 @@ import org.lixiyun.common.sql.handler.MybatisExceptionHandler;
 import org.lixiyun.common.sql.handler.PlusPostInitTableInfoHandler;
 import org.springframework.beans.BeansException;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  *
  * @author lixiyun
  */
+@Configuration
 @EnableTransactionManagement(proxyTargetClass = true)
 @PropertySource(value = "classpath:common-mybatis.yml", factory = YmlPropertySourceFactory.class)
 public class MybatisPlusConfig {
@@ -66,9 +69,10 @@ public class MybatisPlusConfig {
      * 分页插件，自动识别数据库类型
      */
     public PaginationInnerInterceptor paginationInnerInterceptor() {
-        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
+        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
         // 分页合理化
         paginationInnerInterceptor.setOverflow(true);
+        paginationInnerInterceptor.setMaxLimit(1000L); // 单页最大条数限制（防止恶意请求）
         return paginationInnerInterceptor;
     }
 

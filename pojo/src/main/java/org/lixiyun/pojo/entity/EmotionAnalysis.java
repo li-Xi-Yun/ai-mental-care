@@ -30,6 +30,11 @@ public class EmotionAnalysis implements Serializable {
      * 会话ID
      */
     private Long conversationId;
+
+    /**
+     * 用户ID
+     */
+    private Long userId;
     
     /**
      * 对应的轮次，与会话ID结合查询对应的对话信息

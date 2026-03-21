@@ -19,4 +19,6 @@ public interface GraphConstant {
     String USER_INPUT = "user_input";  // 用户输入，这个只用于上下文存储，不参与模型调用，模型调用对应的时OverAllState中的常量属性：DEFAULT_INPUT_KEY
 
     String CONVERSATION_FIRST = "conversation_first";  // 这个是标明是否是会话的第一次对话，是，会在后续进行会话名称的创建
+
+    String CURRENT_ROUND = "current_round";  // 这个是标明当前对话的轮次
 }

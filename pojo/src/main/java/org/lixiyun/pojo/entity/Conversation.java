@@ -21,8 +21,6 @@ public class Conversation implements Serializable {
     
     private static final long serialVersionUID = 409226948168857358L;
     
-    public static final String CURRENT_ROUND = "currentRound";
-
     /**
      * 会话的唯一标识符
      */ 

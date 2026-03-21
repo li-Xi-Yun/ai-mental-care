@@ -8,6 +8,7 @@ import org.lixiyun.common.authentication.properties.JwtProperties;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.ServletUtils;
+import org.lixiyun.common.core.utils.SessionUtil;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.pojo.tool.LoginUser;
@@ -171,7 +172,7 @@ public class JwtUtil {
             // 构建 Key（格式：jwt:token:{id}）
             String key = JWT_REDIS_KEY_PREFIX + userId;
 
-            org.lixiyun.server.common.util.SessionUtil.setExpirableAttribute(key, token, (int) ttlMillis);
+            SessionUtil.setExpirableAttribute(key, token, (int) ttlMillis);
         }
 
         return token;
@@ -200,7 +201,7 @@ public class JwtUtil {
         }
 
         String key = JWT_REDIS_KEY_PREFIX + userId;
-        Object attribute = org.lixiyun.server.common.util.SessionUtil.getExpirableAttribute(key);
+        Object attribute = SessionUtil.getExpirableAttribute(key);
         if (attribute == null) {
             throw new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN);
         }
@@ -218,10 +219,10 @@ public class JwtUtil {
      */
     public static void refreshJwtTTLWithSession(String key, long extendMillis) {
 
-        long expirableAttributeRemainingSeconds = org.lixiyun.server.common.util.SessionUtil.getExpirableAttributeRemainingSeconds(key);
+        long expirableAttributeRemainingSeconds = SessionUtil.getExpirableAttributeRemainingSeconds(key);
 
         if(expirableAttributeRemainingSeconds < jwtProperties.getUserTtl() / 2){
-            org.lixiyun.server.common.util.SessionUtil.refreshExpirableAttribute(key, extendMillis);
+            SessionUtil.refreshExpirableAttribute(key, extendMillis);
         }
     }
 

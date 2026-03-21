@@ -1,12 +1,20 @@
 package org.lixiyun.server.controller.conversation;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.result.Result;
+import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.common.validation.annotation.NumberOfRanges;
+import org.lixiyun.pojo.dto.conversation.ConversationInfoDTO;
+import org.lixiyun.pojo.vo.conversation.ConversationVO;
 import org.lixiyun.server.service.ConversationService;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author lixiyun
@@ -21,5 +29,35 @@ import org.springframework.web.bind.annotation.RestController;
 public class ConversationController {
 
     private final ConversationService conversationService;
+
+    @GetMapping("/list")
+    @Operation(summary = "会话列表分页展示", description = "按更新时间逆序排列")
+    public Result<PageResult<ConversationVO>> listDisplay(
+            @RequestParam @Parameter(description = "当前页码", required = true) @NotNull @NumberOfRanges Integer pageNum,
+            @RequestParam @Parameter(description = "每页数量", required = true) @NotNull @NumberOfRanges Integer pageSize
+    ) {
+        log.info("分页查询会话列表: {}, {}", pageNum, pageSize);
+        PageResult<ConversationVO> result = conversationService.listDisplay(pageNum, pageSize);
+        return Result.success(result);
+    }
+
+    @PutMapping("/{conversationId}/name")
+    @Operation(summary = "修改会话属性", description = "修改指定会话的元数据信息")
+    public Result<Void> updateConversationInfo(
+            @PathVariable @Parameter(description = "会话ID", required = true) @NotNull Long conversationId,
+            @RequestBody @Valid ConversationInfoDTO conversationInfoDTO) {
+        log.info("修改会话属性:{}, {}", conversationId, conversationInfoDTO);
+        conversationService.updateConversationInfo(conversationId, conversationInfoDTO);
+        return Result.success();
+    }
+
+    @DeleteMapping("/{conversationId}")
+    @Operation(summary = "删除会话", description = "删除指定会话及其关联数据")
+    public Result<Void> deleteConversation(@PathVariable @Parameter(description = "会话ID", required = true) @NotNull Long conversationId) {
+        log.info("删除会话:{}", conversationId);
+        conversationService.deleteConversation(conversationId);
+        return Result.success();
+    }
+
 
 }

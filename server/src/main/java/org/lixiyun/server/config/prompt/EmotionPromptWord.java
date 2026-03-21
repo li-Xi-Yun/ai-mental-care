@@ -114,13 +114,12 @@ public interface EmotionPromptWord {
             | coreEmotionLabel         | 字符串   | 核心情绪标签（如焦虑/抑郁/开心/中性），32字以内                                    |
             | coreEmotionConfAvg      | 数值     | 0-1之间，保留3位小数（如0.925、0.700）                                   |
             | coreEmotionIntensity     | 字符串   | 核心情绪强度（轻度/中度/重度/极重度），16字以内                                    |
-            | secondaryEmotionLabels   | 字符串   | 次要情绪标签，多个用逗号分隔（如"烦躁,委屈,孤独"），128字以内                       |
-            | secondaryEmotionConf     | 字符串   | 次要情绪置信度，与标签一一对应，逗号分隔（如"0.850,0.720,0.680"），128字以内        |
+            | secondaryEmotion         | JSON   | 次要情绪，key:次要情绪标签（多个，如"烦躁,委屈,孤独"）;value:次要情绪置信度（与次要标签一一对应，如"0.85,0.72,0.68"）         |
             | negativeEmotionRatio     | 数值     | 负向情绪占比，0-1之间，保留2位小数                                       |
             | positiveEmotionRatio     | 数值     | 正向情绪占比，0-1之间，保留2位小数                                       |
             | neutralEmotionRatio      | 数值     | 中性情绪占比，0-1之间，保留2位小数，三者占比之和为1                      |
-            | negativeEmotionDetail    | 字符串   | 负向情绪细分占比（如"焦虑:0.45,愤怒:0.25,悲伤:0.10"），255字以内                    |
-            | positiveEmotionDetail    | 字符串   | 正向情绪细分占比（如"开心:0.30,欣慰:0.15,放松:0.05"），255字以内                    |
+            | negativeEmotionDetail    | JSON    | 负向情绪细分占比,如{"焦虑":0.45,"愤怒":0.25,"悲伤":0.10}                    |
+            | positiveEmotionDetail    | JSON    | 正向情绪细分占比,如{"开心":0.30,"欣慰":0.15,"放松":0.05}                    |
             | emotionTrend              | 字符串   | 整体情绪趋势，使用自然文字描述，30字以内                             |
             | emotionPeakRound         | 整数     | 情绪峰值轮次（核心情绪强度最高的轮次）                                   |
             | emotionValleyRound       | 整数     | 情绪低谷轮次（核心情绪强度最低的轮次）                                   |

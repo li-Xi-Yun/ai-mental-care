@@ -21,7 +21,7 @@ public class UserProfileDTO implements Serializable {
     @Size(max = 50, message = "用户名长度为2~12")
     private String username;
 
-    @Schema(description = "用户头像URL", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "用户头像URL，这是是由图片上传接口的返回值获取的", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @Size(max = 255, message = "头像URL长度不能超过255个字符")
     private String avatar;
 
@@ -40,7 +40,7 @@ public class UserProfileDTO implements Serializable {
 
     // 性别，0：女，1：男,2：未知
     @Schema(description = "性别，0：女，1：男,2：未知", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @NumberOfRanges(min = 0, max = 2, message = "性别只能是0：女，1：男,2：未知")
+    @NumberOfRanges(max = 2, message = "性别只能是0：女，1：男,2：未知")
     private Integer gender;
 
     // 所在地

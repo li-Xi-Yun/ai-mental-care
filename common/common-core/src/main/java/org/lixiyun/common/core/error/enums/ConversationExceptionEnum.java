@@ -17,6 +17,8 @@ public enum ConversationExceptionEnum implements ErrorCode {
     CONVERSATION_NAME_EXTRACTION_ERROR("会话名称提取错误", 3004),
     SEMANTIC_COMPRESSION_ERROR("语义压缩错误", 3005),
     CONVERSATION_METADATA_NOT_CONFIGURED("未配置对话元数据信息", 3006),
+    DIALOGUE_NOT_EXIST("对话不存在", 3007),
+    EMOTION_ANALYSIS_NOT_EXIST("情绪分析不存在", 3008),
 
 
 

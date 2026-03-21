@@ -79,7 +79,7 @@ public class ChatServiceImpl implements ChatService {
         messageList.add(new UserMessage(input));  // 添加用户输入消息
         RunnableConfig runnableConfig = RunnableConfig.builder()
                 .threadId(threadId)
-                .addMetadata(Conversation.CURRENT_ROUND, currentRound)
+                .addMetadata(GraphConstant.CURRENT_ROUND, currentRound)
                 .addMetadata(GraphConstant.USER_ID, currentId)
                 .addMetadata(GraphConstant.CONVERSATION_MESSAGES, messageList)
                 .addMetadata(GraphConstant.STREAM_RESULT, streamResult)

@@ -1,10 +1,9 @@
-package org.lixiyun.server.common.util;
+package org.lixiyun.common.core.utils;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.core.utils.ServletUtils;
 import org.springframework.util.Assert;
 
 import java.io.Serializable;

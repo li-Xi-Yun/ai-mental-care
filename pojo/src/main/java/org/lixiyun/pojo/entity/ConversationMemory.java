@@ -25,9 +25,14 @@ public class ConversationMemory implements Serializable {
      */
     @TableId(type = IdType.AUTO)
     private Long id;
-    
+
     /**
-     * 会话的唯一标识符
+     * 用户id
+     */
+    private Long userId;
+
+    /**
+     * 会话id
      */
     private Long conversationId;
     

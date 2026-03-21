@@ -7,10 +7,12 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 
-    /**
+/**
  * 情感诊断书表（多轮会话汇总）(EmotionDiagnosis)实体类
  *
  * @author lixiyun
@@ -55,47 +57,46 @@ public class EmotionDiagnosis implements Serializable {
     /**
      * 核心情绪平均置信度（0-1，精度提升）
      */
-    private Double coreEmotionConfAvg;
+    private BigDecimal coreEmotionConfAvg;
     
     /**
      * 核心情绪强度（轻度/中度/重度/极重度）
      */
     private String coreEmotionIntensity;
-    
+
     /**
-     * 次要情绪标签（多个用逗号分隔，如"烦躁,委屈,孤独"）
+     * 次要情绪
+     * <br>
+     * key:次要情绪标签（多个，如"烦躁,委屈,孤独"）;
+     * <br>
+     * value:次要情绪置信度（与次要标签一一对应，如"0.85,0.72,0.68"）
      */
-    private String secondaryEmotionLabels;
-    
-    /**
-     * 次要情绪置信度（与次要标签一一对应，如"0.85,0.72,0.68"）
-     */
-    private String secondaryEmotionConf;
+    private Map<String, BigDecimal> secondaryEmotion;
     
     /**
      * 负向情绪占比（0-1）
      */
-    private Double negativeEmotionRatio;
+    private BigDecimal negativeEmotionRatio;
     
     /**
      * 正向情绪占比（0-1）
      */
-    private Double positiveEmotionRatio;
+    private BigDecimal positiveEmotionRatio;
     
     /**
      * 中性情绪占比（0-1，三者和为1）
      */
-    private Double neutralEmotionRatio;
+    private BigDecimal neutralEmotionRatio;
     
     /**
-     * 负向情绪细分占比（如"焦虑:0.45,愤怒:0.25,悲伤:0.10"）
+     * 负向情绪细分占比,如{"焦虑":0.45,"愤怒":0.25,"悲伤":0.10}
      */
-    private String negativeEmotionDetail;
+    private Map<String, BigDecimal> negativeEmotionDetail;
     
     /**
-     * 正向情绪细分占比（如"开心:0.30,欣慰:0.15,放松:0.05"）
+     * 正向情绪细分占比,如{"开心":0.30,"欣慰":0.15,"放松":0.05}
      */
-    private String positiveEmotionDetail;
+    private Map<String, BigDecimal> positiveEmotionDetail;
     
     /**
      * 整体情绪趋势（上升/下降/平稳/波动）
@@ -115,7 +116,7 @@ public class EmotionDiagnosis implements Serializable {
     /**
      * 情绪波动幅度（峰值-谷值的置信度差）
      */
-    private Double emotionFluctuationAmplitude;
+    private BigDecimal emotionFluctuationAmplitude;
     
     /**
      * 情绪平稳的轮次数量（占总轮次的辅助指标）

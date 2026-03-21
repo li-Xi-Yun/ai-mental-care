@@ -31,7 +31,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping(value = "/emotion-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "情绪分析接口", description = "分析用户每次输入时的情绪内容并进行回复")
+    @Operation(summary = "情绪分析接口", description = "模型接收分析用户每次输入时的情绪内容并进行回复")
     @RateLimit(type = RateLimit.RateLimitType.USER, key = "emotion-chat", maxRequests = 1, windowSizeInMillis = 1000)
     public Flux<String> chat(@RequestBody @Validated ChatDTO chatDTO) throws GraphStateException {
         log.info("用户聊天：{}", chatDTO);

@@ -254,6 +254,8 @@ springdoc:
     - group: ${springdoc.group} # 分组名
       paths-to-match: '/**' # 要匹配的路径
       packages-to-scan: ${springdoc.packages-to-scan} # 要扫描的包
+  default-consumes-media-type: application/x-www-form-urlencoded
+  default-produces-media-type: application/json;charset=UTF-8
 
 # Knife4j 增强配置
 knife4j:

@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.exception.MyBatisException;
-import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
@@ -14,10 +13,10 @@ import java.util.Optional;
  * MP注入处理器
  *
  * @author lixiyun
- * @date 2021/4/25
+ * @date 2025/9/25
  */
 @Slf4j
-@Component
+//@Component
 public class InjectionMetaObjectHandler implements MetaObjectHandler {
 
     private static final String CREATED_BY = "createdBy";

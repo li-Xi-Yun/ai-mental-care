@@ -12,7 +12,6 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.server.config.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.messages.Message;
@@ -177,7 +176,7 @@ public class FinalAnswerNode implements NodeActionWithConfig {
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
         log.debug("专业情感陪伴师节点：开始执行");
-        Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+        Optional<Object> currentRoundOpl = config.metadata(GraphConstant.CURRENT_ROUND);
         int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
         Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
         List<Message> userMessages = userMessageOpl.orElseThrow(() -> {

@@ -29,13 +29,14 @@ public class ConversationHistoryMessagesStorage {
 
     private final ConversationMemoryMapper conversationMemoryMapper;
 
-    public void save(Long conversationId, int roundCount, List<Message> messageList) {
+    public void save(Long userId, Long conversationId, int roundCount, List<Message> messageList) {
         if(messageList == null || messageList.isEmpty()){
             return;
         }
         List<ConversationMemory> result = new ArrayList<>(messageList.size());
         for(var message : messageList) {
             ConversationMemory.ConversationMemoryBuilder builder = ConversationMemory.builder()
+                    .userId(userId)
                     .conversationId(conversationId)
                     .roundNum(roundCount);
             if (message != null) {

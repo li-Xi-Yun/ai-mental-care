@@ -17,7 +17,6 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
-import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.pojo.entity.EmotionDiagnosis;
 import org.lixiyun.server.config.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
@@ -32,6 +31,7 @@ import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,9 +180,9 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
         log.debug("情感诊断节点开始执行");
-        Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+        Optional<Object> currentRoundOpl = config.metadata(GraphConstant.CURRENT_ROUND);
         int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
-        if(currentRound < 5){
+        if (currentRound % 5 != 0){
             return Map.of();
         }
 
@@ -231,8 +231,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
                 .coreEmotionLabel(temp.getCoreEmotionLabel())
                 .coreEmotionConfAvg(temp.getCoreEmotionConfAvg())
                 .coreEmotionIntensity(temp.getCoreEmotionIntensity())
-                .secondaryEmotionLabels(temp.getSecondaryEmotionLabels())
-                .secondaryEmotionConf(temp.getSecondaryEmotionConf())
+                .secondaryEmotion(temp.getSecondaryEmotion())
                 .negativeEmotionRatio(temp.getNegativeEmotionRatio())
                 .positiveEmotionRatio(temp.getPositiveEmotionRatio())
                 .neutralEmotionRatio(temp.getNeutralEmotionRatio())
@@ -255,14 +254,8 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         diagnosis.setUserId(currentId);
         diagnosis.setRoundNum(currentRound);
         log.debug("情感诊断节点：转换结果:{}", diagnosis);
-        if(currentRound == 5){
-            // 初始化诊断书数据
-            emotionDiagnosisMapper.insert(diagnosis);
-        } else if(currentRound % 3 == 0){
-            // 修改诊断书数据
-            emotionDiagnosisMapper.update(diagnosis, new LambdaQueryWrapper<EmotionDiagnosis>()
-                    .eq(EmotionDiagnosis::getConversationId, threadIdOpl.get()));
-        }
+        // 初始化诊断书数据
+        emotionDiagnosisMapper.insert(diagnosis);
 
         return Map.of();
     }
@@ -271,19 +264,18 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
     public static class BriefEmotionDiagnosis {
         private String diagnosisContent;
         private String coreEmotionLabel;
-        private Double coreEmotionConfAvg;
+        private BigDecimal coreEmotionConfAvg;
         private String coreEmotionIntensity;
-        private String secondaryEmotionLabels;
-        private String secondaryEmotionConf;
-        private Double negativeEmotionRatio;
-        private Double positiveEmotionRatio;
-        private Double neutralEmotionRatio;
-        private String negativeEmotionDetail;
-        private String positiveEmotionDetail;
+        private Map<String, BigDecimal> secondaryEmotion;
+        private BigDecimal negativeEmotionRatio;
+        private BigDecimal positiveEmotionRatio;
+        private BigDecimal neutralEmotionRatio;
+        private Map<String, BigDecimal> negativeEmotionDetail;
+        private Map<String, BigDecimal> positiveEmotionDetail;
         private String emotionTrend;
         private Integer emotionPeakRound;
         private Integer emotionValleyRound;
-        private Double emotionFluctuationAmplitude;
+        private BigDecimal emotionFluctuationAmplitude;
         private Integer emotionStableRounds;
         private String coreTriggerScene;
         private String coreTriggerKeywords;

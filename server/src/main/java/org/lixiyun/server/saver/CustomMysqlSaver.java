@@ -134,7 +134,7 @@ public class CustomMysqlSaver extends MemorySaver {
         String conversationId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
         // 获取当前轮数
-        Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+        Optional<Object> currentRoundOpl = config.metadata(GraphConstant.CURRENT_ROUND);
         int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
 
         try {
@@ -160,7 +160,11 @@ public class CustomMysqlSaver extends MemorySaver {
                 if(conversationMessageList == null){
                     throw new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED);
                 }
-                conversationHistoryMessagesStorage.save(Long.parseLong(conversationId), currentRound, conversationMessageList);
+                Long userId = (Long) map.get(GraphConstant.USER_ID);
+                if(userId == null){
+                    throw new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN);
+                }
+                conversationHistoryMessagesStorage.save(userId, Long.parseLong(conversationId), currentRound, conversationMessageList);
                 conversationMessageList.clear();
 
                 return null;

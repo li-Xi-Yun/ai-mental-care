@@ -11,11 +11,11 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
-import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.pojo.entity.EmotionAnalysis;
 import org.lixiyun.server.config.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
@@ -164,7 +164,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
         log.debug("情感识别节点开始执行");
-        Optional<Object> currentRoundOpl = config.metadata(Conversation.CURRENT_ROUND);
+        Optional<Object> currentRoundOpl = config.metadata(GraphConstant.CURRENT_ROUND);
         int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
         Optional<String> threadIdOpl = config.threadId();
         String threadId = threadIdOpl.orElseThrow(() -> {
@@ -215,7 +215,10 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         log.info("情感识别节点:识别结果:{}", modelOutput);
         log.info("情感识别节点:转换结果:{}", analysis);
 
+        Optional<Object> userIdOpl = config.metadata(GraphConstant.USER_ID);
+        Long userId = (Long) userIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
         analysis.conversationId(Long.valueOf(threadId))
+                .userId(userId)
                 .roundNum(currentRound);
 
         emotionAnalysisMapper.insert(analysis.build());
