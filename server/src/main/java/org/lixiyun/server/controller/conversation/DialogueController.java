@@ -30,7 +30,7 @@ public class DialogueController {
 
 
     @GetMapping(value = "/{conversationId}/memory")
-    @Operation(summary = "对话记录分页展示", description = "按创建时间正序排列")
+    @Operation(summary = "对话记录分页展示", description = "按创建时间正序排列，一共有三个类型，user、thinking、assistant，如果轮次相同，表明为同一个对话内容")
     public Result<PageResult<ConversationMemoryVO>> listMemory(
             @RequestParam @Parameter(description = "当前页码", required = true) @NotNull @NumberOfRanges Integer pageNum,
             @RequestParam @Parameter(description = "每页数量", required = true) @NotNull @NumberOfRanges Integer pageSize,

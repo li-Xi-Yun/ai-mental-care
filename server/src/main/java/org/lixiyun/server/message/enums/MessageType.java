@@ -1,4 +1,4 @@
-package org.lixiyun.server.enums;
+package org.lixiyun.server.message.enums;
 
 public enum MessageType {
         USER("user"),

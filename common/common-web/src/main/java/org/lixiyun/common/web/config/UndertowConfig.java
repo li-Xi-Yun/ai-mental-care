@@ -22,7 +22,8 @@ public class UndertowConfig implements WebServerFactoryCustomizer<UndertowServle
         // 默认不直接分配内存 如果项目中使用了 websocket 建议直接分配
         factory.addDeploymentInfoCustomizers(deploymentInfo -> {
             WebSocketDeploymentInfo webSocketDeploymentInfo = new WebSocketDeploymentInfo();
-            webSocketDeploymentInfo.setBuffers(new DefaultByteBufferPool(false, 512));
+            // 增大WebSocket缓冲区（512KB，原512B过小）
+            webSocketDeploymentInfo.setBuffers(new DefaultByteBufferPool(false, 1024 * 512));
             deploymentInfo.addServletContextAttribute("io.undertow.websockets.jsr.WebSocketDeploymentInfo", webSocketDeploymentInfo);
         });
     }

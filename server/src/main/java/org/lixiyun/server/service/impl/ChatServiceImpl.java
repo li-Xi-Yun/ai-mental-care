@@ -9,17 +9,15 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.pojo.dto.chat.ChatDTO;
 import org.lixiyun.pojo.entity.Conversation;
-import org.lixiyun.pojo.entity.ConversationMemory;
 import org.lixiyun.server.constant.GraphConstant;
-import org.lixiyun.server.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.mapper.GraphCheckpointMapper;
+import org.lixiyun.server.message.ThinkMessage;
 import org.lixiyun.server.node.EmotionRecognitionNode;
 import org.lixiyun.server.node.EmotionalDiagnosisNode;
 import org.lixiyun.server.node.FinalAnswerNode;
@@ -38,7 +36,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author lixiyun
@@ -137,6 +138,7 @@ public class ChatServiceImpl implements ChatService {
         stream.subscribeOn(Schedulers.boundedElastic())
                 .subscribe(
                 output -> {
+                    log.debug("流式前置打印信息：{}", output);
                     if (output instanceof StreamingOutput streamingOutput) {
                         OutputType type = streamingOutput.getOutputType();
                         Message message = streamingOutput.message();
@@ -147,7 +149,7 @@ public class ChatServiceImpl implements ChatService {
                                 if (reasoningContent != null && !reasoningContent.toString().isEmpty()) {
                                     stringBuilder.append(reasoningContent);
                                     log.debug("[模型思考输出] {}", reasoningContent);
-                                    sink.tryEmitNext((String) reasoningContent);
+                                    sink.tryEmitNext("模型思考：" + reasoningContent);
                                 } else {
                                     String content = assistantMessage.getText();
                                     log.debug("[模型流式输出结果] ============>>> {}", content);
@@ -165,7 +167,7 @@ public class ChatServiceImpl implements ChatService {
                                     // 到这里说明流式输出已经结束，这里的Output参数中的message属性中，存储的是模型流式输出的完整内容
                                     if (!stringBuilder.isEmpty()) {
                                         log.debug("最终模型思考流式输出结果：{}", stringBuilder);
-                                        Message thinkMessage = new AssistantMessage(stringBuilder.toString());
+                                        Message thinkMessage = new ThinkMessage(stringBuilder.toString());
                                         messageList.add(thinkMessage);
                                     }
 
@@ -196,31 +198,18 @@ public class ChatServiceImpl implements ChatService {
                 },
                 () -> {
                     log.info("Agent 执行完成");
-                    Object isFirstConversation = runnableConfig.context().get(GraphConstant.CONVERSATION_FIRST);
                     Optional<String> threadIdOpl = runnableConfig.threadId();
                     Long conversationId = Long.valueOf(threadIdOpl.orElseThrow());
-                    if(isFirstConversation != null && (Boolean) isFirstConversation){
-                        // 创建对应的会话名称（模型调用）
-                        // 查询会话数据
-                        List<ConversationMemory> conversationMemories = conversationMemoryMapper.selectList(new LambdaQueryWrapper<ConversationMemory>()
-                                .eq(ConversationMemory::getId, conversationId)
-                                .eq(ConversationMemory::getRoundNum, 1));
-
-                        List<String> list = conversationMemories.stream().map(ConversationMemory::getContent).toList();
-
-                        String conversationName = CommonServerAgent.builder().chatModel(deepSeekChatModel).build()
-                                .conversationNameExtraction(list);
-                        conversationMapper.updateById(Conversation.builder()
-                                .id(conversationId)
-                                .name(conversationName)
-                                .build());
-                        sink.tryEmitComplete();
-                    } else{
+                    if (currentRound == 1) {
+                        sink.tryEmitNext("会话ID：" + conversationId);
+                    } else {
                         conversationMapper.updateById(Conversation.builder()
                                 .id(conversationId)
                                 .currentRound(currentRound)
                                 .build());
                     }
+
+                    sink.tryEmitComplete();
 
                     // todo 暂不删除，后续再考虑
 //                    if (currentRound > 2) {

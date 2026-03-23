@@ -77,9 +77,9 @@ public class CustomMysqlSaver extends MemorySaver {
         if (!checkpoints.isEmpty()) {
             return checkpoints;
         }
-        String conversationId  = config.threadId().orElse(THREAD_ID_DEFAULT);
+        String conversationId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
-        if(conversationId.equals(THREAD_ID_DEFAULT)){
+        if (conversationId.equals(THREAD_ID_DEFAULT)) {
             // 说明是该会话的第一次对话，创建对应的会话表数据
             Optional<Object> currentIdOpl = config.metadata(GraphConstant.USER_ID);
             Long currentId = (Long) currentIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
@@ -93,16 +93,17 @@ public class CustomMysqlSaver extends MemorySaver {
             // 为user实例的name属性赋值
             conversationId = conversation.getId().toString();
             nameField.set(config, conversationId);
-
-            config.context().put(GraphConstant.CONVERSATION_FIRST, true);
         }
 
+//        Optional<Map<String, Object>> metadataOpl = config.metadata();
+//        Map<String, Object> map = metadataOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
+//        Integer currentRound = (Integer) map.get(GraphConstant.CURRENT_ROUND);
         try {
             // 转换为Checkpoint对象（适配原逻辑）
             List<GraphCheckpoint> graphCheckpointList = graphCheckpointMapper.loadCheckpointList(conversationId);
             for (GraphCheckpoint dbCheckpoint : graphCheckpointList) {
                 Checkpoint checkpoint = Checkpoint.builder()
-                        .id(dbCheckpoint.getCheckpointId())
+                        .id(dbCheckpoint.getId())
                         .nodeId(dbCheckpoint.getNodeId())
                         .nextNodeId(dbCheckpoint.getNextNodeId())
                         // 反序列化stateData（原二进制数据）
@@ -110,6 +111,17 @@ public class CustomMysqlSaver extends MemorySaver {
                         .build();
                 checkpoints.add(checkpoint);
             }
+//            GraphCheckpoint graphCheckpoint = graphCheckpointMapper.loadCheckpoint(conversationId, currentRound);
+//            if (graphCheckpoint != null) {
+//                Checkpoint checkpoint = Checkpoint.builder()
+//                        .id(graphCheckpoint.getId())
+//                        .nodeId(graphCheckpoint.getNodeId())
+//                        .nextNodeId(graphCheckpoint.getNextNodeId())
+//                        // 反序列化stateData（原二进制数据）
+//                        .state(decodeState((String) graphCheckpoint.getStateData()))
+//                        .build();
+//                checkpoints.add(checkpoint);
+//        }
         } catch (Exception e) {
             log.error("加载检查点失败，会话ID：{}", conversationId, e);
             throw new Exception("Unable to load checkpoints", e);
@@ -139,8 +151,9 @@ public class CustomMysqlSaver extends MemorySaver {
 
         try {
             // 构建自定义GraphCheckpoint实体（映射原检查点数据）
+            log.debug("检查点插入开始，{}", checkpoint.getState());
             GraphCheckpoint graphCheckpoint = GraphCheckpoint.builder()
-                    .checkpointId(checkpoint.getId() == null ? UUID.randomUUID().toString() : checkpoint.getId())
+//                    .checkpointId(checkpoint.getId() == null ? UUID.randomUUID().toString() : checkpoint.getId())
                     .conversationId(conversationId)
                     .nodeId(checkpoint.getNodeId())
                     .nextNodeId(checkpoint.getNextNodeId())
@@ -227,7 +240,7 @@ public class CustomMysqlSaver extends MemorySaver {
             if (config.checkPointId().isPresent()) {
                 // 更新逻辑：根据checkpointId更新
                 LambdaUpdateWrapper<GraphCheckpoint> updateWrapper = new LambdaUpdateWrapper<GraphCheckpoint>()
-                        .eq(GraphCheckpoint::getCheckpointId, config.checkPointId().get())
+                        .eq(GraphCheckpoint::getId, config.checkPointId().get())
                         .eq(GraphCheckpoint::getDeleted, 0)
                         .set(GraphCheckpoint::getNodeId, checkpoint.getNodeId())
                         .set(GraphCheckpoint::getNextNodeId, checkpoint.getNextNodeId())

@@ -45,7 +45,8 @@ public class ConversationController {
     @Operation(summary = "修改会话属性", description = "修改指定会话的元数据信息")
     public Result<Void> updateConversationInfo(
             @PathVariable @Parameter(description = "会话ID", required = true) @NotNull Long conversationId,
-            @RequestBody @Valid ConversationInfoDTO conversationInfoDTO) {
+            @RequestBody @Valid ConversationInfoDTO conversationInfoDTO
+    ) {
         log.info("修改会话属性:{}, {}", conversationId, conversationInfoDTO);
         conversationService.updateConversationInfo(conversationId, conversationInfoDTO);
         return Result.success();
@@ -57,6 +58,18 @@ public class ConversationController {
         log.info("删除会话:{}", conversationId);
         conversationService.deleteConversation(conversationId);
         return Result.success();
+    }
+
+    @PutMapping("/{conversationId}/initialize-name")
+    @Operation(summary = "初始化会话名称", description = "前端在发起第一次对话后，需要主动调用这个接口，返回值为该会话的名称，用于前端指定动态刷新，而不是全面刷新")
+    public Result<String> initializeConversationName(
+            @PathVariable @Parameter(description = "会话ID", required = true) @NotNull Long conversationId,
+            @RequestParam @Parameter(description = "用户输入", required = true) @NotNull String userInput,
+            @RequestParam @Parameter(description = "模型输出", required = true) @NotNull String modelOutput
+    ) {
+        log.info("初始化会话名称:{}, {}, {}", conversationId, userInput, modelOutput);
+        String result = conversationService.initializeConversationName(conversationId, userInput, modelOutput);
+        return Result.success(result);
     }
 
 

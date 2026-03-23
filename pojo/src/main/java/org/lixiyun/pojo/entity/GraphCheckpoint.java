@@ -1,5 +1,6 @@
 package org.lixiyun.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.AllArgsConstructor;
@@ -22,12 +23,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GraphCheckpoint implements Serializable {
     private static final long serialVersionUID = -68530311004080644L;
-    
+
     /**
      * 主键ID
      */
-    @TableId
-    private String checkpointId;
+    @TableId(type = IdType.AUTO)
+    private String id;
     
     /**
      * 会话ID

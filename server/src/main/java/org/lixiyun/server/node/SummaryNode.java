@@ -31,6 +31,7 @@ public class SummaryNode implements NodeActionWithConfig {
             ArrayList<Message> streamOutput = (ArrayList<Message>) map.get(GraphConstant.STREAM_RESULT);
             ArrayList<Message> conversationMessages = (ArrayList<Message>) map.get(GraphConstant.CONVERSATION_MESSAGES);
             conversationMessages.addAll(streamOutput);
+//            streamOutput.clear();
             log.debug("汇总节点：metadata:流式输出：{}", streamOutput);
 
             return Map.of(GraphConstant.MESSAGES, streamOutput);

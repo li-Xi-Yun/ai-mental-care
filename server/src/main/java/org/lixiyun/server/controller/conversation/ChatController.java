@@ -31,7 +31,11 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping(value = "/emotion-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "情绪分析接口", description = "模型接收分析用户每次输入时的情绪内容并进行回复")
+    @Operation(summary = "情绪分析接口", description = """
+            模型接收分析用户每次输入时的情绪内容并进行回复
+            如果是模型思考的结果，消息前面会有：'模型思考：'前缀，前端需要将每一个前缀进行删除，保留后面的信息，进行流式展示
+            如果是第一次对话，那在结果输出结束前的最后一条数据会有一个前缀：‘会话ID：’，后面是会话ID的数值，前端需要获取并设置
+    """)
     @RateLimit(type = RateLimit.RateLimitType.USER, key = "emotion-chat", maxRequests = 1, windowSizeInMillis = 1000)
     public Flux<String> chat(@RequestBody @Validated ChatDTO chatDTO) throws GraphStateException {
         log.info("用户聊天：{}", chatDTO);

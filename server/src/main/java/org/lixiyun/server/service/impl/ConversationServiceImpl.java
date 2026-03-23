@@ -1,6 +1,7 @@
 package org.lixiyun.server.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -15,10 +16,13 @@ import org.lixiyun.pojo.dto.conversation.ConversationInfoDTO;
 import org.lixiyun.pojo.entity.Conversation;
 import org.lixiyun.pojo.vo.conversation.ConversationVO;
 import org.lixiyun.server.constant.CommonConstant;
+import org.lixiyun.server.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.service.ConversationService;
 import org.lixiyun.server.service.async.ConversationServiceAsync;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * @author lixiyun
@@ -29,6 +33,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
+    private final DashScopeChatModel dashScopeChatModel;
     private final ConversationMapper conversationMapper;
     private final ConversationServiceAsync conversationServiceAsync;
 
@@ -76,5 +81,17 @@ public class ConversationServiceImpl implements ConversationService {
 
         // 级联删除所有相关数据
         conversationServiceAsync.deleteConversation(conversationId);
+    }
+
+    @Override
+    public String initializeConversationName(Long conversationId, String userInput, String modelOutput) {
+        // 创建对应的会话名称（模型调用）
+        String conversationName = CommonServerAgent.builder().chatModel(dashScopeChatModel).build()
+                .conversationNameExtraction(List.of("用户输入：" + userInput, "模型输出：" + modelOutput));
+        conversationMapper.updateById(Conversation.builder()
+                .id(conversationId)
+                .name(conversationName)
+                .build());
+        return conversationName;
     }
 }

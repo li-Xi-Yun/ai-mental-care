@@ -8,10 +8,10 @@ server:
   # undertow 配置
   undertow:
     # HTTP post内容的最大大小。当值为-1时，默认值为大小是无限的
-    max-http-post-size: -1
+    max-http-post-size: 209715200  # 200MB（数值为字节，200*1024*1024）
     # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
     # 每块buffer的空间大小,越小的空间被利用越充分
-    buffer-size: 512
+    buffer-size: 8192  # 调整为8KB（原512B过小，大文件上传更高效）
     # 是否分配的直接内存
     direct-buffers: true
     threads:
@@ -19,6 +19,8 @@ server:
       io: 8
       # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
       worker: 256
+#    max-headers: 100
+#    max-parameters: 1000
 
 
 spring:

@@ -7,8 +7,9 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.entity.ConversationMemory;
 import org.lixiyun.server.constant.GraphConstant;
-import org.lixiyun.server.enums.MessageType;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
+import org.lixiyun.server.message.ThinkMessage;
+import org.lixiyun.server.message.enums.MessageType;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.stereotype.Repository;
 
@@ -64,6 +65,9 @@ public class ConversationHistoryMessagesStorage {
                             .collect(Collectors.joining(";"));
                     builder.type(MessageType.TOOL.getName())
                             .content("工具调用成功--" + responses);
+                } else if (message instanceof ThinkMessage) {
+                    builder.type(MessageType.THINKING.getName())
+                            .content(message.getText());
                 }
             }
             result.add(builder.build());

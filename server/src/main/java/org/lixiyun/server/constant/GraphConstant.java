@@ -21,4 +21,6 @@ public interface GraphConstant {
     String CONVERSATION_FIRST = "conversation_first";  // 这个是标明是否是会话的第一次对话，是，会在后续进行会话名称的创建
 
     String CURRENT_ROUND = "current_round";  // 这个是标明当前对话的轮次
+
+    String END_NAME = "__END__";
 }

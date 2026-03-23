@@ -1,5 +1,6 @@
 package org.lixiyun.common.json.config;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -45,6 +46,18 @@ public class JacksonConfig {
             builder.modules(javaTimeModule);
             // 设置Jackson使用系统默认时区进行时间处理
             builder.timeZone(TimeZone.getDefault());
+
+            // 自定义大数模块：独立注册，确保优先级
+            SimpleModule bigNumberModule = new SimpleModule("BigNumberModule");
+            // 注册Long/long类型序列化器（核心：覆盖默认序列化）
+            bigNumberModule.addSerializer(Long.class, BigNumberSerializer.INSTANCE);
+            bigNumberModule.addSerializer(Long.TYPE, BigNumberSerializer.INSTANCE);
+            // 注册BigInteger序列化器
+            bigNumberModule.addSerializer(BigInteger.class, BigNumberSerializer.INSTANCE);
+            // 注册BigDecimal序列化器（直接转字符串，避免精度丢失）
+            bigNumberModule.addSerializer(BigDecimal.class, ToStringSerializer.instance);
+            builder.modules(bigNumberModule);
+
             log.info("初始化 jackson 配置");
         };
     }

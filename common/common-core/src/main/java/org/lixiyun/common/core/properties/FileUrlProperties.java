@@ -13,44 +13,59 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "file-url")
 public class FileUrlProperties {
 
-    /**
-     * 上传文件的URL
-     */
-    private String uploadImages;
+    // 嵌套类匹配配置中的 upload 节点
+    private Upload upload = new Upload();
+    // 嵌套类匹配配置中的 request 节点
+    private Request request = new Request();
 
-    /**
-     * 上传视频的URL
-     */
-    private String uploadVideos;
+    // 内部类：对应 upload 节点
+    @Data
+    public static class Upload {
+        private String images;
+        private String videos;
+        private String files;
+        private String conversations;
+    }
 
-    /**
-     * 上传文件的URL
-     */
-    private String uploadFiles;
+    // 内部类：对应 request 节点
+    @Data
+    public static class Request {
+        private String images;
+        private String videos;
+        private String files;
+        private String conversations;
+    }
 
-    /**
-     * 上传会话的URL
-     */
-    private String uploadConversations;
+    // 可选：提供快捷获取方法（简化业务代码）
+    public String getUploadImages() {
+        return upload.getImages();
+    }
 
-    /**
-     * 请求图片的URL
-     */
-    private String requestImages;
+    public String getRequestImages() {
+        return request.getImages();
+    }
 
-    /**
-     * 请求视频的URL
-     */
-    private String requestVideos;
+    public String getUploadVideos() {
+        return upload.getVideos();
+    }
 
-    /**
-     * 请求文件的URL
-     */
-    private String requestFiles;
+    public String getRequestVideos() {
+        return request.getVideos();
+    }
 
-    /**
-     * 请求会话的URL
-     */
-    private String requestConversations;
+    public String getUploadFiles() {
+        return upload.getFiles();
+    }
 
+    public String getRequestFiles() {
+        return request.getFiles();
+    }
+
+    public String getUploadConversations() {
+        return upload.getConversations();
+    }
+
+    public String getRequestConversations() {
+        return request.getConversations();
+    }
 }

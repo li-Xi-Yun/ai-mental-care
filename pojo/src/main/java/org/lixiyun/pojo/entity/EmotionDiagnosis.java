@@ -1,10 +1,11 @@
 package org.lixiyun.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -20,6 +21,9 @@ import java.util.Map;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName(value = "emotion_diagnosis", autoResultMap = true)
 public class EmotionDiagnosis implements Serializable {
     private static final long serialVersionUID = 468287925712228372L;
     
@@ -71,6 +75,7 @@ public class EmotionDiagnosis implements Serializable {
      * <br>
      * value:次要情绪置信度（与次要标签一一对应，如"0.85,0.72,0.68"）
      */
+     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, BigDecimal> secondaryEmotion;
     
     /**
@@ -91,11 +96,13 @@ public class EmotionDiagnosis implements Serializable {
     /**
      * 负向情绪细分占比,如{"焦虑":0.45,"愤怒":0.25,"悲伤":0.10}
      */
+     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, BigDecimal> negativeEmotionDetail;
     
     /**
      * 正向情绪细分占比,如{"开心":0.30,"欣慰":0.15,"放松":0.05}
      */
+     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, BigDecimal> positiveEmotionDetail;
     
     /**
