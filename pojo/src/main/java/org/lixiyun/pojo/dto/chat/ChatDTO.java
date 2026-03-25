@@ -15,6 +15,7 @@ import java.io.Serializable;
  */
 @Data
 @Builder
+@Schema(description = "文本对话DTO")
 public class ChatDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;

@@ -16,11 +16,11 @@ import org.lixiyun.pojo.entity.EmotionDiagnosis;
 import org.lixiyun.pojo.vo.conversation.EmotionAnalysisDetailVO;
 import org.lixiyun.pojo.vo.conversation.EmotionAnalysisVO;
 import org.lixiyun.pojo.vo.conversation.EmotionDiagnosisVO;
+import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.constant.CommonConstant;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
-import org.lixiyun.server.message.enums.MessageType;
 import org.lixiyun.server.service.EmotionAnalysisService;
 import org.springframework.stereotype.Service;
 

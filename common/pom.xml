@@ -39,6 +39,7 @@
         <module>common-mail</module>
         <module>common-sql</module>
         <module>common-vector</module>
+        <module>websocket</module>
     </modules>
 
 </project>

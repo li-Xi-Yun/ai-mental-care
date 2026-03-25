@@ -218,6 +218,13 @@ spring:
       chat:
         options:
           model: ${ai-model-config.dashscope.chat-model}
+      audio:
+        synthesis:
+          options:
+            model:
+        transcription:
+          options:
+            heartbeat:
     ollama:
       base-url: ${ai-model-config.ollama.url}
       embedding:

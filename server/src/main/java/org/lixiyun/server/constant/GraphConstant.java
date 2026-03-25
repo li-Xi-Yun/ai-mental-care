@@ -6,21 +6,49 @@ package org.lixiyun.server.constant;
  */
 public interface GraphConstant {
 
-    String STREAM_FLAT = "stream_flat";  // 专门用于存储节点输出的流式结果到OverAllState中的，以便整合到图级别中，返回到前端
+    // ============================================这里是放入 config 的 context 对话级临时数据==================================================
 
-    String STREAM_RESULT = "stream_result";  // 专门用于存储节点流式输出的完整结果，以便在后续存入OverAllState（检查点）与上下文信息（DB）中
+    String AUDIO_DATA_EMOTION_RECOGNITION = "audio_data_emotion_recognition"; // 用于格式化情绪分析节点的额外输入，语音语气情绪分析，放入config的context中进行对话级的保存
 
-    String CONVERSATION_MESSAGES = "conversation_messages";  // 这里存储对话的上下文信息，一个ArrayList<Message>，目前只存储用户输出与最终模型回答用户的流式输出
+    String AUDIO_DATA_RESULT = "audio_data_result"; // 用于进行文本转语音的文本信息，放入config的context中进行对话级的保存
 
-    String MESSAGES = "messages";  // 这里是OverAllState中的上下文信息，一个ArrayList<Message>
 
-    String USER_ID = "user_id";
 
-    String USER_INPUT = "user_input";  // 用户输入，这个只用于上下文存储，不参与模型调用，模型调用对应的时OverAllState中的常量属性：DEFAULT_INPUT_KEY
-
-    String CONVERSATION_FIRST = "conversation_first";  // 这个是标明是否是会话的第一次对话，是，会在后续进行会话名称的创建
+    // ============================================这里是放入 config 的 metadata 对话级元数据==================================================
 
     String CURRENT_ROUND = "current_round";  // 这个是标明当前对话的轮次
 
-    String END_NAME = "__END__";
+    String CONVERSATION_MESSAGES = "conversation_messages";  // 这里存储对话的上下文信息，一个ArrayList<Message>，目前只存储用户输出与最终模型回答用户的流式输出
+
+    String USER_ID = "user_id";
+
+    String FINAL_ANSWER_STREAM = "final_answer_stream"; // 用于给予FinalAnswerNode是否开启流式输出的标识，放于config的metadata中进行会话级的保存，存在则不开启流式输出
+
+
+
+
+    // ============================================这里是放入 state 的会话级数据==================================================
+
+    String STREAM_FLAT = "stream_flat";  // 专门用于存储节点输出的流式结果到OverAllState中的，以便整合到图级别中，返回到前端，临时性数据标识
+
+    String STREAM_RESULT = "stream_result";  // 专门用于存储节点流式输出的完整结果，以便在后续存入OverAllState（检查点）与上下文信息（DB）中
+
+    String MESSAGES = "messages";  // 这里是OverAllState中的上下文信息，一个ArrayList<Message>
+
+    String INPUT = "input";  // 用户输入,模型调用对应OverAllState中的常量属性：DEFAULT_INPUT_KEY
+
+
+
+
+
+
+
+//    String USER_INPUT = "user_input";  // 用户输入，这个只用于上下文存储，不参与模型调用，模型调用对应的时OverAllState中的常量属性：DEFAULT_INPUT_KEY
+
+//    String CONVERSATION_FIRST = "conversation_first";  // 这个是标明是否是会话的第一次对话，是，会在后续进行会话名称的创建
+
+//    String END_NAME = "__END__";
+
+//    String START_NAME = "__START__";
+
 }

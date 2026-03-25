@@ -20,6 +20,11 @@ public enum ConversationExceptionEnum implements ErrorCode {
     DIALOGUE_NOT_EXIST("对话不存在", 3007),
     EMOTION_ANALYSIS_NOT_EXIST("情绪分析不存在", 3008),
 
+    AUDIO_CACHE_NOT_INITIALIZED("未初始化音频缓存", 3009),
+    AUDIO_CACHE_WRITE_FAILED("音频缓存写入失败", 3010),
+    AUDIO_CACHE_CLOSE_FAILED("音频缓存关闭失败", 3011),
+    AUDIO_DATA_NOT_EXIST("模型调用中，音频数据不存在", 3012),
+    AUDIO_TEXT_DATA_NOT_EXIST("模型调用中，文本数据不存在", 3013),
 
 
     ;

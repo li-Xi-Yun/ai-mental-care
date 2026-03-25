@@ -13,16 +13,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.pojo.dto.chat.ChatDTO;
 import org.lixiyun.pojo.entity.Conversation;
+import org.lixiyun.server.ai.message.ThinkMessage;
+import org.lixiyun.server.ai.node.EmotionRecognitionNode;
+import org.lixiyun.server.ai.node.EmotionalDiagnosisNode;
+import org.lixiyun.server.ai.node.FinalAnswerNode;
+import org.lixiyun.server.ai.node.SummaryNode;
+import org.lixiyun.server.ai.saver.CustomMysqlSaver;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.ConversationMapper;
-import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.mapper.GraphCheckpointMapper;
-import org.lixiyun.server.message.ThinkMessage;
-import org.lixiyun.server.node.EmotionRecognitionNode;
-import org.lixiyun.server.node.EmotionalDiagnosisNode;
-import org.lixiyun.server.node.FinalAnswerNode;
-import org.lixiyun.server.node.SummaryNode;
-import org.lixiyun.server.saver.CustomMysqlSaver;
 import org.lixiyun.server.service.ChatService;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -64,8 +63,6 @@ public class ChatServiceImpl implements ChatService {
     @Autowired
     private ConversationMapper conversationMapper;
     @Autowired
-    private ConversationMemoryMapper conversationMemoryMapper;
-    @Autowired
     private GraphCheckpointMapper graphCheckpointMapper;
 
     @Override
@@ -89,7 +86,7 @@ public class ChatServiceImpl implements ChatService {
         // 定义状态策略
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+            keyStrategyMap.put(GraphConstant.INPUT, new ReplaceStrategy());
             keyStrategyMap.put(GraphConstant.MESSAGES, new AppendStrategy());
             return keyStrategyMap;
         };
@@ -123,7 +120,7 @@ public class ChatServiceImpl implements ChatService {
         CompiledGraph graph = workflow.compile(compileConfig);
 
         // 设置会话状态
-        Map<String, Object> stateMap = Map.of(OverAllState.DEFAULT_INPUT_KEY, input,
+        Map<String, Object> stateMap = Map.of(GraphConstant.INPUT, input,
                 GraphConstant.MESSAGES, UserMessage.builder().text(input).build(),
                 GraphConstant.USER_ID, currentId);
         Flux<NodeOutput> stream = graph.stream(stateMap, runnableConfig);
