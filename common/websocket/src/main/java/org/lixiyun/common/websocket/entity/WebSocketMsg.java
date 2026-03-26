@@ -21,7 +21,7 @@ public class WebSocketMsg<T> implements Serializable {
 
     // 注释的字段是用于消息可靠性处理，暂不实现
 
-//    private Long msgId;  // 消息ID
+    private Long msgId;  // 消息ID
 
     private String msgType; // 类型标识
 

@@ -83,7 +83,7 @@ public class RedisUtils {
     }
 
     /**
-     * 缓存基本的对象，Integer、String、实体类等
+     * 缓存基本的对象，Integer、String、实体类等，不设置过期时间
      *
      * @param key   缓存的键值
      * @param value 缓存的值

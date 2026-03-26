@@ -1,5 +1,6 @@
 package org.lixiyun.common.websocket.cache;
 
+import cn.hutool.core.util.IdUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +47,9 @@ public class AudioCache {
         if(AUDIO_CACHE.containsKey(userId)){
             log.error("用户{}音频缓存已存在，忽略初始化", userId);
             WebSocketUtils.sendMessage(userId, WebSocketMsg.builder()
-                    .msgType(MessageType.AUDIO_CONCURRENT_ERROR.getName())
-                    .build()
+                            .msgId(IdUtil.getSnowflakeNextId())
+                            .msgType(MessageType.AUDIO_CONCURRENT_ERROR.getName())
+                            .build()
             );
             return;
         }

@@ -1,5 +1,6 @@
 package org.lixiyun.server.ai.node;
 
+import cn.hutool.core.util.IdUtil;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioSpeechApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
@@ -71,6 +72,7 @@ public class TtsToSpeechNode implements NodeActionWithConfig {
         Optional<Object> userIdOpl = config.metadata(GraphConstant.USER_ID);
         Long userId = (Long) userIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
 
+        long msgId = IdUtil.getSnowflakeNextId();
         // 流式发送音频数据到 WebSocket
         Disposable subscribe = audioByteStream
                 .publishOn(Schedulers.boundedElastic())
@@ -78,6 +80,7 @@ public class TtsToSpeechNode implements NodeActionWithConfig {
                             try {
                                 // 创建音频消息
                                 WebSocketMsg<byte[]> audioMsg = WebSocketMsg.<byte[]>builder()
+                                        .msgId(msgId)
                                         .msgType(MessageType.AUDIO_STREAM_RESULT.getName())
                                         .binaryData(audioChunk)
                                         .build();
@@ -97,6 +100,7 @@ public class TtsToSpeechNode implements NodeActionWithConfig {
                             log.info("[TTS] 音频流式输出完成");
                             // 发送结束标志
                             WebSocketMsg<Object> endMsg = WebSocketMsg.builder()
+                                    .msgId(IdUtil.getSnowflakeNextId())
                                     .msgType(MessageType.AUDIO_STREAM_FINISH.getName())
                                     .build();
                             WebSocketUtils.sendMessage(userId, endMsg);

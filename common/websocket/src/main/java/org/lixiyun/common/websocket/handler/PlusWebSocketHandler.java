@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.socket.WebSocketMessageHandle;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.common.websocket.entity.WebSocketMsg;
+import org.lixiyun.common.websocket.enums.MessageType;
 import org.lixiyun.common.websocket.holder.WebSocketSessionHolder;
 import org.lixiyun.common.websocket.util.WebSocketUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +65,11 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
             log.error("WebSocket消息处理失败：{}, {}", session.getId(), e.getMessage());
         }
 
-        // 暂不实现消息发送接收的可靠性：ack机制
-
+        // 实现ack机制，保证消息的可靠性
+        WebSocketUtils.sendMessage(session, WebSocketMsg.builder()
+                        .msgId(webSocketMsg.getMsgId())
+                        .msgType(MessageType.ACK.getName())
+                        .build());
     }
 
     /**
@@ -125,6 +129,11 @@ public class PlusWebSocketHandler extends AbstractWebSocketHandler {
             // 调用对应的消息处理方法
             WebSocketMessageHandle.handle(Long.valueOf(session.getId()), webSocketMsg, webSocketMsg.getMsgType());
 
+            // 实现ack机制，保证消息的可靠性
+            WebSocketUtils.sendMessage(session, WebSocketMsg.builder()
+                    .msgId(webSocketMsg.getMsgId())
+                    .msgType(MessageType.ACK.getName())
+                    .build());
         } catch (Exception e) {
             log.error("sessionId:{} 解析二进制音频数据异常", sessionId, e);
         }

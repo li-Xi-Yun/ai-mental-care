@@ -25,4 +25,14 @@ public interface WebSocketConstants {
      * 服务端心跳恢复的字符串
      */
     String PONG = "pong";
+
+    /**
+     * 消息缓存的key，用于实现ack机制
+     */
+    String MESSAGE_CACHE_KEY = "websocket:message:";
+
+    /**
+     * 消息缓存的过期时间，单位为秒
+     */
+    int MESSAGE_CACHE_TIMEOUT = 60;
 }

@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.common.redis.utils.RedisUtils;
+import org.lixiyun.common.websocket.constant.WebSocketConstants;
 import org.lixiyun.common.websocket.entity.WebSocketMsg;
 import org.lixiyun.common.websocket.holder.WebSocketSessionHolder;
 import org.springframework.web.socket.*;
@@ -12,6 +14,7 @@ import org.springframework.web.socket.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 工具类
@@ -57,7 +60,7 @@ public class WebSocketUtils {
 
         // 发送二进制消息
         byte[] finalBytes = buffer.array();
-        sendAudioMessage(session, finalBytes);
+        sendAudioMessage(session, finalBytes, webSocketMsg.getMsgId());
     }
 
     /**
@@ -68,19 +71,19 @@ public class WebSocketUtils {
      * @param session    WebSocket会话
      * @param audioBytes 音频二进制数据块，约定前4个字节为后续JSON对应的二进制长度，剩下的字节为音频数据
      */
-    public static void sendAudioMessage(WebSocketSession session, byte[] audioBytes) {
+    public static void sendAudioMessage(WebSocketSession session, byte[] audioBytes, Long msgId) {
         if (audioBytes == null || audioBytes.length == 0) {
             log.error("[sendAudio] 音频数据为空，无法发送");
             return;
         }
         // 直接创建二进制消息，无需序列化
         BinaryMessage binaryMessage = new BinaryMessage(audioBytes);
-        sendMessage(session, binaryMessage);
+        sendMessage(session, binaryMessage, msgId);
         log.debug("[sendAudio] 发送音频块，长度：{}字节", audioBytes.length);
     }
 
     /**
-     * 发送文本消息
+     * 发送文本消息，不实现消息缓存
      *
      * @param sessionKey session主键 一般为用户id
      * @param message    消息文本
@@ -116,20 +119,34 @@ public class WebSocketUtils {
         String jsonMessage;
         jsonMessage = JsonUtils.toJsonString(webSocketMsg);
         // 复用原有文本消息发送逻辑
-        sendMessage(session, new TextMessage(jsonMessage));
+        sendMessage(session, new TextMessage(jsonMessage), webSocketMsg.getMsgId());
     }
 
     public static void sendPongMessage(WebSocketSession session) {
-        sendMessage(session, new PongMessage());
+        sendMessage(session, new PongMessage(), null);
     }
 
+    /**
+     * 发送文本消息，不实现消息缓存
+     *
+     * @param session WebSocket会话
+     * @param message 消息文本
+     */
     public static void sendMessage(WebSocketSession session, String message) {
-        sendMessage(session, new TextMessage(message));
+        sendMessage(session, new TextMessage(message), null);
     }
 
-    private static void sendMessage(WebSocketSession session, WebSocketMessage<?> message) {
+    /**
+     * 发送消息，如果消息ID为null，则本次消息不进行缓存
+     *
+     * @param session WebSocket会话
+     * @param message 消息对象
+     * @param MsgId 消息ID
+     */
+    private static void sendMessage(WebSocketSession session, WebSocketMessage<?> message, Long MsgId) {
         if (session == null || !session.isOpen()) {
             log.error("[send] session会话已经关闭");
+            return;
         } else {
             try {
                 // 获取当前会话中的用户
@@ -138,5 +155,15 @@ public class WebSocketUtils {
                 log.error("[send] session({}) 发送消息({}) 异常", session, message, e);
             }
         }
+
+        if(MsgId != null){
+            // 缓存消息，用于实现ack机制
+            RedisUtils.setCacheObject(
+                    WebSocketConstants.MESSAGE_CACHE_KEY + session.getId(),
+                    message,
+                    WebSocketConstants.MESSAGE_CACHE_TIMEOUT,
+                    TimeUnit.SECONDS);
+        }
+
     }
 }

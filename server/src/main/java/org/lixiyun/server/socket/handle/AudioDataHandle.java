@@ -17,7 +17,7 @@ public class AudioDataHandle implements WebSocketMessageHandle {
     @Override
     public void handle(Long userId, Object data) {
         // 存储音频数据（修复：sessionId为String，直接使用）
-        AudioCache.addAudioData(userId, ((WebSocketMsg<byte[]>) data).getBinaryData());
+        AudioCache.addAudioData(userId, ((WebSocketMsg<?>) data).getBinaryData());
     }
 
 }
