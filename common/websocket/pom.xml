@@ -9,7 +9,7 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>common-websocket</artifactId>
+    <artifactId>common-websocket1</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

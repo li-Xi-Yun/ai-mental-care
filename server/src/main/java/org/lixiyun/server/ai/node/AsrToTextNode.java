@@ -15,14 +15,14 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Value;
 
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * ASR 语音转文本并获取对应的语音情绪分析
@@ -35,33 +35,34 @@ public class AsrToTextNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "asrToTextNode";
 
-    @Value("${spring.ai.dashscope.api-key}")
+//    @Value("${spring.ai.dashscope.api-key}")
     private final String apiKey;
 
-    private final ChatModel chatModel;
+//    private final ChatModel chatModel;
 
     private final String IDENTIFY_TEXT = "identifyText";
     private final String SPEECH_EMOTION = "speechEmotion";
 
     private RecognitionParam recognitionParam(){
         return RecognitionParam.builder()
-                // 若没有将API Key配置到环境变量中，需将apiKey替换为自己的API Key
+                 // 阿里的密匙
                 .apiKey(apiKey)
                 .model("paraformer-realtime-8k-v2")
                 // 音频格式：wav
-                .format("wav")
-                // 采样率：16000Hz（阿里云要求的标准采样率）
-                .sampleRate(16000)
+                .format("mp3")
+                // 采样率（阿里云要求的标准采样率）
+                .sampleRate(8000)
                 // 语言提示：支持中文+英文（仅v2模型支持）
-                .parameter("language_hints", new String[]{"zh", "en"})
+//                .parameter("language_hints", new String[]{"zh", "en"})
                 .build();
     }
 
-    private ResultCallback<RecognitionResult> initializeCallback(Map<String, String> map) {
+    private ResultCallback<RecognitionResult> initializeCallback(Map<String, String> map, CountDownLatch latch) {
         String threadName = Thread.currentThread().getName();
         return new ResultCallback<>() {
             @Override
             public void onEvent(RecognitionResult message) {
+                log.debug("[ASR] 收到回调：{}", message);
                 if (message.isSentenceEnd()) {
                     Sentence sentence = message.getSentence();
                     String emoTag = sentence.getEmoTag();
@@ -79,11 +80,13 @@ public class AsrToTextNode implements NodeActionWithConfig {
             @Override
             public void onComplete() {
                 log.debug("[ASR] [process {}] 模型调用完成", threadName);
+                latch.countDown(); // 释放阻塞
             }
 
             @Override
             public void onError(Exception e) {
                 log.error("[ASR] [process {}] 模型调用错误: {}", threadName, e.getMessage());
+                latch.countDown();
             }
         };
     }
@@ -91,24 +94,39 @@ public class AsrToTextNode implements NodeActionWithConfig {
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
         log.info("[ASR] 语音情绪识别节点：开始执行");
-        Optional<Object> voiceDataOpl = state.value(GraphConstant.INPUT);
-        byte[] voiceData = (byte[]) voiceDataOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.AUDIO_DATA_NOT_EXIST));
+        Optional<Object> audioDataOpl = config.metadata(GraphConstant.AUDIO_DATA);
+        ByteBuffer audioBuffer = (ByteBuffer) audioDataOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.AUDIO_DATA_NOT_EXIST));
 
         // 创建Recognition实例
         Recognition recognizer = new Recognition();
         RecognitionParam param = recognitionParam();
         Map<String, String> map = new HashMap<>();
-        ResultCallback<RecognitionResult> callback = initializeCallback(map);
 
-        try {
-            // 启动识别：建立WebSocket长连接，传入参数和回调
+        // 阻塞主线程，等待 ASR 回调完成
+        CountDownLatch latch = new CountDownLatch(1);
+        ResultCallback<RecognitionResult> callback = initializeCallback(map, latch);
+
+
+        byte[] audioData = audioBuffer.array();
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(audioData)){
             recognizer.call(param, callback);
+            byte[] buffer = new byte[3200];
+            int bytesRead;
+            // 循环读取音频二进制流，发送给识别模型
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                ByteBuffer byteBuffer;
+                if (bytesRead < buffer.length) {
+                    byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
+                } else {
+                    byteBuffer = ByteBuffer.wrap(buffer);
+                }
 
-            // 核心：发送音频帧给阿里云识别服务
-            ByteBuffer byteBuffer = ByteBuffer.wrap(voiceData);
-            recognizer.sendAudioFrame(byteBuffer);
+                recognizer.sendAudioFrame(byteBuffer);
+                buffer = new byte[3200];
 
-            // 停止识别：通知阿里云服务「音频发送完毕」
+                Thread.sleep(100);
+            }
+
             recognizer.stop();
         } catch (Exception e) {
             log.error("[ASR] [process {}] 语音情绪识别节点执行失败: {}", Thread.currentThread().getName(), e.getMessage());
@@ -119,17 +137,32 @@ public class AsrToTextNode implements NodeActionWithConfig {
             recognizer.getDuplexApi().close(1000, "bye");
         }
 
-        // 存储语音语气情绪识别结果，用于后续情绪分析节点的额外输入
-        config.context().put(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION, map.get(SPEECH_EMOTION));
+        String userEmotion = map.get(SPEECH_EMOTION);
+        if (userEmotion != null) {
+            // 存储语音语气情绪识别结果，用于后续情绪分析节点的额外输入
+            config.context().put(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION, userEmotion);
+        }
 
-        // 将识别结果存储，用于记录点插入时上下文信息保存
-        UserMessage userInput = new UserMessage(map.get(IDENTIFY_TEXT));
-        Optional<Object> conversationMessageOpl = config.metadata(GraphConstant.CONVERSATION_MESSAGES);
-        List<Message> conversationMessage = (List<Message>) conversationMessageOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
-        conversationMessage.add(userInput);
+        String userInput = map.get(IDENTIFY_TEXT);
+        UserMessage userInputMessage;
+        if (userInput != null) {
+            Optional<Object> conversationMessageOpl = config.metadata(GraphConstant.CONVERSATION_MESSAGES);
+            List<Message> conversationMessage = (List<Message>) conversationMessageOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));
 
-        log.debug("[ASR] 语音识别结果：{}", userInput);
-        return Map.of(GraphConstant.INPUT, userInput, GraphConstant.MESSAGES, userInput);
+            // 将识别结果存储，用于记录点插入时上下文信息保存
+            userInputMessage = new UserMessage(userInput);
+            conversationMessage.add(userInputMessage);
+
+            log.debug("[ASR] 语音识别结果：{}", userInputMessage);
+            return Map.of(GraphConstant.INPUT, userInput, GraphConstant.MESSAGES, userInputMessage);
+        }
+
+        log.info("[ASR] 语音识别节点-执行结束：{}", userInput);
+
+//        throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
+
+        // todo 暂时不做纯情绪分析的内容，例：有哭声，但没有文本语音输入
+        return Map.of();
     }
 
 

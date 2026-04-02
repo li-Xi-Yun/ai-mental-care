@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/conversaion/dialogue")
-@Tag(name = "对话相关接口", description = "对话相关接口")
+@Tag(name = "对话信息相关接口", description = "对话内容上下文信息相关接口")
 public class DialogueController {
 
     private final DialogueService dialogueService;

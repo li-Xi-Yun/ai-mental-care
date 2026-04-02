@@ -109,7 +109,7 @@ public class LoginUser implements UserDetails, OAuth2User {
      */
     @Override
     public String getUsername() {
-        return basicsUser.getUsername();
+        return basicsUser.getId().toString();
     }
 
     /**
@@ -149,6 +149,6 @@ public class LoginUser implements UserDetails, OAuth2User {
      */
     @Override
     public String getName() {
-        return basicsUser.getUsername();
+        return basicsUser.getId().toString();
     }
 }

@@ -23,6 +23,7 @@ public class FileUrlProperties {
     public static class Upload {
         private String images;
         private String videos;
+        private String audios;
         private String files;
         private String conversations;
     }
@@ -32,11 +33,12 @@ public class FileUrlProperties {
     public static class Request {
         private String images;
         private String videos;
+        private String audios;
         private String files;
         private String conversations;
     }
 
-    // 可选：提供快捷获取方法（简化业务代码）
+    // 提供快捷获取方法（简化业务代码）
     public String getUploadImages() {
         return upload.getImages();
     }
@@ -51,6 +53,14 @@ public class FileUrlProperties {
 
     public String getRequestVideos() {
         return request.getVideos();
+    }
+
+    public String getUploadAudio() {
+        return upload.getAudios();
+    }
+
+    public String getRequestAudio() {
+        return request.getAudios();
     }
 
     public String getUploadFiles() {

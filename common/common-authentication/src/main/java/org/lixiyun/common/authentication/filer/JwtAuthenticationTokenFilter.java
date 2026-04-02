@@ -54,8 +54,23 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             }
         }
 
+//        // 判断是否是 WebSocket 连接
+        boolean isWebSocket = isWebSocketRequest(request);
+        if (isWebSocket){
+            log.info("WebSocket 访问");
+        }
+//
+//        // 如果是 WebSocket → 从 URL 参数取 token，否则 → 从 header 取 token
+//        String token;
+//        if (isWebSocket) {
+//            token = request.getParameter("token");
+//            log.info("WebSocket 连接，从 URL 参数获取 token：{}", token);
+//        } else {
+//            // 获取请求体中的token
+//            token = request.getHeader("token");
+//        }
+
         // 进入以下代码，则表示需要进行认证
-        // 获取请求体中的token
         String token = request.getHeader("token");
 
         // 如果是放行接口
@@ -123,6 +138,17 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         return true;
+    }
+
+    /**
+     * 判断是否为 WebSocket 请求
+     */
+    private boolean isWebSocketRequest(HttpServletRequest request) {
+        String upgrade = request.getHeader("Upgrade");
+        String connection = request.getHeader("Connection");
+        return "websocket".equalsIgnoreCase(upgrade)
+                && connection != null
+                && connection.toLowerCase().contains("upgrade");
     }
 
 }

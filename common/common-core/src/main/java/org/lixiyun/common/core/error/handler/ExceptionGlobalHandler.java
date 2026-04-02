@@ -9,6 +9,10 @@ import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.result.Result;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -27,7 +31,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(BusinessException.class)
     public Result<?> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 业务异常：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage());
+        log.error("请求路径：{}， 业务异常：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
         return Result.error(e.getCode(), e.getMsg());
     }
 
@@ -45,7 +49,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public Result<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数为空：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage());
+        log.error("请求路径：{}， 参数为空：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
         return Result.error(SystemExceptionEnum.PARAM_ILLEGAL);
     }
 
@@ -54,7 +58,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(BindException.class)
     public Result<?> handleConstraintViolationException(BindException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 数据绑定失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage());
+        log.error("请求路径：{}， 数据绑定失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
         return Result.error(SystemExceptionEnum.PARAM_ERROR);
     }
 
@@ -63,7 +67,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class})
     public Result<?> handleValidationException(Exception e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数验证失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage());
+        log.error("请求路径：{}， 参数验证失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
 
         String message;
         if (e instanceof ConstraintViolationException constraintViolationException) {
@@ -79,6 +83,58 @@ public class ExceptionGlobalHandler {
         }
 
         return Result.error(SystemExceptionEnum.PARAM_ILLEGAL.getCode(), message);
+    }
+
+    /**
+     * 全局捕获所有 WebSocket 接口异常
+      */
+    @MessageExceptionHandler(BusinessException.class)
+    @SendToUser(value = "/queue/error", broadcast = false)
+    public Result<?> handleException(BusinessException e, Message<?> message) {
+        // 获取 STOMP 消息头访问器
+        SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
+
+        // 获取【客户端请求的路径】（等价于 request.getRequestURI()）
+        String destination = headers.getDestination();
+
+        // 获取 sessionId
+        String sessionId = headers.getSessionId();
+
+        // 打印日志
+        log.error("WebSocket请求路径：{}，sessionId：{}，业务异常：{}",
+                destination,
+                sessionId,
+                e.getMessage(),
+                e
+        );
+
+        return Result.error(e.getCode(), e.getMsg());
+    }
+
+    /**
+     * WebSocket兜底异常处理器
+      */
+    @MessageExceptionHandler(Throwable.class)
+    @SendToUser(value = "/queue/error", broadcast = false)
+    public Result<?> handleException(Throwable e, Message<?> message) {
+        // 获取 STOMP 消息头访问器
+        SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
+
+        // 获取【客户端请求的路径】（等价于 request.getRequestURI()）
+        String destination = headers.getDestination();
+
+        // 获取 sessionId
+        String sessionId = headers.getSessionId();
+
+        // 打印日志
+        log.error("WebSocket兜底异常处理器，请求路径：{}，sessionId：{}，业务异常：{}",
+                destination,
+                sessionId,
+                e.getMessage(),
+                e
+        );
+
+        return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
     }
 
 }

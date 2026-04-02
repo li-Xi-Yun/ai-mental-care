@@ -1,6 +1,7 @@
 package org.lixiyun.common.web.config;
 
 import org.lixiyun.common.web.interceptor.PlusWebInvokeTimeInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.cors.CorsConfiguration;
@@ -17,6 +18,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @AutoConfiguration
 public class ResourcesConfig implements WebMvcConfigurer {
+
+    @Value("${web.allowedOrigins}")
+    private String allowedOrigins;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -37,7 +41,15 @@ public class ResourcesConfig implements WebMvcConfigurer {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         // 设置访问源地址
-        config.addAllowedOriginPattern("*");
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            String[] origins = allowedOrigins.split(",");
+            for (String origin : origins) {
+                config.addAllowedOriginPattern(origin.trim());
+            }
+        } else {
+            // 兜底：没配置就允许所有
+            config.addAllowedOriginPattern("*");
+        }
         // 设置访问源请求头
         config.addAllowedHeader("*");
         // 设置访问源请求方法

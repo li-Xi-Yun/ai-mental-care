@@ -179,6 +179,55 @@ public class FileStorage {
         }
     }
 
+    // ===================== 二进制数据存储方法 =====================
+    /**
+     * 通用二进制数据本地存储（指定存储类型）
+     * @param binaryData 二进制字节数组（任意文件：音频/图片/视频/文档等）
+     * @param fileSuffix 文件后缀名（示例：wav、mp3、png、jpg、pdf，无需带 . ）
+     * @param storageType 文件存储类型 {@link StorageType}
+     * @return 存储后的文件完整路径
+     */
+    public String localBinaryStorage(byte[] binaryData, String fileSuffix, StorageType storageType) {
+        // 核心参数校验（对齐原有逻辑）
+        if (binaryData == null || binaryData.length == 0) {
+            log.error("二进制数据为空，文件存储失败");
+            throw new BusinessException(SystemExceptionEnum.FILE_DATA_EMPTY);
+        }
+        if (StrUtil.isBlank(fileSuffix)) {
+            log.error("文件后缀名为空，文件存储失败");
+            throw new BusinessException(SystemExceptionEnum.FILE_EXTENTION_ERROR);
+        }
+
+        // 获取配置的存储根路径
+        String uploadUrl = getFileUrl(storageType);
+        try {
+            Path targetDir = Paths.get(uploadUrl);
+            // 自动创建多级目录（对齐原有逻辑）
+            if (!Files.exists(targetDir)) {
+                Files.createDirectories(targetDir);
+            }
+
+            // 生成标准文件名（完全复用你项目的命名规则：日期+UUID）
+            String dateFormat = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            // 自动处理后缀，统一格式：.wav
+            String suffix = fileSuffix.startsWith(".") ? fileSuffix : "." + fileSuffix;
+            String newFileName = dateFormat + StrUtil.uuid() + suffix;
+
+            // 写入二进制数据到文件（JDK NIO，与原有文件写入保持一致）
+            Path targetPath = targetDir.resolve(newFileName);
+            Files.write(targetPath, binaryData);
+
+            // 返回完整文件路径（与原有方法返回格式完全一致）
+            String filePath = uploadUrl + newFileName;
+            log.info("二进制文件存储成功 | 存储类型:{} | 路径:{}", storageType, filePath);
+            return filePath;
+
+        } catch (IOException e) {
+            log.error("二进制文件存储失败 | 存储类型:{}", storageType, e);
+            throw new BusinessException(SystemExceptionEnum.FILE_UPLOAD_ERROR);
+        }
+    }
+
     /**
      * 获取文件存储路径
      * @param storageType 文件存储类型 {@link StorageType}
@@ -188,6 +237,7 @@ public class FileStorage {
         return switch (storageType) {
             case IMAGE -> fileUrlProperties.getUploadImages();
             case VIDEO -> fileUrlProperties.getUploadVideos();
+            case AUDIO -> fileUrlProperties.getUploadAudio();
             case CONVERSATION -> fileUrlProperties.getUploadConversations();
             default -> fileUrlProperties.getUploadFiles();
         };
@@ -197,7 +247,8 @@ public class FileStorage {
         FILE,
         IMAGE,
         VIDEO,
-        CONVERSATION
+        AUDIO,
+        CONVERSATION;
     }
 
 }

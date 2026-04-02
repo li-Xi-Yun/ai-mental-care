@@ -27,6 +27,7 @@ public class PlusWebSocketInterceptor implements HandshakeInterceptor {
      */
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+        log.info("WebSocket进行连接");
         return true;
     }
 
@@ -41,6 +42,6 @@ public class PlusWebSocketInterceptor implements HandshakeInterceptor {
      */
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
-
+        log.info("WebSocket进行断开");
     }
 }

@@ -4,10 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import org.lixiyun.common.websocket.handler.PlusWebSocketHandler;
 import org.lixiyun.common.websocket.interceptor.PlusWebSocketInterceptor;
 import org.lixiyun.common.websocket.properties.WebSocketProperties;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -19,7 +19,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  * @author lixiyun
  */
 @EnableWebSocket
-@AutoConfiguration
+@Configuration
 @EnableConfigurationProperties(WebSocketProperties.class)
 @ConditionalOnProperty(value = "websocket.enabled", havingValue = "true")
 public class WebSocketConfig {
@@ -55,5 +55,4 @@ public class WebSocketConfig {
         // 处理WebSocket生命周期中的各种事件和消息
         return new PlusWebSocketHandler();
     }
-
 }

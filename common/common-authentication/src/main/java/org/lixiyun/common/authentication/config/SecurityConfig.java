@@ -6,6 +6,7 @@ import org.lixiyun.common.authentication.handler.AuthenticationHandler;
 import org.lixiyun.common.authentication.handler.LoginSuccessHandler;
 import org.lixiyun.common.authentication.handler.PermissionDeniedHandler;
 import org.lixiyun.common.authentication.oauth2.CustomOAuth2UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +29,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -38,6 +40,9 @@ public class SecurityConfig {
     // 创建BCryptPasswordEncoder，并注入容器，这里的加密因子默认为10,
     @Bean
     public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+
+    @Value("${web.allowedOrigins}")
+    private String allowedOrigins;
 
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
 
@@ -86,6 +91,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+//    @Bean
+//    public TaskExecutor taskExecutor() {
+//        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+//        executor.setTaskDecorator(new SecurityContextDecorator()); // 异步线程上下文的传递配置
+//        executor.initialize();
+//        return executor;
+//    }
 
     /**
      * 把AuthenticationManager注入容器，因为我们要调用authenticate方法进行认证
@@ -97,12 +109,13 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> allowedOriginList = Arrays.stream(allowedOrigins.split(",")).toList();
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*")); // 请替换为你的前端实际域名，生产环境不要用 "*"
-        configuration.setAllowedMethods(Arrays.asList("*"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("X-Custom-Header")); // 如果需要，暴露自定义响应头给前端
-        configuration.setAllowCredentials(false); // 如果前端需要发送Cookie或Authorization头，此项必须为true
+        configuration.setAllowCredentials(true); // 如果前端需要发送Cookie或Authorization头，此项必须为true
+        configuration.setAllowedOrigins(allowedOriginList); // 请替换为你的前端实际域名，生产环境不要用 "*"
+        configuration.setAllowedMethods(List.of("*"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("X-Custom-Header")); // 如果需要，暴露自定义响应头给前端
         configuration.setMaxAge(3600L); // 预检请求的缓存时间（秒）
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

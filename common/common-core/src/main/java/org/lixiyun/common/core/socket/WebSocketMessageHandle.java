@@ -1,7 +1,5 @@
 package org.lixiyun.common.core.socket;
 
-import cn.hutool.extra.spring.SpringUtil;
-
 /**
  * @author lixiyun
  * @since 2026-03-10 22:40
@@ -22,7 +20,7 @@ public interface WebSocketMessageHandle {
      * @param messageName 消息名称
      */
     static void handle(Long userId, Object data, String messageName){
-        WebSocketMessageFactory factory = SpringUtil.getBean(WebSocketMessageFactory.class);
-        factory.getMessageHandle(messageName).handle(userId, data);
+//        WebSocketMessageFactory factory = SpringUtil.getBean(WebSocketMessageFactory.class);
+//        factory.getMessageHandle(messageName).handle(userId, data);
     }
 }

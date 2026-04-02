@@ -10,7 +10,7 @@ public interface GraphConstant {
 
     String AUDIO_DATA_EMOTION_RECOGNITION = "audio_data_emotion_recognition"; // 用于格式化情绪分析节点的额外输入，语音语气情绪分析，放入config的context中进行对话级的保存
 
-    String AUDIO_DATA_RESULT = "audio_data_result"; // 用于进行文本转语音的文本信息，放入config的context中进行对话级的保存
+    String AUDIO_DATA_RESULT = "audio_data_result"; // 存储文本模型生成的文本回复信息，用于后续的文本转语音，放入config的context中进行对话级的保存
 
 
 
@@ -23,6 +23,10 @@ public interface GraphConstant {
     String USER_ID = "user_id";
 
     String FINAL_ANSWER_STREAM = "final_answer_stream"; // 用于给予FinalAnswerNode是否开启流式输出的标识，放于config的metadata中进行会话级的保存，存在则不开启流式输出
+
+    String AUDIO_DATA = "audio_data"; // 用于存储用户输入的音频数据，放于config的metadata中进行会话级的保存
+
+    String AUDIO_FLUX = "audio_flux"; // 用于发送 文本转语音模型 的 流式音频数据 到前端，在config存储的是一个 Flux<byte[]> 变量
 
 
 

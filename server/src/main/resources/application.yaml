@@ -137,71 +137,6 @@ spring:
           # 用于存储聊天记忆的组件，关系型数据库(三选一)
           jdbc:
             initialize-schema: never  # 控制何时初始化架构。值：embedded (default), always, never.
-#    vectorstore:
-#      # 示例：Milvus向量库配置
-#      milvus:
-#        database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
-#        collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
-#        initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
-#        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
-#        index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
-#        metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
-#        index-parameters: {“nlist”：1024}  # 要用于 Milvus 集合的索引参数。
-#        id-field-name: id    # 集合的 ID 字段名称
-#        auto-id: true        # 布尔标志，指示是否将自动 ID 用于 ID 字段
-#        content-field-name: ${milvus.content-field-name}      # 集合的内容字段名称
-#        metadata-field-name: ${milvus.metadata-field-name}    # 集合的元数据字段名称
-#        embedding-field-name: ${milvus.embedding-field-name}  # 集合的嵌入字段名称
-#        client:
-#          host: ${milvus.host}    # 主机的名称或地址
-#          port: ${milvus.port}        # 连接端口。
-#          username: ${milvus.username}     # 此连接的用户名。
-#          password: ${milvus.password}   # 此连接的密码。
-#          #          uri:        # Milvus 实例的 uri
-#          #          token:      #令牌作为识别和身份验证目的的密钥。
-#          connect-timeout-ms: 10000    # 客户端通道的连接超时值。超时值必须大于零。
-#          keep-alive-time-ms: 55000    # 客户端通道的保持活动时间值。keep-alive 值必须大于零。
-#          keep-alive-timeout-ms: 20000 # 客户端通道的保持活动超时值。超时值必须大于零。
-#          # 您愿意等待服务器回复多长时间的截止日期。
-#          # 通过截止时间设置，客户端会在遇到网络波动导致的快速 RPC 失败时等待。截止值必须大于或等于零。
-#          rpc-deadline-ms: 0
-#          #          client-key-path:       # tls 双向身份验证的 client.key 路径，仅在“安全”为真时生效
-#          client-pem-path:        # tls 双向身份验证的 client.pem 路径仅在“secure”为 true 时生效
-#          ca-pem-path:            # tls 双向身份验证的 ca.pem 路径，仅在“secure”为真时生效
-#          server-pem-path:         # server.pem 路径，仅在“secure”为真时生效
-#          # 设置 SSL 主机名检查的目标名称覆盖，仅当“安全”为 True 时才生效。注意：此值传递给 grpc.ssl_target_name_override
-#          server-name:
-#          secure: false   # 保护此连接的授权，设置为 True 以启用 TLS。
-#          idle-timeout-ms: 86400000   # 客户端通道的空闲超时值。超时值必须大于零。24h
-    mcp:
-      client:
-        enabled: true  # 启用/禁用 MCP 客户端
-        name: financial-knowledge-ai  # MCP 客户端实例的名称（用于兼容性检查）
-        initialized: true   # 是否在创建时初始化客户端
-        request-timeout: 30s   # MCP 客户端请求的超时持续时间
-        type: ASYNC   # 客户端类型（SYNC 或 ASYNC）。所有客户端必须是同步或异步的;不支持混合
-        root-change-notification: true    # 为所有客户端启用/禁用根更改通知
-        toolcallback:
-          enabled: true  # 启用/禁用 MCP 工具回调与 Spring AI 的工具执行框架的集成
-        sse:
-          connections: # 命名 SSE 连接配置的映射
-            #            mcp_query_table: # 服务别名
-            #              url: http://127.0.0.1:8000/sse
-            #              sse-endpoint: /custom-sse
-            #              [name].url:   # 用于与 MCP 服务器进行 SSE 通信的基本 URL 端点,无默认值
-            #                [name].sse-endpoint: /sse    # 用于连接的 SSE 端点（作为 URL 后缀）
-            mcp-qieman:
-              #              url: https://stargate.yingmi.com/mcp/sse?apiKey=JHYtenPtV7hAo4DRn4qQlQ
-#              url: https://dashscope.aliyuncs.com/api/v1/mcps/Qieman
-              # 股票实时行情查询
-    #            market-cmapi:
-    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/market-cmapi00065924
-    #            # 股票数据
-    #            qtf_mcp:
-    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/qtf_mcp
-    #            # 证券之星
-    #            stockstar:
-    #              url: https://dashscope.aliyuncs.com/api/v1/mcps/stockstar
     deepseek:
       api-key: ${ai-model-config.deepseek.api}   # 要连接到的 URL
       chat:
@@ -299,11 +234,13 @@ file-url:
   upload:
     images: "images/"
     videos: "videos/"
+    audios: "audios/"
     files: "files/"
     conversations: "conversations/"
   request:
     images: "${basic.url}/images/"
     videos: "${basic.url}/videos/"
+    audios: "${basic.url}/audios/"
     files: "${basic.url}/files/"
     conversations: "${basic.url}/conversations/"
 
@@ -324,6 +261,9 @@ url:
     - ${basic.url}/conversations/**
     - /swagger-ui/**
     - /swagger-ui.html/**
+    - /temp/**
+    - /conversaion/audio/data
+    - ${websocket.endpoint}/**
 
 --- # sms 短信
 sms:
@@ -382,8 +322,20 @@ management:
 # websocket
 websocket:
   enabled: true
-  # 路径
-  path: '/resource/websocket'
+  # WebSocke连接端口
+  endpoint: '/ws/ai-mental-care'
+  # 应用消息前缀
+  message-prefix: '/app'
+  # 用户消息前缀
+  user-send-prefix: '/user'
   # 设置访问源地址
-  allowedOrigins: '*'
+  allowedOrigins: ${web.allowedOrigins}
+  # 群发消息前缀
+  message-broadcast-prefix: 'topic'
+  # 用户单发消息前缀
+  user-private-prefix: '/queue'
 
+# 项目应用部署配置
+web:
+  # 允许跨域访问的源，多个源之间使用","分隔，中间不要有空格，null允许本地HTML文件的http请求发送
+  allowedOrigins: 'null,http://localhost:3001,http://localhost:3000'

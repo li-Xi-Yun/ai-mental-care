@@ -4,8 +4,10 @@ import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.tool.BasicsUser;
 import org.lixiyun.pojo.tool.LoginUser;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,6 +65,10 @@ public class UserInfoThreadLocalUtil {
     public static List<String> getUserPermissionThrow(){
         Optional<List<String>> userPermission = getUserPermission();
         return userPermission.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
+    }
+
+    public static void setSecurityContext(Principal principal){
+        SecurityContextHolder.getContext().setAuthentication((Authentication) principal);
     }
 
 

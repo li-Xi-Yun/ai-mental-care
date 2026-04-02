@@ -20,6 +20,8 @@ public enum SystemExceptionEnum implements ErrorCode {
     NO_PERMISSION("权限不足", 10005),
 
     FILE_UPLOAD_ERROR("文件上传错误", 10006),
+    FILE_DATA_EMPTY("文件数据不能为空", 10007),
+    FILE_EXTENTION_ERROR("文件后缀名错误", 10008),
 
 
 

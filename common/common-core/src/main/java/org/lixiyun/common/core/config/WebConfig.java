@@ -31,5 +31,20 @@ public class WebConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/files/**")
                 .addResourceLocations("file:" + fileUploadPath);
+
+//        // 静态资源映射：排除所有 /ws/ 开头的路径
+//        registry.addResourceHandler("/**")
+//                .addResourceLocations("classpath:/static/")
+//                .resourceChain(true)
+//                .addResolver(new PathResourceResolver() {
+//                    @Override
+//                    protected Resource getResource(String resourcePath, Resource location) throws IOException {
+//                        // 核心：跳过WebSocket路径
+//                        if (resourcePath.startsWith("ws/")) {
+//                            return null;
+//                        }
+//                        return super.getResource(resourcePath, location);
+//                    }
+//                });
     }
 }
