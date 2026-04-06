@@ -91,14 +91,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-//    @Bean
-//    public TaskExecutor taskExecutor() {
-//        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-//        executor.setTaskDecorator(new SecurityContextDecorator()); // 异步线程上下文的传递配置
-//        executor.initialize();
-//        return executor;
-//    }
-
     /**
      * 把AuthenticationManager注入容器，因为我们要调用authenticate方法进行认证
      */

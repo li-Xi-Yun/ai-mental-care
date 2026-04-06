@@ -10,7 +10,9 @@ public interface GraphConstant {
 
     String AUDIO_DATA_EMOTION_RECOGNITION = "audio_data_emotion_recognition"; // 用于格式化情绪分析节点的额外输入，语音语气情绪分析，放入config的context中进行对话级的保存
 
-    String AUDIO_DATA_RESULT = "audio_data_result"; // 存储文本模型生成的文本回复信息，用于后续的文本转语音，放入config的context中进行对话级的保存
+    String AUDIO_TEXT_DATA = "audio_text_data"; // 存储文本模型生成的文本回复信息，用于后续的文本转语音，放入config的context中进行对话级的保存
+
+    String INVALID_CONVERSATION_INFO = "invalid_conversation_info"; // 判断当前会话是否无效，用于检查点数据的清除或是会话上下文信息的清除，存放一个boolean变量
 
 
 

@@ -402,6 +402,11 @@
 
 
     <profiles>
+        <!-- 以下都是项目环境的定义配置信息，用于在yaml文件中进行引用 -->
+        <!-- Maven 在打包时，会把配置值「替换 / 注入」到 yaml 文件里，Spring 启动时读到的已经是替换后的最终值了。 -->
+        <!-- Maven 先处理文件 → 生成最终 yaml → Spring 再读取 -->
+        <!-- 注意，这种使用方式，需要在 build-resources-resource-filtering 中设置为true，才能使用 -->
+        <!-- 注意：以下的日志级别，我设置的是项目全局的日志级别，对于自己开发的项目的日志级别是在yaml的web.logLevel中设置 -->
         <profile>
             <id>local</id>
             <properties>
@@ -415,8 +420,9 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>dev</profiles.active>
-                <logging.level>debug</logging.level>
+                <logging.level>info</logging.level>
             </properties>
+            <!-- 这里是不指定运行或是打包时，所使用的环境，哪怕是在IDEA中运行默认也是这个 -->
             <activation>
                 <!-- 默认环境 -->
                 <activeByDefault>true</activeByDefault>
@@ -426,7 +432,18 @@
             <id>prod</id>
             <properties>
                 <profiles.active>prod</profiles.active>
-                <logging.level>warn</logging.level>
+                <logging.level>info</logging.level>
+            </properties>
+<!--            <activation>-->
+<!--                &lt;!&ndash; 默认环境 &ndash;&gt;-->
+<!--                <activeByDefault>true</activeByDefault>-->
+<!--            </activation>-->
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <profiles.active>test</profiles.active>
+                <logging.level>debug</logging.level>
             </properties>
         </profile>
     </profiles>
@@ -434,41 +451,62 @@
     <build>
         <plugins>
             <plugin>
+                <!-- 这三个是指：插件的坐标，是引用其他人的东西，引用谁的，就写谁的名称 -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.verison}</version>
                 <configuration>
+                    <!-- 指定编写代码时使用的 JDK 语法版本 -->
                     <source>${java.version}</source>
+                    <!-- 指定 编译生成的 .class 文件，能在哪个 JDK 版本上运行 -->
                     <target>${java.version}</target>
+                    <!-- 指定 Java 代码的文件编码格式 -->
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <!-- 编译时自动生成代码、处理注解 -->
                     <annotationProcessorPaths>
+<!--                        <path>-->
+<!--                            &lt;!&ndash; 把文档注解中的内容保存到运行时能读取，一般文档注解的内容是运行时消失的 &ndash;&gt;-->
+<!--                            &lt;!&ndash; 一般用不上 &ndash;&gt;-->
+<!--                            <groupId>com.github.therapi</groupId>-->
+<!--                            <artifactId>therapi-runtime-javadoc-scribe</artifactId>-->
+<!--                            <version>${therapi-javadoc.version}</version>-->
+<!--                        </path>-->
                         <path>
-                            <groupId>com.github.therapi</groupId>
-                            <artifactId>therapi-runtime-javadoc-scribe</artifactId>
-                            <version>${therapi-javadoc.version}</version>
-                        </path>
-                        <path>
+                            <!-- 自动生成 getter/setter/toString 等 -->
+                            <!-- AI说这个是用于让编译器自动生成代码，防止出现 编译报错：找不到符号 @Data -->
+                            <!-- Maven 3.5+ / IDEA 新版，可以自动识别 Lombok 处理器，不用手动写。 -->
+                            <!-- 但只要项目里有其他注解处理器（如 therapi），就必须手动配置！ -->
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
                         <path>
+                            <!-- 让自定义配置类在 yml 中有提示，用于先写配置类，再写yaml配置项的 -->
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-configuration-processor</artifactId>
                             <version>${spring-boot.version}</version>
                         </path>
-                        <path>
-                            <groupId>io.github.linpeilie</groupId>
-                            <artifactId>mapstruct-plus-processor</artifactId>
-                            <version>${mapstruct-plus.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>${mapstruct-plus.lombok.version}</version>
-                        </path>
+<!--                         如果不使用 MapStruct，以下两个都没用 -->
+<!--                        <path>-->
+<!--                            &lt;!&ndash; 对象转换工具（DTO ↔ VO ↔ Entity 自动转换） &ndash;&gt;-->
+<!--                            <groupId>io.github.linpeilie</groupId>-->
+<!--                            <artifactId>mapstruct-plus-processor</artifactId>-->
+<!--                            <version>${mapstruct-plus.version}</version>-->
+<!--                        </path>-->
+<!--                        <path>-->
+<!--                            &lt;!&ndash; 让 Lombok 和 MapStruct 兼容不冲突 &ndash;&gt;-->
+<!--                            <groupId>org.projectlombok</groupId>-->
+<!--                            <artifactId>lombok-mapstruct-binding</artifactId>-->
+<!--                            <version>${mapstruct-plus.lombok.version}</version>-->
+<!--                        </path>-->
                     </annotationProcessorPaths>
                     <compilerArgs>
+                        <!-- 保留方法参数名 -->
+                        <!-- 默认情况下，项目运行时，是将参数的名称使用arg0、arg1等名称进行替换的 -->
+                        <!-- 例如：Mybatis接口中的(@Param("userId")，因为默认编译后参数名会消失，
+                        变成：User selectUser(Long arg0, String arg1);MyBatis 根本不知道 arg0 对应 userId，
+                        所以必须手动写 @Param 标记。开启后，编译后真实参数名直接保留 -->
+                        <!-- 再例如：Java反射中获取参数名称，默认获取到的也是arg0、arg1 -->
                         <arg>-parameters</arg>
                     </compilerArgs>
                 </configuration>
@@ -479,33 +517,45 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <!-- 根据打包环境执行对应的@Tag测试方法 -->
+                    <!-- 根据打包环境执行对应的@Tag测试方法，根据环境（dev/test/prod）执行对应标记的测试方法 -->
                     <groups>${profiles.active}</groups>
-                    <!-- 排除标签 -->
+                    <!-- 排除标签，排除标记为 exclude 的测试 -->
                     <excludedGroups>exclude</excludedGroups>
-                    <!-- 跳过测试 -->
+                    <!-- 跳过测试，直接跳过所有测试 -->
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
-            <!-- 统一版本号管理 -->
+            <!-- 统一版本号管理，CI/CD 自动化发布时统一管理版本号 -->
+            <!-- 用于公司微服务 / 多模块项目，要发布到 Maven 私服（Nexus），Jenkins/GitLab 自动化 CI/CD 发布 -->
+            <!-- 把 pom.xml 里的所有版本变量（${xxx.version}），在打包时自动替换成真实的数字版本，让项目能正常发布到私服，不报错 -->
+            <!-- 可运行的jar包与发布到Maven私服的文件不是同一个东西 -->
+            <!-- 可运行的jar包：自己开发的代码、所有的依赖包、被Maven替换完变量的yaml、配置文件 -->
+            <!-- 发布到私服的文件：普通轻量 Jar（只含开发的代码，不含任何依赖）、原始 pom.xml（带着 ${xxx.version} 变量，完全没替换）、校验文件 -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
                 <version>${flatten-maven-plugin.version}</version>
                 <configuration>
+                    <!-- 在打包时，自动替换 pom 里的变量 -->
                     <updatePomFile>true</updatePomFile>
+                    <!-- 只替换CI需要的变量，保留项目必要配置（标准用法） -->
+                    <!-- 这个只修改：${revision}主版本号（必须）、${sha1}代码提交哈希（可选）、${changelist}发布标记（可选） -->
                     <flattenMode>resolveCiFriendliesOnly</flattenMode>
                 </configuration>
                 <executions>
+                    <!-- 把 flatten 插件自动绑定到 Maven 的生命周期里，让插件在打包 / 清理时自动运行，不用手动执行命令 -->
                     <execution>
                         <id>flatten</id>
+                        <!-- 绑定Maven生命周期：打包时自动执行替换 -->
                         <phase>process-resources</phase>
                         <goals>
+                            <!-- 执行插件的核心功能：扁平化pom、替换变量 -->
                             <goal>flatten</goal>
                         </goals>
                     </execution>
                     <execution>
                         <id>flatten.clean</id>
+                        <!-- 绑定Maven生命周期：清理项目时，删掉生成的临时文件 -->
                         <phase>clean</phase>
                         <goals>
                             <goal>clean</goal>
@@ -516,19 +566,16 @@
         </plugins>
         <resources>
             <resource>
+                <!-- 这个配置是告诉 Maven：去哪里找需要处理的配置文件（yaml、properties、xml 等） -->
                 <directory>src/main/resources</directory>
-                <!-- 关闭过滤 -->
-                <filtering>false</filtering>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <!-- 引入所有 匹配文件进行过滤 -->
-                <includes>
-                    <include>application*</include>
-                    <include>bootstrap*</include>
-                    <include>banner*</include>
-                </includes>
+                <!-- 只打包 以 application / bootstrap / banner 开头的所有文件，除此之外的所有文件（包括 logback-spring.xml）一律不打包、不加载 -->
+<!--                <includes>-->
+<!--                    <include>application*</include>-->
+<!--                    <include>bootstrap*</include>-->
+<!--                    <include>banner*</include>-->
+<!--                </includes>-->
                 <!-- 启用过滤 即该资源中的变量将会被过滤器中的值替换 -->
+                <!-- 这个必须开启，不然yaml文件中的 @xxx@ 就不能替换为Maven中的配置 -->
                 <filtering>true</filtering>
             </resource>
         </resources>

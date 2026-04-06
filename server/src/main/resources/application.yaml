@@ -177,7 +177,13 @@ mybatis:
 
 # 日志配置
 logging:
-  config: classpath:logback-plus.xml
+  config: classpath:logback-spring.xml
+  level:
+    # 全局日志文件级别，项目级别在 web 配置项中定义
+    root: @logging.level@
+  file:
+    # 全局日志文件路径
+    path: ./logs
 
 
 # Swagger3 / SpringDoc 基本配置 (OpenAPI 规范)
@@ -227,8 +233,13 @@ jwt:
   # 设置前端传递过来的令牌名称
   user-token-name: financial-basic-token
 
-basic:
-  url: http://localhost:8088
+# 项目应用部署配置
+web:
+  # 允许跨域访问的源，多个源之间使用","分隔，中间不要有空格，null允许本地HTML文件的http请求发送
+  allowedOrigins: ${web.allowedOrigins}
+  url: ${web.url}
+  # 配置开发的项目日志级别
+  logLevel: ${web.logLevel}
 
 file-url:
   upload:
@@ -238,11 +249,11 @@ file-url:
     files: "files/"
     conversations: "conversations/"
   request:
-    images: "${basic.url}/images/"
-    videos: "${basic.url}/videos/"
-    audios: "${basic.url}/audios/"
-    files: "${basic.url}/files/"
-    conversations: "${basic.url}/conversations/"
+    images: "${web.url}/images/"
+    videos: "${web.url}/videos/"
+    audios: "${web.url}/audios/"
+    files: "${web.url}/files/"
+    conversations: "${web.url}/conversations/"
 
 url:
   permit-all-urls:
@@ -256,9 +267,9 @@ url:
     - /oauth2/authorization/**
     - /login/oauth2/code/**
     - /images/**
-    - ${basic.url}/images/**
-    - ${basic.url}/files/**
-    - ${basic.url}/conversations/**
+    - ${web.url}/images/**
+    - ${web.url}/files/**
+    - ${web.url}/conversations/**
     - /swagger-ui/**
     - /swagger-ui.html/**
     - /temp/**
@@ -331,11 +342,8 @@ websocket:
   # 设置访问源地址
   allowedOrigins: ${web.allowedOrigins}
   # 群发消息前缀
-  message-broadcast-prefix: 'topic'
+  message-broadcast-prefix: '/topic'
   # 用户单发消息前缀
   user-private-prefix: '/queue'
 
-# 项目应用部署配置
-web:
-  # 允许跨域访问的源，多个源之间使用","分隔，中间不要有空格，null允许本地HTML文件的http请求发送
-  allowedOrigins: 'null,http://localhost:3001,http://localhost:3000'
+

@@ -157,9 +157,7 @@ public class AsrToTextNode implements NodeActionWithConfig {
             return Map.of(GraphConstant.INPUT, userInput, GraphConstant.MESSAGES, userInputMessage);
         }
 
-        log.info("[ASR] 语音识别节点-执行结束：{}", userInput);
-
-//        throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
+        log.info("[ASR] 语音识别节点-执行结束，用户输入：{}", userInput);
 
         // todo 暂时不做纯情绪分析的内容，例：有哭声，但没有文本语音输入
         return Map.of();

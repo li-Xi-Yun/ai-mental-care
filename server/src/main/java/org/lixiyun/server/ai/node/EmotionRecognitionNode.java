@@ -163,19 +163,19 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
-        log.debug("情感识别节点开始执行");
+        log.debug("情感识别节点-开始执行");
         Optional<Map<String, Object>> metadataMap = config.metadata();
         Map<String, Object> map = metadataMap.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
 
         int currentRound = (int) map.get(GraphConstant.CURRENT_ROUND);
         Optional<String> threadIdOpl = config.threadId();
         String threadId = threadIdOpl.orElseThrow(() -> {
-            log.error("情感识别threadId:会话不存在");
+            log.error("情感识别节点-threadId:会话不存在");
             return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         });
         Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
         List<Message> userMessages = userMessageOpl.orElseThrow(() -> {
-            log.error("情感识别userMessages:上下文不存在");
+            log.error("情感识别节点-userMessages:上下文不存在");
             return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         });
 
@@ -197,7 +197,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
                     .build()
                     .call(userMessages);
             modelOutput = call.getText();
-            log.debug("情感识别节点:模型调用生成完整数据信息:{}", modelOutput);
+            log.debug("情感识别节点-模型调用生成完整数据信息:{}", modelOutput);
             CompleteEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, CompleteEmotionAnalysis.class);
             analysis.analysisContent(emotionAnalysis.getAnalysisContent())
                     .emotionLabel(emotionAnalysis.getEmotionLabel())
@@ -214,14 +214,14 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
                     .build()
                     .call(userMessages);
             modelOutput = call.getText();
-            log.debug("情感识别节点:模型调用生成简略数据信息:{}", modelOutput);
+            log.debug("情感识别节点-模型调用生成简略数据信息:{}", modelOutput);
             BriefEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, BriefEmotionAnalysis.class);
             analysis.analysisContent(emotionAnalysis.getAnalysisContent())
                     .emotionLabel(emotionAnalysis.getEmotionLabel())
                     .emotionScore(emotionAnalysis.getEmotionScore());
         }
-        log.info("情感识别节点:识别结果:{}", modelOutput);
-        log.info("情感识别节点:转换结果:{}", analysis);
+        log.info("情感识别节点-识别结果:{}", modelOutput);
+        log.info("情感识别节点-转换结果:{}", analysis);
 
         Long userId = (Long) map.get(GraphConstant.USER_ID);
         analysis.conversationId(Long.valueOf(threadId))
@@ -234,7 +234,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
             return Map.of();
         }
 
-        log.debug("情感识别节点结束执行");
+        log.debug("情感识别节点-结束执行");
         String modelOutputResult = "第" + currentRound + "轮情绪识别结果：" + call.getText();
         return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutputResult));
     }

@@ -135,7 +135,7 @@ public class TextServiceImpl implements TextService {
         stream.subscribeOn(Schedulers.boundedElastic())
                 .subscribe(
                 output -> {
-                    log.debug("文本对话-流式前置打印信息：{}", output);
+//                    log.debug("文本对话-流式前置打印信息：{}", output);
                     if (output instanceof StreamingOutput streamingOutput) {
                         OutputType type = streamingOutput.getOutputType();
                         Message message = streamingOutput.message();
@@ -145,11 +145,11 @@ public class TextServiceImpl implements TextService {
                                 Object reasoningContent = assistantMessage.getMetadata().get("reasoningContent");
                                 if (reasoningContent != null && !reasoningContent.toString().isEmpty()) {
                                     stringBuilder.append(reasoningContent);
-                                    log.debug("文本对话-[模型思考输出] {}", reasoningContent);
+//                                    log.debug("文本对话-[模型思考输出] {}", reasoningContent);
                                     sink.tryEmitNext("文本对话-模型思考：" + reasoningContent);
                                 } else {
                                     String content = assistantMessage.getText();
-                                    log.debug("文本对话-[模型流式输出结果] ============>>> {}", content);
+//                                    log.debug("文本对话-[模型流式输出结果] ============>>> {}", content);
                                     sink.tryEmitNext(content);
                                 }
                             }

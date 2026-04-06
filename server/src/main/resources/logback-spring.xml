@@ -1,7 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!--  定义变量，name为变量名，value为变量值  -->
-    <property name="log.path" value="./logs"/>
+<!--    <property name="log.path" value="./logs"/>-->
+    <!-- 这种使用方式，需要文件名为：logback-spring.xml，从yaml文件中读取配置项 -->
+    <!-- scope="context"：变量作用域为整个 Logback 上下文，全局可用 -->
+    <!-- name="log.path"：对应该文件后续使用的变量名 -->
+    <!-- source="logging.file.path"：对应application.yml中的配置项 -->
+    <!-- defaultValue：兜底值，防止配置为空时再次生成_IS_UNDEFINED文件夹 -->
+    <springProperty
+            scope="context"
+            name="log.path"
+            source="logging.file.path"
+            defaultValue="./logs"
+    />
+    <!-- 读取 Spring Boot 全局日志级别 -->
+    <springProperty
+            scope="context"
+            name="log.level.root"
+            source="logging.level.root"
+            defaultValue="INFO"/>
+    <!-- 读取开发项目的日志级别 -->
+    <springProperty
+            scope="context"
+            name="web.logLevel"
+            source="web.logLevel"
+            defaultValue="INFO"/>
+
     <property name="console.log.pattern"
               value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
     <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"/>
@@ -40,6 +64,8 @@
     <!-- 系统日志输出 -->
     <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/sys-info.log</file>
+        <!-- 自动创建日志目录 -->
+        <createOnDemand>true</createOnDemand>
         <!-- 循环政策：基于时间创建日志文件 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- 定义归档日志文件的命名格式，指定 滚动策略为“基于时间”（每天切分一次），.gz会将自动将文件进行压缩打包 -->
@@ -65,6 +91,8 @@
     <!-- 系统日志输出 -->
     <appender name="file_warn" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/sys-warn.log</file>
+        <!-- 自动创建日志目录 -->
+        <createOnDemand>true</createOnDemand>
         <!-- 循环政策：基于时间创建日志文件 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- 日志文件名格式 -->
@@ -89,6 +117,8 @@
 
     <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/sys-error.log</file>
+        <!-- 自动创建日志目录 -->
+        <createOnDemand>true</createOnDemand>
         <!-- 循环政策：基于时间创建日志文件 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- 日志文件名格式 -->
@@ -178,11 +208,13 @@
     <!--    <logger name="org.springframework" level="WARN"/>-->
     <!--    <logger name="org.mybatis.spring.mapper" level="ERROR"/>-->
     <!--    <logger name="org.apache.fury" level="WARN"/>-->
-        <logger name="org.lixiyun" level="debug"/>
+
+        <logger name="org.lixiyun" level="${web.logLevel}"/>
 
     <!--系统操作日志，info意味：INFO、WARN、ERROR 级别的日志会被处理，DEBUG、TRACE 级别的日志 会被直接丢弃-->
     <!--  项目中所有未单独配置日志级别的类 / 模块，都会继承这个根节点的配置  -->
-    <root level="info">
+<!--    <root level="info">-->
+    <root level="${log.level.root}">
         <appender-ref ref="console" />
         <appender-ref ref="async_info" />
         <appender-ref ref="async_warn" />

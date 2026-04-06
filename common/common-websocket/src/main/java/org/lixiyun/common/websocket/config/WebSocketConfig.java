@@ -1,8 +1,8 @@
 package org.lixiyun.common.websocket.config;
 
 import lombok.RequiredArgsConstructor;
-import org.lixiyun.common.websocket.interceptor.AuthHandshakeInterceptor;
-import org.lixiyun.common.websocket.interceptor.WebSocketInterceptor;
+import org.lixiyun.common.websocket.interceptor.WebSocketInboundInterceptor;
+import org.lixiyun.common.websocket.interceptor.WebSocketOutboundInterceptor;
 import org.lixiyun.common.websocket.properties.WebSocketProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -26,17 +26,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private TaskScheduler messageBrokerTaskScheduler;
     private WebSocketProperties webSocketProperties;
-    private AuthHandshakeInterceptor authHandshakeInterceptor;
-    private WebSocketInterceptor webSocketInterceptor;
+//    private AuthHandshakeInterceptor authHandshakeInterceptor;
+    private WebSocketInboundInterceptor webSocketInboundInterceptor;
+    private WebSocketOutboundInterceptor webSocketOutboundInterceptor;
     @Autowired
     public void setMessageBrokerTaskScheduler(@Lazy TaskScheduler taskScheduler,
                                               WebSocketProperties webSocketProperties,
-                                              AuthHandshakeInterceptor authHandshakeInterceptor,
-                                              WebSocketInterceptor webSocketInterceptor) {
+//                                              AuthHandshakeInterceptor authHandshakeInterceptor,
+                                              WebSocketOutboundInterceptor webSocketOutboundInterceptor,
+                                              WebSocketInboundInterceptor webSocketInboundInterceptor) {
         this.messageBrokerTaskScheduler = taskScheduler;
         this.webSocketProperties = webSocketProperties;
-        this.authHandshakeInterceptor = authHandshakeInterceptor;
-        this.webSocketInterceptor = webSocketInterceptor;
+//        this.authHandshakeInterceptor = authHandshakeInterceptor;
+        this.webSocketInboundInterceptor = webSocketInboundInterceptor;
+        this.webSocketOutboundInterceptor = webSocketOutboundInterceptor;
     }
 
     @Override
@@ -57,14 +60,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 注册第一个连接端点：客户端通过 ws://域名/ws 连接
         registry.addEndpoint(webSocketProperties.getEndpoint())
-                .setAllowedOriginPatterns(webSocketProperties.getAllowedOrigins())
-                .addInterceptors(authHandshakeInterceptor)  // 允许所有跨域请求（生产环境可修改为具体域名）
+                .setAllowedOriginPatterns(webSocketProperties.getAllowedOrigins())// 允许指定跨域请求
+//                .addInterceptors(authHandshakeInterceptor)
                 .withSockJS(); // 支持SockJS兼容方案：浏览器不支持WebSocket时自动降级
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // 注入 JWT 拦截器：所有客户端请求都会先经过 jwtChannelInterceptor 做身份校验
-        registration.interceptors(webSocketInterceptor);
+        // 所有客户端请求都会先经过 jwtChannelInterceptor 做身份校验
+        registration.interceptors(webSocketInboundInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        // 拦截从服务端推送到客户端的消息
+        registration.interceptors(webSocketOutboundInterceptor);
     }
 }

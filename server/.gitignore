@@ -20,12 +20,14 @@ target/
 *.ipr
 
 src/main/resources/application-dev.yml
-./logs
-./audios
-./images
-./videos
-./files
-./conversations
+src/main/resources/application-test.yml
+src/main/resources/application-prod.yml
+./logs/**
+./audios/**
+./images/**
+./videos/**
+./files/**
+./conversations/**
 
 ### NetBeans ###
 /nbproject/private/

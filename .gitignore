@@ -22,12 +22,12 @@ target/
 .springBeans
 .sts4-cache
 
-./audios
-./images
-./videos
-./files
-./conversations
-./logs
+./audios/**
+./images/**
+./videos/**
+./files/**
+./conversations/**
+./logs/**
 
 ### NetBeans ###
 /nbproject/private/

@@ -41,7 +41,7 @@ public class FinalAnswerNode implements NodeActionWithConfig {
 
     private final ChatModel chatModel;
 
-    private final int maxToken = 200;
+    private final int maxToken = 600;
 
     public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuild() {
         return ReactAgent.builder()
@@ -203,7 +203,7 @@ public class FinalAnswerNode implements NodeActionWithConfig {
             conversationMessages.add(modelOutputMessage);
 
             // 用于后续节点的文本转语音：TtsToSpeechNode
-            config.context().put(GraphConstant.AUDIO_DATA_RESULT, modelOutputMessage.getText());
+            config.context().put(GraphConstant.AUDIO_TEXT_DATA, modelOutputMessage.getText());
 
             log.debug("专业情感陪伴师节点：结束执行");
             return Map.of(GraphConstant.MESSAGES, modelOutputMessage);
