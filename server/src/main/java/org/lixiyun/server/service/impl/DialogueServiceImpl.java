@@ -6,13 +6,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
+import org.lixiyun.common.core.constant.DeleteConstant;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.entity.*;
+import org.lixiyun.pojo.entity.conversation.*;
 import org.lixiyun.pojo.vo.conversation.ConversationMemoryVO;
-import org.lixiyun.server.constant.CommonConstant;
 import org.lixiyun.server.mapper.*;
 import org.lixiyun.server.service.DialogueService;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class DialogueServiceImpl implements DialogueService {
         LambdaQueryWrapper<ConversationMemory> wrapper = new LambdaQueryWrapper<ConversationMemory>()
                 .eq(ConversationMemory::getUserId, currentId)
                 .eq(ConversationMemory::getConversationId, conversationId)
-                .eq(ConversationMemory::getDeleted, CommonConstant.DELETE_FLAG_NO)
+                .eq(ConversationMemory::getDeleted, DeleteConstant.DELETE_FLAG_NO)
                 .orderByDesc(ConversationMemory::getCreatedTime);
 
         // 执行分页查询
@@ -64,7 +64,7 @@ public class DialogueServiceImpl implements DialogueService {
                 .eq(ConversationMemory::getConversationId, conversationId)
                 .eq(ConversationMemory::getRoundNum, roundNum)
                 .eq(ConversationMemory::getUserId, currentId)
-                .eq(ConversationMemory::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                .eq(ConversationMemory::getDeleted, DeleteConstant.DELETE_FLAG_NO));
 
         // 判断是否有删除
         if (removed <= 0) {
@@ -76,19 +76,19 @@ public class DialogueServiceImpl implements DialogueService {
         graphCheckpointMapper.delete(new LambdaQueryWrapper<GraphCheckpoint>()
                 .eq(GraphCheckpoint::getConversationId, conversationId)
                 .eq(GraphCheckpoint::getRoundNum, roundNum)
-                .eq(GraphCheckpoint::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                .eq(GraphCheckpoint::getDeleted, DeleteConstant.DELETE_FLAG_NO));
 
         // 3. 删除该对话的情绪分析数据，where 会话 ID、删除状态
         emotionAnalysisMapper.delete(new LambdaQueryWrapper<EmotionAnalysis>()
                 .eq(EmotionAnalysis::getConversationId, conversationId)
                 .eq(EmotionAnalysis::getRoundNum, roundNum)
-                .eq(EmotionAnalysis::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                .eq(EmotionAnalysis::getDeleted, DeleteConstant.DELETE_FLAG_NO));
 
         // 4. 删除该对话的情绪诊断数据，where 会话 ID、删除状态
         emotionDiagnosisMapper.delete(new LambdaQueryWrapper<EmotionDiagnosis>()
                 .eq(EmotionDiagnosis::getConversationId, conversationId)
                 .eq(EmotionDiagnosis::getRoundNum, roundNum)
-                .eq(EmotionDiagnosis::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                .eq(EmotionDiagnosis::getDeleted, DeleteConstant.DELETE_FLAG_NO));
 
         // 5. 修改对话表当前轮次，where ID、删除状态
         conversationMapper.update(new LambdaUpdateWrapper<Conversation>()

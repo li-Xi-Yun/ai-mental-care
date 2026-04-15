@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.pojo.entity.ConversationMemory;
+import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.message.ThinkMessage;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.constant.GraphConstant;

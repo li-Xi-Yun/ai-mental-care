@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.result.Result;
@@ -19,6 +20,10 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,12 +31,15 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class ExceptionGlobalHandler {
 
+    private static final int MAX_STACK_TRACE_LINES = 20;
+
     /**
      * 业务异常处理器
      */
     @ExceptionHandler(BusinessException.class)
     public Result<?> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 业务异常：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
+        log.error("请求路径：{}， 业务异常：{}，异常信息：{}",
+                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(e.getCode(), e.getMsg());
     }
 
@@ -40,7 +48,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(Throwable.class)
     public Result<?> handleException(Throwable e, HttpServletRequest request) {
-        log.error("请求路径：{}， 系统异常：{}", request.getRequestURI(), e);
+        log.error("请求路径：{}， ，异常信息：{}", request.getRequestURI(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
     }
 
@@ -49,7 +57,8 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public Result<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数为空：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
+        log.error("请求路径：{}， 参数为空：{}，异常信息：{}",
+                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.PARAM_ILLEGAL);
     }
 
@@ -58,7 +67,8 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(BindException.class)
     public Result<?> handleConstraintViolationException(BindException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 数据绑定失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
+        log.error("请求路径：{}， 数据绑定失败：{}，异常信息：{}",
+                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.PARAM_ERROR);
     }
 
@@ -67,7 +77,15 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class})
     public Result<?> handleValidationException(Exception e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数验证失败：{}", request.getRequestURI(), e.toString() + ":" + e.getMessage(), e);
+        log.error("请求路径：{}， 参数验证失败：{}，异常信息：{}",
+                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
+
+        // 忽略视频播放时的客户端断开/超时异常
+        if (e instanceof ClientAbortException
+                || e.getCause() instanceof SocketTimeoutException) {
+            // 只打印简单日志，不返回错误
+            return null;
+        }
 
         String message;
         if (e instanceof ConstraintViolationException constraintViolationException) {
@@ -101,11 +119,11 @@ public class ExceptionGlobalHandler {
         String sessionId = headers.getSessionId();
 
         // 打印日志
-        log.error("WebSocket请求路径：{}，sessionId：{}，业务异常：{}",
+        log.error("WebSocket请求路径：{}，sessionId：{}，业务异常：{}，异常信息：{}",
                 destination,
                 sessionId,
                 e.getMessage(),
-                e
+                getTruncatedStackTrace(e)
         );
 
         return Result.error(e.getCode(), e.getMsg());
@@ -127,14 +145,31 @@ public class ExceptionGlobalHandler {
         String sessionId = headers.getSessionId();
 
         // 打印日志
-        log.error("WebSocket兜底异常处理器，请求路径：{}，sessionId：{}，业务异常：{}",
+        log.error("WebSocket兜底异常处理器，请求路径：{}，sessionId：{}，业务异常：{}，异常信息：{}",
                 destination,
                 sessionId,
                 e.getMessage(),
-                e
+                getTruncatedStackTrace(e)
         );
 
         return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
+    }
+
+    private String getTruncatedStackTrace(Throwable throwable) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+
+        String fullStackTrace = sw.toString();
+        String[] lines = fullStackTrace.split("\n");
+
+        if (lines.length <= MAX_STACK_TRACE_LINES) {
+            return fullStackTrace;
+        }
+
+        String[] truncatedLines = Arrays.copyOfRange(lines, 0, MAX_STACK_TRACE_LINES);
+        String truncated = String.join("\n", truncatedLines);
+        return truncated + "\n... [堆栈已截断，共 " + lines.length + " 行，仅显示前 " + MAX_STACK_TRACE_LINES + " 行]";
     }
 
 }

@@ -1,5 +1,6 @@
 AuthenticationException:1000
 KnowledgeBaseException:2000
 ConversationException:3000
+ScaleException:4000
 
 SystemException:10000

@@ -14,20 +14,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
+import org.lixiyun.common.core.constant.DeleteConstant;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.dto.conversation.AudioModelDTO;
-import org.lixiyun.pojo.entity.Conversation;
-import org.lixiyun.pojo.entity.ConversationMemory;
-import org.lixiyun.pojo.entity.GraphCheckpoint;
+import org.lixiyun.pojo.entity.conversation.Conversation;
+import org.lixiyun.pojo.entity.conversation.ConversationMemory;
+import org.lixiyun.pojo.entity.conversation.GraphCheckpoint;
 import org.lixiyun.pojo.vo.conversation.ConversationVO;
 import org.lixiyun.server.ai.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.ai.node.*;
 import org.lixiyun.server.ai.saver.CustomMysqlSaver;
-import org.lixiyun.server.constant.CommonConstant;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.audio.AudioCache;
 import org.lixiyun.server.mapper.ConversationMapper;
@@ -315,7 +315,7 @@ public class AudioServiceImpl implements AudioService {
                 graphCheckpointMapper.delete(new LambdaQueryWrapper<GraphCheckpoint>()
                         .eq(GraphCheckpoint::getConversationId, conversationId)
                         .eq(GraphCheckpoint::getRoundNum, currentRound)
-                        .eq(GraphCheckpoint::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                        .eq(GraphCheckpoint::getDeleted, DeleteConstant.DELETE_FLAG_NO));
             }
 
             latch.countDown();
@@ -337,7 +337,7 @@ public class AudioServiceImpl implements AudioService {
             Long count = conversationMemoryMapper.selectCount(new LambdaQueryWrapper<ConversationMemory>()
                     .eq(ConversationMemory::getConversationId, conversationId)
                     .eq(ConversationMemory::getUserId, currentId)
-                    .eq(ConversationMemory::getDeleted, CommonConstant.DELETE_FLAG_NO));
+                    .eq(ConversationMemory::getDeleted, DeleteConstant.DELETE_FLAG_NO));
             if(count == 0){
                 conversationService.deleteConversation(conversationId);
                 return null;
@@ -352,7 +352,7 @@ public class AudioServiceImpl implements AudioService {
         List<ConversationMemory> conversationMemoryList = conversationMemoryMapper.selectList(new LambdaQueryWrapper<ConversationMemory>()
                 .eq(ConversationMemory::getConversationId, conversationId)
                 .eq(ConversationMemory::getUserId, UserInfoThreadLocalUtil.getCurrentIdThrow())
-                .eq(ConversationMemory::getDeleted, CommonConstant.DELETE_FLAG_NO)
+                .eq(ConversationMemory::getDeleted, DeleteConstant.DELETE_FLAG_NO)
                 .orderByAsc(ConversationMemory::getRoundNum)
                 .last("limit 0, 20"));
         String historyInfo = conversationMemoryList.stream()

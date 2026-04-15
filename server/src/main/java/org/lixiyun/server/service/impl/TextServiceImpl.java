@@ -12,7 +12,7 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.pojo.dto.chat.ChatDTO;
-import org.lixiyun.pojo.entity.Conversation;
+import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.server.ai.message.ThinkMessage;
 import org.lixiyun.server.ai.node.EmotionRecognitionNode;
 import org.lixiyun.server.ai.node.EmotionalDiagnosisNode;

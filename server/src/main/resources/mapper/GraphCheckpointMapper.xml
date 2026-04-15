@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.lixiyun.server.mapper.GraphCheckpointMapper">
-    <select id="loadCheckpointList" resultType="org.lixiyun.pojo.entity.GraphCheckpoint">
+    <select id="loadCheckpointList" resultType="org.lixiyun.pojo.entity.conversation.GraphCheckpoint">
         SELECT
             c.id,
             c.node_id,
@@ -11,7 +11,7 @@
         where c.conversation_id = #{conversationId} and c.deleted = 0
         ORDER BY c.created_time DESC, c.id DESC
     </select>
-<!--    <select id="loadCheckpointList" resultType="org.lixiyun.pojo.entity.GraphCheckpoint">-->
+<!--    <select id="loadCheckpointList" resultType="org.lixiyun.pojo.entity.conversation.GraphCheckpoint">-->
 <!--        SELECT-->
 <!--            c.checkpoint_id,-->
 <!--            c.node_id,-->
@@ -21,7 +21,7 @@
 <!--        where c.conversation_id = #{conversationId} and c.deleted = 0-->
 <!--        ORDER BY c.created_time DESC, c.id DESC-->
 <!--    </select>-->
-    <select id="loadCheckpoint" resultType="org.lixiyun.pojo.entity.GraphCheckpoint">
+    <select id="loadCheckpoint" resultType="org.lixiyun.pojo.entity.conversation.GraphCheckpoint">
         SELECT
             c.checkpoint_id,
             c.node_id,

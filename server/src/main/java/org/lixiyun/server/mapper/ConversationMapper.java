@@ -1,7 +1,7 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.lixiyun.pojo.entity.Conversation;
+import org.lixiyun.pojo.entity.conversation.Conversation;
 
 /**
  * 会话表 (Conversation) 表数据库访问层

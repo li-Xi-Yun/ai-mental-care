@@ -576,7 +576,40 @@
 <!--                </includes>-->
                 <!-- 启用过滤 即该资源中的变量将会被过滤器中的值替换 -->
                 <!-- 这个必须开启，不然yaml文件中的 @xxx@ 就不能替换为Maven中的配置 -->
+                <!-- Maven 的 filtering（资源过滤）只能处理纯文本文件 -->
+                <!-- 工作流程是：把文件当成 纯文字（字符流） 打开，逐行扫描里面的 @变量@，替换成 Maven 配置的值，重新保存文件 -->
                 <filtering>true</filtering>
+                <!-- 排除所有二进制文件，避免解析报错 -->
+                <excludes>
+                    <exclude>**/*.xdb</exclude>
+                    <exclude>**/*.jpg</exclude>
+                    <exclude>**/*.jpeg</exclude>
+                    <exclude>**/*.png</exclude>
+                    <exclude>**/*.gif</exclude>
+                    <exclude>**/*.bmp</exclude>
+                    <exclude>**/*.ico</exclude>
+                    <exclude>**/*.jar</exclude>
+                    <exclude>**/*.zip</exclude>
+                    <exclude>**/*.gz</exclude>
+                </excludes>
+            </resource>
+            <!-- 二进制文件：关闭过滤，原样复制（ip2region.xdb/图片等） -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <!-- 只包含二进制文件 -->
+                <includes>
+                    <include>**/*.xdb</include>
+                    <include>**/*.jpg</include>
+                    <include>**/*.jpeg</include>
+                    <include>**/*.png</include>
+                    <include>**/*.gif</include>
+                    <include>**/*.bmp</include>
+                    <include>**/*.ico</include>
+                    <include>**/*.jar</include>
+                    <include>**/*.zip</include>
+                    <include>**/*.gz</include>
+                </includes>
             </resource>
         </resources>
     </build>

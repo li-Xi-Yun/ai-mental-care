@@ -64,30 +64,20 @@
             <artifactId>common-sql</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.lixiyun</groupId>-->
-<!--            <artifactId>common-oss</artifactId>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.lixiyun</groupId>-->
-<!--            <artifactId>common-sensitive</artifactId>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.lixiyun</groupId>-->
-<!--            <artifactId>common-sms</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.lixiyun.agent</groupId>
+            <artifactId>common-agent</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.lixiyun</groupId>
             <artifactId>common-translation</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.lixiyun</groupId>-->
-<!--            <artifactId>common-vector</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.lixiyun.file</groupId>
+            <artifactId>common-file</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.lixiyun</groupId>
@@ -103,6 +93,11 @@
             <groupId>org.lixiyun</groupId>
             <artifactId>common-websocket</artifactId>
         </dependency>
+
+
+
+
+
 
         <!-- 添加 SpringDoc OpenAPI UI 依赖以启用 Swagger UI -->
         <dependency>

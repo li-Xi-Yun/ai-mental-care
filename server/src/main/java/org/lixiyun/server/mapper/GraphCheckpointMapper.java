@@ -2,7 +2,7 @@ package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
-import org.lixiyun.pojo.entity.GraphCheckpoint;
+import org.lixiyun.pojo.entity.conversation.GraphCheckpoint;
 
 import java.util.List;
 

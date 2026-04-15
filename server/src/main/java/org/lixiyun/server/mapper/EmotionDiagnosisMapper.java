@@ -1,7 +1,7 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.lixiyun.pojo.entity.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 
 /**
  * 情感诊断书表（多轮会话汇总）(EmotionDiagnosis) 表数据库访问层

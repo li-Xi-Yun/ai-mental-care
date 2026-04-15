@@ -41,6 +41,8 @@
         <module>common-vector</module>
 <!--        <module>websocket</module>-->
         <module>common-websocket</module>
+        <module>common-agent</module>
+        <module>common-file</module>
     </modules>
 
 </project>
