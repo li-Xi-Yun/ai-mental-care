@@ -1,6 +1,8 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Param;
 import org.lixiyun.pojo.entity.scale.ScaleUserRecord;
 
 /**
@@ -11,4 +13,7 @@ import org.lixiyun.pojo.entity.scale.ScaleUserRecord;
  */
 public interface ScaleUserRecordMapper extends BaseMapper<ScaleUserRecord> {
 
+    @Insert("insert into ai_mental_care.scale_user_record(user_id, scale_id, scale_name) " +
+            "VALUES(#{record.userId}, #{record.scaleId}, (select scale_name from ai_mental_care.scale where id = #{record.scaleId})) ")
+    void insertOneWithScaleName(@Param("record") ScaleUserRecord record);
 }

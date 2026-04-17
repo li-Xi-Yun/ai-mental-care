@@ -65,7 +65,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.lixiyun.agent</groupId>
+            <groupId>org.lixiyun</groupId>
             <artifactId>common-agent</artifactId>
         </dependency>
 
@@ -75,7 +75,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.lixiyun.file</groupId>
+            <groupId>org.lixiyun</groupId>
             <artifactId>common-file</artifactId>
         </dependency>
 

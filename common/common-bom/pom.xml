@@ -124,13 +124,13 @@
             </dependency>
 
             <dependency>
-                <groupId>org.lixiyun.agent</groupId>
+                <groupId>org.lixiyun</groupId>
                 <artifactId>common-agent</artifactId>
                 <version>${revision}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.lixiyun.file</groupId>
+                <groupId>org.lixiyun</groupId>
                 <artifactId>common-file</artifactId>
                 <version>${revision}</version>
             </dependency>

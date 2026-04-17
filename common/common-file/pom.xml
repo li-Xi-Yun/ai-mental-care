@@ -9,7 +9,6 @@
         <version>${revision}</version>
     </parent>
 
-    <groupId>org.lixiyun.file</groupId>
     <artifactId>common-file</artifactId>
 
     <properties>

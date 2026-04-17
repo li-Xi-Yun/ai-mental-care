@@ -241,6 +241,7 @@ web:
   # 配置开发的项目日志级别
   logLevel: ${web.logLevel}
 
+# 修改这里需要同步修改flie模块中的FileStorage类与core模块中的FileUrlProperties类
 file-url:
   upload:
     images: "images/"
@@ -248,12 +249,17 @@ file-url:
     audios: "audios/"
     files: "files/"
     conversations: "conversations/"
+    # 该文件夹需要手动创建
+    skills: "skills/"
+    prompts: "prompts/"
   request:
     images: "${web.url}/images/"
     videos: "${web.url}/videos/"
     audios: "${web.url}/audios/"
     files: "${web.url}/files/"
     conversations: "${web.url}/conversations/"
+    skills: "${web.url}/skills/"
+    prompts: "${web.url}/prompts/"
 
 url:
   permit-all-urls:

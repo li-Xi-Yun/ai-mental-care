@@ -7,7 +7,7 @@
             c.node_id,
             c.next_node_id,
             JSON_UNQUOTE(JSON_EXTRACT(c.state_data, '$.binaryPayload')) AS state_data
-        FROM graph_checkpoint c
+        FROM ai_mental_care.graph_checkpoint c
         where c.conversation_id = #{conversationId} and c.deleted = 0
         ORDER BY c.created_time DESC, c.id DESC
     </select>
@@ -23,11 +23,11 @@
 <!--    </select>-->
     <select id="loadCheckpoint" resultType="org.lixiyun.pojo.entity.conversation.GraphCheckpoint">
         SELECT
-            c.checkpoint_id,
+            c.id,
             c.node_id,
             c.next_node_id,
             JSON_UNQUOTE(JSON_EXTRACT(c.state_data, '$.binaryPayload')) AS state_data
-        FROM graph_checkpoint c
+        FROM ai_mental_care.graph_checkpoint c
         where c.conversation_id = #{conversationId} and c.round_num = #{currentRound} and c.deleted = 0 and c.next_node_id = '__END__'
     </select>
 

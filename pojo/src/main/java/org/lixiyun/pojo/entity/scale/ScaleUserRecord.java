@@ -40,6 +40,11 @@ public class ScaleUserRecord implements Serializable {
      * 量表id
      */
     private Long scaleId;
+
+    /**
+     * 量表名称(冗余存储)
+     */
+    private String scaleName;
     
     /**
      * 最终计算总分

@@ -45,6 +45,11 @@ public class ScaleUserAnswer implements Serializable {
      * 用户选择的选项ID
      */
     private Long optionId;
+
+    /**
+     * 题目显示顺序(冗余存储)
+     */
+    private Integer sort;
     
     /**
      * 答题时的题目内容(冗余存储)

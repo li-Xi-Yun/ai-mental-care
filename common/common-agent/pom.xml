@@ -9,7 +9,6 @@
         <version>${revision}</version>
     </parent>
 
-    <groupId>org.lixiyun.agent</groupId>
     <artifactId>common-agent</artifactId>
 
     <description>
@@ -29,10 +28,16 @@
         </dependency>
 
         <dependency>
-            <groupId>org.lixiyun.file</groupId>
+            <groupId>org.lixiyun</groupId>
             <artifactId>common-file</artifactId>
         </dependency>
 
+        <!-- 仅引入web注解依赖（用于写@RestController），不启动web容器 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <scope>provided</scope> <!-- 运行时由主模块提供 -->
+        </dependency>
     </dependencies>
 
 </project>

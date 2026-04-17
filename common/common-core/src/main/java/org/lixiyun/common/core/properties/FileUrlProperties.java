@@ -26,6 +26,8 @@ public class FileUrlProperties {
         private String audios;
         private String files;
         private String conversations;
+        private String skills;
+        private String prompts;
     }
 
     // 内部类：对应 request 节点
@@ -36,6 +38,8 @@ public class FileUrlProperties {
         private String audios;
         private String files;
         private String conversations;
+        private String skills;
+        private String prompts;
     }
 
     // 提供快捷获取方法（简化业务代码）
@@ -77,5 +81,21 @@ public class FileUrlProperties {
 
     public String getRequestConversations() {
         return request.getConversations();
+    }
+
+    public String getUploadSkills() {
+        return upload.getSkills();
+    }
+
+    public String getRequestSkills() {
+        return request.getSkills();
+    }
+
+    public String getUploadPrompts() {
+        return upload.getPrompts();
+    }
+
+    public String getRequestPrompts() {
+        return request.getPrompts();
     }
 }

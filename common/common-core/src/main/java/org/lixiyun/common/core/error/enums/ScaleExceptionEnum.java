@@ -15,6 +15,9 @@ public enum ScaleExceptionEnum implements ErrorCode {
     SCALE_NOT_FOUND("量表不存在", 4002),
     SCALE_QUESTION_NOT_FOUND("量表题目不存在", 4003),
     SCALE_OPTION_NOT_FOUND("量表选项不存在", 4004),
+    SCALE_DISABLED("量表已禁用，无法答题", 4005),
+    SCALE_QUESTION_OPTION_MISMATCH("题目与选项不匹配", 4006),
+    SCALE_RESULT_RULE_NOT_FOUND("未找到匹配的测评结果规则", 4007),
 
 
 

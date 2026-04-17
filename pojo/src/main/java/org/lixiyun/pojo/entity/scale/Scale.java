@@ -25,7 +25,10 @@ public class Scale implements Serializable {
 
     public static final int STATUS_ENABLE = 1;
     public static final int STATUS_DISABLE = 0;
-    
+
+    public static final int DELETED_NO = 0;
+    public static final int DELETED_YES = 1;
+
     /**
      * 自增主键ID
      */
@@ -84,5 +87,24 @@ public class Scale implements Serializable {
      */
     @TableLogic
     private Integer deleted;
+
+
+    /**
+     * 判断量表是否已删除
+     *
+     * @return true表示已删除，false表示未删除
+     */
+    public boolean isDeleted() {
+        return deleted != null && deleted == DELETED_YES;
+    }
+
+    /**
+     * 判断量表是否已启用
+     *
+     * @return true表示已启用，false表示未启用
+     */
+    public boolean isEnabled() {
+        return status != null && status == STATUS_ENABLE;
+    }
 
 }

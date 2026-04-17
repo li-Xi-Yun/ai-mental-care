@@ -22,6 +22,11 @@ import java.time.LocalDateTime;
 public class ScaleQuestion implements Serializable {
     
     private static final long serialVersionUID = -34986265418913598L;
+
+    // 正向计分
+    public static final Integer SCORE_TYPE_FORWARD = 1;
+    // 反向计分
+    public static final Integer SCORE_TYPE_REVERSE = 2;
     
     /**
      * 自增主键ID
