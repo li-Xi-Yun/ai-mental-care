@@ -3,6 +3,7 @@ package org.lixiyun.common.authentication.handler;
 import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.pojo.tool.LoginUser;
@@ -26,7 +27,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         String jwt;
 
         // 生成 JWT 令牌
-        jwt = JwtUtil.createJwtWithRedis(loginUser, true);
+        jwt = JwtUtil.createJwtWithRedis(loginUser, true, JwtType.USER);
 
         Map<String, Object> map = new HashMap<>();
         map.put("token", jwt);

@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.lixiyun.common.authentication.constant.JwtClaimsConstant;
+import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.properties.JwtProperties;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -27,36 +28,90 @@ public class JwtUtil {
 
 
     // 设置 Redis Key 的前缀
-    public static final String JWT_REDIS_KEY_PREFIX = "jwt:token:";
+    private static final String JWT_REDIS_KEY_PREFIX = "jwt:token:";
+    private static final String JWT_REDIS_KEY_PREFIX_ADMIN = "jwt:token:admin:";
+    private static final String JWT_REDIS_KEY_PREFIX_USER = "jwt:token:user:";
+
 
     /**
      * 从 Redis 中获取用户信息
-     * @param userId 用户 ID
+     *
+     * @param id       人员 ID
+     * @param jwtType  JWT类型 {@link JwtType}
      * @return 用户信息字符串
      */
-    public static String getUserInfoFromRedis(Long userId) {
-        return RedisUtils.getCacheObject(JwtUtil.JWT_REDIS_KEY_PREFIX + userId);
+    public static String getUserInfoFromRedis(Long id, JwtType jwtType) {
+        if (jwtType == JwtType.USER) {
+            return RedisUtils.getCacheObject(JWT_REDIS_KEY_PREFIX_USER + id);
+        } else if (jwtType == JwtType.ADMIN) {
+            return RedisUtils.getCacheObject(JWT_REDIS_KEY_PREFIX_ADMIN + id);
+        }
+        return null;
     }
+
+    /**
+     * 判断Token中存储的ID类型
+     * 通过尝试不同密钥解析Token来确定其类型
+     *
+     * @param token JWT Token
+     * @return JWT类型，如果无法解析则返回null {@link JwtType}
+     */
+    public static JwtType detectJwtType(String token) {
+        // 先尝试用USER类型解析
+        try {
+            String secretKey = jwtProperties.getUserSecretKey();
+            Claims claims = parseJWT(secretKey, token);
+            Object userId = claims.get(JwtClaimsConstant.USER_ID);
+            if (userId != null) {
+                return JwtType.USER;
+            }
+        } catch (Exception e) {
+        }
+
+        // 再尝试用ADMIN类型解析
+        try {
+            String secretKey = jwtProperties.getAdminSecretKey();
+            Claims claims = parseJWT(secretKey, token);
+            Object empId = claims.get(JwtClaimsConstant.EMP_ID);
+            if (empId != null) {
+                return JwtType.ADMIN;
+            }
+        } catch (Exception e) {
+        }
+
+        return null;
+    }
+
+
 
     /**
      * 生成 JWT 并将用户信息存储到 Redis，支持动态刷新 TTL
      *
      * @param secretKey   签名密钥
-     * @param info        用户信息
+     * @param info        用户信息 {@link LoginUser}
      * @param ttlMillis   JWT 初始有效期（秒）
-     * @param flat         是否创建对应的redis中的用户信息
+     * @param flat        是否创建对应的redis中的用户信息
+     * @param jwtType     JWT类型 {@link JwtType}
      * @return            生成的 JWT Token
      */
-    public static String createJwtWithRedis(String secretKey, LoginUser info, long ttlMillis, boolean flat) {
+    public static String createJwtWithRedis(String secretKey, LoginUser info, long ttlMillis, boolean flat, JwtType jwtType) {
         // 生成 JWT
         Long userId = info.getBasicsUser().getId();
-        Map<String, Object> claims = Map.of(JwtClaimsConstant.USER_ID, userId.toString());
+        Map<String, Object> claims;
+        if (jwtType == JwtType.USER) {
+            claims = Map.of(JwtClaimsConstant.USER_ID, userId.toString());
+        } else if (jwtType == JwtType.ADMIN) {
+            claims = Map.of(JwtClaimsConstant.EMP_ID, userId.toString());
+        } else {
+            throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
+        }
+        
         String token = createJwtNoTime(secretKey, claims);
         if (flat) {
-            // 构建 Redis Key（格式：jwt:token:{id}）
-            String redisKey = JWT_REDIS_KEY_PREFIX + info.getBasicsUser().getId();
+            // 构建 Redis Key
+            String redisKey = jwtType == JwtType.USER ? JWT_REDIS_KEY_PREFIX_USER + userId : JWT_REDIS_KEY_PREFIX_ADMIN + userId;
 
-            // 将用户 ID 存储到 Redis 中，绑定 JWT 的有效期
+            // 将用户信息存储到 Redis 中，绑定 JWT 的有效期
             String jsonStr = JSONUtil.toJsonStr(info);
             RedisUtils.setCacheObject(redisKey, jsonStr, ttlMillis, TimeUnit.SECONDS);
         }
@@ -66,34 +121,65 @@ public class JwtUtil {
 
     /**
      * 生成 JWT 并将用户信息存储到 Redis，支持动态刷新 TTL
-     * @param info 用户信息
-     * @param flat 是否创建对应的 Redis 中的用户信息
+     *
+     * @param info    用户信息 {@link LoginUser}
+     * @param flat    是否创建对应的 Redis 中的用户信息
+     * @param jwtType JWT类型 {@link JwtType}
      * @return 生成的 JWT Token
      */
-    public static String createJwtWithRedis(LoginUser info, boolean flat) {
-        return createJwtWithRedis(jwtProperties.getUserSecretKey(), info, jwtProperties.getUserTtl(), flat);
+    public static String createJwtWithRedis(LoginUser info, boolean flat, JwtType jwtType) {
+        String secretKey = jwtType == JwtType.USER ? jwtProperties.getUserSecretKey() : jwtProperties.getAdminSecretKey();
+        long ttlMillis = jwtType == JwtType.USER ? jwtProperties.getUserTtl() : jwtProperties.getAdminTtl();
+        return createJwtWithRedis(secretKey, info, ttlMillis, flat, jwtType);
     }
 
     /**
      * 解析 JWT
      *
-     * @param token       JWT Token
-     * @return            解析后的 userId
-     * @throws JwtException 如果 Token 无效或签名错误
+     * @param token   JWT Token
+     * @param jwtType JWT类型 {@link JwtType}
+     * @return        解析后的 id
+     * @throws BusinessException 如果 Token 无效或签名错误
      */
-    public static Long parseJwtWithRedis(String token) {
+    public static Long parseJwtWithRedis(String token, JwtType jwtType) {
+        String secretKey = jwtType == JwtType.USER ? jwtProperties.getUserSecretKey() : jwtProperties.getAdminSecretKey();
+        
         // 解析 JWT
-        Claims claims = parseJWT(jwtProperties.getUserSecretKey(), token);
+        Claims claims = parseJWT(secretKey, token);
 
-        // 从 Claims 中获取用户 ID（需在生成 JWT 时设置），约定为 "userId"
-        Long userId = null;
+        // 从 Claims 中获取用户 ID
+        Long id = null;
         try {
-            userId = Long.parseLong((String) claims.get(JwtClaimsConstant.USER_ID));
+            if (jwtType == JwtType.USER) {
+                id = Long.parseLong((String) claims.get(JwtClaimsConstant.USER_ID));
+            } else if (jwtType == JwtType.ADMIN) {
+                id = Long.parseLong((String) claims.get(JwtClaimsConstant.EMP_ID));
+            }
         } catch (NumberFormatException e) {
             throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
         }
 
-        return userId;
+        if (id == null) {
+            throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
+        }
+
+        return id;
+    }
+
+    /**
+     * 手动刷新指定用户的 JWT TTL，固定刷新时间
+     *
+     * @param id      人员 ID
+     * @param jwtType JWT类型 {@link JwtType}
+     */
+    public static void refreshJwtTTLWithRedis(Long id, JwtType jwtType) {
+        String redisKey = jwtType == JwtType.USER ? JWT_REDIS_KEY_PREFIX_USER + id : JWT_REDIS_KEY_PREFIX_ADMIN + id;
+        long ttl = jwtType == JwtType.USER ? jwtProperties.getUserTtl() : jwtProperties.getAdminTtl();
+        
+        // 刷新 Redis 中的 TTL（覆盖有效期）
+        if (RedisUtils.getExpire(redisKey) < ttl / 2) {
+            RedisUtils.expire(redisKey, ttl, TimeUnit.SECONDS);
+        }
     }
 
     /**
@@ -104,40 +190,37 @@ public class JwtUtil {
      * @return            解析后的 userId
      * @throws JwtException 如果 Token 无效或签名错误
      */
-    public static Long parseJwtWithRedis(String secretKey, String token) {
+    public static Long parseJwtWithRedis(String secretKey, String token, JwtType jwtType) {
         // 解析 JWT
         Claims claims = parseJWT(secretKey, token);
+        Long id = null;
+        if(jwtType == JwtType.USER){
+            // 从 Claims 中获取用户 ID（需在生成 JWT 时设置）
+            id = (Long) claims.get(JwtClaimsConstant.USER_ID);
+        } else if(jwtType == JwtType.ADMIN){
+            id = (Long) claims.get(JwtClaimsConstant.EMP_ID);
+        }
 
-        // 从 Claims 中获取用户 ID（需在生成 JWT 时设置），约定为 "userId"
-        Long userId = (Long) claims.get(JwtClaimsConstant.USER_ID);
-        if (userId == null) {
+        if (id == null) {
             throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
         }
 
-        return userId;
+        return id;
     }
 
     /**
      * 手动刷新指定用户的 JWT TTL，指定刷新时间
      *
-     * @param id 用户 ID
+     * @param id 人员 ID
      * @param extendMillis 延长的毫秒数
      */
-    public static void refreshJwtTTLWithRedis(Long id, long extendMillis) {
-        String redisKey = JWT_REDIS_KEY_PREFIX + id;
-        RedisUtils.expire(redisKey, extendMillis, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * 手动刷新指定用户的 JWT TTL，固定刷新时间
-     *
-     * @param id 用户 ID
-     */
-    public static void refreshJwtTTLWithRedis(Long userId) {
-        String redisKey = JWT_REDIS_KEY_PREFIX + userId;
-        // 刷新 Redis 中的 TTL（覆盖有效期）
-        if(RedisUtils.getExpire(redisKey) < jwtProperties.getUserTtl() / 2){
-            RedisUtils.expire(redisKey, jwtProperties.getUserTtl(), TimeUnit.SECONDS);
+    public static void refreshJwtTTLWithRedis(Long id, long extendMillis, JwtType jwtType) {
+        if(jwtType == JwtType.USER){
+            String redisKey = JWT_REDIS_KEY_PREFIX_USER + id;
+            RedisUtils.expire(redisKey, extendMillis, TimeUnit.MILLISECONDS);
+        } else if(jwtType == JwtType.ADMIN){
+            String redisKey = JWT_REDIS_KEY_PREFIX_ADMIN + id;
+            RedisUtils.expire(redisKey, extendMillis, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -146,9 +229,14 @@ public class JwtUtil {
      *
      * @param id 用户 ID
      */
-    public static void deleteJwtWithRedis(Long id) {
-        String redisKey = JWT_REDIS_KEY_PREFIX + id;
-        RedisUtils.deleteObject(redisKey);
+    public static void deleteJwtWithRedis(Long id, JwtType jwtType) {
+        if(jwtType == JwtType.USER){
+            String redisKey = JWT_REDIS_KEY_PREFIX_USER + id;
+            RedisUtils.deleteObject(redisKey);
+        } else if(jwtType == JwtType.ADMIN){
+            String redisKey = JWT_REDIS_KEY_PREFIX_ADMIN + id;
+            RedisUtils.deleteObject(redisKey);
+        }
     }
 
 

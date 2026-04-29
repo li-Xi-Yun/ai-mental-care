@@ -59,6 +59,11 @@ public class Scale implements Serializable {
      * 状态：1=启用 0=禁用
      */
     private Integer status;
+
+    /**
+     * 统一选项模板的通用评分规则
+     */
+    private String scoreRule;
     
     /**
      * 创建时间
@@ -94,7 +99,7 @@ public class Scale implements Serializable {
      *
      * @return true表示已删除，false表示未删除
      */
-    public boolean isDeleted() {
+    public boolean deleteFlat() {
         return deleted != null && deleted == DELETED_YES;
     }
 

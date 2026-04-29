@@ -6,8 +6,13 @@ package org.lixiyun.common.agent.constant.prompt;
  */
 public interface CommonConstant {
 
-    String SEMANTIC_COMPRESSION_SYSTEM_PROMPT = "semantic_compression_system_prompt";
+    // 语义压缩系统提示语
+    String SEMANTIC_COMPRESSION_SYSTEM_PROMPT = "SEMANTIC_COMPRESSION_SYSTEM_PROMPT";
 
-    String CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT = "conversation_name_extraction_system_prompt";
+    // 会话名称提取系统提示语
+    String CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT = "CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT";
+
+    // 语义分割系统提示语
+    String SEMANTIC_SEGMENTATION_SYSTEM_PROMPT = "SEMANTIC_SEGMENTATION_SYSTEM_PROMPT";
 
 }

@@ -41,7 +41,7 @@ public class PromptUtil {
     }
 
     /**
-     * 从配置的prompts文件夹中加载所有提示词文件
+     * 从配置的prompts文件夹中加载所有提示词文件（支持多层级目录结构）
      */
     private void loadPrompts() {
         String promptsFolderUrl = fileUrlProperties.getUploadPrompts();
@@ -52,7 +52,7 @@ public class PromptUtil {
             return;
         }
 
-        try (var stream = Files.list(promptsPath)) {
+        try (var stream = Files.walk(promptsPath)) {
             stream.filter(Files::isRegularFile)
                   .forEach(file -> {
                       try {
@@ -64,7 +64,7 @@ public class PromptUtil {
 
                           if (key != null && !key.isEmpty()) {
                               PROMPT_MAP.put(key, content);
-                              log.debug("提示词初始化-加载提示词文件: {}", key);
+                              log.debug("提示词初始化-加载提示词文件: {}, 路径: {}", key, file.toAbsolutePath());
                           }
                       } catch (IOException e) {
                           log.error("提示词初始化-读取文件失败: {}", file.getFileName(), e);
@@ -96,10 +96,18 @@ public class PromptUtil {
      * 根据key获取提示词内容
      *
      * @param key 提示词key，应与constant/prompt/ 中定义的常量名一致
-     * @return 提示词文本内容，如果不存在则返回null
+     * @return 提示词文本内容，如果不存在则返回空字符串
      */
     public static String getPrompt(String key) {
-        return PROMPT_MAP.get(key);
+        if (key == null || key.isEmpty()) {
+            return "";
+        }
+        String prompt = PROMPT_MAP.get(key);
+        if(prompt == null){
+            log.error("提示词内容为空，请检查配置文件：{}", key);
+            return "";
+        }
+        return prompt;
     }
 
     /**

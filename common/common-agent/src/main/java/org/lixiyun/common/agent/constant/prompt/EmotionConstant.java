@@ -6,14 +6,15 @@ package org.lixiyun.common.agent.constant.prompt;
  */
 public interface EmotionConstant {
 
-    String USER_INPUT_CONTEXT = "user_input_context";
+    String USER_INPUT_CONTEXT = "USER_INPUT_CONTEXT";
 
-    String BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS = "brief_analysis_of_youth_contextual_emotions";
+    // 情绪分析节点-简略结果
+    String BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS = "BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS";
 
-    String STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS = "standard_analysis_of_youth_contextual_emotions";
+    // 情绪分析节点-完整结果
+    String STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS = "STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS";
 
-    String DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS = "diagnosis_of Psychological_state_with_multiple_rounds";
-
-    String PROFESSIONAL_EMOTIONAL_COMPANION = "professional_emotional_companion";
+    // 诊断节点
+    String DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS = "DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS";
 
 }

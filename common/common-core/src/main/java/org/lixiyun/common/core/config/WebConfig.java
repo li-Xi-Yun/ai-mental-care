@@ -20,17 +20,22 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 将文件系统中的上传目录映射到Web路径
-        registry.addResourceHandler("/images/**")  // 所有以/images/开头的URL请求都会被这个规则处理
+        registry.addResourceHandler("/static-resources/images/**")  // 所有以/images/开头的URL请求都会被这个规则处理
                 .addResourceLocations("file:" + imageUploadPath);
         // "file:"前缀告诉Spring这是文件系统路径而不是classpath路
         // imageUploadPath是从配置文件中读取的实际文件存储目录，比如./uploads/images/
         // 完整路径可能是：file:./uploads/images/
 
-        registry.addResourceHandler("/videos/**")
+        registry.addResourceHandler("/static-resources/videos/**")
                 .addResourceLocations("file:" + videoUploadPath);
 
-        registry.addResourceHandler("/files/**")
+        registry.addResourceHandler("/static-resources/files/**")
                 .addResourceLocations("file:" + fileUploadPath);
+
+        registry.addResourceHandler("/static-resources/**")
+                .addResourceLocations("file:" + "static-resources/**");
+
+
 
 //        // 静态资源映射：排除所有 /ws/ 开头的路径
 //        registry.addResourceHandler("/**")

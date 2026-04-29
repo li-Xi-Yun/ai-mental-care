@@ -8,7 +8,7 @@ import org.lixiyun.common.core.error.ErrorCode;
  * @since 2026-03-16 17:33
  */
 public enum ConversationExceptionEnum implements ErrorCode {
-    // 状态码从3000开始
+    // 状态码从2000开始
 
     CONVERSATION_NOT_EXIST("会话不存在", 3000),
     CONVERSATION_PARAM_ERROR("会话参数错误", 3001),

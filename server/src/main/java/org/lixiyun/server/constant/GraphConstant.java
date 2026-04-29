@@ -14,6 +14,9 @@ public interface GraphConstant {
 
     String INVALID_CONVERSATION_INFO = "invalid_conversation_info"; // 判断当前会话是否无效，用于检查点数据的清除或是会话上下文信息的清除，存放一个boolean变量
 
+    String RAG_RESULT = "rag_result"; // 存储RAG节点的输出结果，一个String类型
+
+    String RAG_INTERRUPTED = "rag_interrupted";  // 用于中断本次RAG流程，存放一个boolean变量，为true则中断RAG流程
 
 
     // ============================================这里是放入 config 的 metadata 对话级元数据==================================================
@@ -42,11 +45,6 @@ public interface GraphConstant {
     String MESSAGES = "messages";  // 这里是OverAllState中的上下文信息，一个ArrayList<Message>
 
     String INPUT = "input";  // 用户输入,模型调用对应OverAllState中的常量属性：DEFAULT_INPUT_KEY
-
-
-
-
-
 
 
 //    String USER_INPUT = "user_input";  // 用户输入，这个只用于上下文存储，不参与模型调用，模型调用对应的时OverAllState中的常量属性：DEFAULT_INPUT_KEY

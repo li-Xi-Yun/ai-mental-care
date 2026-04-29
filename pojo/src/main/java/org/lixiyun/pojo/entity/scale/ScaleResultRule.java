@@ -48,6 +48,11 @@ public class ScaleResultRule implements Serializable {
      * 测评结果描述文本
      */
     private String resultText;
+
+    /**
+     * 排序序号
+     */
+    private Integer sort;
     
     /**
      * 创建时间

@@ -2,7 +2,7 @@ package org.lixiyun.common.agent.skill.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.SkillConstant;
+import org.lixiyun.common.agent.constant.skill.SkillConstant;
 import org.lixiyun.common.agent.skill.pojo.entity.Skill;
 import org.lixiyun.common.agent.skill.service.SkillService;
 import org.lixiyun.common.agent.skill.utils.SkillUtil;
@@ -102,6 +102,12 @@ public class SkillServiceImpl implements SkillService {
 
         if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
             log.warn("文件不存在或不是普通文件: {}", filePath);
+            return "";
+        }
+
+        boolean textFile = isTextFile(fileName);
+        if (!textFile) {
+            log.warn("文件不是文本文件: {}", filePath);
             return "";
         }
 
@@ -213,6 +219,14 @@ public class SkillServiceImpl implements SkillService {
             throw new RuntimeException("文件不存在: " + fileName);
         }
 
+        // 检查文件类型，只允许修改文本文件
+        boolean isTextFile = isTextFile(fileName);
+
+        if (!isTextFile) {
+            log.error("不支持修改非文本文件: {}", fileName);
+            throw new RuntimeException("不支持修改非文本文件，仅支持修改 .md、.txt、.html、.json、.xml、.yaml、.js、.ts、.css、.py、.java 等文本文件");
+        }
+
         try {
             // 文件不存在则创建；文件存在则清空内容覆写
             Files.writeString(filePath, fileContext);
@@ -246,6 +260,30 @@ public class SkillServiceImpl implements SkillService {
         }
 
         log.info("文件内容修改完成，文件夹: {}, 文件名: {}", folderName, fileName);
+    }
+
+    /**
+     * 判断是否是文本文件
+     * @param fileName 文件名
+     * @return true: 是文本文件，false: 非文本文件
+     */
+    private static boolean isTextFile(String fileName) {
+        String lowerFileName = fileName.toLowerCase();
+        return lowerFileName.endsWith(".md")
+                || lowerFileName.endsWith(".markdown")
+                || lowerFileName.endsWith(".txt")
+                || lowerFileName.endsWith(".html")
+                || lowerFileName.endsWith(".htm")
+                || lowerFileName.endsWith(".json")
+                || lowerFileName.endsWith(".xml")
+                || lowerFileName.endsWith(".yaml")
+                || lowerFileName.endsWith(".yml")
+                || lowerFileName.endsWith(".js")
+                || lowerFileName.endsWith(".ts")
+                || lowerFileName.endsWith(".css")
+                || lowerFileName.endsWith(".py")
+                || lowerFileName.endsWith(".java")
+                || lowerFileName.endsWith(".properties");
     }
 
     @Override
@@ -363,6 +401,9 @@ public class SkillServiceImpl implements SkillService {
         if(fileName == null || fileName.isBlank()){
             log.error("文件名不能为空");
             throw new RuntimeException("文件名不能为空");
+        } else if(fileName.endsWith(".zip")){
+            log.error("不能上传文件夹");
+            throw new RuntimeException("不能上传文件夹");
         }
         Path targetPath = folderPath.resolve(fileName);
 

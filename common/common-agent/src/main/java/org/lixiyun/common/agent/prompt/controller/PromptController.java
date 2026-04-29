@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.prompt.dto.FolderContentItem;
 import org.lixiyun.common.agent.prompt.service.PromptService;
 import org.lixiyun.common.core.result.Result;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,33 +30,40 @@ public class PromptController {
 
     private final PromptService promptService;
 
-    @GetMapping("/all-file-names")
-    @Operation(summary = "查询所有文件名", description = "获取所有提示词文件夹名称")
-    public Result<List<String>> getAllFileNames() {
-        log.info("查询所有文件名");
-        List<String> result = promptService.getAllFileNames();
-        return Result.success(result);
-    }
-
     @GetMapping("/file-content")
-    @Operation(summary = "查询指定文件内容", description = "根据文件名查询指定文件内容")
+    @PreAuthorize("hasAuthority('prompt:file:content:select')")
+    @Operation(summary = "查询指定文件内容", description = "根据文件夹路径和文件名查询指定文件内容")
     public Result<String> getFileContent(
+            @RequestParam @Parameter(description = "文件对应的文件夹路径（完整）", required = true) @NotBlank String folderUrl,
             @RequestParam @Parameter(description = "文件名", required = true) @NotBlank String fileName
     ) {
-        log.info("查询指定文件内容: {}", fileName);
-        String result = promptService.getFileContent(fileName);
+        log.info("查询指定文件内容, 文件夹路径: {}, 文件名: {}", folderUrl, fileName);
+        String result = promptService.getFileContent(folderUrl, fileName);
         return Result.success(result);
     }
 
     @PutMapping("/file-content")
-    @Operation(summary = "修改指定文件内容", description = "根据文件名修改指定文件内容，替换Prompt_MAP中的value")
+    @PreAuthorize("hasAuthority('prompt:file:content:update')")
+    @Operation(summary = "修改指定文件内容", description = "根据文件夹路径和文件名修改指定文件内容，替换Prompt_MAP中的value")
     public Result<?> updateFileContent(
+            @RequestParam @Parameter(description = "文件对应的文件夹路径（完整）", required = true) @NotBlank String folderUrl,
             @RequestParam @Parameter(description = "文件名", required = true) @NotBlank String fileName,
-            @RequestBody @Parameter(description = "文件内容", required = true) @NotBlank String content
+            @RequestParam @Parameter(description = "文件内容", required = true) @NotBlank String content
     ) {
-        log.info("修改指定文件内容: {}", fileName);
-        promptService.updateFileContent(fileName, content);
+        log.info("修改指定文件内容, 文件夹路径: {}, 文件名: {}, 内容长度: {}", folderUrl, fileName, content.length());
+        promptService.updateFileContent(folderUrl, fileName, content);
         return Result.success();
+    }
+
+    @GetMapping("/folder-contents")
+    @PreAuthorize("hasAuthority('prompt:folder:name:select')")
+    @Operation(summary = "查询指定文件夹下的所有内容", description = "根据文件夹路径查询该文件夹下的所有文件和子文件夹名称")
+    public Result<List<FolderContentItem>> getFolderContents(
+            @RequestParam(required = false) @Parameter(description = "文件夹路径（支持多级目录，根目录时不用传）", required = false) String folderUrl
+    ) {
+        log.info("查询指定文件夹下的所有内容, 文件夹路径: {}", folderUrl);
+        List<FolderContentItem> result = promptService.getFolderContents(folderUrl);
+        return Result.success(result);
     }
 
 }

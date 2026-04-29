@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.connector.ClientAbortException;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.result.Result;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -31,15 +29,15 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class ExceptionGlobalHandler {
 
-    private static final int MAX_STACK_TRACE_LINES = 20;
+    private static final int MAX_STACK_TRACE_LINES = 50;
 
     /**
      * 业务异常处理器
      */
     @ExceptionHandler(BusinessException.class)
     public Result<?> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 业务异常：{}，异常信息：{}",
-                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
+        log.error("请求路径：{}，请求方法：{}，业务异常：{}，异常信息：{}",
+                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(e.getCode(), e.getMsg());
     }
 
@@ -48,7 +46,7 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(Throwable.class)
     public Result<?> handleException(Throwable e, HttpServletRequest request) {
-        log.error("请求路径：{}， ，异常信息：{}", request.getRequestURI(), getTruncatedStackTrace(e));
+        log.error("请求路径：{}，请求方法：{}，异常信息：{}", request.getRequestURI(), request.getMethod(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
     }
 
@@ -57,8 +55,8 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public Result<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数为空：{}，异常信息：{}",
-                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
+        log.error("请求路径：{}，请求方法：{}，参数为空：{}，异常信息：{}",
+                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.PARAM_ILLEGAL);
     }
 
@@ -67,8 +65,8 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler(BindException.class)
     public Result<?> handleConstraintViolationException(BindException e, HttpServletRequest request) {
-        log.error("请求路径：{}， 数据绑定失败：{}，异常信息：{}",
-                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
+        log.error("请求路径：{}，请求方法：{}，数据绑定失败：{}，异常信息：{}",
+                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
         return Result.error(SystemExceptionEnum.PARAM_ERROR);
     }
 
@@ -77,15 +75,15 @@ public class ExceptionGlobalHandler {
      */
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class})
     public Result<?> handleValidationException(Exception e, HttpServletRequest request) {
-        log.error("请求路径：{}， 参数验证失败：{}，异常信息：{}",
-                request.getRequestURI(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
+        log.error("请求路径：{}，请求方法：{}，参数验证失败：{}，异常信息：{}",
+                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
 
         // 忽略视频播放时的客户端断开/超时异常
-        if (e instanceof ClientAbortException
-                || e.getCause() instanceof SocketTimeoutException) {
-            // 只打印简单日志，不返回错误
-            return null;
-        }
+//        if (e instanceof ClientAbortException
+//                || e.getCause() instanceof SocketTimeoutException) {
+//            // 只打印简单日志，不返回错误
+//            return null;
+//        }
 
         String message;
         if (e instanceof ConstraintViolationException constraintViolationException) {

@@ -22,7 +22,6 @@ public interface CommonPromptWord {
               1. 精准识别对话中的任务边界与信息节点（提问 → 工具调用 → 结果 → 回答）。
               2. 高效融合多轮信息，消除重复，保持时序逻辑清晰。
               3. 在极短篇幅内实现信息密度最大化，同时保证语句通顺、专业、可读。
-            Example:
             """;
 
     String CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT = """

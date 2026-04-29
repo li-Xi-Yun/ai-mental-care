@@ -423,10 +423,10 @@
                 <logging.level>info</logging.level>
             </properties>
             <!-- 这里是不指定运行或是打包时，所使用的环境，哪怕是在IDEA中运行默认也是这个 -->
-            <activation>
-                <!-- 默认环境 -->
-                <activeByDefault>true</activeByDefault>
-            </activation>
+<!--            <activation>-->
+<!--                &lt;!&ndash; 默认环境 &ndash;&gt;-->
+<!--                <activeByDefault>true</activeByDefault>-->
+<!--            </activation>-->
         </profile>
         <profile>
             <id>prod</id>
@@ -434,10 +434,10 @@
                 <profiles.active>prod</profiles.active>
                 <logging.level>info</logging.level>
             </properties>
-<!--            <activation>-->
-<!--                &lt;!&ndash; 默认环境 &ndash;&gt;-->
-<!--                <activeByDefault>true</activeByDefault>-->
-<!--            </activation>-->
+            <activation>
+                <!-- 默认环境 -->
+                <activeByDefault>true</activeByDefault>
+            </activation>
         </profile>
         <profile>
             <id>test</id>

@@ -12,13 +12,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.EmotionConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
-import org.lixiyun.server.ai.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,6 +35,7 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -46,6 +48,10 @@ import java.util.Optional;
 public class EmotionalDiagnosisNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "emotionalDiagnosisNode";
+    private final int maxRound = 5;
+
+    private final String userInputContextPrompt = PromptUtil.getPrompt(EmotionConstant.USER_INPUT_CONTEXT);
+    private final String emotionDiagnosisPrompt = PromptUtil.getPrompt(EmotionConstant.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS);
 
     private final ChatModel chatModel;
     private final EmotionDiagnosisMapper emotionDiagnosisMapper = SpringUtils.getBean(EmotionDiagnosisMapper.class);
@@ -182,7 +188,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         log.debug("情感诊断节点开始执行");
         Optional<Object> currentRoundOpl = config.metadata(GraphConstant.CURRENT_ROUND);
         int currentRound = (int) currentRoundOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
-        if (currentRound % 5 != 0){
+        if (currentRound % maxRound != 0){
             return Map.of();
         }
 
@@ -202,7 +208,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
             log.error("情感诊断input:会话不存在");
             return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         });
-        String input = String.format(EmotionPromptWord.USER_INPUT_CONTEXT, currentRound, userInput);
+        String input = String.format(userInputContextPrompt, currentRound, userInput);
 
         Optional<Object> currentIdOpl = config.metadata(GraphConstant.USER_ID);
         Long currentId = (Long) currentIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
@@ -210,11 +216,7 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
                 .eq(EmotionDiagnosis::getConversationId, threadIdOpl.get()));
 
         String prompt;
-        if(beforeDiagnosis != null){
-            prompt = String.format(EmotionPromptWord.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS, beforeDiagnosis) + input;
-        } else {
-            prompt = String.format(EmotionPromptWord.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS, "") + input;
-        }
+        prompt = String.format(emotionDiagnosisPrompt, Objects.requireNonNullElse(beforeDiagnosis, "")) + input;
 
         // 模型调用生成完整数据信息
         AssistantMessage call = reactAgentBuilder()
@@ -225,30 +227,8 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         String modelOutput = call.getText();
         log.info("情感诊断节点：模型输出结果:{}", modelOutput);
 
-        BriefEmotionDiagnosis temp = JsonUtils.parseObject(modelOutput, BriefEmotionDiagnosis.class);
-        EmotionDiagnosis diagnosis = EmotionDiagnosis.builder()
-                .diagnosisContent(temp.getDiagnosisContent())
-                .coreEmotionLabel(temp.getCoreEmotionLabel())
-                .coreEmotionConfAvg(temp.getCoreEmotionConfAvg())
-                .coreEmotionIntensity(temp.getCoreEmotionIntensity())
-                .secondaryEmotion(temp.getSecondaryEmotion())
-                .negativeEmotionRatio(temp.getNegativeEmotionRatio())
-                .positiveEmotionRatio(temp.getPositiveEmotionRatio())
-                .neutralEmotionRatio(temp.getNeutralEmotionRatio())
-                .negativeEmotionDetail(temp.getNegativeEmotionDetail())
-                .positiveEmotionDetail(temp.getPositiveEmotionDetail())
-                .emotionTrend(temp.getEmotionTrend())
-                .emotionPeakRound(temp.getEmotionPeakRound())
-                .emotionValleyRound(temp.getEmotionValleyRound())
-                .emotionFluctuationAmplitude(temp.getEmotionFluctuationAmplitude())
-                .emotionStableRounds(temp.getEmotionStableRounds())
-                .coreTriggerScene(temp.getCoreTriggerScene())
-                .coreTriggerKeywords(temp.getCoreTriggerKeywords())
-                .triggerRoundNum(temp.getTriggerRoundNum())
-                .emotionRiskLevel(temp.getEmotionRiskLevel())
-                .emotionAdjustSuggestion(temp.getEmotionAdjustSuggestion())
-                .needManualIntervene(temp.getNeedManualIntervene())
-                .build();
+        BriefEmotionDiagnosis briefEmotionDiagnosis = JsonUtils.parseObject(modelOutput, BriefEmotionDiagnosis.class);
+        EmotionDiagnosis diagnosis = getEmotionDiagnosis(briefEmotionDiagnosis);
 
         diagnosis.setConversationId(Long.valueOf(threadId));
         diagnosis.setUserId(currentId);
@@ -258,6 +238,33 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         emotionDiagnosisMapper.insert(diagnosis);
 
         return Map.of();
+    }
+
+    private static EmotionDiagnosis getEmotionDiagnosis(BriefEmotionDiagnosis briefEmotionDiagnosis) {
+        EmotionDiagnosis diagnosis = EmotionDiagnosis.builder()
+                .diagnosisContent(briefEmotionDiagnosis.getDiagnosisContent())
+                .coreEmotionLabel(briefEmotionDiagnosis.getCoreEmotionLabel())
+                .coreEmotionConfAvg(briefEmotionDiagnosis.getCoreEmotionConfAvg())
+                .coreEmotionIntensity(briefEmotionDiagnosis.getCoreEmotionIntensity())
+                .secondaryEmotion(briefEmotionDiagnosis.getSecondaryEmotion())
+                .negativeEmotionRatio(briefEmotionDiagnosis.getNegativeEmotionRatio())
+                .positiveEmotionRatio(briefEmotionDiagnosis.getPositiveEmotionRatio())
+                .neutralEmotionRatio(briefEmotionDiagnosis.getNeutralEmotionRatio())
+                .negativeEmotionDetail(briefEmotionDiagnosis.getNegativeEmotionDetail())
+                .positiveEmotionDetail(briefEmotionDiagnosis.getPositiveEmotionDetail())
+                .emotionTrend(briefEmotionDiagnosis.getEmotionTrend())
+                .emotionPeakRound(briefEmotionDiagnosis.getEmotionPeakRound())
+                .emotionValleyRound(briefEmotionDiagnosis.getEmotionValleyRound())
+                .emotionFluctuationAmplitude(briefEmotionDiagnosis.getEmotionFluctuationAmplitude())
+                .emotionStableRounds(briefEmotionDiagnosis.getEmotionStableRounds())
+                .coreTriggerScene(briefEmotionDiagnosis.getCoreTriggerScene())
+                .coreTriggerKeywords(briefEmotionDiagnosis.getCoreTriggerKeywords())
+                .triggerRoundNum(briefEmotionDiagnosis.getTriggerRoundNum())
+                .emotionRiskLevel(briefEmotionDiagnosis.getEmotionRiskLevel())
+                .emotionAdjustSuggestion(briefEmotionDiagnosis.getEmotionAdjustSuggestion())
+                .needManualIntervene(briefEmotionDiagnosis.getNeedManualIntervene())
+                .build();
+        return diagnosis;
     }
 
     @Data

@@ -2,6 +2,7 @@ package org.lixiyun.common.sql.core.result;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.github.pagehelper.PageInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -58,6 +59,15 @@ public class PageResult<T> implements Serializable {
     public static <E, VO> PageResult<VO> convert(IPage<E> page, Predicate<E> function, Class<VO> voClass) {
         return new PageResult<>(page.getTotal(), page.getRecords().stream()
                 .filter(function).map(record -> BeanUtil.copyProperties(record, voClass)).toList());
+    }
+
+    /**
+     * 封装分页查询结果，适用于PageHelper分页查询，非 MybatisPlus 分页查询
+     * @param page 分页数据
+     * @param voClass VO类型，用于指定转换后的数据类型
+     */
+    public static <E, VO> PageResult<VO> convert(PageInfo<E> page, Class<VO> voClass) {
+        return new PageResult<>(page.getTotal(), page.getList().stream().map(record -> BeanUtil.copyProperties(record, voClass)).toList());
     }
 
 

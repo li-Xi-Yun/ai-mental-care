@@ -89,7 +89,7 @@ spring:
     redis:
       host: ${redis.host} # Redis服务器地址
       port: ${redis.port} # Redis服务器端口
-#      password: ${redis.password}
+      password: ${redis.password}
       database: ${redis.database}
       timeout: 60000ms  # 超时时间
       lettuce:
@@ -137,6 +137,42 @@ spring:
           # 用于存储聊天记忆的组件，关系型数据库(三选一)
           jdbc:
             initialize-schema: never  # 控制何时初始化架构。值：embedded (default), always, never.
+    vectorstore:
+      # 示例：Milvus向量库配置
+      milvus:
+        database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
+        collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
+        initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
+        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
+        index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
+        metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
+        index-parameters: { “nlist”：1024 }  # 要用于 Milvus 集合的索引参数。
+        id-field-name: id    # 集合的 ID 字段名称
+        auto-id: true        # 布尔标志，指示是否将自动 ID 用于 ID 字段
+        content-field-name: ${milvus.content-field-name}      # 集合的内容字段名称
+        metadata-field-name: ${milvus.metadata-field-name}    # 集合的元数据字段名称
+        embedding-field-name: ${milvus.embedding-field-name}  # 集合的嵌入字段名称
+        client:
+          host: ${milvus.host}    # 主机的名称或地址
+          port: ${milvus.port}        # 连接端口。
+          username: ${milvus.username}     # 此连接的用户名。
+          password: ${milvus.password}   # 此连接的密码。
+          #          uri:        # Milvus 实例的 uri
+          #          token:      #令牌作为识别和身份验证目的的密钥。
+          connect-timeout-ms: 10000    # 客户端通道的连接超时值。超时值必须大于零。
+          keep-alive-time-ms: 55000    # 客户端通道的保持活动时间值。keep-alive 值必须大于零。
+          keep-alive-timeout-ms: 20000 # 客户端通道的保持活动超时值。超时值必须大于零。
+          # 您愿意等待服务器回复多长时间的截止日期。
+          # 通过截止时间设置，客户端会在遇到网络波动导致的快速 RPC 失败时等待。截止值必须大于或等于零。
+          rpc-deadline-ms: 0
+          #          client-key-path:       # tls 双向身份验证的 client.key 路径，仅在“安全”为真时生效
+          client-pem-path:        # tls 双向身份验证的 client.pem 路径仅在“secure”为 true 时生效
+          ca-pem-path:            # tls 双向身份验证的 ca.pem 路径，仅在“secure”为真时生效
+          server-pem-path:         # server.pem 路径，仅在“secure”为真时生效
+          # 设置 SSL 主机名检查的目标名称覆盖，仅当“安全”为 True 时才生效。注意：此值传递给 grpc.ssl_target_name_override
+          server-name:
+          secure: false   # 保护此连接的授权，设置为 True 以启用 TLS。
+          idle-timeout-ms: 86400000   # 客户端通道的空闲超时值。超时值必须大于零。24h
     deepseek:
       api-key: ${ai-model-config.deepseek.api}   # 要连接到的 URL
       chat:
@@ -175,6 +211,9 @@ mybatis:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
+mybatis-plus:
+  mapper-locations: classpath:mapper/**.xml
+
 # 日志配置
 logging:
   config: classpath:logback-spring.xml
@@ -204,7 +243,7 @@ springdoc:
     - group: ${springdoc.group} # 分组名
       paths-to-match: '/**' # 要匹配的路径
       packages-to-scan: ${springdoc.packages-to-scan} # 要扫描的包
-  default-consumes-media-type: application/x-www-form-urlencoded
+  default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
 
 # Knife4j 增强配置
@@ -230,8 +269,11 @@ jwt:
   user-secret-key: lixiyun-hearawerjhawerhyawueT%Juaet5hyuaez5kjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKMASZ4REJIwsskjkjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKkjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UMASZ4REJIwsstujsu5h3ea5sjua35yh5Uiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5Utujsu5h3ea5sjua35yh5UEWA5TJ55hyresjhsue5hysejhesu5uhae5husejues5juse65yhe5sjkies6ujea5syhser456kjiser65thygse5ju
   # 设置jwt过期时间,两小时(秒)
   user-ttl: 7200000
-  # 设置前端传递过来的令牌名称
-  user-token-name: financial-basic-token
+  # 设置前端传递过来的令牌名称s
+  user-token-name: basic-token
+  admin-secret-key: lixiyun-skysrylsjtsrdyrtkrstj%45874584578554trsjsrtkjmaztyjasz6tkymehtrstabta5684jsyrkyutiaqtyuu35735tiuohvgku36346mvjysfjtewth
+  admin-ttl: 7200000
+  admin-token-name: admin-token
 
 # 项目应用部署配置
 web:
@@ -243,43 +285,42 @@ web:
 
 # 修改这里需要同步修改flie模块中的FileStorage类与core模块中的FileUrlProperties类
 file-url:
+  basic: "static-resources"
   upload:
-    images: "images/"
-    videos: "videos/"
-    audios: "audios/"
-    files: "files/"
-    conversations: "conversations/"
+    images: "${file-url.basic}/images/"
+    videos: "${file-url.basic}/videos/"
+    audios: "${file-url.basic}/audios/"
+    files: "${file-url.basic}/files/"
+    conversations: "${file-url.basic}/conversations/"
     # 该文件夹需要手动创建
-    skills: "skills/"
-    prompts: "prompts/"
+    skills: "${file-url.basic}/skills/"
+    prompts: "${file-url.basic}/prompts/"
   request:
-    images: "${web.url}/images/"
-    videos: "${web.url}/videos/"
-    audios: "${web.url}/audios/"
-    files: "${web.url}/files/"
-    conversations: "${web.url}/conversations/"
-    skills: "${web.url}/skills/"
-    prompts: "${web.url}/prompts/"
+    images: "${web.url}/${file-url.basic}/images/"
+    videos: "${web.url}/${file-url.basic}/videos/"
+    audios: "${web.url}/${file-url.basic}/audios/"
+    files: "${web.url}/${file-url.basic}/files/"
+    conversations: "${web.url}/${file-url.basic}/conversations/"
+    skills: "${web.url}/${file-url.basic}/skills/"
+    prompts: "${web.url}/${file-url.basic}/prompts/"
 
 url:
   permit-all-urls:
     - /user/account/register
     - /user/account/login/**
-    - /common/**
+    - /admin/account/login
     - /user/account/forgetPassword
+    - /common/**
     - /v3/**
     - /webjars/**
     - /doc.html
     - /oauth2/authorization/**
     - /login/oauth2/code/**
-    - /images/**
-    - ${web.url}/images/**
-    - ${web.url}/files/**
-    - ${web.url}/conversations/**
+    - /static-resources/**
+    - ${web.url}/static-resources/**
     - /swagger-ui/**
     - /swagger-ui.html/**
     - /temp/**
-    - /conversaion/audio/data
     - ${websocket.endpoint}/**
 
 --- # sms 短信

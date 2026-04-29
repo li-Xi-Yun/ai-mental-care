@@ -53,7 +53,7 @@ public class ScaleQuestion implements Serializable {
      * 计分类型：1=正向计分 2=反向计分
      */
     private Integer scoreType;
-    
+
     /**
      * 创建时间
      */

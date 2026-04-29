@@ -22,12 +22,18 @@ public enum AuthenticationExceptionEnum implements ErrorCode {
     PASSWORD_ERROR("密码错误", 1009),
     USER_EXIST("用户已存在", 1010),
     ACCOUNT_STATUS_PENDING_REVIEW("账户待审核", 1011),
+    USER_STATUS_ABNORMAL("用户状态异常", 1019),
 
 
     // 以下是网页浏览的错误信息
     JWT_ERROR("JWT错误", 1012),
     USER_NOT_PRIVILEGE("权限不足", 1013),
     USER_NOT_LOGIN("用户未登录", 1014),
+
+    USER_STATUS_UPDATE_FAILED("用户状态修改失败", 1016),
+    ADMIN_NOT_FOUND("管理员不存在", 1017),
+    ADMIN_STATUS_UPDATE_FAILED("管理员状态修改失败", 1018),
+
 
 
     CAN_NOT_MODIFIED_IN_AUDIT_OR_PUBLISH("不能修改审核中的文章或发布中的文章", 5000),

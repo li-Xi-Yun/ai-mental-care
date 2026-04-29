@@ -10,9 +10,10 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.EmotionConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.server.ai.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -40,6 +41,9 @@ public class FinalAnswerNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "finalAnswerNode";
 
     private final ChatModel chatModel;
+
+    private final String userInputContextPrompt = PromptUtil.getPrompt(EmotionConstant.USER_INPUT_CONTEXT);
+    private final String modelPrompt;
 
     private final int maxToken = 600;
 
@@ -187,14 +191,14 @@ public class FinalAnswerNode implements NodeActionWithConfig {
 
         int currentRound = (int) map.get(GraphConstant.CURRENT_ROUND);
         Optional<String> inputOpl = state.value(GraphConstant.INPUT);
-        String input = String.format(EmotionPromptWord.USER_INPUT_CONTEXT, currentRound, inputOpl.get());
+        String input = String.format(userInputContextPrompt, currentRound, inputOpl.get());
 
         // 模型调用生成完整数据信息
         log.debug("专业情感陪伴师节点：开始调用模型:{}", userMessages);
         Object streamFlat = map.get(GraphConstant.FINAL_ANSWER_STREAM);
         if (streamFlat != null) {
             AssistantMessage modelOutputMessage = reactAgentBuild()
-                    .systemPrompt(EmotionPromptWord.PROFESSIONAL_EMOTIONAL_COMPANION + input).build()
+                    .systemPrompt(modelPrompt + input).build()
                     .call(userMessages);
 
             // DB添加会话上下文信息
@@ -209,7 +213,7 @@ public class FinalAnswerNode implements NodeActionWithConfig {
             return Map.of(GraphConstant.MESSAGES, modelOutputMessage);
         }
         Flux<NodeOutput> stream = reactAgentBuild()
-                .systemPrompt(EmotionPromptWord.PROFESSIONAL_EMOTIONAL_COMPANION + input).build()
+                .systemPrompt(modelPrompt + input).build()
                 .stream(userMessages);
         log.debug("专业情感陪伴师节点：结束执行");
 

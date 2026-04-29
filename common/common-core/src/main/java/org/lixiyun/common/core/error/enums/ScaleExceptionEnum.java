@@ -9,6 +9,7 @@ import org.lixiyun.common.core.error.ErrorCode;
  */
 public enum ScaleExceptionEnum implements ErrorCode {
 
+    // 状态码从2500开始
 
     SCALE_CATEGORY_NOT_FOUND("量表类别不存在", 4000),
     SCALE_CATEGORY_IN_USE("量表类别正在使用，无法删除", 4001),
@@ -18,6 +19,8 @@ public enum ScaleExceptionEnum implements ErrorCode {
     SCALE_DISABLED("量表已禁用，无法答题", 4005),
     SCALE_QUESTION_OPTION_MISMATCH("题目与选项不匹配", 4006),
     SCALE_RESULT_RULE_NOT_FOUND("未找到匹配的测评结果规则", 4007),
+    SCALE_NOT_DELETED("量表未被删除，无需恢复", 4008),
+    SCALE_DELETED_NOT_ENABLED("量表已删除，不能启用", 4009),
 
 
 

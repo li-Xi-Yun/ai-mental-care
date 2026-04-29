@@ -11,12 +11,13 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.EmotionConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.server.ai.prompt.EmotionPromptWord;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -43,6 +44,11 @@ import java.util.Optional;
 public class EmotionRecognitionNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "emotionRecognitionNode";
+    private final int roundWithCompleteData = 5;
+
+    private final String userInputContextPrompt = PromptUtil.getPrompt(EmotionConstant.USER_INPUT_CONTEXT);
+    private final String standardPrompt = PromptUtil.getPrompt(EmotionConstant.STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
+    private final String briefPrompt = PromptUtil.getPrompt(EmotionConstant.BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
 
     private final ChatModel chatModel;
     private final EmotionAnalysisMapper emotionAnalysisMapper = SpringUtils.getBean(EmotionAnalysisMapper.class);
@@ -180,7 +186,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         });
 
         Optional<String> inputOpl = state.value(GraphConstant.INPUT);
-        String input = String.format(EmotionPromptWord.USER_INPUT_CONTEXT, currentRound, inputOpl.get());
+        String input = String.format(userInputContextPrompt, currentRound, inputOpl.get());
         String audioEmotionRecognition = (String) config.context().get(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION);
         if(audioEmotionRecognition != null){
             input += "以下是本次用户语音输入时的语气情绪分析内容：" + audioEmotionRecognition;
@@ -189,10 +195,10 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         EmotionAnalysis.EmotionAnalysisBuilder analysis = EmotionAnalysis.builder();
         AssistantMessage call;
         String modelOutput;
-        if(currentRound >= 5){
+        if(currentRound >= roundWithCompleteData){
             // 模型调用生成完整数据信息
             call = reactAgentBuilder()
-                    .systemPrompt(EmotionPromptWord.STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS + input)
+                    .systemPrompt(standardPrompt + input)
                     .outputType(CompleteEmotionAnalysis.class)
                     .build()
                     .call(userMessages);
@@ -209,7 +215,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         } else{
             // 模型调用生成简略数据信息（情感标签、置信度）
             call = reactAgentBuilder()
-                    .systemPrompt(EmotionPromptWord.BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS + input)
+                    .systemPrompt(briefPrompt + input)
                     .outputType(BriefEmotionAnalysis.class)
                     .build()
                     .call(userMessages);

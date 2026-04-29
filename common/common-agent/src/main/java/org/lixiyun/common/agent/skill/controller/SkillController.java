@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.skill.service.SkillService;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.validation.annotation.NumberOfRanges;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ public class SkillController {
     private final SkillService skillService;
 
     @GetMapping("/all-folder-names")
+    @PreAuthorize("hasAuthority('skill:folder:name:select')")
     @Operation(summary = "获取所有技能文件夹名称", description = "获取所有技能文件夹名称")
     public Result<List<String>> getAllFolderName(
             @RequestParam @Parameter(description = "当前页码", required = true) @NotNull @NumberOfRanges Integer pageNum,
@@ -42,6 +44,7 @@ public class SkillController {
     }
 
     @GetMapping("/all-file-names")
+    @PreAuthorize("hasAuthority('skill:file:name:select')")
     @Operation(summary = "获取文件夹下所有文件名称", description = "获取指定文件夹名称下所有文件名称")
     public Result<List<String>> getAllFileByFolderName(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName
@@ -52,6 +55,7 @@ public class SkillController {
     }
 
     @GetMapping("/file-context")
+    @PreAuthorize("hasAuthority('skill:file:content:select')")
     @Operation(summary = "查询指定文件内容", description = "根据文件夹名、文件名，查询指定文件内容")
     public Result<String> getFileContext(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
@@ -63,6 +67,7 @@ public class SkillController {
     }
 
     @PutMapping("folder-name")
+    @PreAuthorize("hasAuthority('skill:folder:name:update')")
     @Operation(summary = "修改文件夹名", description = "根据新旧文件夹名称，修改文件夹名称")
     public Result<?> updateFolderName(
             @RequestParam @Parameter(description = "旧文件夹名称", required = true) @NotBlank String oldFolderName,
@@ -74,6 +79,7 @@ public class SkillController {
     }
 
     @PutMapping("file-name")
+    @PreAuthorize("hasAuthority('skill:file:name:update')")
     @Operation(summary = "修改文件名", description = "根据文件夹名、新旧文件名，修改文件名称")
     public Result<?> updateFileName(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
@@ -86,11 +92,12 @@ public class SkillController {
     }
 
     @PutMapping("file-context")
+    @PreAuthorize("hasAuthority('skill:file:content:update')")
     @Operation(summary = "修改文件内容", description = "根据文件夹名、文件名、文件字符串，修改文件内容")
     public Result<?> updateFileContext(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
             @RequestParam @Parameter(description = "文件名", required = true) @NotBlank String fileName,
-            @RequestBody @Parameter(description = "文件内容", required = true) @NotBlank String fileContext
+            @RequestParam @Parameter(description = "文件内容", required = true) @NotBlank String fileContext
     ) {
         log.info("修改文件内容：{}, {}, {}", folderName, fileName, fileContext);
         skillService.updateFileContext(folderName, fileName, fileContext);
@@ -98,6 +105,7 @@ public class SkillController {
     }
 
     @DeleteMapping("/folder")
+    @PreAuthorize("hasAuthority('skill:folder:delete')")
     @Operation(summary = "删除文件夹", description = "根据文件夹名称，级联删除文件夹下的所有文件")
     public Result<Void> deleteFolder(@RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName) {
         log.info("删除文件夹: {}", folderName);
@@ -106,6 +114,7 @@ public class SkillController {
     }
 
     @DeleteMapping("/file")
+    @PreAuthorize("hasAuthority('skill:file:delete')")
     @Operation(summary = "删除文件", description = "根据文件夹名、文件名, 删除指定文件")
     public Result<Void> deleteFile(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
@@ -116,9 +125,8 @@ public class SkillController {
         return Result.success();
     }
 
-
-
     @PostMapping("/folder")
+    @PreAuthorize("hasAuthority('skill:folder:add')")
     @Operation(summary = "文件夹新增", description = "根据文件夹名称，在本地创建新的文件夹")
     public Result<?> addFolder(@RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName) {
         log.info("文件夹新增：{}", folderName);
@@ -127,11 +135,12 @@ public class SkillController {
     }
 
     @PostMapping("/file")
+    @PreAuthorize("hasAuthority('skill:file:add')")
     @Operation(summary = "文件新增", description = "根据文件夹名、文件名、文件字符串，在指定文件夹下创建新的文件，文件内容为传入的字符串")
     public Result<?> addFile(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
             @RequestParam @Parameter(description = "文件名", required = true) @NotBlank String fileName,
-            @RequestBody @Parameter(description = "文件内容", required = true) @NotBlank String fileContext
+            @RequestParam @Parameter(description = "文件内容", required = true) @NotBlank String fileContext
     ) {
         log.info("文件新增：{}, {}, {}", folderName, fileName, fileContext);
         skillService.addFile(folderName, fileName, fileContext);
@@ -139,6 +148,7 @@ public class SkillController {
     }
 
     @PostMapping("/upload/folder")
+    @PreAuthorize("hasAuthority('skill:file:upload')")
     @Operation(summary = "文件上传", description = "根据文件夹名、文件数据，在指定文件夹下创建新的文件")
     public Result<?> uploadFile(
             @RequestParam @Parameter(description = "文件夹名称", required = true) @NotBlank String folderName,
@@ -150,6 +160,7 @@ public class SkillController {
     }
 
     @PostMapping("/upload/file")
+    @PreAuthorize("hasAuthority('skill:folder:upload')")
     @Operation(summary = "文件夹上传", description = "根剧压缩文件夹数据，解压到指定文件夹下")
     public Result<?> uploadFolder(@RequestPart @Parameter(description = "文件数据", required = true) @NotNull MultipartFile file) {
         log.info("文件夹上传：{} 字节", file.getSize());

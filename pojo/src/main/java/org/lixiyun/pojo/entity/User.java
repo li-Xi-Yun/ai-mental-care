@@ -47,10 +47,21 @@ public class User extends BasicsUser implements Serializable {
      * 用户头像路径
      */
     private String avatar;
+
     /**
-     * 封禁时间，表示到这时进行解封
+     * 封禁开始时间
      */
     private LocalDateTime banTime;
+
+    /**
+     * 封禁结束时间，表示到这时进行解封，如果是封禁状态，但这里是null，则是永久封禁
+     */
+    private LocalDateTime banEndTime;
+
+    /**
+     * 封禁原因
+     */
+    private String banReason;
 
     /**
      * 最后更新时间
@@ -73,6 +84,15 @@ public class User extends BasicsUser implements Serializable {
      */
     @TableLogic
     private Integer deleted;
+
+    /**
+     * 判断当前用户是否被删除
+     * @return true: 已删除 false: 未删除
+     */
+    public boolean deletedFlat() {
+        return deleted != null && deleted == 1;
+    }
+
 
 }
 

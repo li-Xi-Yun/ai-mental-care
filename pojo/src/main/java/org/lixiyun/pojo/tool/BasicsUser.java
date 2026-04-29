@@ -12,6 +12,11 @@ public class BasicsUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    public static final int USER_STATUS_NORMAL = 0;
+    public static final int USER_STATUS_ABNORMAL = 1;
+    public static final int USER_STATUS_BAN = 2;
+    public static final int USER_STATUS_LOGOUT = 3;
+
     /**
      * 用户唯一ID，由子类进行自定义
      */
@@ -32,5 +37,33 @@ public class BasicsUser implements Serializable {
      * 密码哈希值
      */
     private String password;
+
+    /**
+     * 是否封禁
+     */
+    public boolean isBanned() {
+        return status != null && status == BasicsUser.USER_STATUS_BAN;
+    }
+
+    /**
+     * 是否注销
+     */
+    public boolean isLogout() {
+        return status != null && status == BasicsUser.USER_STATUS_LOGOUT;
+    }
+
+    /**
+     * 是否正常
+     */
+    public boolean isNormal() {
+        return status != null && status == BasicsUser.USER_STATUS_NORMAL;
+    }
+
+    /**
+     * 是否异常
+     */
+    public boolean isAbnormal() {
+        return status != null && status == BasicsUser.USER_STATUS_ABNORMAL;
+    }
 
 }

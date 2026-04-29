@@ -7,4 +7,8 @@ package org.lixiyun.common.core.constant;
 public interface RoleConstant {
 
     String USER_ROLE = "ORDINARY_USER";
+
+    String ADMIN_ROLE = "ADMIN";
+
+    String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 }

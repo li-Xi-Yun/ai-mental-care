@@ -10,7 +10,7 @@ import org.lixiyun.common.core.error.ErrorCode;
 public enum KnowledgeBaseExceptionEnum implements ErrorCode {
 
 
-    // 状态码从2000开始
+    // 状态码从1500开始
 
 
     KNOWLEDGE_BASE_NOT_EXIST("知识库不存在", 2001),

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.lixiyun.server.mapper.ScaleOptionMapper">
+    <update id="retractDelete">
+        update ai_mental_care.scale_option
+        set deleted = #{deleteFlag}
+        where question_id in (select id from ai_mental_care.scale_question where scale_id = #{scaleId})
+    </update>
+    <delete id="deletePhysicsWithOptions">
+        delete from ai_mental_care.scale_option where question_id = #{questionId} and id in
+        <foreach collection='optionIds' open='(' separator=',' close=')' item='id'>#{id}</foreach>
+    </delete>
+
+</mapper>

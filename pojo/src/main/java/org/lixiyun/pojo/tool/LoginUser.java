@@ -86,8 +86,11 @@ public class LoginUser implements UserDetails, OAuth2User {
         }
 
         //把permissions中字符串类型的权限信息转换成GrantedAuthority对象存入authorities中
-        roles = roles.stream().map(role ->  "ROLE_" + role).toList();
+//        roles = roles.stream().map(role ->  "ROLE_" + role).toList();
 
+        roles = roles.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .toList();
         authorities = Stream.of(roles, permissions)
                 .flatMap(Collection::stream)
                 .map(SimpleGrantedAuthority::new)

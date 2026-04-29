@@ -4,9 +4,10 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.Builder;
 import lombok.Data;
+import org.lixiyun.common.agent.constant.prompt.CommonConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.server.ai.prompt.CommonPromptWord;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -30,11 +31,12 @@ public class CommonServerAgent {
      * @return 压缩后的语义文本
      */
     public String semanticCompression(List<Message> messages) {
+        String prompt = PromptUtil.getPrompt(CommonConstant.SEMANTIC_COMPRESSION_SYSTEM_PROMPT);
         ReactAgent semanticCompressionAgent = ReactAgent.builder()
                 .model(chatModel)
                 .name("semantic-compression")
                 .description("语义压缩")
-                .systemPrompt(CommonPromptWord.SEMANTIC_COMPRESSION_SYSTEM_PROMPT)
+                .systemPrompt(prompt)
                 .chatOptions(ChatOptions.builder()
                         .topK(40)
                         .topP(0.9)
@@ -60,11 +62,12 @@ public class CommonServerAgent {
      * @return 会话名称
      */
     public String conversationNameExtraction(List<String> messages){
+        String prompt = PromptUtil.getPrompt(CommonConstant.CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT);
         ReactAgent conversationNameExtractionAgent = ReactAgent.builder()
                 .model(chatModel)
                 .name("conversation-name-extraction")
                 .description("会话名称提取")
-                .systemPrompt(CommonPromptWord.CONVERSATION_NAME_EXTRACTION_SYSTEM_PROMPT)
+                .systemPrompt(prompt)
                 .chatOptions(ChatOptions.builder()
                         .topK(40)
                         .topP(0.9)

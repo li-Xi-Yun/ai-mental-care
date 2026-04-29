@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
 import org.lixiyun.pojo.tool.LoginUser;
 import org.springframework.messaging.Message;
@@ -41,10 +42,17 @@ public class WebSocketInboundInterceptor implements ChannelInterceptor {
         if (StompCommand.CONNECT.equals(command)) {
             log.info("WebSocket客户端消息前置拦截器-建立会话，用户身份：{}", accessor.getUser());
             String token = accessor.getFirstNativeHeader("token");
-            Long userId = JwtUtil.parseJwtWithRedis(token);
+
+            JwtType jwtType = JwtUtil.detectJwtType(token);
+            if(jwtType == null){
+                log.error("WebSocket客户端消息前置拦截器-建立会话失败，用户身份信息错误");
+                return null;
+            }
+
+            Long userId = JwtUtil.parseJwtWithRedis(token, jwtType);
 
             // 查询Redis，得到用户信息
-            String userStr = JwtUtil.getUserInfoFromRedis(userId);
+            String userStr = JwtUtil.getUserInfoFromRedis(userId, jwtType);
             if(StrUtil.isBlank(userStr)){
                 return message;
             }
@@ -55,7 +63,7 @@ public class WebSocketInboundInterceptor implements ChannelInterceptor {
             }
 
             // 刷新jwt时间
-            JwtUtil.refreshJwtTTLWithRedis(userId);
+            JwtUtil.refreshJwtTTLWithRedis(userId, jwtType);
 
             // 获取权限信息封装到Authentication中
             UsernamePasswordAuthenticationToken authentication =

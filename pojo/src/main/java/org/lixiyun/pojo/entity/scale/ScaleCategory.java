@@ -37,7 +37,7 @@ public class ScaleCategory implements Serializable {
     /**
      * 类别使用数量
      */
-    private Integer userCount;
+    private Integer useCount;
     
     /**
      * 创建时间

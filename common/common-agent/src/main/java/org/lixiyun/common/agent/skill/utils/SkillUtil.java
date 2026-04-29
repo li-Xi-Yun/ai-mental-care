@@ -5,7 +5,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.SkillConstant;
+import org.lixiyun.common.agent.constant.skill.SkillConstant;
 import org.lixiyun.common.agent.skill.pojo.entity.Skill;
 import org.lixiyun.common.core.properties.FileUrlProperties;
 import org.springframework.stereotype.Component;
