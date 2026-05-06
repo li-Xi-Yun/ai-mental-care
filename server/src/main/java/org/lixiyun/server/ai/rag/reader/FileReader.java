@@ -1,5 +1,6 @@
 package org.lixiyun.server.ai.rag.reader;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
@@ -15,7 +16,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.springframework.ai.document.Document;
+import org.lixiyun.pojo.entity.vector.VectorData;
 import org.xml.sax.ContentHandler;
 
 import java.io.*;
@@ -25,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -46,19 +46,19 @@ import java.util.function.Consumer;
 @Slf4j
 public class FileReader {
 
-    // 文件大小限制 50MB
-    private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
+    // 文件大小限制
+    private static final long MAX_FILE_SIZE = 100 * 1024 * 1024;
 
     // 单行最大字符数限制：用于处理超长文本行的自动切分，避免单个Document内容过大导致内存问题或处理效率低下
     private static final int MAX_LINE_CHARS = 100_000;
 
     // 单个Document最大字符数限制：控制每个Document对象的最大内容长度，确保单个Document不会过大，有利于后续的向量嵌入处理和检索效率
-    private static final int MAX_DOC_CHARS  = 200_000;
+    private static final int MAX_DOC_CHARS  = 20_000;
 
     // 批量消费的Document数量阈值：流式读取时的批处理大小控制，设置为5是为了平衡内存占用和批量处理效率，避免频繁的小批量操作
-    private static final int BATCH_DOC_COUNT = 5;
+    private static final int BATCH_DOC_COUNT = 15;
 
-    // 文本文档每Document包含的行数：针对纯文本文件的分块策略配置，设置为100行是为了保持语义的相对完整性，同时控制单个Document的大小
+    // 文本文档每Document包含的行数：针对纯文本文件的分块策略配置
     private static final int TEXT_LINES_PER_DOC = 100;
 
     // 支持的格式
@@ -81,7 +81,7 @@ public class FileReader {
      * @param consumer 消费者接口，接收包含多个 Document 的列表进行后续处理（如向量入库），不能为 null
      * @throws BusinessException 当文件不存在、大小超限（超过50MB）或读取失败时抛出业务异常
      */
-    public void readLocalFile(String filePath, Consumer<List<Document>> consumer) {
+    public void readLocalFile(String filePath, VectorData vectorData, Consumer<List<VectorData>> consumer) {
         validatePath(filePath);
         Path path = Paths.get(filePath);
         String ext = getFileExtension(filePath).toLowerCase();
@@ -91,13 +91,13 @@ public class FileReader {
             try (InputStream is = Files.newInputStream(path)) {
                 // 分发处理：PDF /  Office文档 / 纯文本
                 if (PDF_EXT.contains(ext)) {
-                    processPdfByPage(is, consumer);
+                    processPdfByPage(is, vectorData, consumer);
                 } else if (TIKA_EXT.contains(ext)) {
-                    processTikaDocument(is, consumer);
+                    processTikaDocument(is, vectorData, consumer);
                 } else if (TEXT_EXT.contains(ext)) {
-                    processTextByLine(is, ext, consumer);
+                    processTextByLine(is, vectorData, consumer);
                 } else {
-                    processTextByLine(is, ext, consumer);
+                    processTextByLine(is, vectorData, consumer);
                 }
             }
         } catch (IOException e) {
@@ -109,16 +109,17 @@ public class FileReader {
     /**
      * 按页流式处理 PDF 文件
      * <p>
-     * 使用 Apache PDFBox 逐页提取内容，每页封装为一个 Document。
+     * 使用 Apache PDFBox 逐页提取内容，每页封装为一个 VectorData。
      * 采用磁盘缓存模式避免内存溢出，支持大文件处理。
-     * 当累积的 Document 数量达到 {@link #BATCH_DOC_COUNT}（默认5个）时，立即调用 Consumer 进行消费。
+     * 当累积的 VectorData 数量达到 {@link #BATCH_DOC_COUNT}（默认15个）时，立即调用 Consumer 进行消费。
      *
      * @param is PDF 文件的输入流，方法执行完毕后会自动关闭相关资源
-     * @param consumer 用于批量消费 Document 列表的回调函数，每个批次最多包含5个Document
+     * @param vectorData 文件元数据模板，用于复制生成每个分块的基础信息
+     * @param consumer 用于批量消费 VectorData 列表的回调函数，每个批次最多包含15个VectorData
      * @throws BusinessException 当PDF解析失败或IO异常时抛出业务异常
      */
-    private void processPdfByPage(InputStream is, Consumer<List<Document>> consumer) {
-        List<Document> batch = new ArrayList<>(BATCH_DOC_COUNT);
+    private void processPdfByPage(InputStream is, VectorData vectorData, Consumer<List<VectorData>> consumer) {
+        List<VectorData> batch = new ArrayList<>(BATCH_DOC_COUNT);
 
         try (
                 // 关键：InputStream → RandomAccessRead
@@ -135,18 +136,12 @@ public class FileReader {
                 stripper.setStartPage(pageNum);
                 stripper.setEndPage(pageNum);
                 String content = stripper.getText(pdf);
-                Document doc = new Document(
-                                content,
-                                Map.of(
-                                        "fileType", "pdf",
-                                        "chunkIndex", pageNum,
-                                        "totalPages", totalPages,
-                                        "chunkSize", content.length()
-                                )
-                        );
+                VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
+                data.setContent(content);
+                data.setChunkLevel1Idx(pageNum);
 
-                if (isValidDoc(doc)) {
-                    batch.add(doc);
+                if (isValidDoc(data)) {
+                    batch.add(data);
                     if (batch.size() >= BATCH_DOC_COUNT) {
                         consumer.accept(new ArrayList<>(batch));
                         batch.clear();
@@ -169,18 +164,20 @@ public class FileReader {
      * 流式处理 Office 及 Markdown 文档
      * <p>
      * 使用 Apache Tika 解析 Word、Excel、PPT、Markdown 等复杂格式文档。
-     * 由于这些格式通常不具备统一的"页"概念，采用 Tika 内部的分块逻辑（每1000字符为一个chunk）。
-     * 同样遵循攒够指定数量的 Document 后批量触发的机制。
+     * 由于这些格式通常不具备统一的"页"概念，采用 Tika 内部的分块逻辑（每20000字符为一个chunk）。
+     * 同样遵循攒够指定数量的 VectorData 后批量触发的机制。
      *
      * @param is 文档文件的输入流，方法执行完毕后会自动关闭相关资源
-     * @param consumer 用于批量消费 Document 列表的回调函数，每个批次最多包含5个Document
+     * @param vectorData 文件元数据模板，用于复制生成每个分块的基础信息
+     * @param consumer 用于批量消费 VectorData 列表的回调函数，每个批次最多包含15个VectorData
      * @throws BusinessException 当Tika解析失败或IO异常时抛出业务异常
      */
-    private void processTikaDocument(InputStream is, Consumer<List<Document>> consumer) {
-        List<Document> batch = new ArrayList<>(BATCH_DOC_COUNT);
+    private void processTikaDocument(InputStream is, VectorData vectorData, Consumer<List<VectorData>> consumer) {
+        List<VectorData> batch = new ArrayList<>(BATCH_DOC_COUNT);
         Metadata metadata = new Metadata();
         Parser parser = new AutoDetectParser();
         StringBuilder buffer = new StringBuilder(2000);
+        final int[] chunkIndex = {0};
 
         try {
             ContentHandler handler = new BodyContentHandler(new Writer() {
@@ -191,7 +188,7 @@ public class FileReader {
 
                                     // 达到 chunk 大小
                     if (buffer.length() >= MAX_DOC_CHARS) {
-                        emitChunk(buffer, batch, metadata, consumer);
+                        emitChunk(buffer, vectorData, batch, consumer, chunkIndex[0]++);
                     }
                 }
 
@@ -208,7 +205,7 @@ public class FileReader {
 
             // 收尾
             if (!buffer.isEmpty()) {
-                emitChunk(buffer, batch, metadata, consumer);
+                emitChunk(buffer, vectorData, batch, consumer, chunkIndex[0]);
             }
 
         } catch (Exception e) {
@@ -223,23 +220,20 @@ public class FileReader {
 
     private void emitChunk(
             StringBuilder buffer,
-            List<Document> batch,
-            Metadata metadata,
-            Consumer<List<Document>> consumer) {
+            VectorData vectorData,
+            List<VectorData> batch,
+            Consumer<List<VectorData>> consumer,
+            int chunkIndex) {
 
         if (buffer.isEmpty()) {
             return;
         }
 
-        Document doc = new Document(
-                buffer.toString(),
-                Map.of(
-                        "fileType", metadata.get(Metadata.CONTENT_TYPE),
-                        "chunkSize", buffer.length()
-                )
-        );
+        VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
+        data.setContent(buffer.toString());
+        data.setChunkLevel1Idx(chunkIndex);
 
-        batch.add(doc);
+        batch.add(data);
         buffer.setLength(0);
 
         if (batch.size() >= BATCH_DOC_COUNT) {
@@ -252,63 +246,47 @@ public class FileReader {
      * 按行流式处理纯文本文档
      * <p>
      * 使用 {@link BufferedReader} 逐行读取内容（强制 UTF-8 编码）。
-     * 每读取 {@link #TEXT_LINES_PER_DOC}（默认50）行内容，将其封装为一个 Document。
-     * 支持超长行自动切分（单行最大100,000字符）和超大Document保护（最大200,000字符）。
-     * 当累积的 Document 数量达到 {@link #BATCH_DOC_COUNT}（默认5个）时，触发 Consumer。
+     * 每读取 {@link #TEXT_LINES_PER_DOC}（默认100）行内容，将其封装为一个 VectorData。
+     * 支持超长行自动切分（单行最大100,000字符）和超大VectorData保护（最大20,000字符）。
+     * 当累积的 VectorData 数量达到 {@link #BATCH_DOC_COUNT}（默认15个）时，触发 Consumer。
      *
      * @param is 文本文件的输入流，方法执行完毕后会自动关闭相关资源
-     * @param fileExtension 文件扩展名，用于标识文件类型并记录到Document元数据中
-     * @param consumer 用于批量消费 Document 列表的回调函数，每个批次最多包含5个Document
+     * @param vectorData 文件元数据模板，用于复制生成每个分块的基础信息
+     * @param consumer 用于批量消费 VectorData 列表的回调函数，每个批次最多包含15个VectorData
      * @throws IOException 当读取流发生 IO 错误或字符编码问题时抛出
      */
-    private void processTextByLine(InputStream is, String fileExtension, Consumer<List<Document>> consumer) throws IOException {
-        fileExtension = fileExtension.toLowerCase();
+    private void processTextByLine(InputStream is, VectorData vectorData, Consumer<List<VectorData>> consumer) throws IOException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            List<Document> batch = new ArrayList<>(BATCH_DOC_COUNT);
+            List<VectorData> batch = new ArrayList<>(BATCH_DOC_COUNT);
             StringBuilder sb = new StringBuilder(MAX_DOC_CHARS);
-
+        
             int lineCount = 0;
             String line;
             int chunkIndex = 0;
-            int globalLineNumber = 0;
-            int chunkStartLine = 0;
-
+        
             while ((line = br.readLine()) != null) {
-
+                lineCount++;
+        
                 // ---------- 处理超长行 ----------
                 int offset = 0;
-                boolean firstSegment = true;
-
+        
                 while (offset < line.length()) {
-                    if (lineCount == 0) {
-                        chunkStartLine = globalLineNumber;
-                    }
                     int end = Math.min(offset + MAX_LINE_CHARS, line.length());
                     sb.append(line, offset, end).append('\n');
 
-
                     offset = end;
-                    lineCount++;
-                    // 只有第一段算新行
-                    if (firstSegment) {
-                        globalLineNumber++;
-                        firstSegment = false;
-                    }
-
-                    // ---------- 按行切 ----------
+        
+                    // ---------- 按行或按字符切分 ----------
                     if (lineCount >= TEXT_LINES_PER_DOC || sb.length() >= MAX_DOC_CHARS) {
-                        Document doc = new Document(sb.toString(), Map.of(
-                                "fileType", fileExtension,
-                                "chunkIndex", chunkIndex++,
-                                "startLine", chunkStartLine,
-                                "chunkLines", lineCount,
-                                "chunkSize", sb.length()
-                        ));
-                        batch.add(doc);
-
+                        VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
+                        data.setContent(sb.toString());
+                        data.setChunkLevel1Idx(chunkIndex++);
+                                
+                        batch.add(data);
+        
                         sb.setLength(0);
                         lineCount = 0;
-
+        
                         // ---------- 批处理 ----------
                         if (batch.size() >= BATCH_DOC_COUNT) {
                             consumer.accept(new ArrayList<>(batch));
@@ -317,23 +295,16 @@ public class FileReader {
                     }
                 }
             }
-
+        
             // ---------- 收尾 ----------
             if (!sb.isEmpty()) {
-                Document doc = new Document(
-                        sb.toString(),
-                        Map.of(
-                                "fileType", fileExtension,
-                                "chunkIndex", chunkIndex++,
-                                "startLine", chunkStartLine,
-                                "chunkLines", lineCount,
-                                "chunkSize", sb.length()
-                        )
-                );
-
-                batch.add(doc);
+                VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
+                data.setContent(sb.toString());
+                data.setChunkLevel1Idx(chunkIndex);
+        
+                batch.add(data);
             }
-
+        
             if (!batch.isEmpty()) {
                 consumer.accept(new ArrayList<>(batch));
             }
@@ -350,8 +321,8 @@ public class FileReader {
      * @param doc 待校验的文档对象，可以为null
      * @return 如果文档非null、文本非null且包含非空白字符则返回 true，否则返回 false
      */
-    private boolean isValidDoc(Document doc) {
-        return doc != null && doc.getText() != null && !doc.getText().isBlank();
+    private boolean isValidDoc(VectorData doc) {
+        return doc != null && doc.getContent() != null && !doc.getContent().isBlank();
     }
 
     /**

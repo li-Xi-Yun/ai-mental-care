@@ -49,7 +49,7 @@ public interface UserAccountService {
      * 允许已登录用户修改自己的账户密码
      * </p>
      *
-     * @param pwdUpdateDTO 密码更新信息数据传输对象(包含旧密码和新密码)
+     * @param passwordDTO 密码更新信息数据传输对象(包含旧密码和新密码)
      */
     void pwdUpdate(PasswordDTO passwordDTO);
 

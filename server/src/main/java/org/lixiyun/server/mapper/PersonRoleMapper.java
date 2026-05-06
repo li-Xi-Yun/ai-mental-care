@@ -2,7 +2,7 @@ package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
-import org.lixiyun.pojo.entity.PersonRole;
+import org.lixiyun.pojo.entity.permission.PersonRole;
 
 /**
  * 用户角色关联表(PersonRole)表数据库访问层

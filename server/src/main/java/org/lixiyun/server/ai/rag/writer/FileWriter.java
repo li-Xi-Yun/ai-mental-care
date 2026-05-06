@@ -1,23 +1,30 @@
 package org.lixiyun.server.ai.rag.writer;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import io.milvus.v2.service.vector.response.InsertResp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.rag.MilvusUtil;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * RAG文件存储流程第三步：向量存储器
  * <p>
  * 功能特性：
  * <ul>
- *     <li>接收第二步细粒度分割后的Document列表</li>
- *     <li>将Document转换为向量并存入向量数据库</li>
+ *     <li>接收第二步细粒度分割后的VectorData列表</li>
+ *     <li>将VectorData转换为向量并存入Milvus向量数据库</li>
  *     <li>保留完整的元数据信息用于后续检索</li>
  *     <li>支持批量向量存储，提高入库效率</li>
  * </ul>
@@ -30,34 +37,102 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FileWriter {
 
-    private final VectorStore vectorStore;
+    private final MilvusUtil milvusUtil;
+
+    private static final Gson GSON = new Gson();
+
 
     /**
-     * 批量存储Document到向量数据库
+     * 批量存储VectorData到向量数据库
      * <p>
-     * 将经过粗粒度切割和细粒度语义分割后的Document列表存入向量数据库。
-     * VectorStore会自动处理文本向量化和索引构建过程。
+     * 1. 调用 EmbeddingModel 对文本内容进行向量化。
+     * 2. 将向量结果存入 VectorData 对象。
+     * 3. 组装 Milvus InsertParam 并执行批量插入。
      * 使用 @Retryable 实现自动重试，最多重试3次（退避策略）。
      *
-     * @param documents 待存储的Document列表，包含完整的文本内容和元数据，不能为null或空
+     * @param documents 待存储的VectorData列表，包含完整的文本内容和元数据，不能为null或空
+     * @param embeddingModel 向量嵌入模型，用于将文本转换为向量
      * @throws BusinessException 当文档列表为空或向量存储失败时抛出业务异常
      */
     @Retryable(
-            label = "vectorStore.writeDocuments",
+            label = "milvus.insert",
             retryFor = {Exception.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
-    public void writeDocuments(List<Document> documents) {
+    public void writeDocuments(List<VectorData> documents, EmbeddingModel embeddingModel) {
         if (documents == null || documents.isEmpty()) {
-            log.warn("RAG(FileWriter)-待存储的Document列表为空，跳过向量存储");
+            log.warn("RAG(FileWriter)-待存储的VectorData列表为空，跳过向量存储");
             return;
         }
+        log.info("RAG(FileWriter)-开始处理 {} 个VectorData的向量化与入库", documents.size());
+        validate(documents);
 
-        log.info("RAG(FileWriter)-开始存储 {} 个Document到向量数据库", documents.size());
+        // embedding
+        List<String> texts = documents.stream()
+                .map(VectorData::getContent)
+                .collect(Collectors.toList());
 
-        // 调用VectorStore进行批量向量存储
-        vectorStore.accept(documents);
-        log.info("RAG(FileWriter)-成功存储 {} 个Document到向量数据库", documents.size());
+        List<float[]> vectors = embeddingModel.embed(texts);
+
+        if (vectors.size() != documents.size()) {
+            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        }
+
+        // 构建 JSON Row
+        List<JsonObject> rows = new ArrayList<>(documents.size());
+
+        for (int i = 0; i < documents.size(); i++) {
+            VectorData doc = documents.get(i);
+            float[] vector = vectors.get(i);
+            JsonObject row = new JsonObject();
+            row.add("vector", GSON.toJsonTree(vector));
+            row.addProperty("file_id", doc.getFileId());
+            row.addProperty("content", doc.getContent());
+            row.addProperty("chunk_level1_idx", doc.getChunkLevel1Idx());
+            row.addProperty("chunk_level2_idx", doc.getChunkLevel2Idx());
+            row.addProperty("deleted", doc.getDeleted() != null ? doc.getDeleted() : 0);
+            rows.add(row);
+        }
+
+        InsertResp resp = milvusUtil.insert(rows);
+
+        log.info("RAG(FileWriter)-写入成功: {} 条, 主键: {}", resp.getInsertCnt(), resp.getPrimaryKeys());
+    }
+
+    /**
+     * 校验 VectorData 列表的完整性
+     * <p>
+     * 确保每个待入库的 VectorData 对象包含必要的元数据和内容，防止非法数据进入向量数据库。
+     *
+     * @param documents 待校验的 VectorData 列表
+     * @throws BusinessException 当发现任何必填字段缺失时抛出参数校验异常
+     */
+    private void validate(List<VectorData> documents) {
+        if (documents == null) {
+            throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+        }
+
+        for (VectorData doc : documents) {
+            if (doc == null) {
+                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+            }
+
+            if (doc.getFileId() == null) {
+                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+            }
+
+            if (doc.getChunkLevel1Idx() == null) {
+                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+            }
+
+            if (doc.getChunkLevel2Idx() == null) {
+                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+            }
+
+            if (doc.getContent() == null || doc.getContent().isBlank()) {
+                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+            }
+        }
     }
 }

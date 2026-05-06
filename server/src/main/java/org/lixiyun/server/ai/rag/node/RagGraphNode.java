@@ -1,4 +1,4 @@
-package org.lixiyun.server.ai.node.rag;
+package org.lixiyun.server.ai.rag.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -7,8 +7,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.core.utils.SpringUtils;
-import org.lixiyun.server.ai.node.graph.RagGraph;
+import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.messages.Message;
 
@@ -28,7 +27,7 @@ public class RagGraphNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "ragGraphNode";
 
-    private static final RagGraph ragGraph = SpringUtils.getBean(RagGraph.class);
+    private final RagGraph ragGraph;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -39,6 +38,10 @@ public class RagGraphNode implements NodeActionWithConfig {
             log.error("RagGraphNode-historyMessages:上下文不存在");
             return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         });
+
+        if(ragGraph == null){
+            throw new BusinessException(ConversationExceptionEnum.RAG_PARAM_MISSING);
+        }
 
         String ragResult = ragGraph.executeRag(historyMessages);
         if(ragResult.isBlank()){

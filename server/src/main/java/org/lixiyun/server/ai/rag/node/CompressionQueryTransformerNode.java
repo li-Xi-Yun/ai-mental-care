@@ -1,4 +1,4 @@
-package org.lixiyun.server.ai.node.rag;
+package org.lixiyun.server.ai.rag.node;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;

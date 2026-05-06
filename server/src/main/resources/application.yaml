@@ -89,7 +89,7 @@ spring:
     redis:
       host: ${redis.host} # Redis服务器地址
       port: ${redis.port} # Redis服务器端口
-      password: ${redis.password}
+#      password: ${redis.password}
       database: ${redis.database}
       timeout: 60000ms  # 超时时间
       lettuce:
@@ -143,7 +143,7 @@ spring:
         database-name: ${milvus.database-name}  # 要使用的 Milvus 数据库的名称
         collection-name: ${milvus.collection-name}    # Milvus 集合名称来存储向量
         initialize-schema: false      # 是否初始化 Milvus 的后端,自动创建"vector_store"集合
-        embedding-dimension: 1024     # 要存储在 Milvus 集合中的向量的维度。
+        embedding-dimension: 1536     # 要存储在 Milvus 集合中的向量的维度。
         index-type: IVF_FLAT          # 要为 Milvus 集合创建的索引类型。
         metric-type: COSINE           # 要用于 Milvus 集合的指标类型。
         index-parameters: { “nlist”：1024 }  # 要用于 Milvus 集合的索引参数。
@@ -239,10 +239,10 @@ springdoc:
     default-model-expand-depth: 10  # 默认展开的模型深度。
     default-models-expand-depth: 10
     deep-linking: true
-  group-configs: # 分组配置（可选）
-    - group: ${springdoc.group} # 分组名
-      paths-to-match: '/**' # 要匹配的路径
-      packages-to-scan: ${springdoc.packages-to-scan} # 要扫描的包
+#  group-configs: # 分组配置（可选）
+#    - group: ${springdoc.group} # 分组名
+#      paths-to-match: '/**' # 要匹配的路径
+#      packages-to-scan: ${springdoc.packages-to-scan} # 要扫描的包
   default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
 

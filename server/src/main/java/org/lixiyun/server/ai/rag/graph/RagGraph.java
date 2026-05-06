@@ -1,4 +1,4 @@
-package org.lixiyun.server.ai.node.graph;
+package org.lixiyun.server.ai.rag.graph;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.server.ai.node.rag.*;
+import org.lixiyun.server.ai.rag.node.*;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -58,8 +58,12 @@ public class RagGraph {
 
     @PostConstruct
     public void init() {
-        log.info("RAG图构建器初始化");
-        ragGraph = buildGraph();
+        try {
+            log.info("RAG图构建器初始化");
+            ragGraph = buildGraph();
+        } catch (Exception e) {
+            log.error("RAG图构建器初始化失败", e);
+        }
     }
 
     /**
@@ -133,6 +137,7 @@ public class RagGraph {
         try {
             // 创建工作流图
             StateGraph workflow = new StateGraph(keyStrategyFactory)
+                    .addNode("retry_node", AsyncNodeActionWithConfig.node_async((state, config) -> Map.of()))
                     .addNode(CompressionQueryTransformerNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(compressionNode))
                     .addNode(RewriteQueryTransformerNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(rewriteNode))
                     .addNode(MultiQueryExpanderNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(expanderNode))
@@ -141,8 +146,9 @@ public class RagGraph {
                     .addNode(ConcatenationJoinNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(concatenationNode));
 
             // 定义图的执行流程
-            workflow.addEdge(StateGraph.START, CompressionQueryTransformerNode.NODE_NAME);
-            workflow.addEdge(StateGraph.START, RewriteQueryTransformerNode.NODE_NAME);
+            workflow.addEdge(StateGraph.START, "retry_node");
+            workflow.addEdge("retry_node", CompressionQueryTransformerNode.NODE_NAME);
+            workflow.addEdge("retry_node", RewriteQueryTransformerNode.NODE_NAME);
             workflow.addEdge(CompressionQueryTransformerNode.NODE_NAME, MultiQueryExpanderNode.NODE_NAME);
             workflow.addEdge(RewriteQueryTransformerNode.NODE_NAME, MultiQueryExpanderNode.NODE_NAME);
             workflow.addEdge(MultiQueryExpanderNode.NODE_NAME, RetrieverNode.NODE_NAME);
@@ -151,7 +157,7 @@ public class RagGraph {
             workflow.addConditionalEdges(RetrieverNode.NODE_NAME,
                     createRetryConditionEdge(),
                     Map.of("end", StateGraph.END,
-                            "retry", StateGraph.START,
+                            "retry", "retry_node",
                             "process", RerankerNode.NODE_NAME
                     )
             );
@@ -161,7 +167,7 @@ public class RagGraph {
                     RerankerNode.NODE_NAME,
                     createRetryConditionEdge(),
                     Map.of("end", StateGraph.END,
-                            "retry", StateGraph.START,
+                            "retry", "retry_node",
                             "process", ConcatenationJoinNode.NODE_NAME
                     )
             );
@@ -192,7 +198,7 @@ public class RagGraph {
                 return CompletableFuture.completedFuture("end");
             }
             if (config.context().get("rag_retry_count") != null) {
-                log.debug("条件跳转：触发重试，返回到开始节点");
+                log.debug("条件跳转：触发重试，返回到重试节点");
                 return CompletableFuture.completedFuture("retry");
             }
             return CompletableFuture.completedFuture("process");

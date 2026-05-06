@@ -1,4 +1,4 @@
-package org.lixiyun.pojo.entity;
+package org.lixiyun.pojo.entity.permission;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

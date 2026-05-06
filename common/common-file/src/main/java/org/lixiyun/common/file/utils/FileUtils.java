@@ -1,4 +1,4 @@
-package org.lixiyun.common.core.utils.file;
+package org.lixiyun.common.file.utils;
 
 import cn.hutool.core.io.FileUtil;
 import jakarta.servlet.http.HttpServletResponse;

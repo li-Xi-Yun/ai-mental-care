@@ -26,7 +26,7 @@ public enum ConversationExceptionEnum implements ErrorCode {
     AUDIO_DATA_NOT_EXIST("模型调用中，音频数据不存在", 3012),
     AUDIO_TEXT_DATA_NOT_EXIST("模型调用中，文本数据不存在", 3013),
     CANNOT_HAVE_MULTIPLE_VOICE_DIALOGS("不能同时有多个语音对话", 3014),
-
+    RAG_PARAM_MISSING("RAG流程参数缺失", 3015),
 
     ;
 

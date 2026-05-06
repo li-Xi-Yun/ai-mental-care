@@ -190,9 +190,16 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Milvus矢量数据库(原生) -->
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+        </dependency>
 
 
-<!--        <dependency>-->
+
+
+        <!--        <dependency>-->
 <!--            <groupId>org.springframework.ai</groupId>-->
 <!--            <artifactId>spring-ai-starter-model-deepseek</artifactId>-->
 <!--        </dependency>-->

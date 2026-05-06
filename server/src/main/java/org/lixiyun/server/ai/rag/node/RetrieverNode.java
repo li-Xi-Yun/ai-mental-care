@@ -1,4 +1,4 @@
-package org.lixiyun.server.ai.node.rag;
+package org.lixiyun.server.ai.rag.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;

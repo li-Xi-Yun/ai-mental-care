@@ -4,10 +4,10 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.core.constant.DeleteConstant;
 import org.lixiyun.common.core.error.enums.ScaleExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.StreamUtils;
+import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.user.scale.ScaleCategoryDTO;
 import org.lixiyun.pojo.entity.scale.Scale;
 import org.lixiyun.pojo.entity.scale.ScaleCategory;
@@ -55,7 +55,7 @@ public class AdminScaleCategoryServiceImpl implements AdminScaleCategoryService 
         // 检查是否有量表使用
         Long count = scaleMapper.selectCount(new LambdaQueryWrapper<Scale>()
                 .eq(Scale::getScaleCategoryId, categoryId)
-                .eq(Scale::getDeleted, org.lixiyun.common.core.constant.DeleteConstant.DELETE_FLAG_NO));
+                .eq(Scale::getDeleted, org.lixiyun.pojo.constant.DeleteConstant.DELETE_FLAG_NO));
         if (count > 0) {
             throw new BusinessException(ScaleExceptionEnum.SCALE_CATEGORY_IN_USE);
         }

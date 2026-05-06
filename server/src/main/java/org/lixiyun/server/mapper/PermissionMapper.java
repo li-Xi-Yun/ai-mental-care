@@ -2,7 +2,7 @@ package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
-import org.lixiyun.pojo.entity.Permission;
+import org.lixiyun.pojo.entity.permission.Permission;
 
 import java.util.List;
 

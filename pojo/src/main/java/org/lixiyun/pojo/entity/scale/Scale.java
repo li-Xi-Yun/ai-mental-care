@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.lixiyun.pojo.constant.DeleteConstant;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -25,9 +26,6 @@ public class Scale implements Serializable {
 
     public static final int STATUS_ENABLE = 1;
     public static final int STATUS_DISABLE = 0;
-
-    public static final int DELETED_NO = 0;
-    public static final int DELETED_YES = 1;
 
     /**
      * 自增主键ID
@@ -93,14 +91,13 @@ public class Scale implements Serializable {
     @TableLogic
     private Integer deleted;
 
-
     /**
      * 判断量表是否已删除
      *
      * @return true表示已删除，false表示未删除
      */
     public boolean deleteFlat() {
-        return deleted != null && deleted == DELETED_YES;
+        return deleted != null && deleted == DeleteConstant.DELETE_FLAG_YES;
     }
 
     /**

@@ -1,4 +1,4 @@
-package org.lixiyun.common.core.constant;
+package org.lixiyun.pojo.constant;
 
 /**
  * @author lixiyun

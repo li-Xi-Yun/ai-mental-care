@@ -1,6 +1,7 @@
 package org.lixiyun.common.file.storage;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
@@ -11,10 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,61 +33,78 @@ public class FileStorage {
     private final FileUrlProperties fileUrlProperties;
 
     /**
-     * 本地文件存储
-     * @param file 文件
-     * @return 文件名
+     * 将单个文件存储到本地默认路径（/static-resources/files/）
+     *
+     * @param file 待上传的文件对象
+     * @return 存储后的完整文件路径名
      */
     public String localFileStorage(MultipartFile file) {
         return localFileStorage(new MultipartFile[]{file}, FILE).get(0);
     }
 
     /**
-     * 本地文件存储
-     * @param file 文件
-     * @param storageType 文件存储类型 {@link StorageType}
-     * @return 文件名
+     * 将单个文件存储到本地指定类型路径
+     *
+     * @param file 待上传的文件对象
+     * @param storageType 文件存储类型枚举 {@link StorageType}
+     * @return 存储后的完整文件路径名
      */
     public String localFileStorage(MultipartFile file, StorageType storageType) {
         return localFileStorage(new MultipartFile[]{file}, storageType).get(0);
     }
 
     /**
-     * 本地文件存储
-     * @param files 文件集合
-     * @return 文件名集合
+     * 批量将文件存储到本地默认路径（/static-resources/files/）
+     *
+     * @param files 待上传的文件数组
+     * @return 存储后的完整文件路径名列表，顺序与输入数组一致
      */
     public List<String> localFileStorage(MultipartFile[] files){
         return localFileStorage(files, FILE);
     }
 
     /**
-     * 本地文件存储
-     * @param files 文件集合
-     * @param storageType 文件存储类型 {@link StorageType}
-     * @return 文件名集合
+     * 批量将文件存储到本地指定类型路径
+     * <p>文件夹按年月划分（格式：yyyy-MM），文件名使用内容MD5值命名</p>
+     *
+     * @param files 待上传的文件数组
+     * @param storageType 文件存储类型枚举 {@link StorageType}
+     * @return 存储后的完整文件路径名列表，顺序与输入数组一致
      */
     public List<String> localFileStorage(MultipartFile[] files, StorageType storageType){
         String uploadUrl = getFileUrl(storageType);
         
         List<String> list = new ArrayList<>();
         for (MultipartFile file : files) {
-            Path targetDir = Paths.get(uploadUrl);
             try {
+                // 1. 获取原始文件名后缀
+                String originalFilename = file.getOriginalFilename();
+                String suffix = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+
+                // 2. 计算文件内容的 MD5 作为新文件名
+                String md5 = SecureUtil.md5(file.getInputStream());
+                String newFileName = md5 + suffix;
+
+                // 3. 按年月创建子目录 (格式: yyyy-MM)
+                LocalDateTime currentDate = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+                String monthDir = currentDate.format(formatter);
+                Path targetDir = Paths.get(uploadUrl, monthDir);
+
                 // 确保目录存在
                 if (!Files.exists(targetDir)) {
                     Files.createDirectories(targetDir);
                 }
 
-                // 生成新的文件名
-                LocalDateTime currentDate  = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-                String format = currentDate.format(formatter);
-                String newFileName  = format + StrUtil.uuid() + file.getOriginalFilename();
-                list.add(uploadUrl + newFileName);
-
-                // 保存文件
+                // 4. 保存文件并记录路径
                 Path targetPath = targetDir.resolve(newFileName);
-                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                // 注意：由于 InputStream 已被 SecureUtil.md5 读取，这里需要重新获取或使用 bytes
+                Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                
+                list.add(targetPath.toString());
             } catch (IOException e) {
                 log.error("文件上传失败", e);
                 throw new BusinessException(SystemExceptionEnum.FILE_UPLOAD_ERROR);
@@ -99,18 +114,20 @@ public class FileStorage {
     }
 
     /**
-     * 本地文件存储
-     * @param fileMap 文件名-文件
+     * 异步批量存储文件到本地默认路径（以Map中的Key作为文件名）
+     *
+     * @param fileMap 键值对映射，Key为目标文件名，Value为文件对象
      */
     @Async
-    public void localFileStorage(Map<String, MultipartFile> fileMap) {
+    public void localFileStorageAsync(Map<String, MultipartFile> fileMap) {
         localFileStorage(fileMap, StorageType.FILE);
     }
 
     /**
-     * 本地文件存储
-     * @param fileMap 文件名-文件
-     * @param storageType 文件存储类型 {@link StorageType}
+     * 异步批量存储文件到本地指定类型路径（以Map中的Key作为文件名）
+     *
+     * @param fileMap 键值对映射，Key为目标文件名，Value为文件对象
+     * @param storageType 文件存储类型枚举 {@link StorageType}
      */
     public void localFileStorage(Map<String, MultipartFile> fileMap, StorageType storageType) {
         String uploadUrl = getFileUrl(storageType);
@@ -133,21 +150,23 @@ public class FileStorage {
     }
 
     /**
-     * 本地文件删除
-     * @param fileNames 文件名集合
+     * 异步批量删除本地默认路径下的文件
+     *
+     * @param fileNames 待删除的文件名列表（不含路径前缀）
      */
     @Async
-    public void localFileDelete(List<String> fileNames) {
-        localFileDelete(fileNames, StorageType.FILE);
+    public void localFileDeleteAsync(List<String> fileNames) {
+        localFileDeleteAsync(fileNames, StorageType.FILE);
     }
 
     /**
-     * 本地文件删除
-     * @param fileNames 文件名集合
-     * @param storageType 文件存储类型 {@link StorageType}
+     * 异步批量删除本地指定类型路径下的文件
+     *
+     * @param fileNames 待删除的文件名列表（不含路径前缀）
+     * @param storageType 文件存储类型枚举 {@link StorageType}
      */
     @Async
-    public void localFileDelete(List<String> fileNames, StorageType storageType) {
+    public void localFileDeleteAsync(List<String> fileNames, StorageType storageType) {
         String uploadUrl = getFileUrl(storageType);
 
         for(String fileName : fileNames){
@@ -157,18 +176,21 @@ public class FileStorage {
     }
 
     /**
-     * 本地文件删除
-     * @param fileUrl 文件本地路径
+     * 异步删除指定完整路径的本地文件
+     *
+     * @param fileUrl 文件的完整本地绝对路径或相对路径字符串
      */
     @Async
-    public void localFileDelete(String fileUrl) {
+    public void localFileDeleteAsync(String fileUrl) {
         Path path = Paths.get(fileUrl);
         localFileDelete(path);
     }
 
     /**
-     * 本地文件删除
-     * @param path 文件本地路径
+     * 同步删除指定路径的本地文件（内部核心方法）
+     * <p>若删除失败仅记录错误日志，不会抛出异常</p>
+     *
+     * @param path 待删除文件的路径对象
      */
     public void localFileDelete(Path path) {
         try {

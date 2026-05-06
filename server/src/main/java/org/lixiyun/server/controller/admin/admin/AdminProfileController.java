@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/profile")
-@Tag(name = "用户个人资料相关接口", description = "用户个人资料相关接口")
+@Tag(name = "管理员个人资料相关接口", description = "管理员个人资料相关接口")
 public class AdminProfileController {
 
     private final AdminProfileService adminProfileService;

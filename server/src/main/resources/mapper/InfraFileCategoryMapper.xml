@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.lixiyun.server.mapper.InfraFileCategoryMapper">
+
+    <!-- 批量删除分类 -->
+    <delete id="deleteBatchByIds">
+        DELETE FROM ai_mental_care.infra_file_category WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

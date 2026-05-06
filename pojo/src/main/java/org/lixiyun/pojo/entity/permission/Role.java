@@ -1,5 +1,7 @@
-package org.lixiyun.pojo.entity;
+package org.lixiyun.pojo.entity.permission;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +12,7 @@ import java.time.LocalDateTime;
 
 
 /**
- * 权限表：存储菜单项及其对应权限标识(Permission)实体类
+ * 角色表(Role)实体类
  *
  * @author lixiyun
  * @since 2025-12-13 22:39:53
@@ -19,38 +21,39 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Permission implements Serializable {
+public class Role implements Serializable {
     
-    private static final long serialVersionUID = -90244549428239081L;
+    private static final long serialVersionUID = 747557300162764533L;
     
     /**
-     * 权限唯一标识，自增主键
+     * 角色ID,自增主键
      */
     private Long id;
     
     /**
-     * 权限标识符（如：video:delete），用于权限验证
+     * 角色名(如admin/user/VIP),唯一且非空
      */
-    private String perms;
+    private String name;
     
     /**
-     * 状态标识：0-正常，1-停用，2-删除（使用逻辑删除时可用）
+     * 角色状态（0正常 1停用 2删除）
      */
     private Integer status;
     
     /**
-     * 备注信息，用于描述权限的用途或特殊说明
+     * 备注信息
      */
     private String remark;
     
     /**
-     * 记录创建时间
+     * 创建时间
      */
     private LocalDateTime createdTime;
     
     /**
-     * 创建人用户ID，用于记录初始操作者（可关联用户表）
+     * 创建人用户id
      */
+    @TableField(fill = FieldFill.INSERT)
     private Long createdBy;
     
     /**
@@ -59,8 +62,9 @@ public class Permission implements Serializable {
     private LocalDateTime updatedTime;
     
     /**
-     * 最后更新人用户ID
+     * 最后更新人用户id
      */
+    @TableField(fill = FieldFill.UPDATE)
     private Long updatedBy;
 
  

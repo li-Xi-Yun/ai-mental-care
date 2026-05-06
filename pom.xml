@@ -61,6 +61,10 @@
         <easyexcel.version>3.2.1</easyexcel.version>
         <velocity.version>2.3</velocity.version>
 
+        <milvus.version>2.6.18</milvus.version>
+
+        <dashscope-sdk-java>2.22.12</dashscope-sdk-java>
+
         <p6spy.version>3.9.1</p6spy.version>
         <okhttp.version>4.10.0</okhttp.version>
         <dynamic-ds.version>4.3.1</dynamic-ds.version>
@@ -113,9 +117,15 @@
             </dependency>
 
             <dependency>
+                <groupId>io.milvus</groupId>
+                <artifactId>milvus-sdk-java</artifactId>
+                <version>${milvus.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>dashscope-sdk-java</artifactId>
-                <version>2.22.12</version>
+                <version>${dashscope-sdk-java}</version>
             </dependency>
 
             <dependency>
@@ -423,10 +433,10 @@
                 <logging.level>info</logging.level>
             </properties>
             <!-- 这里是不指定运行或是打包时，所使用的环境，哪怕是在IDEA中运行默认也是这个 -->
-<!--            <activation>-->
-<!--                &lt;!&ndash; 默认环境 &ndash;&gt;-->
-<!--                <activeByDefault>true</activeByDefault>-->
-<!--            </activation>-->
+            <activation>
+                <!-- 默认环境 -->
+                <activeByDefault>true</activeByDefault>
+            </activation>
         </profile>
         <profile>
             <id>prod</id>
@@ -434,10 +444,10 @@
                 <profiles.active>prod</profiles.active>
                 <logging.level>info</logging.level>
             </properties>
-            <activation>
-                <!-- 默认环境 -->
-                <activeByDefault>true</activeByDefault>
-            </activation>
+<!--            <activation>-->
+<!--                &lt;!&ndash; 默认环境 &ndash;&gt;-->
+<!--                <activeByDefault>true</activeByDefault>-->
+<!--            </activation>-->
         </profile>
         <profile>
             <id>test</id>
