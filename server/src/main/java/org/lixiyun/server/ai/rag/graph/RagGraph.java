@@ -7,7 +7,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
@@ -50,10 +49,6 @@ public class RagGraph {
     @Qualifier("ollamaChatModel")
     private ChatModel ollamaChatModel;
 
-    /**
-     * 该子图执行后的是存放在config临时数据中的，key 为 GraphConstant.RAG_RESULT
-     */
-    @Getter
     private static CompiledGraph ragGraph;
 
     @PostConstruct
@@ -69,28 +64,38 @@ public class RagGraph {
     /**
      * 执行RAG图
      * @param historyMessageList 历史上下文信息
+     * @param userInput 用户输入信息
      * @return 检索后返回的相关文本信息，可以使用（已处理好提示词）
      */
-    public String executeRag(List<Message> historyMessageList){
+    public String executeRag(List<Message> historyMessageList, String userInput){
         if(historyMessageList == null){
             log.error("RagGraph-参数错误:历史上下文为空");
             throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         }
+        if(userInput.isBlank()){
+            log.error("RagGraph-参数错误:用户输入为空");
+            throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+        }
+
         RunnableConfig runnableConfig = RunnableConfig.builder()
                 .addParallelNodeExecutor(CompressionQueryTransformerNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(RewriteQueryTransformerNode.NODE_NAME, ForkJoinPool.commonPool())
                 .build();
 
-        OverAllState ragGraphState = ragGraph.invoke(Map.of(GraphConstant.MESSAGES, historyMessageList), runnableConfig).orElse(null);
+        Map<String, Object> messages = Map.of(GraphConstant.MESSAGES, historyMessageList, GraphConstant.INPUT, userInput);
+
+        OverAllState ragGraphState = ragGraph.invoke(messages, runnableConfig).orElse(null);
         if(ragGraphState == null){
             log.error("RagGraph-执行失败， ragGraphState为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
+
         Optional<Object> ragResultOpl = ragGraphState.value(GraphConstant.RAG_RESULT);
         if(ragResultOpl.isEmpty()){
             log.error("RagGraph-执行失败， ragResultOpl为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
+
         log.debug("RagGraph-执行成功，ragResultOpl:{}", ragResultOpl.get());
         return ragResultOpl.get().toString();
     }
@@ -116,6 +121,7 @@ public class RagGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
             keyStrategyMap.put(GraphConstant.MESSAGES, new AppendStrategy());
+            keyStrategyMap.put(GraphConstant.INPUT, new ReplaceStrategy());
             keyStrategyMap.put(CompressionQueryTransformerNode.NODE_NAME, new ReplaceStrategy());
             keyStrategyMap.put(RewriteQueryTransformerNode.NODE_NAME, new ReplaceStrategy());
             keyStrategyMap.put(MultiQueryExpanderNode.NODE_NAME, new ReplaceStrategy());

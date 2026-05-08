@@ -9,6 +9,8 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.RagConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.server.constant.GraphConstant;
@@ -38,33 +40,7 @@ public class CompressionQueryTransformerNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "compressionQueryTransformerNode";
 
-    private final String compressionPrompt = """
-            Role: 查询压缩专家
-            Profile:
-              description: 你是一名专业的查询压缩专家，擅长从用户的自然语言查询中提取核心语义关键词，用于向量数据库检索。
-            Goals:
-              1. 分析用户查询的核心意图和关键信息
-              2. 提取3-8个最具代表性的核心关键词或短语
-              3. 保持关键词的语义完整性和检索价值
-              4. 去除冗余词汇、停用词和无意义修饰词
-            Constraints:
-              1. 仅输出用空格分隔的关键词字符串，不包含任何额外说明、注释、标点符号或JSON格式
-              2. 关键词数量控制在3-8个之间
-              3. 每个关键词长度不超过10个字符
-              4. 保持关键词的原始语义，不进行同义词替换
-              5. 若查询为空或无有效内容，返回空字符串
-            OutputFormat:
-              关键词1 关键词2 关键词3
-            Examples:
-              User: "我最近工作压力很大，经常失眠，感觉很焦虑"
-              Assistant: 工作压力 失眠 焦虑
-              
-              User: "如何缓解考试前的紧张情绪？"
-              Assistant: 缓解 考试 紧张情绪
-              
-              User: "我和男朋友吵架了，心情很差"
-              Assistant: 吵架 男朋友 心情差
-            """;
+    private final String compressionPrompt = PromptUtil.getPrompt(RagConstant.COMPRESSION_QUERY);
 
     private final ChatModel chatModel;
 
@@ -167,12 +143,24 @@ public class CompressionQueryTransformerNode implements NodeActionWithConfig {
 
         // 获取历史消息上下文
         Optional<List<Message>> messagesOpl = state.value(GraphConstant.MESSAGES);
-        List<Message> historyMessages = messagesOpl.orElse(List.of());
+        List<Message> historyMessages = messagesOpl.orElseThrow(() -> {
+            log.error("查询压缩节点-historyMessages:历史消息不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
         log.debug("查询压缩节点：历史消息数量={}", historyMessages.size());
+
+        // 获取用户输入
+        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
+        String userInput = inputOpl.orElseThrow(() -> {
+            log.error("查询压缩节点-input:用户输入不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
+
+        String prompt = compressionPrompt + "\n用户输入：" + userInput;
 
         // 调用模型进行查询压缩
         AssistantMessage call = reactAgentBuilder()
-                .systemPrompt(compressionPrompt)
+                .systemPrompt(prompt)
                 .build()
                 .call(historyMessages);
 

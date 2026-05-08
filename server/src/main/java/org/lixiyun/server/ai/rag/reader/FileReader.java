@@ -17,6 +17,7 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.rag.RagInterruptManager;
 import org.xml.sax.ContentHandler;
 
 import java.io.*;
@@ -53,10 +54,10 @@ public class FileReader {
     private static final int MAX_LINE_CHARS = 100_000;
 
     // 单个Document最大字符数限制：控制每个Document对象的最大内容长度，确保单个Document不会过大，有利于后续的向量嵌入处理和检索效率
-    private static final int MAX_DOC_CHARS  = 20_000;
+    private static final int MAX_DOC_CHARS  = 10_000;
 
     // 批量消费的Document数量阈值：流式读取时的批处理大小控制，设置为5是为了平衡内存占用和批量处理效率，避免频繁的小批量操作
-    private static final int BATCH_DOC_COUNT = 15;
+    private static final int BATCH_DOC_COUNT = 30;
 
     // 文本文档每Document包含的行数：针对纯文本文件的分块策略配置
     private static final int TEXT_LINES_PER_DOC = 100;
@@ -133,19 +134,36 @@ public class FileReader {
             int totalPages = pdf.getNumberOfPages();
 
             for (int pageNum = 1; pageNum <= totalPages; pageNum++) {
+                // 检查Redis中的中断标识
+                if (RagInterruptManager.isInterrupted(vectorData.getFileId())) {
+                    log.warn("RAG(FileReader)-PDF处理过程中检测到中断标识，已处理{}/{}页后放弃", pageNum - 1, totalPages);
+                    break;
+                }
+                
                 stripper.setStartPage(pageNum);
                 stripper.setEndPage(pageNum);
                 String content = stripper.getText(pdf);
+                
+                // 添加调试日志
+                log.debug("RAG(FileReader)-PDF第{}页提取内容长度: {}", pageNum, content != null ? content.length() : 0);
+                if (content != null && !content.trim().isEmpty()) {
+                    log.debug("RAG(FileReader)-PDF第{}页前100字符: {}", pageNum, content.substring(0, Math.min(100, content.length())));
+                }
+                
                 VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
                 data.setContent(content);
                 data.setChunkLevel1Idx(pageNum);
 
                 if (isValidDoc(data)) {
                     batch.add(data);
+                    log.debug("RAG(FileReader)-PDF第{}页内容有效，已加入批次，当前批次大小: {}", pageNum, batch.size());
                     if (batch.size() >= BATCH_DOC_COUNT) {
+                        log.info("RAG(FileReader)-PDF处理完成，已处理{}/{}页，触发批量消费", pageNum, totalPages);
                         consumer.accept(new ArrayList<>(batch));
                         batch.clear();
                     }
+                } else {
+                    log.warn("RAG(FileReader)-PDF第{}页内容无效（为空或纯空白），跳过", pageNum);
                 }
             }
             if (!batch.isEmpty()) {
@@ -228,6 +246,12 @@ public class FileReader {
         if (buffer.isEmpty()) {
             return;
         }
+        
+        // 检查Redis中的中断标识
+        if (RagInterruptManager.isInterrupted(vectorData.getFileId())) {
+            log.warn("RAG(FileReader)-Tika解析过程中检测到中断标识，放弃当前chunk");
+            return;
+        }
 
         VectorData data = BeanUtil.copyProperties(vectorData, VectorData.class);
         data.setContent(buffer.toString());
@@ -265,6 +289,12 @@ public class FileReader {
             int chunkIndex = 0;
         
             while ((line = br.readLine()) != null) {
+                // 检查Redis中的中断标识
+                if (RagInterruptManager.isInterrupted(vectorData.getFileId())) {
+                    log.warn("RAG(FileReader)-文本处理过程中检测到中断标识，已处理{}行后放弃", lineCount);
+                    break;
+                }
+                
                 lineCount++;
         
                 // ---------- 处理超长行 ----------

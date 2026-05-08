@@ -28,6 +28,7 @@ import org.lixiyun.pojo.vo.user.conversation.ConversationVO;
 import org.lixiyun.server.ai.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.ai.node.*;
+import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.ai.saver.CustomMysqlSaver;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.audio.AudioCache;
@@ -71,6 +72,7 @@ public class AudioServiceImpl implements AudioService {
     private final ConversationMemoryMapper conversationMemoryMapper;
     private final GraphCheckpointMapper graphCheckpointMapper;
     private final ConversationService conversationService;
+    private final RagGraph ragGraph;
 
     public AudioServiceImpl(
             @Value("${spring.ai.dashscope.api-key}") String apiKey,
@@ -80,7 +82,7 @@ public class AudioServiceImpl implements AudioService {
             ConversationMapper conversationMapper,
             ConversationMemoryMapper conversationMemoryMapper,
             GraphCheckpointMapper graphCheckpointMapper,
-            ConversationService conversationService
+            ConversationService conversationService, RagGraph ragGraph
     ) {
         // 使用构造器注入，防止异步线程执行时，@Value 未注入，因为该字段是“晚加载”的配置，其他三个是项目一启动，就会创建的，永远存在内存里，永不为null
         this.apiKey = apiKey;
@@ -92,6 +94,7 @@ public class AudioServiceImpl implements AudioService {
         this.conversationMemoryMapper = conversationMemoryMapper;
         this.graphCheckpointMapper = graphCheckpointMapper;
         this.conversationService = conversationService;
+        this.ragGraph = ragGraph;
     }
 
     @Override
@@ -174,7 +177,7 @@ public class AudioServiceImpl implements AudioService {
         // 节点设置
         AsrToTextNode asrToTextNode = AsrToTextNode.builder().apiKey(apiKey).build(); // 语音转文字
         EmotionRecognitionNode emotionRecognitionNode = EmotionRecognitionNode.builder().chatModel(deepSeekChatModel).build(); // 文本情感识别 (格式化存储)
-        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).build(); // 情感诊断
+        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).ragGraph(ragGraph).build(); // 情感诊断
         FinalAnswerNode finalAnswerNode = FinalAnswerNode.builder().chatModel(dashScopeChatModel)
                 .modelPrompt(PromptUtil.getPrompt(ScenarioConstant.PROFESSIONAL_EMOTIONAL_COMPANION)).build(); // 最终回答
         TtsToSpeechNode ttsToSpeechNode = TtsToSpeechNode.builder().apiKey(apiKey).build(); // 文本转语音

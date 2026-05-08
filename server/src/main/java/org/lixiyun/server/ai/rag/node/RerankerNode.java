@@ -10,6 +10,8 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.RagConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
@@ -45,45 +47,7 @@ public class RerankerNode implements NodeActionWithConfig {
     private static final double RELEVANCE_THRESHOLD = 0.7;  // 相关性阈值，低于此值的文档将被过滤
     private static final int RETRY_COUNT = 3;
 
-    private final String rerankerPrompt = """
-            Role: 文档相关性评估专家
-            Profile:
-              description: 你是一名专业的文档相关性评估专家，擅长通过语义分析判断文档内容与用户提问的关联度。
-            Goals:
-              1. 深入理解用户查询的核心意图和语义需求
-              2. 通过语义分析评估每个文档内容与用户查询的关联程度
-              3. 只返回关联度高的文档ID（评分>=0.7）
-              4. 按关联度从高到低排序，最多返回3个最相关的文档ID
-            Constraints:
-              1. 仅输出JSON格式，不包含任何额外说明、注释或解释
-              2. 关联性评分必须为0-1之间的小数，保留两位小数
-              3. 严格筛选：只返回关联性评分>=0.7的文档，低于此阈值的文档不要返回
-              4. 最多返回3个关联度最高的文档ID
-              5. 若所有文档都与用户查询关联度低，返回空数组
-              6. 只需返回文档ID和关联性评分，不需要返回文档内容或其他信息
-            EvaluationCriteria:
-              - 高关联(0.85-1.0): 文档内容直接回答用户问题或高度相关
-              - 中关联(0.7-0.84): 文档内容与用户问题有部分相关性
-              - 低关联(<0.7): 文档内容与用户问题关联度低，不应返回
-            OutputFormat:
-              {
-                "rankedDocuments": [
-                  {"docId": "文档ID", "relevanceScore": 0.95},
-                  {"docId": "文档ID", "relevanceScore": 0.82}
-                ]
-              }
-            Examples:
-              User Query: "如何缓解考试焦虑？"
-              Documents: [doc1(考试内容), doc2(失眠治疗), doc3(焦虑管理)]
-              Assistant: {"rankedDocuments": [{"docId": "doc3", "relevanceScore": 0.92}, {"docId": "doc1", "relevanceScore": 0.75}]}
-              
-              User Query: "工作压力大怎么办"
-              Documents: [doc1(娱乐新闻), doc2(职场压力), doc3(饮食健康)]
-              Assistant: {"rankedDocuments": [{"docId": "doc2", "relevanceScore": 0.88}]}
-            
-            以下是相关文档内容：
-            %s
-            """;
+    private final String rerankerPromptTemplate = PromptUtil.getPrompt(RagConstant.RERANKER);
 
     private final ChatModel chatModel;
 
@@ -221,12 +185,25 @@ public class RerankerNode implements NodeActionWithConfig {
 
         // 获取历史消息上下文
         Optional<List<Message>> messagesOpl = state.value(GraphConstant.MESSAGES);
-        List<Message> historyMessages = messagesOpl.orElse(List.of());
+        List<Message> historyMessages = messagesOpl.orElseThrow(() -> {
+            log.error("文档重排序节点-historyMessages:历史消息不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
+
+        // 获取用户输入
+        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
+        String userInput = inputOpl.orElseThrow(() -> {
+            log.error("文档重排序节点-input:用户输入不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
+        log.debug("文档重排序节点：用户输入={}", userInput);
 
         // 将Map转换为JSON字符串形式
         String documentsJson = JsonUtils.toJsonString(topKDocuments);
         log.debug("文档重排序节点：文档Map JSON={}", documentsJson);
-        String rerankerPromptAgent = String.format(rerankerPrompt, documentsJson);
+        String rerankerPromptAgent = String.format(rerankerPromptTemplate, documentsJson);
+
+        rerankerPromptAgent += "\n用户输入：" + userInput;
 
         // 步骤3：调用模型进行相关性评估和重排序
         AssistantMessage call = reactAgentBuilder()

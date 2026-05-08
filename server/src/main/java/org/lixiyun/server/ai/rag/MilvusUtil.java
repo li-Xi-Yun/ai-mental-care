@@ -115,6 +115,7 @@ public class MilvusUtil {
      */
     public QueryReq buildQueryReq(String filterExpression, List<String> outputFields) {
         return QueryReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .filter(filterExpression)
                 .outputFields(outputFields != null ? outputFields : Collections.singletonList("id"))
@@ -169,6 +170,7 @@ public class MilvusUtil {
     public QueryResp queryWithPagination(String filterExpression, List<String> outputFields,
                                          long offset, long limit) {
         QueryReq req = QueryReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .filter(filterExpression)
                 .outputFields(outputFields)
@@ -199,6 +201,7 @@ public class MilvusUtil {
      */
     public InsertReq buildInsertReq(List<JsonObject> data) {
         return InsertReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .data(data)
                 .build();
@@ -239,6 +242,7 @@ public class MilvusUtil {
      */
     public UpsertReq buildUpsertReq(List<JsonObject> data, boolean partialUpdate) {
         return UpsertReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .data(data)
                 .partialUpdate(partialUpdate)
@@ -281,6 +285,7 @@ public class MilvusUtil {
      */
     public DeleteReq buildDeleteReq(String filterExpression) {
         return DeleteReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .filter(filterExpression)
                 .build();
@@ -358,6 +363,7 @@ public class MilvusUtil {
         String filterExpression = "id in [" + idListStr + "]";
         
         DeleteReq req = DeleteReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .filter(filterExpression)
                 .build();
@@ -385,6 +391,7 @@ public class MilvusUtil {
         log.info("开始根据过滤表达式删除文档: {}", filterExpression);
         
         DeleteReq req = DeleteReq.builder()
+                .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
                 .filter(filterExpression)
                 .build();

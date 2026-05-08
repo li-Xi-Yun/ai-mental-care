@@ -19,6 +19,7 @@ import org.lixiyun.server.ai.node.EmotionRecognitionNode;
 import org.lixiyun.server.ai.node.EmotionalDiagnosisNode;
 import org.lixiyun.server.ai.node.FinalAnswerNode;
 import org.lixiyun.server.ai.node.SummaryNode;
+import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.ai.saver.CustomMysqlSaver;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.ConversationMapper;
@@ -66,6 +67,8 @@ public class TextServiceImpl implements TextService {
     private ConversationMapper conversationMapper;
     @Autowired
     private GraphCheckpointMapper graphCheckpointMapper;
+    @Autowired
+    private RagGraph ragGraph;
 
     @Override
     public Flux<String> scenarioChat(ScenarioChatDTO scenarioChatDTO) throws GraphStateException {
@@ -114,7 +117,7 @@ public class TextServiceImpl implements TextService {
 
         // 节点设置
         EmotionRecognitionNode emotionRecognitionNode = EmotionRecognitionNode.builder().chatModel(deepSeekChatModel).build();
-        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).build();
+        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).ragGraph(ragGraph).build();
         FinalAnswerNode finalAnswerNode = FinalAnswerNode.builder().chatModel(dashScopeChatModel).modelPrompt(scenarioPrompt).build();
         SummaryNode summaryNode = SummaryNode.builder().build();
 

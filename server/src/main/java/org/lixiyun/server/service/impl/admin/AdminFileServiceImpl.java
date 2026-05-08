@@ -159,8 +159,6 @@ public class AdminFileServiceImpl implements AdminFileService {
         // 分类ID过滤
         if (queryDTO.getCategoryId() != null) {
             queryWrapper.eq(InfraFile::getCategoryId, queryDTO.getCategoryId());
-        } else {
-            queryWrapper.eq(InfraFile::getCategoryId, InfraFileCategory.DEFAULT_CATEGORY_ID);
         }
 
         // 文件名模糊查询

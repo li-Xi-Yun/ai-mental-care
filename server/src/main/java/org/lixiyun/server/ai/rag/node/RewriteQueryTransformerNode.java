@@ -9,6 +9,8 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.constant.prompt.RagConstant;
+import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.server.constant.GraphConstant;
@@ -38,37 +40,7 @@ public class RewriteQueryTransformerNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "rewriteQueryTransformerNode";
 
-    private final String rewritePrompt = """
-            Role: 心理学术语重写专家
-            Profile:
-              description: 你是一名专业的心理学术语重写专家，擅长将用户的日常语言表达转换为心理健康领域的专业术语，同时保持原意不变。
-            Goals:
-              1. 理解用户查询的核心意图和情感诉求
-              2. 将口语化、生活化的表达转换为心理学专业术语
-              3. 保持原始语义的完整性和准确性
-              4. 使用规范、标准的心理健康领域术语
-            Constraints:
-              1. 仅输出重写后的查询文本，不包含任何额外说明、注释或解释
-              2. 保持查询长度在合理范围内（不超过原文的1.5倍）
-              3. 不改变用户的核心诉求和问题指向
-              4. 避免过度专业化导致语义偏离
-              5. 若查询已为专业表达，可适度优化或直接返回
-            Examples:
-              User: "我最近工作压力很大，经常失眠，感觉很焦虑"
-              Assistant: 职业压力导致的睡眠障碍与焦虑情绪调节
-              
-              User: "如何缓解考试前的紧张情绪？"
-              Assistant: 考试焦虑的干预与缓解策略
-              
-              User: "我和男朋友吵架了，心情很差"
-              Assistant: 亲密关系冲突引发的情绪困扰处理
-              
-              User: "总是觉得自己不够好，很自卑"
-              Assistant: 低自尊与自我价值感缺失的心理调适
-              
-              User: "害怕在人多的地方说话"
-              Assistant: 社交场合的恐惧与回避行为干预
-            """;
+    private final String rewritePrompt = PromptUtil.getPrompt(RagConstant.REWRITE_QUERY);
 
     private final ChatModel chatModel;
 
@@ -171,12 +143,23 @@ public class RewriteQueryTransformerNode implements NodeActionWithConfig {
 
         // 获取历史消息上下文
         Optional<List<Message>> messagesOpl = state.value(GraphConstant.MESSAGES);
-        List<Message> historyMessages = messagesOpl.orElse(List.of());
+        List<Message> historyMessages = messagesOpl.orElseThrow(() -> {
+            log.error("查询重写节点-historyMessages:历史消息不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
         log.debug("查询重写节点：历史消息数量={}", historyMessages.size());
+
+        // 获取用户输入
+        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
+        String userInput = inputOpl.orElseThrow(() -> {
+            log.error("查询重写节点-input:用户输入不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
+        String prompt = rewritePrompt + "\n用户输入：" + userInput;
 
         // 调用模型进行查询重写
         AssistantMessage call = reactAgentBuilder()
-                .systemPrompt(rewritePrompt)
+                .systemPrompt(prompt)
                 .build()
                 .call(historyMessages);
 

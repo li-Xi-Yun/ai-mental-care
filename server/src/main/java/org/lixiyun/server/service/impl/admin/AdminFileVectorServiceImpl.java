@@ -13,7 +13,7 @@ import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
 import org.lixiyun.server.ai.rag.MilvusUtil;
-import org.lixiyun.server.ai.rag.RagFileThreadHolder;
+import org.lixiyun.server.ai.rag.RagInterruptManager;
 import org.lixiyun.server.ai.rag.RagStore;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
@@ -72,7 +72,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         int updateCount = infraFileMapper.update(null,
                 new LambdaUpdateWrapper<InfraFile>()
                         .eq(InfraFile::getId, fileId)
-                        .eq(InfraFile::getStatus, InfraFile.STATUS_PENDING)
+                        .in(InfraFile::getStatus, InfraFile.STATUS_PENDING, InfraFile.STATUS_PARSE_FAILED)
                         .set(InfraFile::getStatus, InfraFile.STATUS_PARSING));
         if (updateCount == 0) {
             log.error("文件向量加载-更新文件状态失败，文件ID：{}", fileId);
@@ -93,17 +93,26 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
 
         // 8. 添加消费者参数：向量加载完成后更新文件状态
         future.thenRun(() -> {
+            if (RagInterruptManager.isInterrupted(fileId)){
+                log.info("文件向量加载中断，结束RAG文件加载流程：{}", fileId);
+                return;
+            }
             log.info("文件向量加载完成，文件ID：{}", fileId);
             // 更新文件状态为解析完成
             infraFileMapper.update(null,
                     new LambdaUpdateWrapper<InfraFile>()
                             .eq(InfraFile::getId, fileId)
+                            .eq(InfraFile::getStatus, InfraFile.STATUS_PARSING)  // 确保只有解析中的文件才能更新为完成
                             .set(InfraFile::getStatus, InfraFile.STATUS_PARSE_COMPLETED));
             log.debug("文件状态已更新为解析完成，文件ID：{}", fileId);
         }).exceptionally(ex -> {
             log.error("文件向量加载异步任务异常，文件ID：{}", fileId, ex);
             handleVectorLoadException(fileId, (Exception) ex);
             return null;
+        }).whenComplete((result, throwable) -> {
+            // 无论成功还是失败，都会清除中断标识
+            RagInterruptManager.clearInterruptFlag(fileId);
+            log.debug("文件向量加载任务结束，已清除中断标识，文件ID：{}", fileId);
         });
     }
 
@@ -125,7 +134,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         }
 
         // 3. 校验文件状态
-        if (!infraFile.isPending()) {
+        if (!infraFile.isParseCompleted()) {
             log.error("文件向量删除-文件状态不允许删除，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
             throw new BusinessException(FileExceptionEnum.FILE_PARAMS_ERROR);
         }
@@ -165,7 +174,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         }
 
         // 根据文件ID分页查询向量集合
-        PageQuery pageQuery = new PageQuery(pageNum, pageSize);
+        PageQuery pageQuery = new PageQuery(pageSize, pageNum);
         PageResult<FileVectorVO> pageResult = queryVectorsByFileId(fileId, pageQuery);
 
         log.info("文件向量分页查询完成，文件ID：{}，总记录数：{}，当前页记录数：{}",
@@ -177,12 +186,12 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
     public void interruptFileVectorParsing(Long fileId) {
         log.info("开始文件向量解析中断，文件ID：{}", fileId);
 
-        // 1. 从RagFileThreadHolder获取线程对象
-        boolean interrupted = RagFileThreadHolder.interrupt(fileId);
+        // 1. 在Redis中设置中断标识
+        boolean interrupted = RagInterruptManager.setInterruptFlag(fileId);
 
-        // 2. 判断是否成功中断
+        // 2. 判断是否成功设置中断标识
         if (!interrupted) {
-            log.debug("文件向量解析中断-未找到正在执行的解析线程或线程已结束，文件ID：{}", fileId);
+            log.error("文件向量解析中断-设置中断标识失败，文件ID：{}", fileId);
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
 

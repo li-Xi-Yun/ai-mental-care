@@ -33,17 +33,24 @@ public class RagGraphNode implements NodeActionWithConfig {
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
         log.debug("RagGraphNode开始执行");
 
-        Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
-        List<Message> historyMessages = userMessageOpl.orElseThrow(() -> {
+        Optional<List<Message>> historyMessageOpl = state.value(GraphConstant.MESSAGES);
+        List<Message> historyMessages = historyMessageOpl.orElseThrow(() -> {
             log.error("RagGraphNode-historyMessages:上下文不存在");
-            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
+        });
+
+        // 获取用户输入
+        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
+        String userInput = inputOpl.orElseThrow(() -> {
+            log.error("RagGraphNode-input:用户输入不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
         });
 
         if(ragGraph == null){
             throw new BusinessException(ConversationExceptionEnum.RAG_PARAM_MISSING);
         }
 
-        String ragResult = ragGraph.executeRag(historyMessages);
+        String ragResult = ragGraph.executeRag(historyMessages, userInput);
         if(ragResult.isBlank()){
             log.debug("RagGraphNode执行失败，没有数据");
             return Map.of();

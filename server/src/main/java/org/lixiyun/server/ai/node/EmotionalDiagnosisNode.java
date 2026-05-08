@@ -20,6 +20,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -31,12 +32,14 @@ import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 用户文本情绪诊断节点
@@ -54,7 +57,9 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
     private final String emotionDiagnosisPrompt = PromptUtil.getPrompt(EmotionConstant.DIAGNOSIS_OF_PSYCHOLOGICAL_STATE_WITH_MULTIPLE_ROUNDS);
 
     private final ChatModel chatModel;
+    private final RagGraph ragGraph;
     private final EmotionDiagnosisMapper emotionDiagnosisMapper = SpringUtils.getBean(EmotionDiagnosisMapper.class);
+    private final ThreadPoolTaskExecutor threadPoolTaskExecutor = SpringUtils.getBean(ThreadPoolTaskExecutor.class);
 
     public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder() {
         return ReactAgent.builder()
@@ -200,13 +205,13 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         });
         Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
         List<Message> userMessages = userMessageOpl.orElseThrow(() -> {
-            log.error("情感诊断userMessages:会话不存在");
-            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+            log.error("情感诊断userMessages:会话上下文不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
         });
         Optional<String> inputOpl = state.value(GraphConstant.INPUT);
         String userInput = inputOpl.orElseThrow(() -> {
-            log.error("情感诊断input:会话不存在");
-            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+            log.error("情感诊断input:用户输入不存在");
+            return new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR);
         });
         String input = String.format(userInputContextPrompt, currentRound, userInput);
 
@@ -215,27 +220,44 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
         EmotionDiagnosis beforeDiagnosis = emotionDiagnosisMapper.selectOne(new LambdaQueryWrapper<EmotionDiagnosis>()
                 .eq(EmotionDiagnosis::getConversationId, threadIdOpl.get()));
 
-        String prompt;
-        prompt = String.format(emotionDiagnosisPrompt, Objects.requireNonNullElse(beforeDiagnosis, "")) + input;
+        String prompt = String.format(emotionDiagnosisPrompt, Objects.requireNonNullElse(beforeDiagnosis, "")) + input;
 
-        // 模型调用生成完整数据信息
-        AssistantMessage call = reactAgentBuilder()
-                .systemPrompt(prompt)
-                .outputType(BriefEmotionDiagnosis.class)
-                .build()
-                .call(userMessages);
-        String modelOutput = call.getText();
-        log.info("情感诊断节点：模型输出结果:{}", modelOutput);
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 构建包含RAG结果的提示词
+                String finalPrompt = prompt;
+                if (ragGraph != null){
+                    // 获取RAG流程查询到的内容，作为模型输入
+                    String ragResult = ragGraph.executeRag(userMessages, userInput);
+                    log.info("情感诊断节点：RAG查询结果:{}", ragResult);
+                    if(!ragResult.isBlank()){
+                        finalPrompt = finalPrompt + ragResult;
+                    }
+                }
 
-        BriefEmotionDiagnosis briefEmotionDiagnosis = JsonUtils.parseObject(modelOutput, BriefEmotionDiagnosis.class);
-        EmotionDiagnosis diagnosis = getEmotionDiagnosis(briefEmotionDiagnosis);
+                // 模型调用生成完整数据信息
+                AssistantMessage call = reactAgentBuilder()
+                        .systemPrompt(finalPrompt)
+                        .outputType(BriefEmotionDiagnosis.class)
+                        .build()
+                        .call(userMessages);
+                String modelOutput = call.getText();
+                log.info("情感诊断节点：模型输出结果:{}", modelOutput);
 
-        diagnosis.setConversationId(Long.valueOf(threadId));
-        diagnosis.setUserId(currentId);
-        diagnosis.setRoundNum(currentRound);
-        log.debug("情感诊断节点：转换结果:{}", diagnosis);
-        // 初始化诊断书数据
-        emotionDiagnosisMapper.insert(diagnosis);
+                BriefEmotionDiagnosis briefEmotionDiagnosis = JsonUtils.parseObject(modelOutput, BriefEmotionDiagnosis.class);
+                EmotionDiagnosis diagnosis = getEmotionDiagnosis(briefEmotionDiagnosis);
+
+                diagnosis.setConversationId(Long.valueOf(threadId));
+                diagnosis.setUserId(currentId);
+                diagnosis.setRoundNum(currentRound);
+                log.debug("情感诊断节点：转换结果:{}", diagnosis);
+                // 初始化诊断书数据
+                emotionDiagnosisMapper.insert(diagnosis);
+                log.info("情感诊断节点：异步诊断数据保存成功，会话ID:{}", threadId);
+            } catch (Exception e) {
+                log.error("情感诊断节点：异步执行失败，会话ID:{}", threadId, e);
+            }
+        }, threadPoolTaskExecutor);
 
         return Map.of();
     }

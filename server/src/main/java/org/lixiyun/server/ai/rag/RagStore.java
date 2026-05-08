@@ -102,6 +102,7 @@ public class RagStore {
      * 适用于批量文件导入、后台任务等场景。
      * <p>
      * 需自动处理异常
+     * <p>同时，需要自行在上层调用 {@link RagInterruptManager} 中的 clearInterruptFlag 方法进行数据清除</p>
      * @param filePath 本地文件的绝对或相对路径，不能为空且文件必须存在
      * @param vectorData 文件元数据信息 {@link VectorData}
      * @param interruptedHandler 中断处理函数，任务中断时需要执行的功能，{@link Consumer}
@@ -116,18 +117,15 @@ public class RagStore {
         return CompletableFuture.runAsync(() -> {
             long fileId = vectorData.getFileId();
             try {
-                Thread workThread  = Thread.currentThread();
-                // 将当前线程保存，用于后续中断处理
-                RagFileThreadHolder.put(fileId, workThread);
-                log.info("RAG异步任务开始处理文件: {}，执行线程: {}，线程ID: {}",
-                        filePath, workThread.getName(), workThread.getId());
+                // 清除可能存在的旧中断标识（防止重复任务干扰）
+                RagInterruptManager.clearInterruptFlag(fileId);
+                
+                log.info("RAG异步任务开始处理文件: {}，文件ID: {}", filePath, fileId);
                 storeFileToVector(filePath, vectorData, interruptedHandler);
                 log.info("RAG异步任务完成处理文件: {}", filePath);
             } catch (Throwable e) {
                 log.error("RAG异步任务处理文件失败: {}", filePath, e);
                 throw e;
-            } finally {
-                RagFileThreadHolder.remove(fileId);
             }
         }, ragThreadPoolExecutor);
     }

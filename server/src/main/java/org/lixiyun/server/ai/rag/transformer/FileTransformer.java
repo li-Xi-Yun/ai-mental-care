@@ -12,6 +12,7 @@ import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.rag.RagInterruptManager;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -51,10 +52,10 @@ public class FileTransformer {
     private final ChatModel chatModel;
 
     // 单个Document最大字符数限制：超过此值才需要进行语义分割
-    private static final int MAX_SEGMENT_CHARS = 3_000;
+    private static final int MAX_SEGMENT_CHARS = 2_000;
 
-    // 批量传递给Consumer的Document数量阈值
-    private static final int BATCH_SIZE = 15;
+    // 批量传递给模型与Consumer的Document数量阈值
+    private static final int BATCH_SIZE = 25;
 
     private ReactAgent agent;
 
@@ -84,13 +85,15 @@ public class FileTransformer {
         log.info("RAG(FileTransformer)-开始对 {} 个VectorData进行细粒度语义分割", documents.size());
 
         List<VectorData> batchBuffer = new ArrayList<>(BATCH_SIZE);
-        int globalIndex = 0;
 
         for (VectorData doc : documents) {
-            if(Thread.currentThread().isInterrupted()){
+            // 检查Redis中的中断标识
+            if (RagInterruptManager.isInterrupted(doc.getFileId())) {
                 long fileId = doc.getFileId();
-                log.warn("RAG(FileTransformer)-线程被中断");
+                log.warn("RAG(FileTransformer)-检测到中断标识，准备执行中断处理");
                 interruptedHandler.accept(fileId);
+                // 直接返回，不抛出异常
+                return;
             }
 
             if (!isValidDocument(doc)) {
@@ -101,25 +104,29 @@ public class FileTransformer {
 
             if (content.length() <= MAX_SEGMENT_CHARS) {
                 log.debug("RAG(FileTransformer)-VectorData长度{}未超过阈值，直接保留", content.length());
-                doc.setChunkLevel2Idx(globalIndex++); // 用于识别二次分割的索引
+                doc.setChunkLevel2Idx(0); // 用于识别二次分割的索引
                 batchBuffer.add(doc);
             } else {
                 log.debug("RAG(FileTransformer)-VectorData长度{}超过阈值，进行语义分割", content.length());
+                int globalIndex = 0;
                 List<VectorData> secondaryDivisionDocs = semanticSegmentation(doc, globalIndex);
-                globalIndex += secondaryDivisionDocs.size();
                 batchBuffer.addAll(secondaryDivisionDocs);
             }
 
             // 达到批量阈值则触发消费
-            if (batchBuffer.size() >= BATCH_SIZE) {
-                consumer.accept(new ArrayList<>(batchBuffer));
-                batchBuffer.clear();
+            while (batchBuffer.size() >= BATCH_SIZE) {
+                List<VectorData> subList = new ArrayList<>(batchBuffer.subList(0, BATCH_SIZE));
+                log.debug("RAG(FileTransformer)-批量处理 {} 个VectorData", subList.size());
+                consumer.accept(subList);
+                batchBuffer.subList(0, BATCH_SIZE).clear();
             }
         }
 
         // 处理剩余的 VectorData
         if (!batchBuffer.isEmpty()) {
-            consumer.accept(batchBuffer);
+            log.debug("RAG(FileTransformer)-处理剩余 {} 个VectorData", batchBuffer.size());
+            consumer.accept(new ArrayList<>(batchBuffer));
+            batchBuffer.clear();
         }
 
         log.info("RAG(FileTransformer)-VectorData细粒度语义分割及批量分发完成");
@@ -142,6 +149,11 @@ public class FileTransformer {
         try {
             log.debug("RAG(FileTransformer)-调用AI模型进行语义分割，原文长度: {}", content.length());
 
+            // 检查Redis中的中断标识
+            if (RagInterruptManager.isInterrupted(doc.getFileId())) {
+                log.warn("RAG(FileTransformer)-语义分割前检测到中断标识，放弃处理");
+                return List.of();
+            }
 
             // 缓存Agent实例，避免重复创建
             if(agent == null){
@@ -155,8 +167,17 @@ public class FileTransformer {
                         .build();
             }
 
+            // 再次检查中断标识（防止在构建Agent过程中被中断）
+            if (RagInterruptManager.isInterrupted(doc.getFileId())) {
+                log.warn("RAG(FileTransformer)-调用AI模型前检测到中断标识，放弃处理");
+                return List.of();
+            }
+
             List<Message> messages = new ArrayList<>();
             messages.add(new UserMessage(content));
+            
+            // 调用AI模型（这是一个阻塞操作，会在HTTP请求期间等待）
+            // 如果此时线程被中断，会抛出InterruptedException
             AssistantMessage response = agent.call(messages);
 
             String responseText = response.getText();
@@ -164,6 +185,11 @@ public class FileTransformer {
             if (responseText == null || responseText.isBlank()) {
                 log.warn("RAG(FileTransformer)-模型返回内容为空，使用字符截断方式分割");
                 return splitByCharCount(content, doc, globalIndex);
+            }
+
+            if (RagInterruptManager.isInterrupted(doc.getFileId())) {
+                log.warn("RAG(FileTransformer)-模型调用成功，但检测到中断标识，放弃处理");
+                return List.of();
             }
 
             List<String> segments = parseSegmentsFromResponse(responseText);
@@ -178,6 +204,11 @@ public class FileTransformer {
             // 构建多个 VectorData，并递增 globalIndex
             List<VectorData> result = new ArrayList<>();
             for (String segment : segments) {
+                // 在循环中检查中断标识
+                if (RagInterruptManager.isInterrupted(doc.getFileId())) {
+                    log.warn("RAG(FileTransformer)-构建VectorData过程中检测到中断标识，已生成{}个片段后放弃", result.size());
+                    return result.isEmpty() ? List.of() : result;
+                }
                 VectorData newDoc = createVectorDataWithMetadata(segment, doc, globalIndex++);
                 result.add(newDoc);
             }
@@ -210,6 +241,12 @@ public class FileTransformer {
         int offset = 0;
 
         while (offset < totalLength) {
+            // 检查Redis中的中断标识
+            if (RagInterruptManager.isInterrupted(originalDoc.getFileId())) {
+                log.warn("RAG(FileTransformer)-字符截断过程中检测到中断标识，已生成{}个片段后放弃", result.size());
+                return result.isEmpty() ? List.of() : result;
+            }
+            
             // 计算当前片段的结束位置
             int endOffset = Math.min(offset + MAX_SEGMENT_CHARS, totalLength);
             String segment = content.substring(offset, endOffset);
