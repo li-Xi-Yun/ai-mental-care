@@ -217,6 +217,8 @@ public class EmotionalDiagnosisNode implements NodeActionWithConfig {
 
         Optional<Object> currentIdOpl = config.metadata(GraphConstant.USER_ID);
         Long currentId = (Long) currentIdOpl.orElseThrow(() -> new BusinessException(AuthenticationExceptionEnum.USER_NOT_LOGIN));
+
+
         EmotionDiagnosis beforeDiagnosis = emotionDiagnosisMapper.selectOne(new LambdaQueryWrapper<EmotionDiagnosis>()
                 .eq(EmotionDiagnosis::getConversationId, threadIdOpl.get()));
 

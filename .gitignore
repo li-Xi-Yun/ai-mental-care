@@ -22,12 +22,28 @@ target/
 .springBeans
 .sts4-cache
 
-static-resources/audios/**
-static-resources/images/**
 ./videos/**
 ./files/**
 ./conversations/**
 logs/**
+
+# 静态资源文件(保留目录结构,忽略内容)
+static-resources/audios/**
+static-resources/images/**
+static-resources/files/**
+static-resources/videos/**
+static-resources/conversations/**
+
+# 日志文件
+logs/*
+server/logs/*
+
+# 配置文件中的敏感信息
+**/application-dev.yml
+**/application-test.yml
+**/application-prod.yml
+**/*-secret.yml
+**/*.env
 
 ### NetBeans ###
 /nbproject/private/

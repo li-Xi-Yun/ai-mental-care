@@ -98,8 +98,6 @@
 
 
 
-
-        <!-- 添加 SpringDoc OpenAPI UI 依赖以启用 Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

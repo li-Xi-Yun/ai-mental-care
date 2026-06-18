@@ -184,9 +184,10 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
             log.error("情感识别节点-userMessages:上下文不存在");
             return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
         });
-
         Optional<String> inputOpl = state.value(GraphConstant.INPUT);
         String input = String.format(userInputContextPrompt, currentRound, inputOpl.get());
+
+        // 获取语音输入的情绪分析内容
         String audioEmotionRecognition = (String) config.context().get(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION);
         if(audioEmotionRecognition != null){
             input += "以下是本次用户语音输入时的语气情绪分析内容：" + audioEmotionRecognition;
@@ -197,6 +198,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         String modelOutput;
         if(currentRound >= roundWithCompleteData){
             // 模型调用生成完整数据信息
+            // todo 这里的模型提示词输入的内容反了
             call = reactAgentBuilder()
                     .systemPrompt(standardPrompt + input)
                     .outputType(CompleteEmotionAnalysis.class)

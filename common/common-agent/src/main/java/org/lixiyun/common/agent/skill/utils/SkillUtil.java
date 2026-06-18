@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequiredArgsConstructor
 public class SkillUtil {
 
+    // todo 存储所有的一级Skill列表
     // 内存中技能列表，线程安全，适合读多写少的场景
     private static final List<Skill> SKILLS = new CopyOnWriteArrayList<>();
     // 用于动态热加载，key:存储文件夹名称，value:技能对象
@@ -44,7 +45,6 @@ public class SkillUtil {
         long start = System.currentTimeMillis();
         // 1. 首次初始化加载技能
         reloadSkills();
-        log.info("skill初始化完成，共加载技能数量：{}", SKILLS.size());
 
         log.info("skill初始化完成，共加载技能数量：{}，耗时：{}ms", SKILLS.size(), System.currentTimeMillis() - start);
     }
