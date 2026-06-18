@@ -32,6 +32,8 @@ static-resources/audios/**
 static-resources/images/**
 static-resources/files/**
 static-resources/videos/**
+static-resources/skills/**
+static-resources/prompts/**
 static-resources/conversations/**
 
 # 日志文件

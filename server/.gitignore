@@ -27,6 +27,8 @@ src/main/resources/application-prod.yml
 ./images/**
 ./videos/**
 ./files/**
+./skills/**
+./prompts/**
 ./conversations/**
 
 ### NetBeans ###
