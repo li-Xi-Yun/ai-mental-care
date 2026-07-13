@@ -3,12 +3,15 @@ package org.lixiyun.pojo.entity.conversation;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-    
+import java.util.Map;
+
 /**
  * 会话表(Conversation)实体类
  *
@@ -17,6 +20,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Builder
+@TableName(value = "conversation", autoResultMap = true)
 public class Conversation implements Serializable {
     
     private static final long serialVersionUID = 409226948168857358L;
@@ -43,7 +47,23 @@ public class Conversation implements Serializable {
     private String contextSummary;
     
     /**
-     * 当前轮次
+     * 最后活跃时间，用于业务展示、排序、统计，用户发消息/AI回复都会更新
+     */
+    private LocalDateTime lastActiveTime;
+    
+    /**
+     * 会话模式
+     */
+    private String chatMode;
+    
+    /**
+     * 会话映射表
+     */
+    @com.baomidou.mybatisplus.annotation.TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, String> sessionMapping;
+    
+    /**
+     * 当前轮次，执行中是当前轮次，执行后是下一轮次
      */
     private Integer currentRound;
     
@@ -64,4 +84,3 @@ public class Conversation implements Serializable {
     private Integer deleted;
 
 }
-

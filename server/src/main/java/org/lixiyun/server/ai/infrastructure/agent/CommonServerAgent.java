@@ -4,7 +4,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.Builder;
 import lombok.Data;
-import org.lixiyun.common.agent.constant.prompt.CommonConstant;
+import org.lixiyun.common.agent.prompt.constant.CommonConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;

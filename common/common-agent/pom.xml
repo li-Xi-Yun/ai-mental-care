@@ -32,12 +32,142 @@
             <artifactId>common-file</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
+            <artifactId>common-json</artifactId>
+        </dependency>
+
         <!-- 仅引入web注解依赖（用于写@RestController），不启动web容器 -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <scope>provided</scope> <!-- 运行时由主模块提供 -->
         </dependency>
+
+
+
+
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
+
+        <!-- 自定义数据库时，在yaml文件中填写对应数据库的 datasource 配置项 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
+        </dependency>
+
+        <!-- 必选：Agent 核心 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-deepseek</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>1.1.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-generator</artifactId>
+            <version>4.35.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-module-jackson</artifactId>
+            <version>4.35.0</version>
+        </dependency>
+
+        <!-- 检索增强生成 （RAG）,矢量数据库 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-advisors-vector-store</artifactId>
+        </dependency>
+
+        <!-- Milvus 矢量数据库,自动配置 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-milvus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-rag</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
+        </dependency>
+
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.ai</groupId>-->
+        <!--            <artifactId>spring-ai-pdf-document-reader</artifactId>-->
+        <!--        </dependency>-->
+
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.ai</groupId>-->
+        <!--            <artifactId>spring-ai-markdown-document-reader</artifactId>-->
+        <!--        </dependency>-->
+
+        <!-- PDF文件原生读取 -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.pdfbox</groupId>-->
+<!--            <artifactId>pdfbox</artifactId>-->
+<!--            <version>3.0.5</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
+
+        <!-- Milvus矢量数据库(原生) -->
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+        </dependency>
+
+
+
+
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.ai</groupId>-->
+        <!--            <artifactId>spring-ai-starter-model-deepseek</artifactId>-->
+        <!--        </dependency>-->
+
+        <!-- 这个是使用SpringAIAlibaba的Maven坐标 -->
+        <!--        <dependency>-->
+        <!--            <groupId>com.alibaba.cloud.ai</groupId>-->
+        <!--            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>-->
+        <!--        </dependency>-->
+
+        <!-- 如果你用 StateGraph（几乎肯定用） -->
+        <!--        		<dependency>-->
+        <!--        			<groupId>com.alibaba.cloud.ai</groupId>-->
+        <!--        			<artifactId>spring-ai-alibaba-graph</artifactId>-->
+        <!--        		</dependency>-->
+
+        <!--		<dependency>-->
+        <!--			<groupId>org.springframework.ai</groupId>-->
+        <!--			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>-->
+        <!--		</dependency>-->
     </dependencies>
 
 </project>

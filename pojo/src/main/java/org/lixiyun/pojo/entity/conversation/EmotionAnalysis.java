@@ -59,17 +59,42 @@ public class EmotionAnalysis implements Serializable {
     /**
      * 情感识别置信度（0-1，如0.9200）
      */
-    private Double emotionScore;
+    private Double emotionConfidence;
     
     /**
-     * 情绪变化趋势
+     * 情绪本身的强烈程度（0-1，如0.9200）
+     */
+    private Double emotionIntensity;
+    
+    /**
+     * 较上一轮的情绪变化趋势
      */
     private String emotionTrend;
+    
+    /**
+     * PAD愉悦度P，取值范围[-1,1]
+     */
+    private Double pScore;
+    
+    /**
+     * PAD唤醒度A，取值范围[-1,1]
+     */
+    private Double aScore;
+    
+    /**
+     * PAD支配度D，取值范围[-1,1]
+     */
+    private Double dScore;
     
     /**
      * 负向情绪占比（0-1）
      */
     private Double negativeEmotionRatio;
+    
+    /**
+     * 中性情绪占比（0-1）
+     */
+    private Double neutralEmotionRatio;
     
     /**
      * 正向情绪占比（0-1）
@@ -88,4 +113,3 @@ public class EmotionAnalysis implements Serializable {
     private Integer deleted;
 
 }
-

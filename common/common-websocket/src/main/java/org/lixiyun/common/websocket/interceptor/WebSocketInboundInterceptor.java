@@ -43,27 +43,30 @@ public class WebSocketInboundInterceptor implements ChannelInterceptor {
             log.info("WebSocket客户端消息前置拦截器-建立会话，用户身份：{}", accessor.getUser());
             String token = accessor.getFirstNativeHeader("token");
 
-            JwtType jwtType = JwtUtil.detectJwtType(token);
-            if(jwtType == null){
-                log.error("WebSocket客户端消息前置拦截器-建立会话失败，用户身份信息错误");
+            // 一次性解析 JWT，获取类型和用户 ID（避免重复解析）
+            JwtType jwtType = JwtType.USER;
+            Long personId = JwtUtil.parseJwtWithType(token, jwtType);
+            
+            if (personId == null) {
+                log.error("WebSocket客户端消息前置拦截器-建立会话失败，用户身份信息错误或Token无效");
                 return null;
             }
 
-            Long userId = JwtUtil.parseJwtWithRedis(token, jwtType);
-
             // 查询Redis，得到用户信息
-            String userStr = JwtUtil.getUserInfoFromRedis(userId, jwtType);
+            String userStr = JwtUtil.getUserInfoFromRedis(personId, jwtType);
             if(StrUtil.isBlank(userStr)){
+                log.warn("WebSocket客户端消息前置拦截器-Redis中未找到用户信息，personId: {}", personId);
                 return message;
             }
 
             LoginUser loginUser = JSONUtil.toBean(userStr, LoginUser.class);
             if(loginUser == null || loginUser.getBasicsUser() == null){
+                log.warn("WebSocket客户端消息前置拦截器-用户信息解析失败，personId: {}", personId);
                 return message;
             }
 
             // 刷新jwt时间
-            JwtUtil.refreshJwtTTLWithRedis(userId, jwtType);
+            JwtUtil.refreshJwtTTLWithRedis(personId, jwtType);
 
             // 获取权限信息封装到Authentication中
             UsernamePasswordAuthenticationToken authentication =
@@ -72,7 +75,7 @@ public class WebSocketInboundInterceptor implements ChannelInterceptor {
             accessor.setUser(authentication);
             // 把用户相关信息放到SecurityContext上下文对象中
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("WebSocket客户端消息前置拦截器-连接成功，用户ID：{}", userId);
+            log.info("WebSocket客户端消息前置拦截器-连接成功，用户ID：{}，类型：{}", personId, jwtType);
         }
 
         if(StompCommand.SUBSCRIBE.equals(command)){
@@ -95,14 +98,6 @@ public class WebSocketInboundInterceptor implements ChannelInterceptor {
             log.info("WebSocket客户端消息前置拦截器-取消订阅成功，用户ID：{}，订阅ID：{}",
                     user.getName(), accessor.getSubscriptionId());
         }
-
-        // 清理上下文（避免线程复用导致的安全问题）
-//        SecurityContextHolder.clearContext();
-
-//        if(StompCommand.SEND.equals(accessor.getCommand())){
-//            log.info("WebSocket前置拦截器，消息接收：{}", accessor.getUser());
-//            SecurityContextHolder.getContext().setAuthentication(auth);
-//        }
 
         return message;
     }

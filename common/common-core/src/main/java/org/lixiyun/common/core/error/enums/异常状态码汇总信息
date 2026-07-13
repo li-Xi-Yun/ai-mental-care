@@ -1,7 +1,8 @@
-AuthenticationException:1000
-KnowledgeBaseException:1500
-ConversationException:2000
-ScaleException:2500
+AuthenticationExceptionEnum:1000
+KnowledgeBaseExceptionEnum:1500
+ConversationExceptionEnum:2000
+ScaleExceptionEnum:2500
 FileExceptionEnum:3000
+SkillExceptionEnum:3500
 
-SystemException:10000
+SystemExceptionEnum:10000

@@ -2,11 +2,11 @@ package org.lixiyun.common.agent.prompt.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.FileConstant;
 import org.lixiyun.common.agent.prompt.dto.FolderContentItem;
 import org.lixiyun.common.agent.prompt.service.PromptService;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.properties.FileUrlProperties;
+import org.lixiyun.common.file.constant.FileConstant;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

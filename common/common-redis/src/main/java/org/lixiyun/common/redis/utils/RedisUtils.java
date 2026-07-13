@@ -532,5 +532,37 @@ public class RedisUtils {
         );
     }
 
+    /**
+     * 尝试获取分布式锁
+     *
+     * @param lockKey      锁的Key
+     * @param waitTimeSec  等待时间（秒）
+     * @param leaseTimeSec 锁持有时间（秒）
+     * @return boolean true-成功获取锁，false-获取失败
+     */
+    public static boolean tryAcquireLock(String lockKey, long waitTimeSec, long leaseTimeSec) {
+        try {
+            RLock lock = CLIENT.getLock(lockKey);
+            return lock.tryLock(waitTimeSec, leaseTimeSec, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    /**
+     * 释放分布式锁
+     * <p>
+     * 只有锁的持有者才能释放锁，防止误释放。
+     * </p>
+     *
+     * @param lockKey 锁的Key
+     */
+    public static void releaseLock(String lockKey) {
+        RLock lock = CLIENT.getLock(lockKey);
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
+    }
 
 }

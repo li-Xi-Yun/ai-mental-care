@@ -1,8 +1,11 @@
 package org.lixiyun.common.authentication.utils;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.constant.JwtClaimsConstant;
 import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.properties.JwtProperties;
@@ -21,6 +24,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -50,39 +54,82 @@ public class JwtUtil {
     }
 
     /**
-     * 判断Token中存储的ID类型
-     * 通过尝试不同密钥解析Token来确定其类型
+     * 获取Token
+     * <p>优先从请求头中提取 Token，如果同时存在多个 token，记录警告日志</p>
+     *
+     * @param request HttpServletRequest 请求对象
+     * @return Token信息，如果都不存在则返回 null
+     */
+    public static String getToken(HttpServletRequest request) {
+        String userToken = request.getHeader(jwtProperties.getUserTokenName());
+        String adminToken = request.getHeader(jwtProperties.getAdminTokenName());
+        
+        // 如果两个 token 都存在，记录警告日志
+        if (StrUtil.isNotBlank(userToken) && StrUtil.isNotBlank(adminToken)) {
+            log.warn("请求中同时存在用户token和管理员token，将优先使用用户token。建议前端检查是否重复传递token");
+            return userToken;
+        }
+        
+        // 优先返回用户token，其次返回管理员token
+        if (StrUtil.isNotBlank(userToken)) {
+            return userToken;
+        }
+        
+        return adminToken;
+    }
+
+    /**
+     * 一次性解析 JWT，返回类型、用户 ID 和 Claims 信息
      *
      * @param token JWT Token
-     * @return JWT类型，如果无法解析则返回null {@link JwtType}
+     * @param jwtType jwt类型
+     * @return 登录人员的ID
      */
-    public static JwtType detectJwtType(String token) {
-        // 先尝试用USER类型解析
-        try {
-            String secretKey = jwtProperties.getUserSecretKey();
-            Claims claims = parseJWT(secretKey, token);
-            Object userId = claims.get(JwtClaimsConstant.USER_ID);
-            if (userId != null) {
-                return JwtType.USER;
+    public static Long parseJwtWithType(String token, JwtType jwtType) {
+        if(jwtType == JwtType.USER){
+            try {
+                String secretKey = jwtProperties.getUserSecretKey();
+                Claims claims = parseJWT(secretKey, token);
+                Object userIdObj = claims.get(JwtClaimsConstant.USER_ID);
+                if (userIdObj != null) {
+                    return Long.parseLong(userIdObj.toString());
+                }
+            } catch (Exception e) {
+                log.debug("USER类型JWT解析失败: {}", e.getMessage());
+                return null;
             }
-        } catch (Exception e) {
-        }
-
-        // 再尝试用ADMIN类型解析
-        try {
-            String secretKey = jwtProperties.getAdminSecretKey();
-            Claims claims = parseJWT(secretKey, token);
-            Object empId = claims.get(JwtClaimsConstant.EMP_ID);
-            if (empId != null) {
-                return JwtType.ADMIN;
+        } else if(jwtType == JwtType.ADMIN){
+            try {
+                String secretKey = jwtProperties.getAdminSecretKey();
+                Claims claims = parseJWT(secretKey, token);
+                Object empIdObj = claims.get(JwtClaimsConstant.EMP_ID);
+                if (empIdObj != null) {
+                    return Long.parseLong(empIdObj.toString());
+                }
+            } catch (Exception e) {
+                log.debug("ADMIN类型JWT解析失败: {}", e.getMessage());
+                return null;
             }
-        } catch (Exception e) {
+        } else{
+            log.warn("无法识别JWT类型或解析失败");
+            return null;
         }
-
         return null;
     }
 
-
+    /**
+     * 生成 JWT 并将用户信息存储到 Redis，支持动态刷新 TTL
+     *
+     * @param info    用户信息 {@link LoginUser}
+     * @param flat    是否创建对应的 Redis 中的用户信息
+     * @param jwtType JWT类型 {@link JwtType}
+     * @return 生成的 JWT Token
+     */
+    public static String createJwtWithRedis(LoginUser info, boolean flat, JwtType jwtType) {
+        String secretKey = jwtType == JwtType.USER ? jwtProperties.getUserSecretKey() : jwtProperties.getAdminSecretKey();
+        long ttlMillis = jwtType == JwtType.USER ? jwtProperties.getUserTtl() : jwtProperties.getAdminTtl();
+        return createJwtWithRedis(secretKey, info, ttlMillis, flat, jwtType);
+    }
 
     /**
      * 生成 JWT 并将用户信息存储到 Redis，支持动态刷新 TTL
@@ -105,7 +152,7 @@ public class JwtUtil {
         } else {
             throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
         }
-        
+
         String token = createJwtNoTime(secretKey, claims);
         if (flat) {
             // 构建 Redis Key
@@ -120,53 +167,6 @@ public class JwtUtil {
     }
 
     /**
-     * 生成 JWT 并将用户信息存储到 Redis，支持动态刷新 TTL
-     *
-     * @param info    用户信息 {@link LoginUser}
-     * @param flat    是否创建对应的 Redis 中的用户信息
-     * @param jwtType JWT类型 {@link JwtType}
-     * @return 生成的 JWT Token
-     */
-    public static String createJwtWithRedis(LoginUser info, boolean flat, JwtType jwtType) {
-        String secretKey = jwtType == JwtType.USER ? jwtProperties.getUserSecretKey() : jwtProperties.getAdminSecretKey();
-        long ttlMillis = jwtType == JwtType.USER ? jwtProperties.getUserTtl() : jwtProperties.getAdminTtl();
-        return createJwtWithRedis(secretKey, info, ttlMillis, flat, jwtType);
-    }
-
-    /**
-     * 解析 JWT
-     *
-     * @param token   JWT Token
-     * @param jwtType JWT类型 {@link JwtType}
-     * @return        解析后的 id
-     * @throws BusinessException 如果 Token 无效或签名错误
-     */
-    public static Long parseJwtWithRedis(String token, JwtType jwtType) {
-        String secretKey = jwtType == JwtType.USER ? jwtProperties.getUserSecretKey() : jwtProperties.getAdminSecretKey();
-        
-        // 解析 JWT
-        Claims claims = parseJWT(secretKey, token);
-
-        // 从 Claims 中获取用户 ID
-        Long id = null;
-        try {
-            if (jwtType == JwtType.USER) {
-                id = Long.parseLong((String) claims.get(JwtClaimsConstant.USER_ID));
-            } else if (jwtType == JwtType.ADMIN) {
-                id = Long.parseLong((String) claims.get(JwtClaimsConstant.EMP_ID));
-            }
-        } catch (NumberFormatException e) {
-            throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
-        }
-
-        if (id == null) {
-            throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
-        }
-
-        return id;
-    }
-
-    /**
      * 手动刷新指定用户的 JWT TTL，固定刷新时间
      *
      * @param id      人员 ID
@@ -175,37 +175,11 @@ public class JwtUtil {
     public static void refreshJwtTTLWithRedis(Long id, JwtType jwtType) {
         String redisKey = jwtType == JwtType.USER ? JWT_REDIS_KEY_PREFIX_USER + id : JWT_REDIS_KEY_PREFIX_ADMIN + id;
         long ttl = jwtType == JwtType.USER ? jwtProperties.getUserTtl() : jwtProperties.getAdminTtl();
-        
+
         // 刷新 Redis 中的 TTL（覆盖有效期）
         if (RedisUtils.getExpire(redisKey) < ttl / 2) {
             RedisUtils.expire(redisKey, ttl, TimeUnit.SECONDS);
         }
-    }
-
-    /**
-     * 解析 JWT
-     *
-     * @param secretKey   签名密钥
-     * @param token       JWT Token
-     * @return            解析后的 userId
-     * @throws JwtException 如果 Token 无效或签名错误
-     */
-    public static Long parseJwtWithRedis(String secretKey, String token, JwtType jwtType) {
-        // 解析 JWT
-        Claims claims = parseJWT(secretKey, token);
-        Long id = null;
-        if(jwtType == JwtType.USER){
-            // 从 Claims 中获取用户 ID（需在生成 JWT 时设置）
-            id = (Long) claims.get(JwtClaimsConstant.USER_ID);
-        } else if(jwtType == JwtType.ADMIN){
-            id = (Long) claims.get(JwtClaimsConstant.EMP_ID);
-        }
-
-        if (id == null) {
-            throw new BusinessException(AuthenticationExceptionEnum.JWT_ERROR);
-        }
-
-        return id;
     }
 
     /**

@@ -12,7 +12,7 @@ import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.ScenarioConstant;
+import org.lixiyun.common.agent.prompt.constant.ScenarioConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;

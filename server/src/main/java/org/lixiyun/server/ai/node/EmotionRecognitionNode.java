@@ -11,17 +11,12 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.EmotionConstant;
+import org.lixiyun.common.agent.prompt.constant.EmotionConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
-import org.lixiyun.common.json.utils.JsonUtils;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
@@ -30,9 +25,7 @@ import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 用户情绪分析节点
@@ -170,81 +163,82 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
         log.debug("情感识别节点-开始执行");
-        Optional<Map<String, Object>> metadataMap = config.metadata();
-        Map<String, Object> map = metadataMap.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
-
-        int currentRound = (int) map.get(GraphConstant.CURRENT_ROUND);
-        Optional<String> threadIdOpl = config.threadId();
-        String threadId = threadIdOpl.orElseThrow(() -> {
-            log.error("情感识别节点-threadId:会话不存在");
-            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
-        });
-        Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
-        List<Message> userMessages = userMessageOpl.orElseThrow(() -> {
-            log.error("情感识别节点-userMessages:上下文不存在");
-            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
-        });
-        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
-        String input = String.format(userInputContextPrompt, currentRound, inputOpl.get());
-
-        // 获取语音输入的情绪分析内容
-        String audioEmotionRecognition = (String) config.context().get(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION);
-        if(audioEmotionRecognition != null){
-            input += "以下是本次用户语音输入时的语气情绪分析内容：" + audioEmotionRecognition;
-        }
-
-        EmotionAnalysis.EmotionAnalysisBuilder analysis = EmotionAnalysis.builder();
-        AssistantMessage call;
-        String modelOutput;
-        if(currentRound >= roundWithCompleteData){
-            // 模型调用生成完整数据信息
-            // todo 这里的模型提示词输入的内容反了
-            call = reactAgentBuilder()
-                    .systemPrompt(standardPrompt + input)
-                    .outputType(CompleteEmotionAnalysis.class)
-                    .build()
-                    .call(userMessages);
-            modelOutput = call.getText();
-            log.debug("情感识别节点-模型调用生成完整数据信息:{}", modelOutput);
-            CompleteEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, CompleteEmotionAnalysis.class);
-            analysis.analysisContent(emotionAnalysis.getAnalysisContent())
-                    .emotionLabel(emotionAnalysis.getEmotionLabel())
-                    .emotionSubLabel(emotionAnalysis.getEmotionSubLabel())
-                    .emotionScore(emotionAnalysis.getEmotionScore())
-                    .emotionTrend(emotionAnalysis.getEmotionTrend())
-                    .negativeEmotionRatio(emotionAnalysis.getNegativeEmotionRatio())
-                    .positiveEmotionRatio(emotionAnalysis.getPositiveEmotionRatio());
-        } else{
-            // 模型调用生成简略数据信息（情感标签、置信度）
-            call = reactAgentBuilder()
-                    .systemPrompt(briefPrompt + input)
-                    .outputType(BriefEmotionAnalysis.class)
-                    .build()
-                    .call(userMessages);
-            modelOutput = call.getText();
-            log.debug("情感识别节点-模型调用生成简略数据信息:{}", modelOutput);
-            BriefEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, BriefEmotionAnalysis.class);
-            analysis.analysisContent(emotionAnalysis.getAnalysisContent())
-                    .emotionLabel(emotionAnalysis.getEmotionLabel())
-                    .emotionScore(emotionAnalysis.getEmotionScore());
-        }
-        log.info("情感识别节点-识别结果:{}", modelOutput);
-        log.info("情感识别节点-转换结果:{}", analysis);
-
-        Long userId = (Long) map.get(GraphConstant.USER_ID);
-        analysis.conversationId(Long.valueOf(threadId))
-                .userId(userId)
-                .roundNum(currentRound);
-
-        emotionAnalysisMapper.insert(analysis.build());
-
-        if(modelOutput == null){
-            return Map.of();
-        }
-
-        log.debug("情感识别节点-结束执行");
-        String modelOutputResult = "第" + currentRound + "轮情绪识别结果：" + call.getText();
-        return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutputResult));
+        return null;
+//        Optional<Map<String, Object>> metadataMap = config.metadata();
+//        Map<String, Object> map = metadataMap.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_PARAM_ERROR));
+//
+//        int currentRound = (int) map.get(GraphConstant.CURRENT_ROUND);
+//        Optional<String> threadIdOpl = config.threadId();
+//        String threadId = threadIdOpl.orElseThrow(() -> {
+//            log.error("情感识别节点-threadId:会话不存在");
+//            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+//        });
+//        Optional<List<Message>> userMessageOpl = state.value(GraphConstant.MESSAGES);
+//        List<Message> userMessages = userMessageOpl.orElseThrow(() -> {
+//            log.error("情感识别节点-userMessages:上下文不存在");
+//            return new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_FOUND);
+//        });
+//        Optional<String> inputOpl = state.value(GraphConstant.INPUT);
+//        String input = String.format(userInputContextPrompt, currentRound, inputOpl.get());
+//
+//        // 获取语音输入的情绪分析内容
+//        String audioEmotionRecognition = (String) config.context().get(GraphConstant.AUDIO_DATA_EMOTION_RECOGNITION);
+//        if(audioEmotionRecognition != null){
+//            input += "以下是本次用户语音输入时的语气情绪分析内容：" + audioEmotionRecognition;
+//        }
+//
+//        EmotionAnalysis.EmotionAnalysisBuilder analysis = EmotionAnalysis.builder();
+//        AssistantMessage call;
+//        String modelOutput;
+//        if(currentRound >= roundWithCompleteData){
+//            // 模型调用生成完整数据信息
+//            // todo 这里的模型提示词输入的内容反了
+//            call = reactAgentBuilder()
+//                    .systemPrompt(standardPrompt + input)
+//                    .outputType(CompleteEmotionAnalysis.class)
+//                    .build()
+//                    .call(userMessages);
+//            modelOutput = call.getText();
+//            log.debug("情感识别节点-模型调用生成完整数据信息:{}", modelOutput);
+//            CompleteEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, CompleteEmotionAnalysis.class);
+//            analysis.analysisContent(emotionAnalysis.getAnalysisContent())
+//                    .emotionLabel(emotionAnalysis.getEmotionLabel())
+//                    .emotionSubLabel(emotionAnalysis.getEmotionSubLabel())
+//                    .emotionScore(emotionAnalysis.getEmotionScore())
+//                    .emotionTrend(emotionAnalysis.getEmotionTrend())
+//                    .negativeEmotionRatio(emotionAnalysis.getNegativeEmotionRatio())
+//                    .positiveEmotionRatio(emotionAnalysis.getPositiveEmotionRatio());
+//        } else{
+//            // 模型调用生成简略数据信息（情感标签、置信度）
+//            call = reactAgentBuilder()
+//                    .systemPrompt(briefPrompt + input)
+//                    .outputType(BriefEmotionAnalysis.class)
+//                    .build()
+//                    .call(userMessages);
+//            modelOutput = call.getText();
+//            log.debug("情感识别节点-模型调用生成简略数据信息:{}", modelOutput);
+//            BriefEmotionAnalysis emotionAnalysis = JsonUtils.parseObject(modelOutput, BriefEmotionAnalysis.class);
+//            analysis.analysisContent(emotionAnalysis.getAnalysisContent())
+//                    .emotionLabel(emotionAnalysis.getEmotionLabel())
+//                    .emotionScore(emotionAnalysis.getEmotionScore());
+//        }
+//        log.info("情感识别节点-识别结果:{}", modelOutput);
+//        log.info("情感识别节点-转换结果:{}", analysis);
+//
+//        Long userId = (Long) map.get(GraphConstant.USER_ID);
+//        analysis.conversationId(Long.valueOf(threadId))
+//                .userId(userId)
+//                .roundNum(currentRound);
+//
+//        emotionAnalysisMapper.insert(analysis.build());
+//
+//        if(modelOutput == null){
+//            return Map.of();
+//        }
+//
+//        log.debug("情感识别节点-结束执行");
+//        String modelOutputResult = "第" + currentRound + "轮情绪识别结果：" + call.getText();
+//        return Map.of(GraphConstant.MESSAGES, new AssistantMessage(modelOutputResult));
     }
 
 

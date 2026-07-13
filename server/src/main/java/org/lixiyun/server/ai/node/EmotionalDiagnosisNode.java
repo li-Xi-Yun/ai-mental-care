@@ -12,7 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.EmotionConstant;
+import org.lixiyun.common.agent.prompt.constant.EmotionConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;

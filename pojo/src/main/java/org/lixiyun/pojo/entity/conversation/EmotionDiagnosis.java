@@ -67,6 +67,11 @@ public class EmotionDiagnosis implements Serializable {
      * 核心情绪强度（轻度/中度/重度/极重度）
      */
     private String coreEmotionIntensity;
+    
+    /**
+     * 核心情绪强度分值(0-1)
+     */
+    private BigDecimal coreEmotionIntensityScore;
 
     /**
      * 次要情绪
@@ -131,6 +136,41 @@ public class EmotionDiagnosis implements Serializable {
     private Integer emotionStableRounds;
     
     /**
+     * 情绪稳定性得分（0-1，越高越稳定）
+     */
+    private BigDecimal emotionStabilityScore;
+    
+    /**
+     * 整体PAD愉悦度均值，值域[-1,1]
+     */
+    private BigDecimal avgP;
+    
+    /**
+     * 整体PAD唤醒度均值，值域[-1,1]
+     */
+    private BigDecimal avgA;
+    
+    /**
+     * 整体PAD支配度均值，值域[-1,1]
+     */
+    private BigDecimal avgD;
+    
+    /**
+     * P维度标准差，数值越大情绪愉悦度波动越强
+     */
+    private BigDecimal stdP;
+    
+    /**
+     * A维度标准差，数值越大唤醒起伏剧烈
+     */
+    private BigDecimal stdA;
+    
+    /**
+     * D维度标准差，数值越大掌控感反复变化
+     */
+    private BigDecimal stdD;
+    
+    /**
      * 核心触发场景（如工作压力/人际关系/家庭矛盾）
      */
     private String coreTriggerScene;
@@ -146,7 +186,67 @@ public class EmotionDiagnosis implements Serializable {
     private Integer triggerRoundNum;
     
     /**
-     * 情绪风险等级（low/medium/high/critical，低/中/高/危急）
+     * 整体心理状态评估，如"适应不良/轻度焦虑状态/抑郁情绪困扰/人际敏感状态"
+     */
+    private String psychologicalState;
+    
+    /**
+     * 核心症状总结（自然语言），如"持续情绪低落、兴趣减退、入睡困难、注意力下降"
+     */
+    private String symptomSummary;
+    
+    /**
+     * 症状标签集合，逗号分隔，如"失眠,焦虑,自卑,易怒,兴趣减退,食欲下降"
+     */
+    private String symptomTags;
+    
+    /**
+     * 社会功能受损程度：无影响/轻度受损/中度受损/重度受损
+     */
+    private String socialFunctionImpact;
+    
+    /**
+     * 受影响的具体领域，逗号分隔，如"工作效率下降,睡眠受影响,社交减少,食欲变差"
+     */
+    private String impactDomains;
+    
+    /**
+     * 对日常生活影响的自然语言描述
+     */
+    private String dailyLifeInfluence;
+    
+    /**
+     * 症状持续时长，如"几天/1-2周/1个月以上/3个月以上/半年以上"
+     */
+    private String symptomDuration;
+    
+    /**
+     * 发作模式：持续性/阵发性/偶发/逐渐加重/反复波动
+     */
+    private String onsetPattern;
+    
+    /**
+     * 用户提及的首次触发事件/原因
+     */
+    private String firstTriggerDesc;
+    
+    /**
+     * 社会支持水平：良好/一般/较差/匮乏
+     */
+    private String socialSupportLevel;
+    
+    /**
+     * 保护性因素/心理资源，逗号分隔，如"家人支持,朋友陪伴,有兴趣爱好,自我调节能力强"
+     */
+    private String protectiveFactors;
+    
+    /**
+     * 用户的应对方式，如"积极解决/回避/倾诉/压抑/运动调节"
+     */
+    private String copingStyle;
+    
+    /**
+     * 情绪风险等级（低/中/高/危急）
      */
     private String emotionRiskLevel;
     
@@ -159,6 +259,46 @@ public class EmotionDiagnosis implements Serializable {
      * 是否需要人工干预（0-否，1-是）
      */
     private Integer needManualIntervene;
+    
+    /**
+     * 自伤风险等级：无/低/中/高/极高
+     */
+    private String selfHarmRiskLevel;
+    
+    /**
+     * 自杀风险等级：无/低/中/高/极高
+     */
+    private String suicideRiskLevel;
+    
+    /**
+     * 风险细节描述，如"存在消极念头，无具体计划，无自伤行为"
+     */
+    private String riskDetail;
+    
+    /**
+     * 是否触发危机预警：0-否 1-是
+     */
+    private Integer crisisWarning;
+    
+    /**
+     * 自助调节建议（用户可独立完成的小事，如呼吸放松、散步）
+     */
+    private String selfHelpSuggestion;
+    
+    /**
+     * 社会支持建议（如向亲友倾诉、加入兴趣社群）
+     */
+    private String socialSupportSuggestion;
+    
+    /**
+     * 专业干预建议（如建议寻求心理咨询、精神科就诊评估）
+     */
+    private String professionalInterveneSuggestion;
+    
+    /**
+     * 建议优先级：1-自助为主 2-建议寻求支持 3-强烈建议专业干预
+     */
+    private Integer suggestionPriority;
     
     /**
      * 记录创建时间
@@ -177,4 +317,3 @@ public class EmotionDiagnosis implements Serializable {
     private Integer deleted;
 
 }
-

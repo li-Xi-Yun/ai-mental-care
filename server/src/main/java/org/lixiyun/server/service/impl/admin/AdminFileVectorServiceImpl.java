@@ -88,8 +88,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         // 7. 异步向量加载
         Consumer<Long> interruptedHandler = this::handleInterrupt;
 
-        CompletableFuture<Void> future = ragStore.storeFileToVectorAsync(
-                filePath, vectorData, interruptedHandler);
+        CompletableFuture<Void> future = ragStore.storeFileToVectorAsync(filePath, vectorData, interruptedHandler);
 
         // 8. 添加消费者参数：向量加载完成后更新文件状态
         future.thenRun(() -> {

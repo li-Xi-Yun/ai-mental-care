@@ -55,30 +55,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             }
         }
 
-//        // 判断是否是 WebSocket 连接
-//        boolean isWebSocket = isWebSocketRequest(request);
-//        if (isWebSocket){
-//            log.info("WebSocket 访问");
-//        }
-//
-//        // 如果是 WebSocket → 从 URL 参数取 token，否则 → 从 header 取 token
-//        String token;
-//        if (isWebSocket) {
-//            token = request.getParameter("token");
-//            log.info("WebSocket 连接，从 URL 参数获取 token：{}", token);
-//        } else {
-//            // 获取请求体中的token
-//            token = request.getHeader("token");
-//        }
-
         // 进入以下代码，则表示需要进行认证
-        String token = request.getHeader("token");
+        String token = JwtUtil.getToken(request);
+
+        JwtType jwtType = request.getServletPath().startsWith("admin") ? JwtType.ADMIN : JwtType.USER;
 
         // 如果是放行接口
         if (isPermitAll) {
             // 即使是放行接口，也尝试解析token获取用户信息（如果token存在且有效）
             if(StrUtil.isNotBlank(token)) {
-                processToken(token);
+                processToken(token, jwtType);
             }
 
             // 直接放行
@@ -96,7 +82,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
 
         log.info("开始令牌校验");
-        boolean tokenValid = processToken(token);
+        boolean tokenValid = processToken(token, jwtType);
 
         if (!tokenValid) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
@@ -113,47 +99,37 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     /**
      * 处理token解析和用户信息获取，自动识别用户类型
+     * <p>使用优化后的单次解析方法，避免重复解析 Token</p>
      *
      * @param token JWT token
      * @return boolean token是否有效
      */
-    private boolean processToken(String token) {
-        // 尝试自动识别用户类型
-        JwtType jwtType = JwtUtil.detectJwtType(token);
-        return processTokenWithJwtType(token, jwtType);
-    }
-
-    /**
-     * 处理token解析和用户信息获取，指定用户类型
-     *
-     * @param token   JWT token
-     * @param jwtType JWT类型 {@link JwtType}
-     * @return boolean token是否有效
-     */
-    private boolean processTokenWithJwtType(String token, JwtType jwtType) {
-        if (jwtType == null) {
-            log.warn("无法识别JWT类型");
+    private boolean processToken(String token, JwtType jwtType) {
+        // 一次性解析 JWT，获取类型和用户 ID
+        Long personId = JwtUtil.parseJwtWithType(token, jwtType);
+        
+        if (personId == null) {
+            log.warn("JWT解析失败或结果无效");
             return false;
         }
-
-        Long userId = JwtUtil.parseJwtWithRedis(token, jwtType);
-        log.info("令牌中存放的id为{}，类型为{}", userId, jwtType);
+        
+        log.info("令牌中存放的id为{}，类型为{}", personId, jwtType);
 
         // 查询Redis，得到用户信息
-        String userStr = JwtUtil.getUserInfoFromRedis(userId, jwtType);
+        String userStr = JwtUtil.getUserInfoFromRedis(personId, jwtType);
         if (StrUtil.isBlank(userStr)) {
-            log.warn("Redis中未找到用户信息，userId: {}", userId);
+            log.warn("Redis中未找到用户信息，personId: {}", personId);
             return false;
         }
 
         LoginUser loginUser = JSONUtil.toBean(userStr, LoginUser.class);
         if (loginUser == null || loginUser.getBasicsUser() == null) {
-            log.warn("用户信息解析失败，userId: {}", userId);
+            log.warn("用户信息解析失败，personId: {}", personId);
             return false;
         }
 
         // 刷新jwt时间
-        JwtUtil.refreshJwtTTLWithRedis(userId, jwtType);
+        JwtUtil.refreshJwtTTLWithRedis(personId, jwtType);
 
         // 获取权限信息封装到Authentication中
         UsernamePasswordAuthenticationToken authentication =

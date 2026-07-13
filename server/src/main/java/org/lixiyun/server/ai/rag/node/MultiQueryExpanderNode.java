@@ -9,7 +9,7 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.RagConstant;
+import org.lixiyun.common.agent.prompt.constant.RagConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;

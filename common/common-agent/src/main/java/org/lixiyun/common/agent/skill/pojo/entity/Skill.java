@@ -41,7 +41,7 @@ public class Skill implements Serializable {
     private String author;
 
     /**
-     * 技能标签
+     * 技能标签，领域标签，小写英文
      */
     private List<String> tags;
 
@@ -49,5 +49,25 @@ public class Skill implements Serializable {
      * 技能的相对URL, 例如：/skills/skill1/SKILL.md
      */
     private String url;
+    
+    /**
+     * 索引文件标识，0-实际Skill文件，1-Skill索引文件
+     */
+    private Integer isIndex;
+    
+    /**
+     * 删除标识，0-未删除，1-已删除
+     */
+    private Integer deleteFlag;
+
+    public boolean equals(Skill other) {
+        return name.equals(other.name) &&
+                description.equals(other.description) &&
+                version.equals(other.version) &&
+                author.equals(other.author) &&
+                tags.equals(other.tags) &&
+                isIndex.equals(other.isIndex) &&
+                deleteFlag.equals(other.deleteFlag);
+    }
 
 }

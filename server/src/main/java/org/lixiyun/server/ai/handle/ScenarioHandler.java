@@ -2,7 +2,7 @@ package org.lixiyun.server.ai.handle;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.ScenarioConstant;
+import org.lixiyun.common.agent.prompt.constant.ScenarioConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;

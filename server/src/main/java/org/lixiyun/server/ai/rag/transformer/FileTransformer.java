@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.constant.prompt.CommonConstant;
+import org.lixiyun.common.agent.prompt.constant.CommonConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;

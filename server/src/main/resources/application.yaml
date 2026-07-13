@@ -266,14 +266,14 @@ knife4j:
 
 jwt:
   # 设置jwt签名加密时使用的秘钥
-  user-secret-key: lixiyun-hearawerjhawerhyawueT%Juaet5hyuaez5kjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKMASZ4REJIwsskjkjiw53Ukjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UJ4ES6KII4ESLKS5RYKkjiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5UMASZ4REJIwsstujsu5h3ea5sjua35yh5Uiw53UJ4ES6KII4ESLKS5RYKMASZ4REJIwsstujsu5h3ea5sjua35yh5Utujsu5h3ea5sjua35yh5UEWA5TJ55hyresjhsue5hysejhesu5uhae5husejues5juse65yhe5sjkies6ujea5syhser456kjiser65thygse5ju
-  # 设置jwt过期时间,两小时(秒)
-  user-ttl: 7200000
+  user-secret-key: ${jwt.user-secret-key}
+  # 设置jwt过期时间
+  user-ttl: ${jwt.user-ttl}
   # 设置前端传递过来的令牌名称s
-  user-token-name: basic-token
-  admin-secret-key: lixiyun-skysrylsjtsrdyrtkrstj%45874584578554trsjsrtkjmaztyjasz6tkymehtrstabta5684jsyrkyutiaqtyuu35735tiuohvgku36346mvjysfjtewth
-  admin-ttl: 7200000
-  admin-token-name: admin-token
+  user-token-name: ${jwt.user-token-name}
+  admin-secret-key: ${jwt.admin-secret-key}
+  admin-ttl: ${jwt.admin-ttl}
+  admin-token-name: ${jwt.admin-token-name}
 
 # 项目应用部署配置
 web:
@@ -325,13 +325,19 @@ url:
 
 --- # sms 短信
 sms:
-  enabled: false
+  enabled: true
+  region: ${sms.region}
   # 阿里云 dysmsapi.aliyuncs.com
   # 腾讯云 sms.tencentcloudapi.com
-  endpoint: "dysmsapi.aliyuncs.com"
-  accessKeyId: xxxxxxx
-  accessKeySecret: xxxxxx
-  signName: 测试
+  endpoint: ${sms.endpoint}
+  accessKeyId: ${sms.accessKeyId}
+  accessKeySecret: ${sms.accessKeySecret}
+  signName: ${sms.signName}
+  templates:
+    common: ${sms.templates.common}
+    register: ${sms.templates.register}    # 注册验证码模板ID
+    login: ${sms.templates.login}      # 登录验证码模板ID
+    reset: ${sms.templates.reset}     # 找回密码模板ID
   # 腾讯专用
   sdkAppId:
 
@@ -393,4 +399,68 @@ websocket:
   # 用户单发消息前缀
   user-private-prefix: '/queue'
 
+weather:
+  api-url: ${weather.api-url}
+  id: ${weather.id}
+  key: ${weather.key}
 
+skill:
+  auto-init:
+    enabled: ${skill.auto-init.enabled}  # 是否自动初始化加载Skill数据
+  terminal:
+    # ==================== AI安全审计配置 ====================
+    security:
+      # 是否启用AI模型安全检查（建议生产环境开启）
+      enabled: ${skill.terminal.security.enabled}
+      # AI安全检查超时时间（秒）
+      timeout-seconds: ${skill.terminal.security.timeout-seconds}
+      # AI检查失败时的默认行为
+      # true: 默认允许执行（保证可用性优先）- 推荐开发环境
+      # false: 默认拒绝执行（安全性优先）- 推荐生产环境
+      default-allow-on-failure: ${skill.terminal.security.default-allow-on-failure}
+      # 系统提示词模板（支持占位符：%s = Skill目录路径）
+      system-prompt: ${skill.terminal.security.system-prompt}
+      # 用户消息模板（支持占位符：第一个%s=命令，第二个%s=工作目录）
+      user-message-template: ${skill.terminal.security.user-message-template}
+      # 安全响应标识
+      safe-response: ${skill.terminal.security.safe-response}
+      # 不安全响应前缀
+      unsafe-response-prefix: ${skill.terminal.security.unsafe-response-prefix}
+    # ==================== Docker容器配置 ====================
+    docker:
+      # Docker基础镜像（根据实际Skill类型选择）
+      base-image: ${skill.terminal.docker.base-image}  # 轻量级Linux（~5MB）
+      # base-image: python:3.11-slim  # Python环境（~150MB）
+      # base-image: node:20-alpine  # Node.js环境（~180MB）
+      # 内存限制（支持单位：k, m, g）
+      memory-limit: ${skill.terminal.docker.memory-limit}
+      cpu-limit: ${skill.terminal.docker.cpu-limit}
+      # 内存交换空间限制（0表示禁用swap，推荐与memory-limit相同）
+      memory-swap: ${skill.terminal.docker.memory-swap}
+      # 命令执行超时时间（秒）
+      timeout-seconds: ${skill.terminal.docker.timeout-seconds}
+      # 网络隔离模式
+      # none: 无网络访问（最安全，推荐）
+      # bridge: 默认桥接网络
+      # host: 使用主机网络（不推荐）
+      network-mode: ${skill.terminal.docker.network-mode}
+      # 是否启用只读根文件系统（推荐开启以增强安全性）
+      read-only-fs: true
+      # 容器内工作目录（Skill目录挂载点）
+      workspace-dir: ${skill.terminal.docker.workspace-dir}
+      # 容器清理超时时间（秒）
+      cleanup-timeout-seconds: ${skill.terminal.docker.cleanup-timeout-seconds}
+      # 容器名前缀
+      container-name-prefix: ${skill.terminal.docker.container-name-prefix}
+      # 分布式锁Key前缀
+      lock-key-prefix: ${skill.terminal.docker.lock-key-prefix}
+      # 分布式锁最大重试次数（获取锁失败后的最大尝试次数）
+      # 建议：根据并发量调整，高并发环境可适当增大
+      lock-max-retries: ${skill.terminal.docker.lock-max-retries}
+      # 分布式锁重试间隔（毫秒）
+      # 建议：1000-3000ms，避免频繁重试造成Redis压力
+      lock-retry-interval-ms: ${skill.terminal.docker.lock-retry-interval-ms}
+      # 分布式锁持有时间（秒）
+      # 建议：应大于命令的最大执行时间（timeout-seconds）+ 缓冲时间
+      # 例如：命令超时120秒 + 缓冲180秒 = 300秒
+      lock-lease-time-seconds: ${skill.terminal.docker.lock-lease-time-seconds}

@@ -9,20 +9,23 @@ import org.lixiyun.common.core.error.ErrorCode;
  */
 public enum FileExceptionEnum implements ErrorCode {
 
-    // çŠ¶æ€ç ä»Ž3000å¼€å§‹
-    FILE_NOT_FOUND("æ–‡ä»¶ä¸å­˜åœ¨", 3001),
-    FILE_READ_ERROR("æ–‡ä»¶è¯»å–å¤±è´¥", 3002),
-    FILE_PARSE_ERROR("æ–‡ä»¶è§£æžå¤±è´¥ï¼Œæ ¼å¼ä¸æ”¯æŒæˆ–å·²æŸå", 3003),
-    NETWORK_TIMEOUT("ç½‘ç»œè¯·æ±‚è¶…æ—¶", 3004),
-    FILE_SIZE_EXCEEDED("æ–‡ä»¶å¤§å°è¶…å‡ºé™åˆ¶", 3005),
-    UNSUPPORTED_FILE_TYPE("ä¸æ”¯æŒçš„æ–‡ä»¶ç±»åž‹", 3006),
-    FILE_CATEGORY_NOT_FOUND("æ–‡ä»¶åˆ†ç±»ä¸å­˜åœ¨", 3007),
-    FILE_CATEGORY_HAS_FILES("è¯¥åˆ†ç±»ä¸‹å­˜åœ¨æ–‡ä»¶ï¼Œæ— æ³•åˆ é™¤", 3008),
-    FILE_CATEGORY_NAME_EXISTS("åˆ†ç±»åç§°å·²å­˜åœ¨", 3009),
-    FILE_CATEGORY_NOT_ALLOWED_CHILD("é»˜è®¤åˆ†ç±»ä¸å…è®¸æœ‰å­åˆ†ç±»", 3010),
-    FILE_CATEGORY_NOT_ALLOWED_UPDATE("é»˜è®¤åˆ†ç±»ä¸å…è®¸ä¿®æ”¹åç§°", 3011),
-    FILE_PARAMS_ERROR("RAGæµç¨‹å‚æ•°é”™è¯¯", 3012),
-    FILE_VECTOR_UPDATE_ERROR("æ–‡ä»¶å‘é‡æ›´æ–°é”™è¯¯", 3013),
+    // ×´Ì¬Âë´Ó3000¿ªÊ¼
+    FILE_NOT_FOUND("ÎÄ¼þ²»´æÔÚ", 3001),
+    FILE_READ_ERROR("ÎÄ¼þ¶ÁÈ¡Ê§°Ü", 3002),
+    FILE_PARSE_ERROR("ÎÄ¼þ½âÎöÊ§°Ü£¬¸ñÊ½²»Ö§³Ö»òÒÑËð»µ", 3003),
+    NETWORK_TIMEOUT("ÍøÂçÇëÇó³¬Ê±", 3004),
+    FILE_SIZE_EXCEEDED("ÎÄ¼þ´óÐ¡³¬³öÏÞÖÆ", 3005),
+    UNSUPPORTED_FILE_TYPE("²»Ö§³ÖµÄÎÄ¼þÀàÐÍ", 3006),
+    FILE_CATEGORY_NOT_FOUND("ÎÄ¼þ·ÖÀà²»´æÔÚ", 3007),
+    FILE_CATEGORY_HAS_FILES("¸Ã·ÖÀàÏÂ´æÔÚÎÄ¼þ£¬ÎÞ·¨É¾³ý", 3008),
+    FILE_CATEGORY_NAME_EXISTS("·ÖÀàÃû³ÆÒÑ´æÔÚ", 3009),
+    FILE_CATEGORY_NOT_ALLOWED_CHILD("Ä¬ÈÏ·ÖÀà²»ÔÊÐíÓÐ×Ó·ÖÀà", 3010),
+    FILE_CATEGORY_NOT_ALLOWED_UPDATE("Ä¬ÈÏ·ÖÀà²»ÔÊÐíÐÞ¸ÄÃû³Æ", 3011),
+    FILE_PARAMS_ERROR("RAGÁ÷³Ì²ÎÊý´íÎó", 3012),
+    FILE_VECTOR_UPDATE_ERROR("ÎÄ¼þÏòÁ¿¸üÐÂ´íÎó", 3014),
+    FILE_NAME_INVALID("ÎÄ¼þÃû²»ºÏ·¨", 3015),
+    FOLDER_NAME_INVALID("ÎÄ¼þ¼ÐÃû³Æ²»ºÏ·¨", 3016),
+    FILE_WRITE_ERROR("ÎÄ¼þÐ´ÈëÊ§°Ü", 3017),
 
 
 

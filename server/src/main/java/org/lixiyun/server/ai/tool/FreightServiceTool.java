@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  * @since 2026-01-22 11:15
  */
 @Component(FreightServiceTool.NAME)
-public class FreightServiceTool implements Tools {
+public class FreightServiceTool implements org.lixiyun.common.agent.skill.tools.Tools {
 
     public static final String NAME = "FreightServiceTool";
 
