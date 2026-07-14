@@ -45,6 +45,11 @@ public class Conversation implements Serializable {
      * 上下文概括
      */
     private String contextSummary;
+
+    /**
+     * 语义压缩时轮次
+     */
+    private Integer contextSummaryRound;
     
     /**
      * 最后活跃时间，用于业务展示、排序、统计，用户发消息/AI回复都会更新

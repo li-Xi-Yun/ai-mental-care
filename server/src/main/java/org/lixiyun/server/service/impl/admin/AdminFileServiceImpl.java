@@ -246,14 +246,22 @@ public class AdminFileServiceImpl implements AdminFileService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public FileVO updateFileInfo(FileUpdateDTO updateDTO) {
         log.info("开始修改文件元数据，文件ID：{}，修改内容：{}", updateDTO.getId(), updateDTO);
         Long fileId = updateDTO.getId();
         String fileName = updateDTO.getFileName();
         Long categoryId = updateDTO.getCategoryId();
+        Integer vectorStatus = updateDTO.getVectorStatus();
 
-        // DB修改文件元数据信息
+        InfraFile infraFileBeforeUpdate = infraFileMapper.selectById(fileId);
+        if (infraFileBeforeUpdate == null) {
+            log.error("文件不存在，文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        }
+        Long categoryIdBeforeUpdate = infraFileBeforeUpdate.getCategoryId();
+        Integer vectorStatusBeforeUpdate = infraFileBeforeUpdate.getVectorStatus();
+
         InfraFile updateEntity = new InfraFile();
         updateEntity.setId(fileId);
 
@@ -266,13 +274,10 @@ public class AdminFileServiceImpl implements AdminFileService {
             updateEntity.setCategoryId(categoryId);
             hasUpdate = true;
         }
-
-        InfraFile infraFileBeforeUpdate = infraFileMapper.selectById(fileId);
-        if (infraFileBeforeUpdate == null) {
-            log.error("文件不存在，文件ID：{}", fileId);
-            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        if (vectorStatus != null) {
+            updateEntity.setVectorStatus(vectorStatus);
+            hasUpdate = true;
         }
-        Long categoryIdBeforeUpdate = infraFileBeforeUpdate.getCategoryId();
 
         if (!hasUpdate) {
             log.warn("没有需要修改的字段，文件ID：{}", fileId);
@@ -285,13 +290,23 @@ public class AdminFileServiceImpl implements AdminFileService {
             log.debug("文件元数据修改成功");
         }
 
-        if(categoryId != null && !categoryId.equals(categoryIdBeforeUpdate)){
+        if (categoryId != null && !categoryId.equals(categoryIdBeforeUpdate)) {
             infraFileCategoryMapper.updateMyFileCount(categoryIdBeforeUpdate, -1);
             infraFileCategoryMapper.updateMyFileCount(categoryId, 1);
             log.info("文件分类数量更新完成，分类ID：{}, {}，数量变化：{}, {}", categoryIdBeforeUpdate, categoryId, -1, 1);
         }
 
-        // DB查询文件元数据信息
+        if (vectorStatus != null && !vectorStatus.equals(vectorStatusBeforeUpdate)
+                && InfraFile.VECTOR_STATUS_DISABLE == vectorStatus
+                && InfraFile.VECTOR_STATUS_ENABLE == vectorStatusBeforeUpdate) {
+            try {
+                ragStore.addVectorDeletedMetadata(fileId);
+                log.info("向量状态从启用变为禁用，已更新删除状态，文件ID：{}", fileId);
+            } catch (Exception e) {
+                log.error("更新向量删除状态失败，文件ID：{}", fileId, e);
+            }
+        }
+
         InfraFile infraFile = infraFileMapper.selectById(fileId);
         if (infraFile == null) {
             log.error("文件不存在，文件ID：{}", fileId);

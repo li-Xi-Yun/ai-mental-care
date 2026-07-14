@@ -45,6 +45,15 @@ public class InfraFile implements Serializable {
     public static final int STATUS_PARSE_COMPLETED = 3;
 
     /**
+     * 向量状态：禁用
+     */
+    public static final int VECTOR_STATUS_DISABLE = 0;
+    /**
+     * 向量状态：启用
+     */
+    public static final int VECTOR_STATUS_ENABLE = 1;
+
+    /**
      * 自增主键ID
      */
     @TableId(type = IdType.AUTO)
@@ -99,6 +108,11 @@ public class InfraFile implements Serializable {
      * 解析失败原因
      */
     private String failReason;
+
+    /**
+     * 是否启用向量检索，0-否，1-是
+     */
+    private Integer vectorStatus;
 
     /**
      * 上传时间
@@ -173,5 +187,21 @@ public class InfraFile implements Serializable {
         return deleted != null && deleted == DeleteConstant.DELETE_FLAG_YES;
     }
 
+    /**
+     * 判断文件是否已启用向量检索
+     *
+     * @return true-已启用向量检索，false-未启用向量检索
+     */
+    public boolean isVectorStatusEnable() {
+        return VECTOR_STATUS_ENABLE == this.vectorStatus;
+    }
 
+    /**
+     * 判断文件是否已禁用向量检索
+     *
+     * @return true-已禁用向量检索，false-未禁用向量检索
+     */
+    public boolean isVectorStatusDisable() {
+        return VECTOR_STATUS_DISABLE == this.vectorStatus;
+    }
 }

@@ -88,7 +88,7 @@ public class PromptServiceImpl implements PromptService {
         try (var stream = Files.list(folderPath)) {
             stream.map(path -> {
                         String name = path.getFileName().toString();
-                        Integer type = Files.isDirectory(path) ? FileConstant.Folder_TYPE : FileConstant.File_TYPE;
+                        Integer type = Files.isDirectory(path) ? FileConstant.FOLDER_TYPE : FileConstant.FILE_TYPE;
                         return FolderContentItem.builder()
                                 .name(name)
                                 .type(type)

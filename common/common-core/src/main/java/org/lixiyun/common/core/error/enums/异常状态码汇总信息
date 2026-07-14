@@ -4,5 +4,6 @@ ConversationExceptionEnum:2000
 ScaleExceptionEnum:2500
 FileExceptionEnum:3000
 SkillExceptionEnum:3500
+AIChatExceptionEnum:3200
 
 SystemExceptionEnum:10000

@@ -382,10 +382,11 @@ public class RedisUtils {
      * @param key   Redis键
      * @param hKey  Hash键
      * @param value 值
+     * @return 原来的值
      */
-    public static <T> void setCacheMapValue(final String key, final String hKey, final T value) {
+    public static <T> T setCacheMapValue(final String key, final String hKey, final T value) {
         RMap<String, T> rMap = CLIENT.getMap(key);
-        rMap.put(hKey, value);
+        return rMap.put(hKey, value);
     }
 
     /**
@@ -562,6 +563,92 @@ public class RedisUtils {
         RLock lock = CLIENT.getLock(lockKey);
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
+        }
+    }
+
+    /**
+     * 向有序集合（ZSet/ScoredSortedSet）添加元素
+     * <p>用于会话消息队列等场景，按时间戳排序存储数据</p>
+     *
+     * @param key   Redis键（ZSet的key）
+     * @param score 分数（通常为时间戳）
+     * @param value 值（通常为会话ID等标识）
+     */
+    public static void addToScoredSortedSet(String key, double score, String value) {
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        scoredSortedSet.add(score, value);
+    }
+
+    /**
+     * 从有序集合（ZSet/ScoredSortedSet）中移除元素
+     *
+     * @param key   Redis键
+     * @param value 要移除的值
+     * @return 是否成功移除
+     */
+    public static boolean removeFromScoredSortedSet(String key, String value) {
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        return scoredSortedSet.remove(value);
+    }
+
+    /**
+     * 获取有序集合（ZSet/ScoredSortedSet）中的所有元素
+     *
+     * @param key Redis键
+     * @return 有序集合的所有值（按分数升序排列）
+     */
+    public static Collection<String> getScoredSortedSetValues(String key) {
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        return scoredSortedSet.readAll();
+    }
+
+    /**
+     * 获取有序集合（ZSet/ScoredSortedSet）中指定分数范围内的元素
+     *
+     * @param key       Redis键
+     * @param startScore 起始分数（包含）
+     * @param endScore   结束分数（包含）
+     * @return 符合条件的值集合
+     */
+    public static Collection<String> getScoredSortedSetByScoreRange(String key, double startScore, double endScore) {
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        return scoredSortedSet.valueRange(startScore, true, endScore, true);
+    }
+
+    /**
+     * 原子性Compare-And-Swap (CAS) 操作 - Hash字段值替换
+     * <p>
+     * 使用Redisson RMap的CAS语义，保证并发安全：
+     * <ul>
+     *     <li>只有当Hash Field的当前值等于期望的旧值时，才执行替换</li>
+     *     <li>整个操作是原子的，不会被其他线程打断</li>
+     *     <li>适用于分布式锁、状态机转换、令牌获取等场景</li>
+     * </ul>
+     * </p>
+     *
+     * @param key         Redis键（Hash的主Key）
+     * @param field       Hash字段名
+     * @param expectValue 期望的旧值（null表示期望字段不存在）
+     * @param newValue    要设置的新值
+     * @return 是否成功替换（true=成功，false=当前值与期望值不匹配或已被其他线程修改）
+     */
+    public static boolean compareAndSwapMapValue(String key, String field, Object expectValue, Object newValue) {
+        try {
+            RMap<String, Object> rMap = CLIENT.getMap(key);
+
+            Object currentValue = rMap.get(field);
+
+            if (expectValue == null && currentValue == null) {
+                return rMap.fastPutIfAbsent(field, newValue);
+            }
+
+            if (currentValue != null && currentValue.equals(expectValue)) {
+                return rMap.replace(field, currentValue, newValue);
+            }
+
+            return false;
+        } catch (Exception e) {
+            throw new RuntimeException("CAS操作失败，key: " + key + ", field: " + field, e);
         }
     }
 

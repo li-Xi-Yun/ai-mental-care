@@ -1,4 +1,4 @@
-package org.lixiyun.pojo.vector;
+package org.lixiyun.pojo.bo.vector;
 
 import lombok.Builder;
 import lombok.Data;

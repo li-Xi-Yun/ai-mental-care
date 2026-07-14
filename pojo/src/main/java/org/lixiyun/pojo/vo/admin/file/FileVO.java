@@ -51,6 +51,9 @@ public class FileVO implements Serializable {
     @Schema(description = "解析失败原因")
     private String failReason;
 
+    @Schema(description = "是否启用向量检索，0-否，1-是")
+    private Integer vectorStatus;
+
     @Schema(description = "上传时间")
     private LocalDateTime createdTime;
 

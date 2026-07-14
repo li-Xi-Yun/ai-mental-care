@@ -31,6 +31,11 @@ public class VectorData implements Serializable {
     private Long fileId;
 
     /**
+     * 知识类型，1=症状库 2=诊断标准库 3=干预方案库
+     */
+    private Integer knowledgeType;
+
+    /**
      * 一级分块索引
      */
     private Integer chunkLevel1Idx;

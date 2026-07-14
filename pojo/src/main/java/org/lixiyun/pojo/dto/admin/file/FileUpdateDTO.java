@@ -28,4 +28,8 @@ public class FileUpdateDTO implements Serializable {
     @Schema(description = "分类ID（可选）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Long categoryId;
 
+    @NumberOfRanges(max = 1, min = 0)
+    @Schema(description = "是否启用向量检索，0-否，1-是", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Integer vectorStatus;
+
 }

@@ -1,6 +1,7 @@
 package org.lixiyun.server.ai.rag;
 
 import jakarta.annotation.PreDestroy;
+import jodd.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -68,6 +69,7 @@ public class RagStore {
             KEEP_ALIVE_TIME,
             TimeUnit.SECONDS,
             new LinkedBlockingQueue<>(QUEUE_CAPACITY),
+            new ThreadFactoryBuilder().setNameFormat("rag-proc-%d").get(),
             new ThreadPoolExecutor.CallerRunsPolicy()  // 拒绝策略：由调用线程执行，避免任务丢失
     );
 

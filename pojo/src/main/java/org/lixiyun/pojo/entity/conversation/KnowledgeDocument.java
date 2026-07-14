@@ -49,25 +49,16 @@ public class KnowledgeDocument implements Serializable {
     /**
      * 第一次初始分片的位置索引
      */
-    private Integer initSliceIndex;
+    private Integer chunkLevel1Idx;
     
     /**
      * 第二次分片的位置索引
      */
-    private Integer secondSliceIndex;
-    
-    /**
-     * 状态：0=禁用 1=启用
-     */
-    private Integer status;
+    private Integer chunkLevel2Idx;
     
     /**
      * 创建时间
      */
     private LocalDateTime createdTime;
-    
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updatedTime;
+
 }

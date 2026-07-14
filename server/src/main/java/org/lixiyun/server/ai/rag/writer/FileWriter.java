@@ -7,8 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.constant.DeleteConstant;
+import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.server.ai.rag.MilvusUtil;
+import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -38,6 +41,8 @@ import java.util.stream.Collectors;
 public class FileWriter {
 
     private final MilvusUtil milvusUtil;
+
+    private final KnowledgeDocumentMapper knowledgeDocumentMapper;
 
     private static final Gson GSON = new Gson();
 
@@ -81,6 +86,7 @@ public class FileWriter {
 
         // 构建 JSON Row
         List<JsonObject> rows = new ArrayList<>(documents.size());
+        List<KnowledgeDocument> knowledgeDocumentList = new ArrayList<>();
 
         for (int i = 0; i < documents.size(); i++) {
             VectorData doc = documents.get(i);
@@ -88,16 +94,38 @@ public class FileWriter {
             JsonObject row = new JsonObject();
             row.add("vector", GSON.toJsonTree(vector));
             row.addProperty("file_id", doc.getFileId());
-            row.addProperty("content", doc.getContent());
-            row.addProperty("chunk_level1_idx", doc.getChunkLevel1Idx());
-            row.addProperty("chunk_level2_idx", doc.getChunkLevel2Idx());
-            row.addProperty("deleted", doc.getDeleted() != null ? doc.getDeleted() : 0);
+            row.addProperty("knowledge_type", doc.getKnowledgeType());
+            row.addProperty("deleted", doc.getDeleted() != null ? doc.getDeleted() : DeleteConstant.DELETE_FLAG_NO);
             rows.add(row);
+
+            KnowledgeDocument knowledgeDocument = KnowledgeDocument.builder()
+                    .fileId(doc.getFileId())
+                    .content(doc.getContent())
+                    .chunkLevel1Idx(doc.getChunkLevel1Idx())
+                    .chunkLevel2Idx(doc.getChunkLevel2Idx())
+                    .build();
+
+            knowledgeDocumentList.add(knowledgeDocument);
         }
 
         InsertResp resp = milvusUtil.insert(rows);
 
-        log.info("RAG(FileWriter)-写入成功: {} 条, 主键: {}", resp.getInsertCnt(), resp.getPrimaryKeys());
+        log.info("RAG(FileWriter)-分片数据向量库写入成功: {} 条, 主键: {}", resp.getInsertCnt(), resp.getPrimaryKeys());
+
+        List<Long> milvusSliceIdList = resp.getPrimaryKeys().stream().map(item -> (Long) item).toList();
+        if (milvusSliceIdList.size() != documents.size()) {
+            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR.getCode(), "Milvus返回主键数量与文档不匹配");
+        }
+
+        for (int i = 0; i < documents.size(); i++) {
+            Long milvusSliceId = milvusSliceIdList.get(i);
+            KnowledgeDocument document = knowledgeDocumentList.get(i);
+            document.setSliceId(milvusSliceId);
+        }
+
+        knowledgeDocumentMapper.insert(knowledgeDocumentList);
+
+        log.info("RAG(FileWriter)-分片数据DB存储完成，共存储 {} 条数据", knowledgeDocumentList.size());
     }
 
     /**

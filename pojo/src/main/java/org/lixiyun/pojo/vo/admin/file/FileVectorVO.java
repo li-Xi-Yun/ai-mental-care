@@ -17,19 +17,19 @@ public class FileVectorVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "向量ID")
+    @Schema(description = "分片ID")
     private Long id;
 
     @Schema(description = "文件ID")
     private Long fileId;
+
+    @Schema(description = "分块内容")
+    private String content;
 
     @Schema(description = "一级分块索引")
     private Integer chunkLevel1Idx;
 
     @Schema(description = "二级分块索引")
     private Integer chunkLevel2Idx;
-
-    @Schema(description = "分块内容")
-    private String chunkContent;
 
 }
