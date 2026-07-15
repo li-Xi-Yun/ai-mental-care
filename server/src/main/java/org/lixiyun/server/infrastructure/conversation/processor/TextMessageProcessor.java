@@ -1,14 +1,22 @@
 package org.lixiyun.server.infrastructure.conversation.processor;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.redis.utils.RedisUtils;
+import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.message.enums.MessageType;
+import org.lixiyun.server.ai.model.ChatModelFactory;
+import org.lixiyun.server.ai.model.TextMessageProcessorModel;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.mapper.ConversationMemoryMapper;
+import org.lixiyun.server.socket.constant.TextConstant;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +42,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TextMessageProcessor implements MessageProcessor {
 
-    private final ConversationMemoryMapper conversationMemoryMapper;
+    private final TextMessageProcessorModel textMessageProcessorModel;
+    private final ChatModelFactory chatModelFactory;
 
     /**
      * 处理文本类型的会话消息
@@ -52,58 +61,78 @@ public class TextMessageProcessor implements MessageProcessor {
     @Override
     public void processMessage(ConversationProcessContextBO context) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
-            log.warn("处理上下文或临时消息为空，跳过处理");
-            return;
+            log.error("AI对话文本处理器-临时消息为空，跳过处理");
+            throw new BusinessException(AIChatExceptionEnum.TEMPORARY_MESSAGES_EMPTY);
         }
 
         Long conversationId = context.getConversation().getId();
-        log.info("开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
+        int currentRound = context.getConversation().getCurrentRound() + 1;
+        Long userId = context.getConversation().getUserId();
+        log.info("AI对话文本处理器-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
 
         try {
-            // todo 构建提示词
+
             String prompt = buildPrompt(context);
 
-            // todo 调用LLM生成文本回答
-            String llmResponse = callLLMGenerateResponse(prompt);
+            Flux<NodeOutput> stream = callLLMGenerateResponse(prompt);
 
-            // todo 通过WebSocket流式发送消息
-            sendViaWebSocket(conversationId, llmResponse);
+            textMessageProcessorModel.processStreamWithCallbacks(
+                    stream,
+                    userId,
+                    conversationId,
+                    currentRound,
 
-            ConversationMemory conversationMemory = ConversationMemory.builder()
-                    .conversationId(conversationId)
-                    .userId(context.getConversation().getUserId())
-                    .content(llmResponse)
-                    .type(MessageType.ASSISTANT.getName())
-                    .state(ConversationMemory.STATE_PROCESSED)
-                    .roundNum(context.getConversation().getCurrentRound())
-                    .build();
+                    thinking -> {},
 
-            conversationMemoryMapper.insert(conversationMemory);
+                    content -> sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, content),
 
-            // 更新Redis缓存中的历史上下文
-            updateCacheHistory(conversationId, conversationMemory);
+                    toolCall -> {},
 
-            log.info("文本消息处理完成，会话ID：{}", conversationId);
+                    toolResponse -> {},
+
+                    completeMessage -> {
+                        log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
+
+                        ConversationMemory finalMemory = ConversationMemory.builder()
+                                .userId(userId)
+                                .conversationId(conversationId)
+                                .content(completeMessage.getText())
+                                .type(MessageType.ASSISTANT.getName())
+                                .state(ConversationMemory.STATE_PROCESSED)
+                                .roundNum(currentRound)
+                                .build();
+
+                        updateCacheHistory(conversationId, finalMemory);
+                    },
+
+                    error -> {},
+
+                    () -> {}
+            );
+
+            log.info("AI对话文本处理器-文本消息处理完成，会话ID：{}", conversationId);
+        } catch (BusinessException e) {
+            log.error("AI对话文本处理器-文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
-            throw new RuntimeException("文本消息处理失败", e);
+            log.error("AI对话文本处理器-文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            throw new BusinessException(AIChatExceptionEnum.MAIN_THREAD_EXECUTION_FAILED);
         }
     }
 
-    private String callLLMGenerateResponse(String prompt) {
-        log.debug("调用LLM生成回答，提示词：{}", prompt);
-
-        return null;
+    private Flux<NodeOutput> callLLMGenerateResponse(String prompt) throws GraphRunnerException {
+        log.debug("AI对话文本处理器-调用LLM生成回答，提示词：{}", prompt);
+        return textMessageProcessorModel.stream(chatModelFactory.getOllamaChatModel(), prompt);
     }
 
     private String buildPrompt(ConversationProcessContextBO context) {
         StringBuilder sb = new StringBuilder();
-        sb.append("用户消息：").append(context.getTemporaryMessages().get(0).getContent()).append("\n");
+//        sb.append("用户消息：").append(context.getTemporaryMessages().get(0).getContent()).append("\n");
 
         if (context.getConversationHistory() != null && !context.getConversationHistory().isEmpty()) {
             sb.append("\n【会话历史上下文】\n");
             context.getConversationHistory().forEach(msg ->
-                    sb.append(msg.getType()).append("：").append(msg.getContent()).append("\n")
+                    sb.append(MessageType.getDescription(msg.getType())).append("：").append(msg.getContent()).append("\n")
             );
         }
 
@@ -119,37 +148,21 @@ public class TextMessageProcessor implements MessageProcessor {
             sb.append(context.getEmotionDiagnosis().toString()).append("\n");
         }
 
-        sb.append("\n请基于以上信息，给出专业的心理支持建议。回复要温暖、专业、具有共情能力。");
+        sb.append("本次用户发送的消息为：");
+        context.getTemporaryMessages().forEach(msg ->
+                sb.append(msg.getContent()).append("\n")
+        );
+
         return sb.toString();
     }
 
-    private void sendViaWebSocket(Long conversationId, String response) {
-        log.info("WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
-
-        int chunkSize = 50;
-        int totalChunks = (int) Math.ceil((double) response.length() / chunkSize);
-
-        for (int i = 0; i < response.length(); i += chunkSize) {
-            int end = Math.min(i + chunkSize, response.length());
-            String chunk = response.substring(i, end);
-            int currentChunk = (i / chunkSize) + 1;
-
-            log.debug("发送文本块 {}/{}，会话ID：{}，块长度：{}", currentChunk, totalChunks, conversationId, chunk.length());
-
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("WebSocket发送被中断，会话ID：{}", conversationId);
-                break;
-            }
-        }
-
-        log.info("WebSocket流式发送完成，会话ID：{}，总块数：{}", conversationId, totalChunks);
+    private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, String response) {
+        log.info("AI对话文本处理器-WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
+        WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
     }
 
     private void updateCacheHistory(Long conversationId, ConversationMemory conversationMemory) {
-        log.info("更新Redis缓存历史上下文，会话ID：{}", conversationId);
+        log.info("AI对话文本处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 
         try {
             String cacheKey = ConversationCacheConstant.CONVERSATION_CACHE_KEY_PREFIX + conversationId;
@@ -161,9 +174,9 @@ public class TextMessageProcessor implements MessageProcessor {
             RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
             RedisUtils.expire(cacheKey, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
 
-            log.info("缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
+            log.info("AI对话文本处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
         } catch (Exception e) {
-            log.error("更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("AI对话文本处理器-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
         }
     }
 

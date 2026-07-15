@@ -101,6 +101,15 @@ public class ConversationHistoryMessagesStorage {
                 userId, conversationId, result.size());
     }
 
+    public void save(Long userId, Long conversationId, int roundCount, Message message) {
+        if (message == null) {
+            log.debug("消息为空，跳过保存操作，会话ID：{}，轮次：{}", conversationId, roundCount);
+            return;
+        }
+
+        save(userId, conversationId, roundCount, List.of(message));
+    }
+
     /**
      * 将Spring AI的Message对象转换为ConversationMemory实体（基于Message对象）
      * <p>
@@ -141,7 +150,7 @@ public class ConversationHistoryMessagesStorage {
      * @see MessageType
      * @see ConversationMemory
      */
-    public ConversationMemory getConversationMemory(Long userId, Long conversationId, int roundCount, Message message) {
+    private ConversationMemory getConversationMemory(Long userId, Long conversationId, int roundCount, Message message) {
         ConversationMemory.ConversationMemoryBuilder builder = ConversationMemory.builder()
                 .userId(userId)
                 .conversationId(conversationId)

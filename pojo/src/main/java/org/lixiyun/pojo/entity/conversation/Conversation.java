@@ -46,14 +46,13 @@ public class Conversation implements Serializable {
      */
     private String contextSummary;
 
-    /**
-     * 语义压缩时轮次
-     */
+    /** 情绪分析上下文语义压缩 */
+    private String analysisContextSummary;
+
+    /** 语义压缩时轮次 */
     private Integer contextSummaryRound;
-    
-    /**
-     * 最后活跃时间，用于业务展示、排序、统计，用户发消息/AI回复都会更新
-     */
+
+    /** 最后活跃时间，用于业务展示、排序、统计，用户发消息/AI回复都会更新 */
     private LocalDateTime lastActiveTime;
     
     /**

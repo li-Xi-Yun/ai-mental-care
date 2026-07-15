@@ -8,10 +8,13 @@ import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.server.ai.node.HistoryAnalysisCompressionNode;
+import org.lixiyun.server.ai.node.HistoryMessageCompressionNode;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.processor.MessageProcessor;
 import org.lixiyun.server.infrastructure.conversation.processor.ProcessorHolder;
@@ -21,6 +24,7 @@ import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +47,8 @@ public class ConversationMessageProcessor {
     private final EmotionAnalysisMapper emotionAnalysisMapper;
     private final EmotionDiagnosisMapper emotionDiagnosisMapper;
     private final ProcessorHolder processorHolder;
+    private final HistoryMessageCompressionNode historyMessageCompressionNode;
+    private final HistoryAnalysisCompressionNode historyAnalysisCompressionNode;
 
     private static final int MAX_CONTEXT_MESSAGES = 50;
 
@@ -105,10 +111,13 @@ public class ConversationMessageProcessor {
             // 获取执行器实例
             MessageProcessor executorInstance = processorHolder.getProcessor(conversationType);
 
-            // 检查是否需要语义压缩（暂不实现）
+            // 检查是否需要语义压缩
             checkAndTriggerSemanticCompression(contextData, conversationId);
 
-            // 主线程执行（暂不实现）
+            // todo 分析与诊断
+            analysisAndDiagnosis(conversationId, contextData);
+
+            // 主线程执行
             executeMainThread(conversationId, contextData, executorInstance, unprocessedMessages);
 
             // 更新临时消息轮次状态为已处理
@@ -174,16 +183,46 @@ public class ConversationMessageProcessor {
     }
 
     /**
+     * 带重试机制的获取处理令牌
+     * <p>在acquireProcessingToken基础上增加重试机制，适用于需要等待锁释放的场景</p>
+     *
+     * @param conversationId 会话ID
+     * @return 是否成功获取令牌
+     */
+    private boolean acquireProcessingTokenWithRetry(Long conversationId) {
+        final int MAX_RETRY = 50;
+        final long RETRY_INTERVAL_MS = 100;
+
+        for (int i = 0; i < MAX_RETRY; i++) {
+            boolean acquired = acquireProcessingToken(conversationId);
+            if (acquired) {
+                log.debug("重试第{}次成功获取处理令牌，会话ID：{}", i + 1, conversationId);
+                return true;
+            }
+            try {
+                Thread.sleep(RETRY_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("获取处理令牌重试被中断，会话ID：{}", conversationId, e);
+                return false;
+            }
+        }
+
+        log.warn("获取处理令牌重试耗尽，会话ID：{}", conversationId);
+        return false;
+    }
+
+    /**
      * 重新将会话加入ZSet队列（获取令牌失败时调用）
      *
      * @param conversationId 会话ID
      */
     private void readdToZSetQueue(Long conversationId) {
         try {
-            String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX + System.currentTimeMillis();
-            long timestamp = System.currentTimeMillis() + 60000;
+            String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
+            LocalDateTime expireTime = LocalDateTime.now().plusSeconds(ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS);
 
-            RedisUtils.addToScoredSortedSet(zSetKey, timestamp, String.valueOf(conversationId));
+            RedisUtils.addToScoredSortedSet(zSetKey, expireTime, String.valueOf(conversationId));
             RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);
 
             log.info("重新加入ZSet队列成功，Key：{}，延迟时间：60秒，会话ID：{}", zSetKey, conversationId);
@@ -271,18 +310,6 @@ public class ConversationMessageProcessor {
     }
 
     /**
-     * 获取对应的执行器对象实例
-     *
-     * @param conversationType 会话类型
-     * @param conversationId   会话ID
-     * @return 执行器对象实例
-     */
-    private Object getExecutorInstance(String conversationType, Long conversationId) {
-        log.debug("获取执行器实例，会话类型：{}，会话ID：{}", conversationType, conversationId);
-        return conversationType;
-    }
-
-    /**
      * 判断历史上下文数据量是否超过指定数量，触发语义压缩
      *
      * @param contextData     会话上下文数据
@@ -300,12 +327,10 @@ public class ConversationMessageProcessor {
         int messageCount = historyMessages.size();
 
         if (messageCount > MAX_CONTEXT_MESSAGES) {
-            log.info("历史消息数量（{}）超过阈值（{}），需要语义压缩（暂不实现），会话ID：{}",
-                    messageCount, MAX_CONTEXT_MESSAGES, conversationId);
+            log.info("历史消息数量（{}）超过阈值（{}），需要语义压缩（暂不实现），会话ID：{}", messageCount, MAX_CONTEXT_MESSAGES, conversationId);
             semanticCompression(conversationId, contextData);
         } else {
-            log.debug("历史消息数量（{}）未超过阈值（{}），无需压缩，会话ID：{}",
-                    messageCount, MAX_CONTEXT_MESSAGES, conversationId);
+            log.debug("历史消息数量（{}）未超过阈值（{}），无需压缩，会话ID：{}", messageCount, MAX_CONTEXT_MESSAGES, conversationId);
         }
     }
 
@@ -393,13 +418,54 @@ public class ConversationMessageProcessor {
     }
 
     /**
-     * 语义压缩（异步，暂不实现）
+     * 语义压缩
      *
      * @param conversationId 会话ID
      * @param contextData    会话上下文数据
      */
     private void semanticCompression(Long conversationId, Map<String, Object> contextData) {
         log.info("语义压缩功能暂未实现，会话ID：{}", conversationId);
+        Object historyMessagesObj = contextData.get(ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
+        Object conversationObj = contextData.get(ConversationCacheConstant.HASH_FIELD_METADATA);
+        Object emotionListObj = contextData.get(ConversationCacheConstant.HASH_FIELD_EMOTION_ANALYSIS_LIST);
+        List<ConversationMemory> historyMessages = (List<ConversationMemory>) historyMessagesObj;
+        Conversation conversation = (Conversation) conversationObj;
+        List<EmotionAnalysis> emotionAnalyses = (List<EmotionAnalysis>) emotionListObj;
+
+        HistoryCompressionBO historyCompressionBO = HistoryCompressionBO.builder()
+                .conversation(conversation)
+                .historyMessages(historyMessages)
+                .emotionAnalyses(emotionAnalyses)
+                .build();
+
+        // 历缩历史消息
+        String historyMessageCompression = historyMessageCompressionNode.apply(historyCompressionBO);
+
+        // 历缩历史情绪分析
+        String historyAnalysisCompression = historyAnalysisCompressionNode.apply(historyCompressionBO);
+
+        conversationMapper.updateById(Conversation.builder()
+                .id(conversationId)
+                .contextSummary(historyMessageCompression)
+                .analysisContextSummary(historyAnalysisCompression)
+                .contextSummaryRound(conversation.getCurrentRound())
+                .build());
+
+        // 更新缓存中的会话元数据（带重试的CAS操作）
+        boolean lockAcquired = acquireProcessingTokenWithRetry(conversationId);
+        try {
+            if (lockAcquired) {
+                String cacheKey = buildConversationCacheKey(conversationId);
+                RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_METADATA, conversation);
+            } else {
+                throw new RuntimeException("获取会话缓存更新锁超时，conversationId:" + conversationId);
+            }
+        } finally {
+            if (lockAcquired) {
+                clearProcessingFlag(conversationId);
+            }
+        }
+
     }
 
     /**

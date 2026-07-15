@@ -279,9 +279,12 @@ jwt:
 web:
   # 允许跨域访问的源，多个源之间使用","分隔，中间不要有空格，null允许本地HTML文件的http请求发送
   allowedOrigins: ${web.allowedOrigins}
+  # 项目部署URL
   url: ${web.url}
   # 配置开发的项目日志级别
   logLevel: ${web.logLevel}
+  # 时区
+  timeZone: ${web.timeZone}
 
 # 修改这里需要同步修改flie模块中的FileStorage类与core模块中的FileUrlProperties类
 file-url:

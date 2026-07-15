@@ -14,10 +14,10 @@ import org.lixiyun.pojo.dto.user.conversation.UserMessageSendDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
+import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
-import org.lixiyun.server.service.async.ConversationServiceAsync;
 import org.lixiyun.server.service.user.AIChatService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +46,6 @@ public class AIChatServiceImpl implements AIChatService {
 
     private final ConversationMapper conversationMapper;
     private final ConversationMemoryMapper conversationMemoryMapper;
-    private final ConversationServiceAsync conversationServiceAsync;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -71,17 +70,15 @@ public class AIChatServiceImpl implements AIChatService {
             currentRound = conversation.getCurrentRound();
         }
 
-        log.info("保存用户消息到数据库，会话ID：{}，轮次：{}", conversationId, currentRound);
+        log.debug("保存用户消息到数据库，会话ID：{}，轮次：{}", conversationId, currentRound);
         saveUserMessageToDB(conversationId, currentId, message, currentRound);
 
-        log.info("更新会话状态信息，会话ID：{}", conversationId);
-        updateConversationState(conversationId, currentRound);
+        LocalDateTime messageTime = LocalDateTime.now();
+        log.debug("更新会话状态信息，会话ID：{}", conversationId);
+        updateConversationState(conversationId, currentRound, messageTime);
 
-        log.info("查询最近会话基础信息中的最新消息发送时间，会话ID：{}", conversationId);
-        LocalDateTime lastMessageTime = getLastMessageTime(conversationId);
-
-        log.info("在缓存中存储消息ZSet集合，会话ID：{}", conversationId);
-        saveMessageToZSet(conversationId, lastMessageTime);
+        log.debug("在缓存中存储消息ZSet集合，会话ID：{}", conversationId);
+        saveMessageToZSet(conversationId, messageTime);
 
         log.info("用户消息发送完成，会话ID：{}，当前轮次：{}", conversationId, currentRound);
         return UserMessageSendVO.builder()
@@ -123,7 +120,7 @@ public class AIChatServiceImpl implements AIChatService {
                 .userId(userId)
                 .conversationId(conversationId)
                 .content(message)
-                .type("USER")
+                .type(MessageType.USER.getName())
                 .state(ConversationCacheConstant.PROCESS_FLAG_NOT_PROCESSED)
                 .roundNum(roundNum)
                 .build();
@@ -132,38 +129,22 @@ public class AIChatServiceImpl implements AIChatService {
         log.debug("用户消息保存成功，会话ID：{}，轮次：{}", conversationId, roundNum);
     }
 
-    private void updateConversationState(Long conversationId, Integer currentRound) {
+    private void updateConversationState(Long conversationId, Integer currentRound, LocalDateTime messageTime) {
         conversationMapper.update(null,
                 new LambdaUpdateWrapper<Conversation>()
                         .eq(Conversation::getId, conversationId)
-                        .set(Conversation::getCurrentRound, currentRound)
-                        .set(Conversation::getLastActiveTime, LocalDateTime.now())
-                        .set(Conversation::getUpdatedTime, LocalDateTime.now())
+                        .set(Conversation::getLastActiveTime, messageTime)
         );
         log.debug("会话状态更新成功，会话ID：{}，当前轮次：{}", conversationId, currentRound);
     }
 
-    private LocalDateTime getLastMessageTime(Long conversationId) {
-        ConversationMemory lastMessage = conversationMemoryMapper.selectOne(
-                new LambdaQueryWrapper<ConversationMemory>()
-                        .eq(ConversationMemory::getConversationId, conversationId)
-                        .orderByDesc(ConversationMemory::getCreatedTime)
-                        .last("LIMIT 1")
-        );
-
-        LocalDateTime lastMessageTime = lastMessage != null ? lastMessage.getCreatedTime() : LocalDateTime.now();
-        log.debug("获取到最新消息时间：{}，会话ID：{}", lastMessageTime, conversationId);
-        return lastMessageTime;
-    }
-
     private void saveMessageToZSet(Long conversationId, LocalDateTime messageTime) {
-        String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX + System.currentTimeMillis();
-        long timestamp = System.currentTimeMillis();
+        String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
 
         try {
-            RedisUtils.getClient().getScoredSortedSet(zSetKey).add(timestamp, String.valueOf(conversationId));
+            RedisUtils.addToScoredSortedSet(zSetKey, messageTime, String.valueOf(conversationId));
             RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);
-            log.debug("消息ZSet集合保存成功，Key：{}，时间戳：{}", zSetKey, timestamp);
+            log.debug("消息ZSet集合保存成功，Key：{}", zSetKey);
         } catch (Exception e) {
             log.error("保存消息到ZSet集合失败，会话ID：{}", conversationId, e);
             throw new BusinessException(AIChatExceptionEnum.REDIS_OPERATION_FAILED);

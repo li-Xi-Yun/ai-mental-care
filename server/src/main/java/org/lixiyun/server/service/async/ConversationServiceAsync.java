@@ -42,7 +42,7 @@ public class ConversationServiceAsync {
             graphCheckpointMapper.delete(new LambdaUpdateWrapper<GraphCheckpoint>()
                     .eq(GraphCheckpoint::getConversationId, conversationId));
         } catch (Exception e) {
-            log.error("删除会话失败，会话ID：{}， {}", conversationId, e);
+            log.error("删除会话失败，会话ID：{}", conversationId, e);
         }
     }
 

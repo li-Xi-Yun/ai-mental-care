@@ -1,0 +1,41 @@
+package org.lixiyun.server.ai.model;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author lixiyun
+ * @since 2026-07-14 23:42
+ */
+@Slf4j
+@Component
+public class ChatModelFactory {
+    
+    @Autowired
+    @Qualifier("deepSeekChatModel")
+    private ChatModel deepSeekChatModel;
+
+    @Autowired
+    @Qualifier("dashScopeChatModel")
+    private ChatModel dashScopeChatModel;
+
+    @Autowired
+    @Qualifier("ollamaChatModel")
+    private ChatModel ollamaChatModel;
+
+    public ChatModel getDeepSeekChatModel() {
+        return deepSeekChatModel;
+    }
+    
+    public ChatModel getDashScopeChatModel() {
+        return dashScopeChatModel;
+    }
+    
+    public ChatModel getOllamaChatModel() {
+        return ollamaChatModel;
+    }
+
+}

@@ -3,12 +3,14 @@ package org.lixiyun.server.task;
 import jodd.util.concurrent.ThreadFactoryBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.utils.DateUtils;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.ConversationMessageProcessor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ConversationCleanupTask {
 
+    private final DateUtils dateUtils;
     private final ConversationMessageProcessor conversationMessageProcessor;
 
     private static final int SCAN_BATCH_SIZE = 50;
@@ -82,8 +85,12 @@ public class ConversationCleanupTask {
     private Set<Long> scanExpiredConversationsFromZSet() {
         log.debug("开始通过Lua脚本扫描ZSet集合，数量限制：{}", ConversationCleanupTask.SCAN_BATCH_SIZE);
 
-        long currentTime = System.currentTimeMillis();
-        long expireThreshold = currentTime - (ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS * 1000);
+        // 1. 获取当前东八区LocalDateTime
+        LocalDateTime nowLocal = LocalDateTime.now();
+        // 2. 转成UTC毫秒戳（和写入ZSet的转换逻辑完全统一）
+        long currentUtcMilli = dateUtils.toUtcZoned(nowLocal).toInstant().toEpochMilli();
+        // 3. 基于UTC时间计算过期阈值（阈值也是UTC毫秒）
+        long expireThreshold = currentUtcMilli - (ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS * 1000);
 
         List<Object> result = RedisUtils.executeLuaScript(
                 LUA_SCRIPT,

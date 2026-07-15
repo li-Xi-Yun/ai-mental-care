@@ -3,11 +3,13 @@ package org.lixiyun.common.redis.utils;
 import cn.hutool.extra.spring.SpringUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.lixiyun.common.core.utils.DateUtils;
 import org.redisson.api.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -25,6 +27,7 @@ import java.util.stream.Stream;
 public class RedisUtils {
 
     private static final RedissonClient CLIENT = SpringUtil.getBean(RedissonClient.class);
+    private static final DateUtils dateUtils = SpringUtil.getBean(DateUtils.class);
 
     /**
      * 限流
@@ -568,7 +571,6 @@ public class RedisUtils {
 
     /**
      * 向有序集合（ZSet/ScoredSortedSet）添加元素
-     * <p>用于会话消息队列等场景，按时间戳排序存储数据</p>
      *
      * @param key   Redis键（ZSet的key）
      * @param score 分数（通常为时间戳）
@@ -613,6 +615,31 @@ public class RedisUtils {
     public static Collection<String> getScoredSortedSetByScoreRange(String key, double startScore, double endScore) {
         RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
         return scoredSortedSet.valueRange(startScore, true, endScore, true);
+    }
+
+    /**
+     * 向有序集合添加元素（自动时区转换：本地业务LocalDateTime → UTC毫秒score）
+     * @param key ZSet键
+     * @param localDateTime 本地时区业务时间（东八区，yml配置时区）
+     * @param value 存储值（会话ID）
+     */
+    public static void addToScoredSortedSet(String key, LocalDateTime localDateTime, String value) {
+        // 统一转换：本地时间 → UTC毫秒戳
+        long utcMilli = dateUtils.toUtcZoned(localDateTime).toInstant().toEpochMilli();
+        addToScoredSortedSet(key, (double) utcMilli, value);
+    }
+
+    /**
+     * 按本地时间区间查询ZSet（自动转换起止时间为UTC毫秒score）
+     * @param key ZSet键
+     * @param startLocal 起始本地业务时间（包含）
+     * @param endLocal 结束本地业务时间（包含）
+     * @return 匹配的成员集合
+     */
+    public static Collection<String> getScoredSortedSetByScoreRange(String key, LocalDateTime startLocal, LocalDateTime endLocal) {
+        long startUtc = dateUtils.toUtcZoned(startLocal).toInstant().toEpochMilli();
+        long endUtc = dateUtils.toUtcZoned(endLocal).toInstant().toEpochMilli();
+        return getScoredSortedSetByScoreRange(key, (double) startUtc, (double) endUtc);
     }
 
     /**

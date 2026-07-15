@@ -1,12 +1,15 @@
 package org.lixiyun.pojo.bo.conversation;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -18,7 +21,11 @@ import java.util.List;
  */
 @Data
 @Builder
-public class ConversationProcessContextBO {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ConversationProcessContextBO implements Serializable {
+
+    private static final long serialVersionUID = 420266596019691443L;
 
     /**
      * 临时消息数据（待处理的用户消息列表）

@@ -1,9 +1,9 @@
 AuthenticationExceptionEnum:1000
-KnowledgeBaseExceptionEnum:1500
-ConversationExceptionEnum:2000
-ScaleExceptionEnum:2500
-FileExceptionEnum:3000
-SkillExceptionEnum:3500
-AIChatExceptionEnum:3200
+KnowledgeBaseExceptionEnum:1200
+ConversationExceptionEnum:1400
+ScaleExceptionEnum:1600
+FileExceptionEnum:1800
+SkillExceptionEnum:2000
+AIChatExceptionEnum:2200
 
 SystemExceptionEnum:10000

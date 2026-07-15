@@ -52,7 +52,10 @@ public interface ConversationCacheConstant {
     /** 消息ZSet集合的过期时间（秒），默认7200秒（2小时） */
     long MESSAGE_ZSET_EXPIRE_SECONDS = 7200L;
 
-    /** 消息处理状态 - 未处理 */
+    /** zset集合消息重入时的指定时间间隔（秒） */
+    int MESSAGE_ZSET_READD_INTERVAL_SECONDS = 2;
+
+       /** 消息处理状态 - 未处理 */
     int PROCESS_FLAG_NOT_PROCESSED = 0;
 
     /** 消息处理状态 - 处理中 */
