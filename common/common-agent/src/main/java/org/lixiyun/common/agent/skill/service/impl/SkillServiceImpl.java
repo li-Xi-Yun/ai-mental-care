@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.agent.skill.service.impl;
+package org.lixiyun.common.agent.skill.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

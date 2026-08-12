@@ -431,6 +431,57 @@ public class MilvusUtil {
     }
 
     /**
+     * 通用：批量更新向量的knowledge_type字段
+     * <p>
+     * 通过查询-构建-批量Upsert的方式实现部分字段更新。
+     *
+     * @param fileId 文件ID
+     * @param targetKnowledgeType 目标知识类型
+     */
+    public void batchUpdateKnowledgeType(Long fileId, int targetKnowledgeType) {
+        if (fileId == null) {
+            log.warn("批量更新knowledge_type字段：文件ID为空，跳过操作");
+            return;
+        }
+
+        log.info("开始批量更新向量knowledge_type字段，文件ID：{}，目标知识类型：{}", fileId, targetKnowledgeType);
+
+        String filter = "file_id == " + fileId;
+
+        try {
+            QueryResp resp = queryIds(filter);
+            List<QueryResp.QueryResult> results = resp.getQueryResults();
+
+            if (results == null || results.isEmpty()) {
+                log.debug("未找到需要更新的向量数据，文件ID：{}", fileId);
+                return;
+            }
+
+            log.info("找到 {} 条需要更新的向量数据，文件ID：{}", results.size(), fileId);
+
+            List<JsonObject> updateData = results.stream()
+                    .map(r -> {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("id", ((Number) r.getEntity().get("id")).longValue());
+                        obj.addProperty("knowledge_type", targetKnowledgeType);
+                        return obj;
+                    })
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < updateData.size(); i += BATCH_SIZE) {
+                List<JsonObject> batch = updateData.subList(i, Math.min(i + BATCH_SIZE, updateData.size()));
+                upsert(batch, true);
+            }
+
+            log.info("成功批量更新向量knowledge_type字段，文件ID：{}，更新数量：{}", fileId, updateData.size());
+
+        } catch (Exception e) {
+            log.error("批量更新向量knowledge_type字段失败，文件ID：{}", fileId, e);
+            throw new BusinessException(FileExceptionEnum.FILE_VECTOR_UPDATE_ERROR);
+        }
+    }
+
+    /**
      * 通用：批量更新向量的deleted字段
      * <p>
      * 使用MilvusUtil工具类简化Milvus操作，自动处理集合名称配置。

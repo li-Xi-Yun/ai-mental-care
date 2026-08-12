@@ -46,7 +46,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void loadFileVector(Long fileId, Integer knowledgeType) {
+    public void loadFileVector(Long fileId) {
         log.info("开始文件向量加载，文件ID：{}", fileId);
 
         // 1. DB查询判断文件是否存在
@@ -68,9 +68,15 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
             throw new BusinessException(FileExceptionEnum.FILE_PARAMS_ERROR);
         }
 
+        if (infraFile.getKnowledgeType().equals(InfraFile.KNOWLEDGE_TYPE_NONE)) {
+            log.error("文件向量加载-文件知识类型不允许为空，当前知识类型：{}，文件ID：{}", infraFile.getKnowledgeType(), fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_KNOWLEDGE_TYPE_NONE);
+        }
+
         // 4. 获取文件元数据
         String filePath = infraFile.getFileUrl();
-        log.debug("文件路径：{}", filePath);
+        Integer knowledgeType = infraFile.getKnowledgeType();
+        log.debug("文件路径：{}，知识类型：{}", filePath, knowledgeType);
 
         // 5. DB修改文件状态为解析中
         int updateCount = infraFileMapper.update(null,

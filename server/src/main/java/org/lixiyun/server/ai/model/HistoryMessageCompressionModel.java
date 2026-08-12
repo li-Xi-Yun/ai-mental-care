@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -32,8 +31,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class HistoryMessageCompressionModel {
-
-    private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
 
     private final String deepseekModelName = "deepseek-chat";
     private final String ollamaModelName = "qwen3:7b-chat-thinking";

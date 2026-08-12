@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.core.error.enums;
+package org.lixiyun.common.core.error.enums;
 
 import lombok.Getter;
 import org.lixiyun.common.core.error.ErrorCode;

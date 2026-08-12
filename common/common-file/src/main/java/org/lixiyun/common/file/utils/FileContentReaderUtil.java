@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.file.utils;
+package org.lixiyun.common.file.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

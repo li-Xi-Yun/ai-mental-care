@@ -27,6 +27,8 @@ public class ConversationProcessContextBO implements Serializable {
 
     private static final long serialVersionUID = 420266596019691443L;
 
+    public static final String NAME = "conversationProcessContextBO";
+
     /**
      * 临时消息数据（待处理的用户消息列表）
      */

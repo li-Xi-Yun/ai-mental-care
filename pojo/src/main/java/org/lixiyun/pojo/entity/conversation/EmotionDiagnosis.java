@@ -26,7 +26,83 @@ import java.util.Map;
 @TableName(value = "emotion_diagnosis", autoResultMap = true)
 public class EmotionDiagnosis implements Serializable {
     private static final long serialVersionUID = 468287925712228372L;
-    
+
+    /** 情绪趋势-上升 */
+    public static final int EMOTION_TREND_UP = 0;
+    /** 情绪趋势-下降 */
+    public static final int EMOTION_TREND_DOWN = 1;
+    /** 情绪趋势-平稳 */
+    public static final int EMOTION_TREND_STABLE = 2;
+
+    /** 社会支持水平-良好 */
+    public static final int SOCIAL_SUPPORT_GOOD = 0;
+    /** 社会支持水平-一般 */
+    public static final int SOCIAL_SUPPORT_FAIR = 1;
+    /** 社会支持水平-较差 */
+    public static final int SOCIAL_SUPPORT_POOR = 2;
+    /** 社会支持水平-匮乏 */
+    public static final int SOCIAL_SUPPORT_SCARCE = 3;
+
+    /** 情绪风险等级-低 */
+    public static final int EMOTION_RISK_LOW = 0;
+    /** 情绪风险等级-中 */
+    public static final int EMOTION_RISK_MEDIUM = 1;
+    /** 情绪风险等级-高 */
+    public static final int EMOTION_RISK_HIGH = 2;
+    /** 情绪风险等级-危急 */
+    public static final int EMOTION_RISK_CRITICAL = 3;
+
+    /** 是否需要人工干预-否 */
+    public static final int NEED_MANUAL_INTERVENE_NO = 0;
+    /** 是否需要人工干预-是 */
+    public static final int NEED_MANUAL_INTERVENE_YES = 1;
+
+    /** 自伤风险等级-无 */
+    public static final int SELF_HARM_RISK_NONE = 0;
+    /** 自伤风险等级-低 */
+    public static final int SELF_HARM_RISK_LOW = 1;
+    /** 自伤风险等级-中 */
+    public static final int SELF_HARM_RISK_MEDIUM = 2;
+    /** 自伤风险等级-高 */
+    public static final int SELF_HARM_RISK_HIGH = 3;
+    /** 自伤风险等级-极高 */
+    public static final int SELF_HARM_RISK_VERY_HIGH = 4;
+
+    /** 自杀风险等级-无 */
+    public static final int SUICIDE_RISK_NONE = 0;
+    /** 自杀风险等级-低 */
+    public static final int SUICIDE_RISK_LOW = 1;
+    /** 自杀风险等级-中 */
+    public static final int SUICIDE_RISK_MEDIUM = 2;
+    /** 自杀风险等级-高 */
+    public static final int SUICIDE_RISK_HIGH = 3;
+    /** 自杀风险等级-极高 */
+    public static final int SUICIDE_RISK_VERY_HIGH = 4;
+
+    /** 是否触发危机预警-否 */
+    public static final int CRISIS_WARNING_NO = 0;
+    /** 是否触发危机预警-是 */
+    public static final int CRISIS_WARNING_YES = 1;
+
+    /** 建议优先级-自助为主 */
+    public static final int SUGGESTION_PRIORITY_SELF_HELP = 1;
+    /** 建议优先级-建议寻求支持 */
+    public static final int SUGGESTION_PRIORITY_SEEK_SUPPORT = 2;
+    /** 建议优先级-强烈建议专业干预 */
+    public static final int SUGGESTION_PRIORITY_PROFESSIONAL = 3;
+
+    /** 不认同 */
+    public static final int AGREE_NO = 0;
+    /** 认同 */
+    public static final int AGREE_YES = 1;
+
+    /** 未尝试采纳建议 */
+    public static final int USE_SUGGESTION_NONE = 0;
+    /** 尝试部分建议 */
+    public static final int USE_SUGGESTION_PART = 1;
+    /** 全部尝试建议 */
+    public static final int USE_SUGGESTION_ALL = 2;
+
     /**
      * 诊断书主键ID
      */
@@ -111,9 +187,9 @@ public class EmotionDiagnosis implements Serializable {
     private Map<String, BigDecimal> positiveEmotionDetail;
     
     /**
-     * 整体情绪趋势（上升/下降/平稳/波动）
+     * 整体情绪趋势（0-上升/1-下降/2-平稳）
      */
-    private String emotionTrend;
+    private Integer emotionTrend;
     
     /**
      * 情绪峰值轮次（核心情绪强度最高的轮次）
@@ -231,9 +307,9 @@ public class EmotionDiagnosis implements Serializable {
     private String firstTriggerDesc;
     
     /**
-     * 社会支持水平：良好/一般/较差/匮乏
+     * 社会支持水平：0-良好/1-一般/2-较差/3-匮乏
      */
-    private String socialSupportLevel;
+    private Integer socialSupportLevel;
     
     /**
      * 保护性因素/心理资源，逗号分隔，如"家人支持,朋友陪伴,有兴趣爱好,自我调节能力强"
@@ -246,9 +322,9 @@ public class EmotionDiagnosis implements Serializable {
     private String copingStyle;
     
     /**
-     * 情绪风险等级（低/中/高/危急）
+     * 情绪风险等级（0-低/1-中/2-高/3-危急）
      */
-    private String emotionRiskLevel;
+    private Integer emotionRiskLevel;
     
     /**
      * 情绪调节建议（自然语言，如"建议适当休息，减少加班频率"）
@@ -261,14 +337,14 @@ public class EmotionDiagnosis implements Serializable {
     private Integer needManualIntervene;
     
     /**
-     * 自伤风险等级：无/低/中/高/极高
+     * 自伤风险等级：0-无/1-低/2-中/3-高/4-极高
      */
-    private String selfHarmRiskLevel;
+    private Integer selfHarmRiskLevel;
     
     /**
-     * 自杀风险等级：无/低/中/高/极高
+     * 自杀风险等级：0-无/1-低/2-中/3-高/4-极高
      */
-    private String suicideRiskLevel;
+    private Integer suicideRiskLevel;
     
     /**
      * 风险细节描述，如"存在消极念头，无具体计划，无自伤行为"
@@ -299,7 +375,48 @@ public class EmotionDiagnosis implements Serializable {
      * 建议优先级：1-自助为主 2-建议寻求支持 3-强烈建议专业干预
      */
     private Integer suggestionPriority;
-    
+
+    /**
+     * 用户对本次诊断打分 1~5分，NULL代表未评分
+     */
+    private Integer diagnosisScore;
+
+    /**
+     * 用户文字反馈、吐槽、补充意见
+     */
+    private String feedbackContent;
+
+    /**
+     * 是否认同风险评估：0-不认同 1-认同 NULL未反馈
+     */
+    private Integer agreeRiskJudge;
+
+    /**
+     * 是否认同给出的自助调节建议：0-不认同 1-认同 NULL未反馈
+     */
+    private Integer agreeSuggestionSelf;
+
+    /**
+     * 是否认同给出的社会支持建议：0-不认同 1-认同 NULL未反馈
+     */
+    private Integer agreeSuggestionSocial;
+
+    /**
+     * 是否认同给出的专业干预建议：0-不认同 1-认同 NULL未反馈
+     */
+    private Integer agreeSuggestionProfessional;
+
+    /**
+     * 是否尝试采纳建议：0-没有 1-尝试部分 2-全部尝试 NULL未反馈
+     */
+    private Integer useSuggestion;
+
+    /**
+     * 用户提交反馈时间
+     */
+    private LocalDateTime feedbackTime;
+
+
     /**
      * 记录创建时间
      */

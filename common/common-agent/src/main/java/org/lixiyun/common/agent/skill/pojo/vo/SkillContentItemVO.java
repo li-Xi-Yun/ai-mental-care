@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.agent.skill.pojo.vo;
+package org.lixiyun.common.agent.skill.pojo.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

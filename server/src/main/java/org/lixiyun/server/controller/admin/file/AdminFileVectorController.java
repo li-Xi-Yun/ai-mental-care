@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.common.validation.annotation.NumberOfRanges;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
 import org.springframework.validation.annotation.Validated;
@@ -34,11 +33,10 @@ public class AdminFileVectorController {
     @PostMapping("/{fileId}/load")
     @Operation(summary = "文件向量加载", description = "根据文件ID加载文件向量，校验文件状态后进行向量加载")
     public Result<Void> loadFileVector(
-            @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId,
-            @RequestParam @NumberOfRanges(min = 1, max = 3) @Parameter(description = "知识类型，1=症状库 2=诊断标准库 3=干预方案库", required = true, in = ParameterIn.QUERY) Integer knowledgeType
+            @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId
     ) {
-        log.info("文件向量加载请求接口，文件ID：{}, 知识类型：{}", fileId, knowledgeType);
-        adminFileVectorService.loadFileVector(fileId, knowledgeType);
+        log.info("文件向量加载请求接口，文件ID：{}", fileId);
+        adminFileVectorService.loadFileVector(fileId);
         return Result.success();
     }
 

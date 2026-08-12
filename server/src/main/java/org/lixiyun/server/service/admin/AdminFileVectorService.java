@@ -18,10 +18,9 @@ public interface AdminFileVectorService {
      * <p>向量加载采用异步方式执行，加载完成后自动更新文件状态为解析完成，加载失败则更新为解析失败</p>
      *
      * @param fileId        文件ID，不能为空
-     * @param knowledgeType 知识类型，不能为空
      * @throws org.lixiyun.common.core.error.exception.BusinessException 当文件不存在、已删除或状态不允许时抛出
      */
-    void loadFileVector(Long fileId, Integer knowledgeType);
+    void loadFileVector(Long fileId);
 
     /**
      * 文件向量删除

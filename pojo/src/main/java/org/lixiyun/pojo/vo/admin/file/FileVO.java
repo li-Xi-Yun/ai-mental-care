@@ -54,6 +54,12 @@ public class FileVO implements Serializable {
     @Schema(description = "是否启用向量检索，0-否，1-是")
     private Integer vectorStatus;
 
+    @Schema(description = "向量库知识类型：0-无，1-症状库，2-诊断标准库，3-干预方案库")
+    private Integer knowledgeType;
+
+    @Schema(description = "文件来源")
+    private String source;
+
     @Schema(description = "上传时间")
     private LocalDateTime createdTime;
 

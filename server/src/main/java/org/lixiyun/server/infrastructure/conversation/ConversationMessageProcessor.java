@@ -13,6 +13,7 @@ import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.server.ai.node.EmotionRecognitionNode;
 import org.lixiyun.server.ai.node.HistoryAnalysisCompressionNode;
 import org.lixiyun.server.ai.node.HistoryMessageCompressionNode;
 import org.lixiyun.server.constant.ConversationCacheConstant;
@@ -49,6 +50,7 @@ public class ConversationMessageProcessor {
     private final ProcessorHolder processorHolder;
     private final HistoryMessageCompressionNode historyMessageCompressionNode;
     private final HistoryAnalysisCompressionNode historyAnalysisCompressionNode;
+    private final EmotionRecognitionNode emotionRecognitionNode;
 
     private static final int MAX_CONTEXT_MESSAGES = 50;
 
@@ -114,11 +116,14 @@ public class ConversationMessageProcessor {
             // 检查是否需要语义压缩
             checkAndTriggerSemanticCompression(contextData, conversationId);
 
+            // 构建处理上下文
+            ConversationProcessContextBO processContext = buildProcessContext(conversationId, contextData, unprocessedMessages);
+
             // todo 分析与诊断
-            analysisAndDiagnosis(conversationId, contextData);
+            analysisAndDiagnosis(conversationId, processContext);
 
             // 主线程执行
-            executeMainThread(conversationId, contextData, executorInstance, unprocessedMessages);
+            executeMainThread(conversationId, processContext, executorInstance);
 
             // 更新临时消息轮次状态为已处理
             updateMessagesToProcessedStatus(conversationId, unprocessedMessages);
@@ -339,10 +344,9 @@ public class ConversationMessageProcessor {
      * <p>根据会话类型获取对应的MessageProcessor，构建处理上下文BO，并调用处理器执行完整的消息处理流程</p>
      *
      * @param conversationId   会话ID
-     * @param contextData      会话上下文数据（从Redis缓存中获取的完整数据Map）
      * @param executorInstance 执行器实例（具体的MessageProcessor实现类）
      */
-    private void executeMainThread(Long conversationId, Map<String, Object> contextData, MessageProcessor executorInstance, List<ConversationMemory> unprocessedMessages) {
+    private void executeMainThread(Long conversationId, ConversationProcessContextBO processContext, MessageProcessor executorInstance) {
         log.info("开始主线程执行，会话ID：{}，执行器：{}", conversationId,
                 executorInstance != null ? executorInstance.getClass().getSimpleName() : "null");
 
@@ -351,8 +355,6 @@ public class ConversationMessageProcessor {
         }
 
         try {
-            ConversationProcessContextBO processContext = buildProcessContext(conversationId, contextData, unprocessedMessages);
-
             log.info("开始调用消息处理器，会话ID：{}", conversationId);
 
             long startTime = System.currentTimeMillis();
@@ -408,13 +410,13 @@ public class ConversationMessageProcessor {
     }
 
     /**
-     * 分析与诊断（异步，暂不实现）
+     * 分析与诊断
      *
      * @param conversationId 会话ID
-     * @param contextData    会话上下文数据
      */
-    private void analysisAndDiagnosis(Long conversationId, Map<String, Object> contextData) {
-        log.info("分析与诊断功能暂未实现，会话ID：{}", conversationId);
+    private void analysisAndDiagnosis(Long conversationId, ConversationProcessContextBO processContext) {
+        log.info("分析与诊断功能，会话ID：{}", conversationId);
+        emotionRecognitionNode.apply(processContext);
     }
 
     /**
@@ -424,7 +426,7 @@ public class ConversationMessageProcessor {
      * @param contextData    会话上下文数据
      */
     private void semanticCompression(Long conversationId, Map<String, Object> contextData) {
-        log.info("语义压缩功能暂未实现，会话ID：{}", conversationId);
+        log.info("语义压缩功能，会话ID：{}", conversationId);
         Object historyMessagesObj = contextData.get(ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
         Object conversationObj = contextData.get(ConversationCacheConstant.HASH_FIELD_METADATA);
         Object emotionListObj = contextData.get(ConversationCacheConstant.HASH_FIELD_EMOTION_ANALYSIS_LIST);
@@ -536,12 +538,8 @@ public class ConversationMessageProcessor {
         }
     }
 
-
-
-
     /**
      * 会话缓存加载
-     * <p>根据图片流程实现：</p>
      * <ol>
      *     <li>判断会话缓存数据是否存在</li>
      *     <li>DB查询会话完整数据信息（状态：已处理）</li>

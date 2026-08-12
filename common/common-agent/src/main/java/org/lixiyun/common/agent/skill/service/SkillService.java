@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.agent.skill.service;
+package org.lixiyun.common.agent.skill.service;
 
 import org.lixiyun.common.agent.skill.pojo.vo.SkillContentItemVO;
 import org.springframework.core.io.Resource;

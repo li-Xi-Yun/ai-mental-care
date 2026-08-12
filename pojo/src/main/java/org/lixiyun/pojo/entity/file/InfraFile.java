@@ -24,34 +24,28 @@ public class InfraFile implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 文件状态：待解析
-     */
+    /**文件状态：待解析 */
     public static final int STATUS_PENDING = 0;
-
-    /**
-     * 文件状态：解析中
-     */
+    /** 文件状态：解析中 */
     public static final int STATUS_PARSING = 1;
-
-    /**
-     * 文件状态：解析失败
-     */
+    /** 文件状态：解析失败 */
     public static final int STATUS_PARSE_FAILED = 2;
-
-    /**
-     * 文件状态：解析完成
-     */
+    /** 文件状态：解析完成 */
     public static final int STATUS_PARSE_COMPLETED = 3;
 
-    /**
-     * 向量状态：禁用
-     */
+    /** 向量状态：禁用 */
     public static final int VECTOR_STATUS_DISABLE = 0;
-    /**
-     * 向量状态：启用
-     */
+    /** 向量状态：启用 */
     public static final int VECTOR_STATUS_ENABLE = 1;
+
+    /** 向量库知识类型：无 */
+    public static final int KNOWLEDGE_TYPE_NONE = 0;
+    /** 向量库知识类型：症状库 */
+    public static final int KNOWLEDGE_TYPE_SYMPTOM = 1;
+    /** 向量库知识类型：诊断标准库 */
+    public static final int KNOWLEDGE_TYPE_DIAGNOSIS = 2;
+    /** 向量库知识类型：干预方案库 */
+    public static final int KNOWLEDGE_TYPE_INTERVENTION_PLAN = 3;
 
     /**
      * 自增主键ID
@@ -113,6 +107,16 @@ public class InfraFile implements Serializable {
      * 是否启用向量检索，0-否，1-是
      */
     private Integer vectorStatus;
+
+    /**
+     * 向量库知识类型，0-无，1=症状库 2=诊断标准库 3=干预方案库
+     */
+    private Integer knowledgeType;
+
+    /**
+     * 文件来源
+     */
+    private String source;
 
     /**
      * 上传时间

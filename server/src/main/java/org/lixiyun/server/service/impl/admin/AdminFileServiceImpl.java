@@ -18,6 +18,7 @@ import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.file.InfraFileCategory;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
+import org.lixiyun.server.ai.rag.MilvusUtil;
 import org.lixiyun.server.ai.rag.RagStore;
 import org.lixiyun.server.mapper.InfraFileCategoryMapper;
 import org.lixiyun.server.mapper.InfraFileMapper;
@@ -44,6 +45,7 @@ public class AdminFileServiceImpl implements AdminFileService {
     private final InfraFileCategoryMapper infraFileCategoryMapper;
     private final FileStorage fileStorage;
     private final RagStore ragStore;
+    private final MilvusUtil milvusUtil;
     private final AdminFileVectorService adminFileVectorService;
 
     /**
@@ -133,6 +135,7 @@ public class AdminFileServiceImpl implements AdminFileService {
                 .fileSize(file.getSize())
                 .fileMd5(fileMd5)
                 .status(InfraFile.STATUS_PENDING)
+                .knowledgeType(0)
                 .build();
 
         // DB存储文件元数据信息
@@ -153,39 +156,15 @@ public class AdminFileServiceImpl implements AdminFileService {
         // 构建分页对象
         Page<InfraFile> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
 
-        // 构建查询条件
-        LambdaQueryWrapper<InfraFile> queryWrapper = new LambdaQueryWrapper<>();
-        
-        // 分类ID过滤
-        if (queryDTO.getCategoryId() != null) {
-            queryWrapper.eq(InfraFile::getCategoryId, queryDTO.getCategoryId());
-        }
-
-        // 文件名模糊查询
-        if (StrUtil.isNotBlank(queryDTO.getFileName())) {
-            queryWrapper.like(InfraFile::getOriginalName, queryDTO.getFileName());
-        }
-
-        // 文件状态过滤
-        if (queryDTO.getStatus() != null) {
-            queryWrapper.eq(InfraFile::getStatus, queryDTO.getStatus());
-        }
-
-        // 开始时间过滤
-        if (queryDTO.getStartTime() != null) {
-            queryWrapper.ge(InfraFile::getCreatedTime, queryDTO.getStartTime());
-        }
-
-        // 结束时间过滤
-        if (queryDTO.getEndTime() != null) {
-            queryWrapper.le(InfraFile::getCreatedTime, queryDTO.getEndTime());
-        }
-
-        // 按创建时间倒序排列
-        queryWrapper.orderByDesc(InfraFile::getCreatedTime);
-
         // DB分页查询
-        Page<InfraFile> resultPage = infraFileMapper.selectPage(page, queryWrapper);
+        Page<InfraFile> resultPage = infraFileMapper.selectPage(page, new LambdaQueryWrapper<InfraFile>()
+                .eq(queryDTO.getCategoryId() != null, InfraFile::getCategoryId, queryDTO.getCategoryId())
+                .like(StrUtil.isNotBlank(queryDTO.getFileName()), InfraFile::getOriginalName, queryDTO.getFileName())
+                .eq(queryDTO.getStatus() != null, InfraFile::getStatus, queryDTO.getStatus())
+                .ge(queryDTO.getStartTime() != null, InfraFile::getCreatedTime, queryDTO.getStartTime())
+                .le(queryDTO.getEndTime() != null, InfraFile::getCreatedTime, queryDTO.getEndTime())
+                .eq(queryDTO.getKnowledgeType() != null, InfraFile::getKnowledgeType, queryDTO.getKnowledgeType())
+                .orderByDesc(InfraFile::getCreatedTime));
         log.debug("文件分页查询完成，总数：{}，当前页记录数：{}", resultPage.getTotal(), resultPage.getRecords().size());
 
         // 转换为VO并返回分页结果
@@ -253,6 +232,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         String fileName = updateDTO.getFileName();
         Long categoryId = updateDTO.getCategoryId();
         Integer vectorStatus = updateDTO.getVectorStatus();
+        Integer knowledgeType = updateDTO.getKnowledgeType();
 
         InfraFile infraFileBeforeUpdate = infraFileMapper.selectById(fileId);
         if (infraFileBeforeUpdate == null) {
@@ -261,34 +241,22 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
         Long categoryIdBeforeUpdate = infraFileBeforeUpdate.getCategoryId();
         Integer vectorStatusBeforeUpdate = infraFileBeforeUpdate.getVectorStatus();
+        Integer knowledgeTypeBeforeUpdate = infraFileBeforeUpdate.getKnowledgeType();
 
-        InfraFile updateEntity = new InfraFile();
-        updateEntity.setId(fileId);
+        InfraFile updateEntity = InfraFile.builder()
+                .id(fileId)
+                .originalName(fileName)
+                .categoryId(categoryId)
+                .vectorStatus(vectorStatus)
+                .knowledgeType(knowledgeType)
+                .build();
 
-        boolean hasUpdate = false;
-        if (StrUtil.isNotBlank(fileName)) {
-            updateEntity.setOriginalName(fileName);
-            hasUpdate = true;
+        int updated = infraFileMapper.updateById(updateEntity);
+        if (updated == 0) {
+            log.error("文件元数据修改失败，文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
         }
-        if (categoryId != null) {
-            updateEntity.setCategoryId(categoryId);
-            hasUpdate = true;
-        }
-        if (vectorStatus != null) {
-            updateEntity.setVectorStatus(vectorStatus);
-            hasUpdate = true;
-        }
-
-        if (!hasUpdate) {
-            log.warn("没有需要修改的字段，文件ID：{}", fileId);
-        } else {
-            int updated = infraFileMapper.updateById(updateEntity);
-            if (updated == 0) {
-                log.error("文件元数据修改失败，文件ID：{}", fileId);
-                throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
-            }
-            log.debug("文件元数据修改成功");
-        }
+        log.debug("文件元数据修改成功");
 
         if (categoryId != null && !categoryId.equals(categoryIdBeforeUpdate)) {
             infraFileCategoryMapper.updateMyFileCount(categoryIdBeforeUpdate, -1);
@@ -304,6 +272,27 @@ public class AdminFileServiceImpl implements AdminFileService {
                 log.info("向量状态从启用变为禁用，已更新删除状态，文件ID：{}", fileId);
             } catch (Exception e) {
                 log.error("更新向量删除状态失败，文件ID：{}", fileId, e);
+            }
+        }
+
+        if (knowledgeType != null && !knowledgeType.equals(knowledgeTypeBeforeUpdate)) {
+            if (InfraFile.KNOWLEDGE_TYPE_NONE != knowledgeTypeBeforeUpdate) {
+                if (InfraFile.KNOWLEDGE_TYPE_NONE != knowledgeType) {
+                    try {
+                        milvusUtil.batchUpdateKnowledgeType(fileId, knowledgeType);
+                        log.info("知识类型从{}变为{}，已更新向量数据库，文件ID：{}", knowledgeTypeBeforeUpdate, knowledgeType, fileId);
+                    } catch (Exception e) {
+                        log.error("更新向量知识类型失败，文件ID：{}", fileId, e);
+                    }
+                } else {
+                    if (InfraFile.VECTOR_STATUS_ENABLE == vectorStatusBeforeUpdate) {
+                        log.error("向量启用状态下不允许将知识类型置为空，文件ID：{}", fileId);
+                        throw new BusinessException(FileExceptionEnum.FILE_KNOWLEDGE_TYPE_UPDATE_NEED_DELETE_VECTOR);
+                    }
+                    log.info("知识类型从{}变为0且向量未启用，无需更新向量数据库，文件ID：{}", knowledgeTypeBeforeUpdate, fileId);
+                }
+            } else {
+                log.info("数据库知识类型为0，无需更新向量数据库，文件ID：{}", fileId);
             }
         }
 

@@ -28,6 +28,20 @@ public enum ConversationExceptionEnum implements ErrorCode {
     CANNOT_HAVE_MULTIPLE_VOICE_DIALOGS("不能同时有多个语音对话", 1414),
     RAG_PARAM_MISSING("RAG流程参数缺失", 1415),
 
+
+    CONVERSATION_PROCESS_CONTEXT_NOT_EXIST("心理诊断流程-会话上下文不存在", 1416),
+    SESSION_CLEAN_RESULT_NOT_EXIST("心理诊断流程-会话清洗结果不存在", 1417),
+    INPUT_RESULT_NOT_EXIST("心理诊断流程-输入侧流程聚合结果不存在", 1418),
+    KNOWLEDGE_MATCH_REQUEST_NOT_EXIST("知识匹配请求不存在", 1419),
+    KNOWLEDGE_RETRIEVE_RESULT_NOT_EXIST("知识检索结果不存在", 1420),
+    KNOWLEDGE_DOCUMENT_NOT_EXIST("知识文档不存在", 1421),
+    INFRA_FILE_NOT_EXIST("文件元数据不存在", 1422),
+    MODEL_OUTPUT_PARSE_FAILED("模型输出解析失败", 1423),
+    SYMPTOM_KNOWLEDGE_DOCUMENT_LIST_EMPTY("症状知识文档为空", 1424),
+    INTERVENTION_KNOWLEDGE_DOCUMENT_LIST_EMPTY("干预知识文档为空", 1425),
+    DIAGNOSIS_KNOWLEDGE_DOCUMENT_LIST_EMPTY("诊断知识文档为空", 1426),
+    RERANK_LAYER_RESULT_NOT_EXIST("重排层节点-模型输出解析失败", 1427),
+
     ;
 
     @Getter

@@ -27,7 +27,8 @@ public enum FileExceptionEnum implements ErrorCode {
     FILE_NAME_INVALID("文件名错误", 1815),
     FOLDER_NAME_INVALID("文件夹名称错误", 1816),
     FILE_WRITE_ERROR("文件写入错误", 1817),
-
+    FILE_KNOWLEDGE_TYPE_NONE("向量加载时，文件知识类型不允许为空", 1818),
+    FILE_KNOWLEDGE_TYPE_UPDATE_NEED_DELETE_VECTOR("请先删除文件向量，才能更新知识类型", 1819),
 
 
 

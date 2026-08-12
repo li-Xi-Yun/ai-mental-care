@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class EmotionAnalysis implements Serializable {
+
     private static final long serialVersionUID = -35884017703413638L;
     
     /**

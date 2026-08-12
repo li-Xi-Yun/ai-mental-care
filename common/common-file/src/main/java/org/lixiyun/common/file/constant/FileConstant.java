@@ -1,4 +1,4 @@
-﻿package org.lixiyun.common.file.constant;
+package org.lixiyun.common.file.constant;
 
 import org.lixiyun.common.core.constant.MimeTypeConstant;
 

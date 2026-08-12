@@ -33,6 +33,10 @@ public class FileQueryDTO implements Serializable {
     @Schema(description = "分类ID，没有查所有文件信息", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Long categoryId;
 
+    @NumberOfRanges(min = 0, max = 3)
+    @Schema(description = "向量库知识类型：0-无，1-症状库，2-诊断标准库，3-干预方案库", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Integer knowledgeType;
+
     @Schema(description = "文件名（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String fileName;
 

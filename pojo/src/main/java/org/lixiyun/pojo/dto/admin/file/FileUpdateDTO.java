@@ -32,4 +32,8 @@ public class FileUpdateDTO implements Serializable {
     @Schema(description = "是否启用向量检索，0-否，1-是", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Integer vectorStatus;
 
+    @NumberOfRanges(min = 0, max = 3)
+    @Schema(description = "向量库知识类型：0-无，1-症状库，2-诊断标准库，3-干预方案库", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Integer knowledgeType;
+
 }
