@@ -17,9 +17,8 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtrac
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.SymptomRawItem;
 import org.lixiyun.pojo.entity.conversation.SymptomDict;
 import org.lixiyun.server.ai.model.ChatModelFactory;
-import org.lixiyun.server.ai.model.diagnosis.SymptomNormalizeModel;
+import org.lixiyun.server.ai.model.diagnosis.input.SymptomNormalizeModel;
 import org.lixiyun.server.mapper.SymptomDictMapper;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -468,9 +467,7 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
                                  List<String> stillUnmatchedTexts) {
         String userPrompt = buildModelUserPrompt(unmatchedTexts, dictList);
         try {
-            AssistantMessage assistantMessage = symptomNormalizeModel.call(chatModel, userPrompt);
-            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = JsonUtils.parseObject(
-                    assistantMessage.getText(), SymptomNormalizeModel.SymptomNormalizeModelResult.class);
+            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt);
 
             if (modelOutput == null || modelOutput.getTermList() == null) {
                 log.warn("输入侧-语义归一化处理-模型输出为空，全部保留原文");

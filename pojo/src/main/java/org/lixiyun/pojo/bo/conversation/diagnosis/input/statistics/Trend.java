@@ -25,21 +25,6 @@ public class Trend implements Serializable {
     private String emotionTrend;
 
     /**
-     * 情绪强度峰值对应的轮次号
-     */
-    private Integer emotionPeakRound;
-
-    /**
-     * 情绪强度谷值对应的轮次号
-     */
-    private Integer emotionValleyRound;
-
-    /**
-     * 情绪波动幅度（峰值与谷值的差值，0~1）
-     */
-    private BigDecimal emotionFluctuationAmplitude;
-
-    /**
      * 情绪平稳的相邻轮次数量
      */
     private Integer emotionStableRounds;
@@ -61,9 +46,6 @@ public class Trend implements Serializable {
 
     public static String getPrompt() {
         return "emotionTrend：全会话情绪整体趋势（上升/下降/平稳/无法判断），" +
-                "emotionPeakRound：情绪强度峰值对应的轮次号，" +
-                "emotionValleyRound：情绪强度谷值对应的轮次号，" +
-                "emotionFluctuationAmplitude：情绪波动幅度（0~1），" +
                 "emotionStableRounds：情绪平稳的相邻轮次数量，" +
                 "emotionStabilityScore：情绪稳定性得分（0~1，越高越稳定），" +
                 "emotionChangeCount：情绪主标签变化的总次数，" +

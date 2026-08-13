@@ -33,9 +33,14 @@ public class SubEmotionDistributionItem implements Serializable {
      */
     private BigDecimal ratio;
 
+    /** 平均置信度(0~1) */
+    private BigDecimal avgConfidence;
+
+
     public static String getPrompt() {
         return "label：情绪标签名称，" +
                 "count：出现轮次数，" +
-                "ratio：出现占比（0~1）";
+                "ratio：出现占比（0~1）" +
+                "avgConfidence:平均置信度";
     }
 }

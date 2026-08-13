@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 知识侧检索输出结果
+ * 知识侧-检索输出结果
  * <p>包含症状/诊断标准/干预方案三类参考文本及切片列表，以及检索元信息</p>
  *
  * @author lixiyun

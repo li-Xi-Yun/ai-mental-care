@@ -7,11 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.server.ai.model.ChatModelFactory;
-import org.lixiyun.server.ai.model.diagnosis.QueryTransformLayerModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
+import org.lixiyun.server.ai.model.diagnosis.knowlegde.QueryTransformLayerModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +33,6 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
     private final ChatModelFactory chatModelFactory;
     private final ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
 
-
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
         log.info("知识侧-查询变换层-开始");
@@ -50,9 +47,7 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(knowledgeMatchRequest);
         log.info("知识侧-查询变换层-构建用户提示词完成");
 
-        AssistantMessage assistantMessage = queryTransformLayerModel.call(chatModel, userPrompt);
-        QueryTransformLayerModel.QueryTransformLayerResult result = JsonUtils.parseObject(
-                assistantMessage.getText(), QueryTransformLayerModel.QueryTransformLayerResult.class);
+        QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt);
 
         if (result == null) {
             log.error("知识侧-查询变换层-模型输出解析失败");

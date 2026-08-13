@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.MessageEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
@@ -15,8 +14,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.model.ChatModelFactory;
-import org.lixiyun.server.ai.model.diagnosis.MessageStructuredProcessModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
+import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -100,8 +98,7 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
             log.info("输入侧-消息结构化处理-分支B-有效轮次({})达到阈值({})，调用大模型提取核心信息", validRoundCount, ROUND_THRESHOLD);
             String userPrompt = buildUserPrompt(validRounds);
             ChatModel chatModel = chatModelFactory.getOllamaChatModel();
-            AssistantMessage assistantMessage = messageStructuredProcessModel.call(chatModel, userPrompt);
-            CoreInfoExtractResult coreInfoExtractResult = JsonUtils.parseObject(assistantMessage.getText(), CoreInfoExtractResult.class);
+            CoreInfoExtractResult coreInfoExtractResult = messageStructuredProcessModel.callForResult(chatModel, userPrompt);
             inputResult.setCoreInfoExtractResult(coreInfoExtractResult);
         }
 

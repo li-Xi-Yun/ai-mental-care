@@ -8,17 +8,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeSliceItem;
 import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.server.ai.model.ChatModelFactory;
-import org.lixiyun.server.ai.model.diagnosis.RerankLayerModel;
+import org.lixiyun.server.ai.model.diagnosis.knowlegde.RerankLayerModel;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -143,9 +141,7 @@ public class RerankLayerNode implements NodeActionWithConfig {
                 symptomSliceIdMap, diagnosisSliceIdMap, interventionSliceIdMap);
         log.info("知识侧-重排层节点-构建用户提示词完成");
 
-        AssistantMessage assistantMessage = rerankLayerModel.call(chatModel, userPrompt);
-        RerankLayerModel.RerankLayerResult rerankResult = JsonUtils.parseObject(
-                assistantMessage.getText(), RerankLayerModel.RerankLayerResult.class);
+        RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt);
 
         if (rerankResult == null) {
             log.error("知识侧-重排层节点-模型输出解析失败");

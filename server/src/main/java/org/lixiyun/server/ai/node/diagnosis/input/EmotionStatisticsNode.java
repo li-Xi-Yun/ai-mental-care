@@ -3,7 +3,6 @@ package org.lixiyun.server.ai.node.diagnosis.input;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -12,12 +11,16 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLeve
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,58 +54,36 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class EmotionStatisticsNode implements NodeActionWithConfig {
 
     /**
      * 节点名称标识
      */
     public static final String NODE_NAME = "emotionStatisticsNode";
-
     /**
      * 情绪置信度筛选阈值，低于此值的轮次不纳入统计
      */
     private static final BigDecimal CONFIDENCE_THRESHOLD = new BigDecimal("0.5");
-
     /**
      * BigDecimal 运算保留小数位数
      */
     private static final int SCALE = 4;
-
     /**
      * 趋势判断阈值：前后半段P维度均值差绝对值大于此值判定为上升/下降，否则为平稳
      */
     private static final BigDecimal TREND_THRESHOLD = new BigDecimal("0.1");
-
     /**
      * 平稳相邻对判定阈值：相邻两轮强度差值绝对值小于此值则记为平稳
      */
     private static final BigDecimal STABLE_DIFF_THRESHOLD = new BigDecimal("0.1");
-
     /**
      * 情绪强度上界，用于初始化最小值搜索
      */
     private static final BigDecimal INTENSITY_UPPER_BOUND = new BigDecimal("2");
 
-    /**
-     * 趋势枚举：上升
-     */
-    private static final String TREND_RISING = "上升";
-
-    /**
-     * 趋势枚举：下降
-     */
-    private static final String TREND_FALLING = "下降";
-
-    /**
-     * 趋势枚举：平稳
-     */
-    private static final String TREND_STABLE = "平稳";
-
-    /**
-     * 趋势枚举：无法判断
-     */
-    private static final String TREND_UNKNOWN = "无法判断";
+    @Autowired
+    @Qualifier("diagnosisThreadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor diagnosisExecutor;
 
     /**
      * 执行情绪数据处理流程
@@ -165,9 +146,15 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
      * @return 完整的情绪统计数据包
      */
     private EmotionStatisticsResult buildStatisticsResult(List<RoundEffectiveLevel> validRounds) {
-        BaseInfo baseInfo = buildBaseInfo(validRounds);
-        Quantitative quantitative = buildQuantitative(validRounds);
-        Trend trend = buildTrend(validRounds, quantitative);
+        CompletableFuture<BaseInfo> baseInfoFuture = CompletableFuture.supplyAsync(() -> buildBaseInfo(validRounds), diagnosisExecutor);
+        CompletableFuture<Quantitative> quantitativeFuture = CompletableFuture.supplyAsync(() -> buildQuantitative(validRounds), diagnosisExecutor);
+        CompletableFuture<Trend> trendFuture = CompletableFuture.supplyAsync(() -> buildTrend(validRounds), diagnosisExecutor);
+
+        CompletableFuture.allOf(baseInfoFuture, quantitativeFuture, trendFuture).join();
+
+        BaseInfo baseInfo = baseInfoFuture.join();
+        Quantitative quantitative = quantitativeFuture.join();
+        Trend trend = trendFuture.join();
 
         return EmotionStatisticsResult.builder()
                 .hasValidData(true)
@@ -216,10 +203,12 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
                             .filter(Objects::nonNull)
                             .max(Comparator.naturalOrder())
                             .map(this::bd).orElse(BigDecimal.ZERO);
+                    BigDecimal avgConfidence = simpleAvg(analyses, EmotionAnalysis::getEmotionConfidence);
                     return EmotionDistributionItem.builder()
                             .label(label)
                             .count(count)
                             .ratio(ratio)
+                            .avgConfidence(avgConfidence)
                             .avgIntensity(avgIntensity)
                             .peakIntensity(peakIntensity)
                             .build();
@@ -235,12 +224,15 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
         List<SubEmotionDistributionItem> subEmotionDistribution = bySubLabel.entrySet().stream()
                 .map(entry -> {
                     String label = entry.getKey();
-                    int count = entry.getValue().size();
+                    List<EmotionAnalysis> analyses = entry.getValue();
+                    int count = analyses.size();
                     BigDecimal ratio = bd(count).divide(bd(total), SCALE, RoundingMode.HALF_UP);
+                    BigDecimal avgConfidence = simpleAvg(analyses, EmotionAnalysis::getEmotionConfidence);
                     return SubEmotionDistributionItem.builder()
                             .label(label)
                             .count(count)
                             .ratio(ratio)
+                            .avgConfidence(avgConfidence)
                             .build();
                 })
                 .sorted(Comparator.comparing(SubEmotionDistributionItem::getRatio).reversed())
@@ -258,13 +250,10 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
         BigDecimal avgConfidence = simpleAvg(validRounds,
                 r -> r.getEmotionAnalysis().getEmotionConfidence());
 
-        String dominantEmotion = emotionDistribution.isEmpty() ? null : emotionDistribution.get(0).getLabel();
-        BigDecimal dominantRatio = emotionDistribution.isEmpty() ? BigDecimal.ZERO : emotionDistribution.get(0).getRatio();
+        EmotionDistributionItem dominantEmotion = emotionDistribution.isEmpty() ? null : emotionDistribution.get(0);
 
         return BaseInfo.builder()
                 .dominantEmotion(dominantEmotion)
-                .dominantRatio(dominantRatio)
-                .emotionCount(emotionDistribution.size())
                 .emotionDistribution(emotionDistribution)
                 .subEmotionDistribution(subEmotionDistribution)
                 .avgPositiveRatio(avgPositiveRatio)
@@ -409,8 +398,6 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
      * <ul>
      *   <li>{@code emotionTrend}：基于P维度（愉悦度）做二分法趋势判断，
      *       前后半段均值差 &gt; 0.1 为上升，&lt; -0.1 为下降，区间内为平稳</li>
-     *   <li>{@code emotionPeakRound}/{@code emotionValleyRound}：全局情绪强度最高/最低的轮次号</li>
-     *   <li>{@code emotionFluctuationAmplitude}：强度峰值 - 强度谷值，即情绪强度的最大波动差</li>
      *   <li>{@code emotionStableRounds}：相邻两轮强度差值绝对值 &lt; 0.1 的相邻对数
      *       （n轮对应n-1个相邻对，非平稳轮次数量）</li>
      *   <li>{@code emotionStabilityScore}：基于加权标准差做归一化得分：1 - 加权标准差，
@@ -420,11 +407,10 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
      * </ul>
      *
      * @param validRounds   有效情绪轮次列表
-     * @param quantitative  已构建的量化指标（复用强度统计结果）
      * @return 情绪动态趋势特征
      * @see Trend
      */
-    private Trend buildTrend(List<RoundEffectiveLevel> validRounds, Quantitative quantitative) {
+    private Trend buildTrend(List<RoundEffectiveLevel> validRounds) {
         List<BigDecimal> pValues = validRounds.stream()
                 .map(RoundEffectiveLevel::getEmotionAnalysis)
                 .map(EmotionAnalysis::getPScore)
@@ -432,26 +418,20 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
                 .map(this::bd)
                 .collect(Collectors.toList());
 
-        String emotionTrend = TREND_UNKNOWN;
+        String emotionTrend = EmotionStatisticsResult.TREND_UNKNOWN;
         if (pValues.size() >= 2) {
             int mid = pValues.size() / 2;
             BigDecimal firstHalfAvg = avgOfList(pValues.subList(0, mid));
             BigDecimal secondHalfAvg = avgOfList(pValues.subList(mid, pValues.size()));
             BigDecimal diff = secondHalfAvg.subtract(firstHalfAvg);
             if (diff.compareTo(TREND_THRESHOLD) > 0) {
-                emotionTrend = TREND_RISING;
+                emotionTrend = EmotionStatisticsResult.TREND_RISING;
             } else if (diff.compareTo(TREND_THRESHOLD.negate()) < 0) {
-                emotionTrend = TREND_FALLING;
+                emotionTrend = EmotionStatisticsResult.TREND_FALLING;
             } else {
-                emotionTrend = TREND_STABLE;
+                emotionTrend = EmotionStatisticsResult.TREND_STABLE;
             }
         }
-
-        IntensityStat intensityStat = quantitative.getIntensity();
-        int emotionPeakRound = intensityStat != null ? intensityStat.getPeakRound() : 0;
-        int emotionValleyRound = intensityStat != null ? intensityStat.getValleyRound() : 0;
-
-        BigDecimal emotionFluctuationAmplitude = intensityStat != null ? intensityStat.getWaveRange() : BigDecimal.ZERO;
 
         List<BigDecimal> intensities = new ArrayList<>();
         List<BigDecimal> intensityWeights = new ArrayList<>();
@@ -503,9 +483,6 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
 
         return Trend.builder()
                 .emotionTrend(emotionTrend)
-                .emotionPeakRound(emotionPeakRound)
-                .emotionValleyRound(emotionValleyRound)
-                .emotionFluctuationAmplitude(emotionFluctuationAmplitude)
                 .emotionStableRounds(emotionStableRounds)
                 .emotionStabilityScore(emotionStabilityScore)
                 .emotionChangeCount(emotionChangeCount)

@@ -1,7 +1,9 @@
 package org.lixiyun.pojo.bo.conversation.diagnosis.input;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomNormalizeResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.EmotionStatisticsResult;
@@ -17,6 +19,8 @@ import java.io.Serializable;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class InputResult implements Serializable {
 
     private static final long serialVersionUID = 1L;

@@ -22,17 +22,7 @@ public class BaseInfo implements Serializable {
     /**
      * 全会话主导情绪主标签
      */
-    private String dominantEmotion;
-
-    /**
-     * 主导情绪占比（0~1）
-     */
-    private BigDecimal dominantRatio;
-
-    /**
-     * 全会话出现的情绪主标签种类数
-     */
-    private Integer emotionCount;
+    private EmotionDistributionItem dominantEmotion;
 
     /**
      * 主情绪标签分布列表（按占比降序）
@@ -65,8 +55,7 @@ public class BaseInfo implements Serializable {
     private BigDecimal avgConfidence;
 
     public static String getPrompt() {
-        return "dominantEmotion：全会话主导情绪主标签，" +
-                "dominantRatio：主导情绪占比（0~1），" +
+        return "dominantEmotion：全会话主导情绪主标签，" + EmotionDistributionItem.getPrompt() + "，" +
                 "emotionCount：全会话出现的情绪主标签种类数，" +
                 "emotionDistribution：" + EmotionDistributionItem.getPrompt() + "，" +
                 "subEmotionDistribution：" + SubEmotionDistributionItem.getPrompt() + "，" +

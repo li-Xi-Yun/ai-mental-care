@@ -1,25 +1,25 @@
-package org.lixiyun.server.ai.model.diagnosis;
+package org.lixiyun.server.ai.model.diagnosis.knowlegde;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
-import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.server.ai.model.BaseModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
-import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -33,8 +33,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class RerankLayerModel {
+public class RerankLayerModel extends BaseModel {
 
     private final String deepseekModelName = "deepseek-chat";
     private final String ollamaModelName = "qwen3:7b-chat-thinking";
@@ -77,31 +76,28 @@ public class RerankLayerModel {
             - 严格按JSON格式输出，不要输出任何其他内容
             """;
 
-    public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel) {
-        if (chatModel == null) {
-            throw new BusinessException(ConversationExceptionEnum.MODEL_NOT_EXIST);
-        }
-        return ReactAgent.builder()
-                .model(chatModel)
-                .name("rerankLayer")
-                .description("重排层-语义筛选去噪与相关性排序")
-                .chatOptions(chatOptions(chatModel))
-                .enableLogging(false);
+    @Override
+    protected String getSystemPrompt() {
+        return systemPrompt;
     }
 
-    private ChatOptions chatOptions(ChatModel chatModel) {
-        if (chatModel instanceof OllamaChatModel) {
-            return buildOllamaCompanionOptions();
-        } else if (chatModel instanceof DashScopeChatModel) {
-            return buildDashScopeCompanionOptions();
-        } else if (chatModel instanceof DeepSeekChatModel) {
-            return buildDeepSeekCompanionOptions();
-        } else {
-            return buildDefaultCompanionOptions();
-        }
+    @Override
+    protected String getAgentName() {
+        return "rerankLayer";
     }
 
-    private ChatOptions buildOllamaCompanionOptions() {
+    @Override
+    protected String getAgentDescription() {
+        return "重排层-语义筛选去噪与相关性排序";
+    }
+
+    @Override
+    protected Class<?> getOutputType() {
+        return RerankLayerResult.class;
+    }
+
+    @Override
+    protected ChatOptions buildOllamaCompanionOptions() {
         return OllamaChatOptions.builder()
                 .model(ollamaModelName)
                 .temperature(0.2)
@@ -127,7 +123,8 @@ public class RerankLayerModel {
                 .build();
     }
 
-    private ChatOptions buildDashScopeCompanionOptions() {
+    @Override
+    protected ChatOptions buildDashScopeCompanionOptions() {
         return DashScopeChatOptions.builder()
                 .model(dashscopeModelName)
                 .temperature(0.2)
@@ -149,7 +146,8 @@ public class RerankLayerModel {
                 .build();
     }
 
-    private ChatOptions buildDeepSeekCompanionOptions() {
+    @Override
+    protected ChatOptions buildDeepSeekCompanionOptions() {
         return DeepSeekChatOptions.builder()
                 .model(deepseekModelName)
                 .temperature(0.2)
@@ -165,7 +163,8 @@ public class RerankLayerModel {
                 .build();
     }
 
-    private ChatOptions buildDefaultCompanionOptions() {
+    @Override
+    protected ChatOptions buildDefaultCompanionOptions() {
         return ChatOptions.builder()
                 .topK(40)
                 .topP(0.9)
@@ -182,12 +181,24 @@ public class RerankLayerModel {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
+    @Override
     public AssistantMessage call(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return reactAgentBuilder(chatModel)
-                .systemPrompt(systemPrompt)
-                .outputType(RerankLayerResult.class)
-                .build()
-                .call(userPrompt);
+        return doCall(chatModel, userPrompt);
+    }
+
+    @Retryable(
+            label = "rerank-layer-model",
+            retryFor = {Exception.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public RerankLayerResult callForResult(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
+        return doCallForResult(chatModel, userPrompt);
+    }
+
+    @Override
+    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
+        return doStream(chatModel, userPrompt);
     }
 
     @Data
@@ -198,7 +209,6 @@ public class RerankLayerModel {
 
         private static final long serialVersionUID = 1L;
 
-        // key: 切片ID，value: 模型给出的相关性分值（0-1 区间，越高越相关）
         private Map<Long, Double> symptomScores;
         private Map<Long, Double> diagnosisScores;
         private Map<Long, Double> interventionScores;

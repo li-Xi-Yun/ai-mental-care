@@ -1,43 +1,38 @@
-package org.lixiyun.server.ai.model.diagnosis;
+package org.lixiyun.server.ai.model.diagnosis.process;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
-import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomOriginalItem;
+import org.lixiyun.server.ai.model.BaseModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
-import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
+import java.io.Serializable;
 
 /**
- * 症状语义归一化模型
- * 对规则词典无法匹配的个性化/小众症状表述做模型语义归一化解析
+ * 心理状态与症状评估处理模型
+ * 评估用户整体心理状态、总结核心症状、生成症状标签
  *
  * @author lixiyun
- * @since 2026-08-10 17:28
+ * @since 2026-08-13
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class SymptomNormalizeModel {
+public class PsychologicalStateProcessModel extends BaseModel {
 
     private final String deepseekModelName = "deepseek-chat";
     private final String ollamaModelName = "qwen3:7b-chat-thinking";
@@ -46,66 +41,57 @@ public class SymptomNormalizeModel {
     private final int maxToken = 2048;
 
     private final String systemPrompt = """
-            你是一个心理健康领域的症状语义归一化助手。你的任务是将用户口语化的症状表述映射到标准症状术语。
+            你是一个心理健康领域的心理状态与症状评估助手。你的任务是根据用户的对话内容，评估整体心理状态、总结核心症状并生成症状标签。
 
             ## 核心约束
-            1. **范围限定**：你只能从给定的「标准症状库」中选择最匹配的标签，严禁自创术语。如果标准症状库中没有合适的匹配项，对应映射的matchedTermId设为null。
-            2. **语义严谨**：严格基于原文语义匹配，严禁过度推断、延伸用户未提及的症状。
-            3. **格式固定**：按SymptomNormalizeResult的JSON结构输出，包含termList和termOriginalMapping两个字段。
+            1. **状态评估**：综合判断用户整体心理状态，使用标准化的状态表述
+            2. **症状总结**：用自然语言概括用户的核心症状表现，语言简洁准确
+            3. **标签生成**：从症状总结中提取关键症状标签，用逗号分隔
+            4. **格式固定**：严格按PsychologicalStateResult的JSON结构输出
 
             ## 输出格式
             ```json
             {
-              "termList": [
-                {
-                  "symptomDict": {"id": 1, "symptomTerm": "入睡困难"},
-                  "matchConfidence": 0.85
-                }
-              ],
-              "termOriginalMapping": {
-                "1": [
-                  {"originalText": "睡不着", "matchedTermId": 1}
-                ]
-              }
+              "psychologicalState": "轻度焦虑状态",
+              "symptomSummary": "持续情绪低落、兴趣减退、入睡困难、注意力下降",
+              "symptomTags": "失眠,焦虑,自卑,易怒,兴趣减退,食欲下降"
             }
             ```
 
             ## 字段说明
-            - termList：匹配到的标准术语列表，每项包含symptomDict（只需填id和symptomTerm）和matchConfidence（0-1置信度）
-            - termOriginalMapping：术语ID到原文的映射，key为标准术语ID（字符串），value为该术语匹配到的所有原文列表
-            - 如果某条表述无法匹配到任何标准术语，放入termOriginalMapping时key使用"unmatched"，matchedTermId设为null
+            - psychologicalState：整体心理状态评估，从"适应不良/轻度焦虑状态/中度焦虑状态/抑郁情绪困扰/焦虑抑郁共病/人际敏感状态/应激反应/其他"中选择最匹配的
+            - symptomSummary：核心症状总结（自然语言），概括用户的主要症状表现
+            - symptomTags：症状标签集合，逗号分隔，如"失眠,焦虑,自卑,易怒,兴趣减退,食欲下降"
 
             ## 注意事项
-            - matchConfidence范围0-1，表示语义匹配置信度
-            - 每条待匹配原文必须出现在termOriginalMapping中，不可遗漏
-            - symptomDict中的id必须与标准症状库中的ID完全一致
+            - psychologicalState应基于症状的严重程度和范围综合判断
+            - symptomSummary应涵盖用户提及的所有显著症状，语言精练
+            - symptomTags中的每个标签应是独立的症状关键词，不可包含修饰语
+            - 严禁编造用户未提及的症状，所有评估需有对话依据
             """;
 
-    public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel) {
-        if (chatModel == null) {
-            throw new BusinessException(ConversationExceptionEnum.MODEL_NOT_EXIST);
-        }
-        return ReactAgent.builder()
-                .model(chatModel)
-                .name("symptomNormalize")
-                .description("症状语义归一化")
-                .chatOptions(chatOptions(chatModel))
-                .enableLogging(false);
+    @Override
+    protected String getSystemPrompt() {
+        return systemPrompt;
     }
 
-    private ChatOptions chatOptions(ChatModel chatModel) {
-        if (chatModel instanceof OllamaChatModel) {
-            return buildOllamaCompanionOptions();
-        } else if (chatModel instanceof DashScopeChatModel) {
-            return buildDashScopeCompanionOptions();
-        } else if (chatModel instanceof DeepSeekChatModel) {
-            return buildDeepSeekCompanionOptions();
-        } else {
-            return buildDefaultCompanionOptions();
-        }
+    @Override
+    protected String getAgentName() {
+        return "psychologicalState";
     }
 
-    private ChatOptions buildOllamaCompanionOptions() {
+    @Override
+    protected String getAgentDescription() {
+        return "心理状态与症状评估";
+    }
+
+    @Override
+    protected Class<?> getOutputType() {
+        return PsychologicalStateResult.class;
+    }
+
+    @Override
+    protected ChatOptions buildOllamaCompanionOptions() {
         return OllamaChatOptions.builder()
                 .model(ollamaModelName)
                 .temperature(0.2)
@@ -131,7 +117,8 @@ public class SymptomNormalizeModel {
                 .build();
     }
 
-    private ChatOptions buildDashScopeCompanionOptions() {
+    @Override
+    protected ChatOptions buildDashScopeCompanionOptions() {
         return DashScopeChatOptions.builder()
                 .model(dashscopeModelName)
                 .temperature(0.2)
@@ -153,7 +140,8 @@ public class SymptomNormalizeModel {
                 .build();
     }
 
-    private ChatOptions buildDeepSeekCompanionOptions() {
+    @Override
+    protected ChatOptions buildDeepSeekCompanionOptions() {
         return DeepSeekChatOptions.builder()
                 .model(deepseekModelName)
                 .temperature(0.2)
@@ -169,7 +157,8 @@ public class SymptomNormalizeModel {
                 .build();
     }
 
-    private ChatOptions buildDefaultCompanionOptions() {
+    @Override
+    protected ChatOptions buildDefaultCompanionOptions() {
         return ChatOptions.builder()
                 .topK(40)
                 .topP(0.9)
@@ -181,26 +170,43 @@ public class SymptomNormalizeModel {
     }
 
     @Retryable(
-            label = "symptom-normalize-model",
+            label = "psychological-state-process-model",
             retryFor = {Exception.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
+    @Override
     public AssistantMessage call(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return reactAgentBuilder(chatModel)
-                .systemPrompt(systemPrompt)
-                .outputType(SymptomNormalizeModelResult.class)
-                .build()
-                .call(userPrompt);
+        return doCall(chatModel, userPrompt);
+    }
+
+    @Retryable(
+            label = "psychological-state-process-model",
+            retryFor = {Exception.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public PsychologicalStateResult callForResult(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
+        return doCallForResult(chatModel, userPrompt);
+    }
+
+    @Override
+    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
+        return doStream(chatModel, userPrompt);
     }
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SymptomNormalizeModelResult {
+    public static class PsychologicalStateResult implements Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        private List<SymptomOriginalItem> termList;
+        private String psychologicalState;
+
+        private String symptomSummary;
+
+        private String symptomTags;
     }
 }

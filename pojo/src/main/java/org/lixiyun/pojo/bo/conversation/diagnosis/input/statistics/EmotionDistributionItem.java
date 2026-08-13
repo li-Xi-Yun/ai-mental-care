@@ -33,6 +33,9 @@ public class EmotionDistributionItem implements Serializable {
      */
     private BigDecimal ratio;
 
+    /** 平均置信度(0~1) */
+    private BigDecimal avgConfidence;
+
     /**
      * 平均强烈程度（0~1）
      * 仅主情绪分布包含
@@ -46,10 +49,11 @@ public class EmotionDistributionItem implements Serializable {
     private BigDecimal peakIntensity;
 
     public static String getPrompt() {
-        return "label：情绪标签名称，" +
-                "count：出现轮次数，" +
-                "ratio：出现占比（0~1），" +
-                "avgIntensity：平均强烈程度（0~1），" +
-                "peakIntensity：最高强烈程度（0~1）";
+        return "label:情绪标签名称，" +
+                "count:出现轮次数，" +
+                "ratio:出现占比（0~1），" +
+                "avgConfidence:平均置信度" +
+                "avgIntensity:平均强烈程度（0~1），" +
+                "peakIntensity:最高强烈程度（0~1）";
     }
 }

@@ -19,6 +19,15 @@ public class EmotionStatisticsResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 趋势枚举：上升 */
+    public static final String TREND_RISING = "上升";
+    /** 趋势枚举：下降 */
+    public static final String TREND_FALLING = "下降";
+    /** 趋势枚举：平稳 */
+    public static final String TREND_STABLE = "平稳";
+    /** 趋势枚举：无法判断 */
+    public static final String TREND_UNKNOWN = "无法判断";
+
     /**
      * 是否存在有效情绪数据
      * 全轮次均为无效噪声/低置信度时返回false

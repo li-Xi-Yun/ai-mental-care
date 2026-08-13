@@ -4,7 +4,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -17,11 +16,15 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPAD
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,12 +59,16 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "history-diagnosis-summary-node";
 
-    private final EmotionDiagnosisMapper emotionDiagnosisMapper;
+    @Autowired
+    private EmotionDiagnosisMapper emotionDiagnosisMapper;
+
+    @Autowired
+    @Qualifier("diagnosisThreadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor diagnosisExecutor;
 
     private static final int MAX_HISTORY_COUNT = 10;
     private static final String firstDiagnosisPrompt = "用户首次诊断，无历史记录";
@@ -160,11 +167,19 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig {
      * @return 五维度分析结果的聚合记录 {@link HistoryDiagnosisSummaryResult}
      */
     private HistoryDiagnosisSummaryResult parallelAnalysis(List<EmotionDiagnosis> emotionDiagnosisList) {
-        SymptomEvolution symptomEvolution = buildSymptomEvolution(emotionDiagnosisList);
-        EmotionTrend emotionTrend = buildEmotionTrend(emotionDiagnosisList);
-        DiagnosisSummary diagnosisSummary = buildDiagnosisSummary(emotionDiagnosisList);
-        InterventionHistory interventionHistory = buildInterventionHistory(emotionDiagnosisList);
-        List<RiskPoints> riskPointsList = buildRiskPointsList(emotionDiagnosisList);
+        CompletableFuture<SymptomEvolution> symptomEvolutionFuture = CompletableFuture.supplyAsync(() -> buildSymptomEvolution(emotionDiagnosisList), diagnosisExecutor);
+        CompletableFuture<EmotionTrend> emotionTrendFuture = CompletableFuture.supplyAsync(() -> buildEmotionTrend(emotionDiagnosisList), diagnosisExecutor);
+        CompletableFuture<DiagnosisSummary> diagnosisSummaryFuture = CompletableFuture.supplyAsync(() -> buildDiagnosisSummary(emotionDiagnosisList), diagnosisExecutor);
+        CompletableFuture<InterventionHistory> interventionHistoryFuture = CompletableFuture.supplyAsync(() -> buildInterventionHistory(emotionDiagnosisList), diagnosisExecutor);
+        CompletableFuture<List<RiskPoints>> riskPointsListFuture = CompletableFuture.supplyAsync(() -> buildRiskPointsList(emotionDiagnosisList), diagnosisExecutor);
+
+        CompletableFuture.allOf(symptomEvolutionFuture, emotionTrendFuture, diagnosisSummaryFuture, interventionHistoryFuture, riskPointsListFuture).join();
+
+        SymptomEvolution symptomEvolution = symptomEvolutionFuture.join();
+        EmotionTrend emotionTrend = emotionTrendFuture.join();
+        DiagnosisSummary diagnosisSummary = diagnosisSummaryFuture.join();
+        InterventionHistory interventionHistory = interventionHistoryFuture.join();
+        List<RiskPoints> riskPointsList = riskPointsListFuture.join();
 
         return HistoryDiagnosisSummaryResult.builder()
                 .isFirstDiagnosis(false)
@@ -733,10 +748,7 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig {
             return true;
         }
         Integer suicideRisk = diagnosis.getSuicideRiskLevel();
-        if (suicideRisk != null && (suicideRisk >= EmotionDiagnosis.SUICIDE_RISK_HIGH)) {
-            return true;
-        }
-        return false;
+        return suicideRisk != null && (suicideRisk >= EmotionDiagnosis.SUICIDE_RISK_HIGH);
     }
 
     /**
