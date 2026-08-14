@@ -49,6 +49,12 @@ public class SymptomKnowledgeRepositoryNode implements NodeActionWithConfig {
             throw new BusinessException(ConversationExceptionEnum.KNOWLEDGE_MATCH_REQUEST_NOT_EXIST);
         }
         KnowledgeMatchRequest knowledgeMatchRequest = knowledgeMatchRequestOpt.get();
+
+        if (!knowledgeMatchRequest.isSymptomNeedTransform() && knowledgeMatchRequest.getSymptomSliceIds() != null) {
+            log.info("知识侧-查询症状知识库-跳过（无需重新查询，已有数据）");
+            return Map.of();
+        }
+
         String symptomPrompt = knowledgeMatchRequest.getSymptomPrompt();
 
         if (symptomPrompt == null || symptomPrompt.isBlank()) {

@@ -11,6 +11,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLeve
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -124,8 +125,9 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
 
         EmotionStatisticsResult result = null;
         if (validRounds.isEmpty()) {
-            log.info("输入侧-情绪数据处理-无有效情绪数据");
-            // todo 结束所有流程
+            log.info("输入侧-情绪数据处理-无有效情绪数据，终止诊断流程");
+            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
+            inputResult.setInterrupted(true);
         } else {
             log.info("输入侧-情绪数据处理-有效情绪轮次数：{}", validRounds.size());
             result = buildStatisticsResult(validRounds);

@@ -75,4 +75,8 @@ public interface ConversationCacheConstant {
 
     /** 中断标识 - 非激活状态（正常/未中断） */
     String INTERRUPT_FLAG_INACTIVE = "0";
+
+    static String buildConversationCacheKey(Long conversationId) {
+        return CONVERSATION_CACHE_KEY_PREFIX + conversationId;
+    }
 }

@@ -45,6 +45,12 @@ public class InterventionPlanRepositoryNode implements NodeActionWithConfig {
             throw new BusinessException(ConversationExceptionEnum.KNOWLEDGE_MATCH_REQUEST_NOT_EXIST);
         }
         KnowledgeMatchRequest knowledgeMatchRequest = knowledgeMatchRequestOpt.get();
+
+        if (!knowledgeMatchRequest.isInterventionNeedTransform() && knowledgeMatchRequest.getInterventionSliceIds() != null) {
+            log.info("知识侧-查询干预方案库-跳过（无需重新查询，已有数据）");
+            return Map.of();
+        }
+
         String interventionPrompt = knowledgeMatchRequest.getInterventionPrompt();
 
         if (interventionPrompt == null || interventionPrompt.isBlank()) {

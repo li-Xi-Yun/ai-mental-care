@@ -45,6 +45,12 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig {
             throw new BusinessException(ConversationExceptionEnum.KNOWLEDGE_MATCH_REQUEST_NOT_EXIST);
         }
         KnowledgeMatchRequest knowledgeMatchRequest = knowledgeMatchRequestOpt.get();
+
+        if (!knowledgeMatchRequest.isDiagnosisNeedTransform() && knowledgeMatchRequest.getDiagnosisSliceIds() != null) {
+            log.info("知识侧-查询诊断标准库-跳过（无需重新查询，已有数据）");
+            return Map.of();
+        }
+
         String diagnosisPrompt = knowledgeMatchRequest.getDiagnosisPrompt();
 
         if (diagnosisPrompt == null || diagnosisPrompt.isBlank()) {

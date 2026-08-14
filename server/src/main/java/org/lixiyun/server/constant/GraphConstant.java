@@ -18,6 +18,8 @@ public interface GraphConstant {
 
     String RAG_INTERRUPTED = "rag_interrupted";  // 用于中断本次RAG流程，存放一个boolean变量，为true则中断RAG流程
 
+    String DIAGNOSIS_INTERRUPTED = "diagnosis_interrupted";  // 用于中断本次诊断流程，存放一个boolean变量，为true则中断诊断流程
+
 
     // ============================================这里是放入 config 的 metadata 对话级元数据==================================================
 

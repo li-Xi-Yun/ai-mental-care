@@ -15,6 +15,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtrac
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel;
+import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -79,7 +80,8 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
 
         if (validRounds.isEmpty()) {
             log.info("输入侧-消息结构化处理-有效消息为空，终止处理流程");
-            // todo 输入侧-消息结构化处理-有效消息为空，终止处理流程
+            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
+            inputResult.setInterrupted(true);
             return Map.of();
         }
 

@@ -18,6 +18,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.SymptomRawItem
 import org.lixiyun.pojo.entity.conversation.SymptomDict;
 import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.input.SymptomNormalizeModel;
+import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -59,6 +60,8 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class SymptomNormalizeNode implements NodeActionWithConfig {
+
+    public static final String NODE_NAME = "symptomNormalizeNode";
 
     /**
      * 规则词典匹配的默认置信度，精确匹配视为完全可信
@@ -110,7 +113,9 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
         CoreInfoExtractResult coreInfoExtractResult = inputResult.getCoreInfoExtractResult();
         if (coreInfoExtractResult == null || coreInfoExtractResult.getSymptomOriginalList() == null
                 || coreInfoExtractResult.getSymptomOriginalList().isEmpty()) {
-            log.info("输入侧-语义归一化处理-症状原文列表为空，跳过归一化处理");
+            log.info("输入侧-语义归一化处理-症状原文列表为空，终止诊断流程");
+            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
+            inputResult.setInterrupted(true);
             return Map.of();
         }
 
@@ -121,7 +126,9 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
         log.info("输入侧-语义归一化处理-清洗后有效条数：{}", cleanedList.size());
 
         if (cleanedList.isEmpty()) {
-            log.info("输入侧-语义归一化处理-清洗后数据为空，结束流程");
+            log.info("输入侧-语义归一化处理-清洗后数据为空，终止诊断流程");
+            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
+            inputResult.setInterrupted(true);
             return Map.of();
         }
 

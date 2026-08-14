@@ -55,6 +55,19 @@ public class QueryTransformLayerModel extends BaseModel {
             4. **干预方案库Query**：基于标准症状列表+核心诉求生成，聚焦问题成因与干预方法建议
             5. **格式固定**：严格按QueryTransformLayerResult的JSON结构输出
 
+            ## Query降级策略
+            当用户输入中包含queryLevel参数时，按以下策略生成不同复杂度的Query：
+
+            | queryLevel | 版本 | 生成规则 |
+            |------------|------|----------|
+            | 0（默认） | 精准版 | 症状+场景+限定词，追求精准匹配 |
+            | 1 | 简化版 | 去掉场景限定词，保留核心症状+类型 |
+            | 2 | 极简版 | 仅保留核心症状关键词，最大化召回 |
+
+            降级示例（原精准Query：工作压力引发的焦虑失眠 自我调节 干预建议）：
+            - queryLevel=1（简化版）：焦虑失眠 干预调节方法
+            - queryLevel=2（极简版）：焦虑 失眠
+
             ## 输出格式
             ```json
             {
@@ -73,6 +86,7 @@ public class QueryTransformLayerModel extends BaseModel {
             - 每个Query应是自然流畅的检索语句，便于向量检索匹配
             - 严禁简单罗列关键词，应将特征信息有机融合为语义完整的检索表达
             - 如果某个入参特征为空，基于已有信息合理推断补全，不可留空
+            - 当queryLevel>0时，必须严格按照降级策略生成更简化的Query，去掉限定词和场景修饰，仅保留核心语义
             """;
 
     @Override
