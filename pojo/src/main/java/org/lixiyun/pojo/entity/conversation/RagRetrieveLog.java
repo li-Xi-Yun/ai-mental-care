@@ -73,7 +73,7 @@ public class RagRetrieveLog implements Serializable {
      * 重排结果：分片ID+得分列表JSON
      */
     @com.baomidou.mybatisplus.annotation.TableField(typeHandler = JacksonTypeHandler.class)
-    private Map<String, Integer> reruleResult;
+    private Map<Long, Integer> reruleResult;
     
     /**
      * 是否触发兜底：0=否 1=是

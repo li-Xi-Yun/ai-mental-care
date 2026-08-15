@@ -2,18 +2,13 @@ package org.lixiyun.server.service.impl.user;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.prompt.constant.ScenarioConstant;
-import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
@@ -27,7 +22,8 @@ import org.lixiyun.pojo.entity.conversation.GraphCheckpoint;
 import org.lixiyun.pojo.vo.user.conversation.ConversationVO;
 import org.lixiyun.server.ai.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.ai.message.enums.MessageType;
-import org.lixiyun.server.ai.node.*;
+import org.lixiyun.server.ai.node.EmotionalDiagnosisNode;
+import org.lixiyun.server.ai.node.FinalAnswerNode;
 import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.ai.saver.CustomMysqlSaver;
 import org.lixiyun.server.constant.GraphConstant;
@@ -49,8 +45,10 @@ import reactor.core.publisher.Flux;
 
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -134,7 +132,7 @@ public class AudioServiceImpl implements AudioService {
                 .build();
 
         try {
-            StateGraph workflow = getStateGraph();
+            StateGraph workflow = null;
 
             var compileConfig = CompileConfig.builder()
                     .saverConfig(SaverConfig.builder()
@@ -165,56 +163,56 @@ public class AudioServiceImpl implements AudioService {
      * @return 状态图
      * @throws GraphStateException 状态图异常
      */
-    private StateGraph getStateGraph() throws GraphStateException {
-        // 定义状态策略
-        KeyStrategyFactory keyStrategyFactory = () -> {
-            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-            keyStrategyMap.put(GraphConstant.INPUT, new ReplaceStrategy());
-            keyStrategyMap.put(GraphConstant.MESSAGES, new AppendStrategy());
-            return keyStrategyMap;
-        };
-
-        // 节点设置
-        AsrToTextNode asrToTextNode = AsrToTextNode.builder().apiKey(apiKey).build(); // 语音转文字
-        EmotionRecognitionNode emotionRecognitionNode = EmotionRecognitionNode.builder().chatModel(deepSeekChatModel).build(); // 文本情感识别 (格式化存储)
-        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).ragGraph(ragGraph).build(); // 情感诊断
-        FinalAnswerNode finalAnswerNode = FinalAnswerNode.builder().chatModel(dashScopeChatModel)
-                .modelPrompt(PromptUtil.getPrompt(ScenarioConstant.PROFESSIONAL_EMOTIONAL_COMPANION)).build(); // 最终回答
-        TtsToSpeechNode ttsToSpeechNode = TtsToSpeechNode.builder().apiKey(apiKey).build(); // 文本转语音
-
-        // 创建图并设置对应节点与关系
-        StateGraph workflow = new StateGraph(keyStrategyFactory)
-                .addNode(AsrToTextNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(asrToTextNode))
-                .addNode(EmotionRecognitionNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(emotionRecognitionNode))
-                .addNode(EmotionalDiagnosisNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(emotionalDiagnosisNode))
-                .addNode(FinalAnswerNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(finalAnswerNode))
-                .addNode(TtsToSpeechNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(ttsToSpeechNode));
-
-        workflow.addEdge(StateGraph.START, AsrToTextNode.NODE_NAME);
-        workflow.addConditionalEdges(
-                AsrToTextNode.NODE_NAME,
-                (state) -> {
-                    // 从状态中获取 input
-                    Optional<Object> inputOpl = state.value(GraphConstant.INPUT);
-                    // 判断：input 不为空且不为空白字符串 → 走情感识别
-                    if (inputOpl.isPresent() && !inputOpl.get().toString().isBlank()) {
-                        return CompletableFuture.completedFuture("process"); // 正常处理
-                    } else {
-                        return CompletableFuture.completedFuture("skip"); // 直接跳过
-                    }
-                },
-                Map.of(
-                        "process", EmotionRecognitionNode.NODE_NAME,
-                        "skip", TtsToSpeechNode.NODE_NAME
-                )
-        );
-        workflow.addEdge(EmotionRecognitionNode.NODE_NAME, EmotionalDiagnosisNode.NODE_NAME);
-        workflow.addEdge(EmotionRecognitionNode.NODE_NAME, FinalAnswerNode.NODE_NAME);
-        workflow.addEdge(EmotionalDiagnosisNode.NODE_NAME, TtsToSpeechNode.NODE_NAME);
-        workflow.addEdge(FinalAnswerNode.NODE_NAME, TtsToSpeechNode.NODE_NAME);
-        workflow.addEdge(TtsToSpeechNode.NODE_NAME, StateGraph.END);
-        return workflow;
-    }
+//    private StateGraph getStateGraph() throws GraphStateException {
+//        // 定义状态策略
+//        KeyStrategyFactory keyStrategyFactory = () -> {
+//            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+//            keyStrategyMap.put(GraphConstant.INPUT, new ReplaceStrategy());
+//            keyStrategyMap.put(GraphConstant.MESSAGES, new AppendStrategy());
+//            return keyStrategyMap;
+//        };
+//
+//        // 节点设置
+//        AsrToTextNode asrToTextNode = AsrToTextNode.builder().apiKey(apiKey).build(); // 语音转文字
+//        EmotionRecognitionNode emotionRecognitionNode = EmotionRecognitionNode.builder().chatModel(deepSeekChatModel).build(); // 文本情感识别 (格式化存储)
+//        EmotionalDiagnosisNode emotionalDiagnosisNode = EmotionalDiagnosisNode.builder().chatModel(dashScopeChatModel).ragGraph(ragGraph).build(); // 情感诊断
+//        FinalAnswerNode finalAnswerNode = FinalAnswerNode.builder().chatModel(dashScopeChatModel)
+//                .modelPrompt(PromptUtil.getPrompt(ScenarioConstant.PROFESSIONAL_EMOTIONAL_COMPANION)).build(); // 最终回答
+//        TtsToSpeechNode ttsToSpeechNode = TtsToSpeechNode.builder().apiKey(apiKey).build(); // 文本转语音
+//
+//        // 创建图并设置对应节点与关系
+//        StateGraph workflow = new StateGraph(keyStrategyFactory)
+//                .addNode(AsrToTextNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(asrToTextNode))
+//                .addNode(EmotionRecognitionNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(emotionRecognitionNode))
+//                .addNode(EmotionalDiagnosisNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(emotionalDiagnosisNode))
+//                .addNode(FinalAnswerNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(finalAnswerNode))
+//                .addNode(TtsToSpeechNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(ttsToSpeechNode));
+//
+//        workflow.addEdge(StateGraph.START, AsrToTextNode.NODE_NAME);
+//        workflow.addConditionalEdges(
+//                AsrToTextNode.NODE_NAME,
+//                (state) -> {
+//                    // 从状态中获取 input
+//                    Optional<Object> inputOpl = state.value(GraphConstant.INPUT);
+//                    // 判断：input 不为空且不为空白字符串 → 走情感识别
+//                    if (inputOpl.isPresent() && !inputOpl.get().toString().isBlank()) {
+//                        return CompletableFuture.completedFuture("process"); // 正常处理
+//                    } else {
+//                        return CompletableFuture.completedFuture("skip"); // 直接跳过
+//                    }
+//                },
+//                Map.of(
+//                        "process", EmotionRecognitionNode.NODE_NAME,
+//                        "skip", TtsToSpeechNode.NODE_NAME
+//                )
+//        );
+//        workflow.addEdge(EmotionRecognitionNode.NODE_NAME, EmotionalDiagnosisNode.NODE_NAME);
+//        workflow.addEdge(EmotionRecognitionNode.NODE_NAME, FinalAnswerNode.NODE_NAME);
+//        workflow.addEdge(EmotionalDiagnosisNode.NODE_NAME, TtsToSpeechNode.NODE_NAME);
+//        workflow.addEdge(FinalAnswerNode.NODE_NAME, TtsToSpeechNode.NODE_NAME);
+//        workflow.addEdge(TtsToSpeechNode.NODE_NAME, StateGraph.END);
+//        return workflow;
+//    }
 
     /**
      * 执行图

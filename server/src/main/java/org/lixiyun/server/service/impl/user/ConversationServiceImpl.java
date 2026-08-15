@@ -1,7 +1,6 @@
 package org.lixiyun.server.service.impl.user;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,17 +11,17 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.user.conversation.ConversationInfoDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
+import org.lixiyun.pojo.entity.conversation.ConversationMemory;
+import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.pojo.vo.user.conversation.ConversationVO;
-import org.lixiyun.server.ai.infrastructure.agent.CommonServerAgent;
 import org.lixiyun.server.mapper.ConversationMapper;
-import org.lixiyun.server.service.async.ConversationServiceAsync;
+import org.lixiyun.server.mapper.ConversationMemoryMapper;
+import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.lixiyun.server.service.user.ConversationService;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author lixiyun
@@ -33,9 +32,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
-    private final DashScopeChatModel dashScopeChatModel;
     private final ConversationMapper conversationMapper;
-    private final ConversationServiceAsync conversationServiceAsync;
+    private final ConversationMemoryMapper conversationMemoryMapper;
+    private final EmotionAnalysisMapper emotionAnalysisMapper;
 
     @Override
     public PageResult<ConversationVO> listDisplay(Integer pageNum, Integer pageSize) {
@@ -47,7 +46,6 @@ public class ConversationServiceImpl implements ConversationService {
         // 构建查询条件：用户 ID + 未删除
         LambdaQueryWrapper<Conversation> wrapper = new LambdaQueryWrapper<Conversation>()
                 .eq(Conversation::getUserId, currentId)
-                .eq(Conversation::getDeleted, DeleteConstant.DELETE_FLAG_NO)
                 .orderByDesc(Conversation::getUpdatedTime);
 
         // 执行分页查询
@@ -63,35 +61,25 @@ public class ConversationServiceImpl implements ConversationService {
         Conversation conversation = BeanUtil.copyProperties(conversationInfoDTO, Conversation.class);
         conversationMapper.update(conversation, new LambdaUpdateWrapper<Conversation>()
                 .eq(Conversation::getId, conversationId)
-                .eq(Conversation::getUserId, currentId)
-                .eq(Conversation::getDeleted, DeleteConstant.DELETE_FLAG_NO));
+                .eq(Conversation::getUserId, currentId));
     }
 
     @Override
+    @Transactional
     public void deleteConversation(Long conversationId) {
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
         int delete = conversationMapper.delete(new LambdaUpdateWrapper<Conversation>()
                 .eq(Conversation::getUserId, currentId)
-                .eq(Conversation::getId, conversationId)
-                .eq(Conversation::getDeleted, DeleteConstant.DELETE_FLAG_NO));
+                .eq(Conversation::getId, conversationId));
 
         if (delete == 0) {
             throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
         }
 
         // 级联删除所有相关数据
-        conversationServiceAsync.deleteConversation(conversationId);
-    }
-
-    @Override
-    public String initializeConversationName(Long conversationId, String userInput, String modelOutput) {
-        // 创建对应的会话名称（模型调用）
-        String conversationName = CommonServerAgent.builder().chatModel(dashScopeChatModel).build()
-                .conversationNameExtraction(List.of("用户输入：" + userInput, "模型输出：" + modelOutput));
-        conversationMapper.updateById(Conversation.builder()
-                .id(conversationId)
-                .name(conversationName)
-                .build());
-        return conversationName;
+        conversationMemoryMapper.delete(new LambdaUpdateWrapper<ConversationMemory>()
+                .eq(ConversationMemory::getConversationId, conversationId));
+        emotionAnalysisMapper.delete(new LambdaUpdateWrapper<EmotionAnalysis>()
+                .eq(EmotionAnalysis::getConversationId, conversationId));
     }
 }

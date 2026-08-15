@@ -1,6 +1,7 @@
 package org.lixiyun.pojo.vo.user.conversation;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,6 +11,7 @@ import java.io.Serializable;
  * @since 2026-03-19 33:16
  */
 @Data
+@Builder
 @Schema(description = "情绪分析详情（包含对话）")
 public class EmotionAnalysisDetailVO implements Serializable {
 

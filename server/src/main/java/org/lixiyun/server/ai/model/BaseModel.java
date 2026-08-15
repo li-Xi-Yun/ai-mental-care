@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
@@ -41,6 +42,7 @@ import reactor.core.publisher.Flux;
  * @author lixiyun
  * @since 2026-08-13 16:01
  */
+@Slf4j
 public abstract class BaseModel implements Model {
 
     // ==================== 抽象钩子方法 ====================
@@ -177,6 +179,7 @@ public abstract class BaseModel implements Model {
         AssistantMessage message = doCall(chatModel, userPrompt);
         return (T) deserializeResult(message);
     }
+
 
     // ==================== 模板方法：构建Agent ====================
 

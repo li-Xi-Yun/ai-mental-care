@@ -3,10 +3,14 @@ package org.lixiyun.server.infrastructure.conversation;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
+import org.lixiyun.server.ai.node.conversation.ConversationNameGenerationNode;
 import org.lixiyun.server.infrastructure.conversation.processor.MessageProcessor;
 import org.lixiyun.server.infrastructure.conversation.processor.ProcessorHolder;
+import org.lixiyun.server.socket.constant.TextConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -47,6 +51,8 @@ public class ConversationMessageProcessor {
     private ConversationAiService conversationAiService;
     @Autowired
     private ProcessorHolder processorHolder;
+    @Autowired
+    private ConversationNameGenerationNode conversationNameGenerationNode;
 
     @Autowired
     @Qualifier("diagnosisThreadPoolTaskExecutor")
@@ -110,7 +116,16 @@ public class ConversationMessageProcessor {
                 }
             });
 
+            // 主线程执行
             executeMainThread(conversationId, processContext, executorInstance);
+
+            diagnosisExecutor.execute(() -> {
+                try {
+                    generateConversationNameIfFirstRound(conversationId, processContext);
+                } catch (Exception e) {
+                    log.error("异步会话名称生成异常，会话ID：{}", conversationId, e);
+                }
+            });
 
             conversationRepository.updateConversationState(conversationId, unprocessedMessages);
 
@@ -170,6 +185,37 @@ public class ConversationMessageProcessor {
         } catch (Exception e) {
             log.error("主线程执行系统异常，会话ID：{}", conversationId, e);
             throw new BusinessException(AIChatExceptionEnum.MAIN_THREAD_EXECUTION_FAILED);
+        }
+    }
+
+    /**
+     * 判断是否是第一次对话，如果是则生成会话名称并更新
+     * <p>根据当前轮次是否为1判断是否是首次对话，首次对话时调用AI模型
+     * 根据用户消息内容生成会话名称，并更新到数据库和缓存中。</p>
+     *
+     * @param conversationId 会话ID
+     * @param processContext  会话处理上下文
+     */
+    private void generateConversationNameIfFirstRound(Long conversationId, ConversationProcessContextBO processContext) {
+        Conversation conversation = processContext.getConversation();
+        Integer currentRound = conversation.getCurrentRound();
+        Long userId = conversation.getUserId();
+
+        if (currentRound != null && currentRound == 1) {
+            log.info("首次对话，开始生成会话名称，会话ID：{}", conversationId);
+            try {
+                String conversationName = conversationNameGenerationNode.apply(processContext);
+                conversationRepository.updateConversationName(conversationId, conversationName);
+
+                Conversation updatedConversation = conversationRepository.getConversationById(conversationId);
+                conversationCacheManager.updateCacheMetadata(conversationId, updatedConversation);
+
+                WebSocketUtils.sendToUserBySubDestination(userId.toString(), TextConstant.CONVERSATION_NAME + "/" + conversationId, conversationName);
+
+                log.info("会话名称生成完成，会话ID：{}，名称：{}", conversationId, conversationName);
+            } catch (Exception e) {
+                log.error("会话名称生成异常，会话ID：{}", conversationId, e);
+            }
         }
     }
 }

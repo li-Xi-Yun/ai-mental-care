@@ -1,7 +1,7 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.pojo.dto.scale.ScaleOptionTemplateDTO;
-import org.lixiyun.pojo.vo.scale.ScaleOptionTemplateVO;
+import org.lixiyun.pojo.dto.admin.scale.ScaleOptionTemplateDTO;
+import org.lixiyun.pojo.vo.admin.scale.ScaleOptionTemplateVO;
 
 import java.util.List;
 

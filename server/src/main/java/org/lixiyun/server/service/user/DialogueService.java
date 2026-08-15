@@ -27,19 +27,4 @@ public interface DialogueService {
      */
     PageResult<ConversationMemoryVO> listMemory(Long conversationId, Integer pageNum, Integer pageSize);
 
-    /**
-     * 删除对话记忆（级联删除相关数据）
-     * <p>
-     * 删除指定轮次的对话及其相关的所有数据，包括检查点、情绪分析、情绪诊断等
-     * </p>
-     *
-     * @param dialogueId 对话 ID
-     * @param roundNum 轮次
-     */
-    /**
-     * 删除对话记忆（级联删除相关数据）
-     * @param conversationId 会话ID
-     * @param roundNum 轮次
-     */
-    void deleteConversationMemory(Long conversationId, Integer roundNum);
 }

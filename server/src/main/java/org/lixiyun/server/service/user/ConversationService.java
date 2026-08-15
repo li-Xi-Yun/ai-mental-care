@@ -48,16 +48,4 @@ public interface ConversationService {
      */
     void deleteConversation(Long conversationId);
 
-    /**
-     * 初始化会话名称
-     * <p>
-     * 根据用户输入和模型输出，生成会话名称
-     * </p>
-     *
-     * @param conversationId 会话 ID
-     * @param userInput 用户输入
-     * @param modelOutput 模型输出
-     * @return 生成的会话名称
-     */
-    String initializeConversationName(Long conversationId, String userInput, String modelOutput);
 }

@@ -9,4 +9,7 @@ public interface TextConstant {
     /** AI 文本回复，客户端订阅时，需要在后面路径中添加/{conversationId} */
     String AI_TEXT_REPLY = "/text/reply";
 
+    /** 会话名称，客户端订阅时，需要在后面路径中添加/{conversationId} */
+    String CONVERSATION_NAME = "conversation/name";
+
 }

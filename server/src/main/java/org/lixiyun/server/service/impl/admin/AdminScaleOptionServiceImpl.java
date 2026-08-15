@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ScaleExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.pojo.dto.scale.ScaleOptionBatchAddDTO;
+import org.lixiyun.pojo.dto.admin.scale.ScaleOptionBatchAddDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
 import org.lixiyun.pojo.entity.scale.ScaleOption;
 import org.lixiyun.pojo.entity.scale.ScaleQuestion;

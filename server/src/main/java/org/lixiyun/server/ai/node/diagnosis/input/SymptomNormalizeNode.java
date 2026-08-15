@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomNormalizeResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomOriginalItem;
@@ -16,8 +15,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomTer
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.SymptomRawItem;
 import org.lixiyun.pojo.entity.conversation.SymptomDict;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.input.SymptomNormalizeModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.springframework.ai.chat.model.ChatModel;
@@ -82,9 +82,10 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
     );
 
     private final SymptomNormalizeModel symptomNormalizeModel;
-    private final ChatModelFactory chatModelFactory;
     private final SymptomDictMapper symptomDictMapper;
-    private final ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
+
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     /**
      * 节点主执行方法，编排完整的症状语义归一化处理流程
@@ -391,15 +392,12 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
             if (dict.getSymptomTerm() != null) {
                 index.put(dict.getSymptomTerm(), dict);
             }
-            if (dict.getSynonymWords() != null && !dict.getSynonymWords().isBlank()) {
-                List<String> synonyms = JsonUtils.parseArray(dict.getSynonymWords(), String.class);
-                if (synonyms != null) {
-                    for (String synonym : synonyms) {
-                        if (synonym != null && !synonym.isBlank()) {
-                            String normalized = cleanText(synonym);
-                            if (normalized != null) {
-                                index.put(normalized, dict);
-                            }
+            if (dict.getSynonymWords() != null && !dict.getSynonymWords().isEmpty()) {
+                for (String synonym : dict.getSynonymWords()) {
+                    if (synonym != null && !synonym.isBlank()) {
+                        String normalized = cleanText(synonym);
+                        if (normalized != null) {
+                            index.put(normalized, dict);
                         }
                     }
                 }
@@ -433,13 +431,10 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
             if (dict.getSymptomTerm() != null && text.contains(dict.getSymptomTerm())) {
                 return dict;
             }
-            if (dict.getSynonymWords() != null && !dict.getSynonymWords().isBlank()) {
-                List<String> synonyms = JsonUtils.parseArray(dict.getSynonymWords(), String.class);
-                if (synonyms != null) {
-                    for (String synonym : synonyms) {
-                        if (synonym != null && !synonym.isBlank() && text.contains(synonym)) {
-                            return dict;
-                        }
+            if (dict.getSynonymWords() != null && !dict.getSynonymWords().isEmpty()) {
+                for (String synonym : dict.getSynonymWords()) {
+                    if (synonym != null && !synonym.isBlank() && text.contains(synonym)) {
+                        return dict;
                     }
                 }
             }

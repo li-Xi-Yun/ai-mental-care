@@ -1,6 +1,6 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.pojo.dto.scale.ScaleOptionBatchAddDTO;
+import org.lixiyun.pojo.dto.admin.scale.ScaleOptionBatchAddDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
 
 import java.util.List;

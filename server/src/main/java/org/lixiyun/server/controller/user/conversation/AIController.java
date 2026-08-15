@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.aop.annotation.RateLimit;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.pojo.dto.user.conversation.UserMessageSendDTO;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/conversation/ai-chat")
+@RequestMapping("/user/conversation/ai-chat")
 @Tag(name = "AI聊天接口", description = "AI聊天相关接口")
 public class AIController {
 
@@ -38,6 +39,7 @@ public class AIController {
             - 如果传入会话ID，系统会验证会话有效性并返回当前轮次（在上次轮次基础上加一）
             - 返回的会话ID和轮次信息用于后续对话和前端状态管理
             """)
+    @RateLimit(type = RateLimit.RateLimitType.INTERFACE, key = "user-text", maxRequests = 1, windowSizeInMillis = 2000)
     public Result<UserMessageSendVO> sendUserMessage(@RequestBody @Validated UserMessageSendDTO userMessageSendDTO) {
         log.info("接收用户消息发送请求：{}", userMessageSendDTO);
         UserMessageSendVO result = aiChatService.sendUserMessage(userMessageSendDTO);

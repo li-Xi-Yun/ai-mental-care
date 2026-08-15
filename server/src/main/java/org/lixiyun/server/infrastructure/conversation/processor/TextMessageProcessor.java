@@ -1,7 +1,5 @@
 package org.lixiyun.server.infrastructure.conversation.processor;
 
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
@@ -10,13 +8,19 @@ import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
+import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
 import org.lixiyun.server.ai.message.enums.MessageType;
-import org.lixiyun.server.ai.model.ChatModelFactory;
-import org.lixiyun.server.ai.model.TextMessageProcessorModel;
+import org.lixiyun.server.ai.model.conversation.TextMessageProcessorModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
+import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
+import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.socket.constant.TextConstant;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +47,9 @@ import java.util.concurrent.TimeUnit;
 public class TextMessageProcessor implements MessageProcessor {
 
     private final TextMessageProcessorModel textMessageProcessorModel;
-    private final ChatModelFactory chatModelFactory;
+    private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     /**
      * 处理文本类型的会话消息
@@ -71,44 +77,18 @@ public class TextMessageProcessor implements MessageProcessor {
         log.info("AI对话文本处理器-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
 
         try {
-
             String prompt = buildPrompt(context);
 
-            Flux<NodeOutput> stream = callLLMGenerateResponse(prompt);
+            AgentStreamProcessor processor = AgentStreamProcessorBuilder.create()
+                    .withThinkAccumulate()
+                    .withLogging(conversationId)
+                    .withPersistence(conversationHistoryMessagesStorage, userId, conversationId, currentRound)
+                    .withListener(buildListener(userId, conversationId, currentRound))
+                    .build();
 
-            textMessageProcessorModel.processStreamWithCallbacks(
-                    stream,
-                    userId,
-                    conversationId,
-                    currentRound,
-
-                    thinking -> {},
-
-                    content -> sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, content),
-
-                    toolCall -> {},
-
-                    toolResponse -> {},
-
-                    completeMessage -> {
-                        log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
-
-                        ConversationMemory finalMemory = ConversationMemory.builder()
-                                .userId(userId)
-                                .conversationId(conversationId)
-                                .content(completeMessage.getText())
-                                .type(MessageType.ASSISTANT.getName())
-                                .state(ConversationMemory.STATE_PROCESSED)
-                                .roundNum(currentRound)
-                                .build();
-
-                        updateCacheHistory(conversationId, finalMemory);
-                    },
-
-                    error -> {},
-
-                    () -> {}
-            );
+            processor.process(textMessageProcessorModel.stream(chatModel, prompt))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe();
 
             log.info("AI对话文本处理器-文本消息处理完成，会话ID：{}", conversationId);
         } catch (BusinessException e) {
@@ -120,14 +100,33 @@ public class TextMessageProcessor implements MessageProcessor {
         }
     }
 
-    private Flux<NodeOutput> callLLMGenerateResponse(String prompt) throws GraphRunnerException {
-        log.debug("AI对话文本处理器-调用LLM生成回答，提示词：{}", prompt);
-        return textMessageProcessorModel.stream(chatModelFactory.getOllamaChatModel(), prompt);
+    private StreamEventListener buildListener(Long userId, Long conversationId, int currentRound) {
+        return new StreamEventListener() {
+            @Override
+            public void onContentChunk(String text) {
+                sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, text);
+            }
+
+            @Override
+            public void onModelComplete(org.springframework.ai.chat.messages.AssistantMessage message) {
+                log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
+
+                ConversationMemory finalMemory = ConversationMemory.builder()
+                        .userId(userId)
+                        .conversationId(conversationId)
+                        .content(message.getText())
+                        .type(MessageType.ASSISTANT.getName())
+                        .state(ConversationMemory.STATE_PROCESSED)
+                        .roundNum(currentRound)
+                        .build();
+
+                updateCacheHistory(conversationId, finalMemory);
+            }
+        };
     }
 
     private String buildPrompt(ConversationProcessContextBO context) {
         StringBuilder sb = new StringBuilder();
-//        sb.append("用户消息：").append(context.getTemporaryMessages().get(0).getContent()).append("\n");
 
         if (context.getConversationHistory() != null && !context.getConversationHistory().isEmpty()) {
             sb.append("\n【会话历史上下文】\n");

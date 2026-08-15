@@ -22,7 +22,7 @@ import java.util.List;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/scale/category")
+@RequestMapping("/user/scale/category")
 @Tag(name = "量表类别相关接口", description = "量表类别相关接口")
 public class ScaleCategoryController {
 

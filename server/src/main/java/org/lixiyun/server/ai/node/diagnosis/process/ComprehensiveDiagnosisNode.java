@@ -13,8 +13,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.process.ComprehensiveDiagnosisProcessModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +39,8 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "comprehensiveDiagnosisNode";
 
     private final ComprehensiveDiagnosisProcessModel comprehensiveDiagnosisProcessModel;
-    private final ChatModelFactory chatModelFactory;
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -56,7 +58,6 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.info("诊断处理侧-情绪综合分析-构建用户提示词完成");
 
-        ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
         ComprehensiveDiagnosisProcessModel.EmotionComprehensiveResult result = comprehensiveDiagnosisProcessModel.callForResult(chatModel, userPrompt);
 
         if (result == null) {
@@ -221,6 +222,15 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
             }
             diagnosisData.setSecondaryEmotion(secondaryEmotion);
         }
+
+        if (baseInfo.getEmotionDistribution() != null && !baseInfo.getEmotionDistribution().isEmpty()) {
+            Map<String, BigDecimal> coreEmotion = new LinkedHashMap<>();
+            for (EmotionDistributionItem item : baseInfo.getEmotionDistribution()) {
+                coreEmotion.put(item.getLabel(), item.getAvgConfidence());
+            }
+            diagnosisData.setCoreEmotion(coreEmotion);
+        }
+
     }
 
     private void fillEmotionDistributionDimension(DiagnosisData diagnosisData, EmotionStatisticsResult emotionStats) {

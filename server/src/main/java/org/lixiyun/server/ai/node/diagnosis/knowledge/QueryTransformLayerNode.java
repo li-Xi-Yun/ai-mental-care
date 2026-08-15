@@ -8,8 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.knowlegde.QueryTransformLayerModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -79,7 +80,9 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "queryTransformLayerNode";
 
     private final QueryTransformLayerModel queryTransformLayerModel;
-    private final ChatModelFactory chatModelFactory;
+
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     /**
      * 节点执行入口
@@ -118,7 +121,6 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(knowledgeMatchRequest, isFirstRun, symptomNeed, diagnosisNeed, interventionNeed);
         log.info("知识侧-查询变换层-构建用户提示词完成");
 
-        ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
         QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt);
 
         if (result == null) {

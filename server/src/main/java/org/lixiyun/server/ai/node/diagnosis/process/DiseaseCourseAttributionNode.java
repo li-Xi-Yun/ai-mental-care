@@ -13,8 +13,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.KeyEventItem;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.process.DiseaseCourseAttributionProcessModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,8 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "diseaseCourseAttributionNode";
 
     private final DiseaseCourseAttributionProcessModel diseaseCourseAttributionProcessModel;
-    private final ChatModelFactory chatModelFactory;
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -55,7 +57,6 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.info("诊断处理侧-病程归因组-构建用户提示词完成");
 
-        ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
         DiseaseCourseAttributionProcessModel.DiseaseCourseAttributionResult result = diseaseCourseAttributionProcessModel.callForResult(chatModel, userPrompt);
 
         if (result == null) {

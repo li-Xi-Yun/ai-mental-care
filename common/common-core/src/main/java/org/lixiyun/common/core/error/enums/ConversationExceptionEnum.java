@@ -44,6 +44,7 @@ public enum ConversationExceptionEnum implements ErrorCode {
     DIAGNOSIS_DATA_NOT_EXIST("诊断处理侧-诊断数据不存在", 1428),
     DIAGNOSIS_PROCESS_RESULT_PARSE_FAILED("诊断处理侧-模型输出解析失败", 1429),
     DIAGNOSIS_DATA_RESULT_NOT_EXIST("诊断处理测-诊断结果数据为空", 1430),
+    EMOTION_DIAGNOSIS_NOT_EXIST("情感诊断书不存在", 1431),
 
     ;
 

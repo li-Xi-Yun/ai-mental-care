@@ -25,7 +25,7 @@
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/scale/questions")
+@RequestMapping("/user/scale/questions")
 @Tag(name = "量表题目相关接口", description = "量表题目相关接口")
 public class ScaleQuestionController {
 

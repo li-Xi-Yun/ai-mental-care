@@ -89,7 +89,7 @@ spring:
     redis:
       host: ${redis.host} # Redis服务器地址
       port: ${redis.port} # Redis服务器端口
-#      password: ${redis.password}
+      password: ${redis.password}
       database: ${redis.database}
       timeout: 60000ms  # 超时时间
       lettuce:

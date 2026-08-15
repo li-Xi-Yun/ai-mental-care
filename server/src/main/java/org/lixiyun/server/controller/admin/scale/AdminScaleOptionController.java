@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.validation.group.AddGroup;
 import org.lixiyun.common.validation.group.UpdateGroup;
-import org.lixiyun.pojo.dto.scale.ScaleOptionBatchAddDTO;
+import org.lixiyun.pojo.dto.admin.scale.ScaleOptionBatchAddDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
 import org.lixiyun.server.service.admin.AdminScaleOptionService;
 import org.springframework.security.access.prepost.PreAuthorize;

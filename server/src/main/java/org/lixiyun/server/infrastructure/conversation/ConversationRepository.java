@@ -274,4 +274,19 @@ public class ConversationRepository {
 
         log.debug("更新会话语义压缩摘要，会话ID：{}，压缩轮次：{}", conversationId, contextSummaryRound);
     }
+
+    /**
+     * 更新会话名称
+     *
+     * @param conversationId 会话ID
+     * @param name           新的会话名称
+     */
+    public void updateConversationName(Long conversationId, String name) {
+        conversationMapper.updateById(Conversation.builder()
+                .id(conversationId)
+                .name(name)
+                .build());
+
+        log.debug("更新会话名称，会话ID：{}，新名称：{}", conversationId, name);
+    }
 }

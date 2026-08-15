@@ -28,7 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/conversaion/audio")
+@RequestMapping("/user/conversaion/audio")
 @Tag(name = "语音对话相关接口", description = "语音对话相关接口")
 public class AudioController {
 

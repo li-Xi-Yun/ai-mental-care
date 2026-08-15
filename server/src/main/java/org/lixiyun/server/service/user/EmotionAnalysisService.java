@@ -3,7 +3,6 @@ package org.lixiyun.server.service.user;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.vo.user.conversation.EmotionAnalysisDetailVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionAnalysisVO;
-import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisVO;
 
 /**
  * 情绪分析服务接口
@@ -15,17 +14,6 @@ import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisVO;
  * @since 2026-03-19 20:27
  */
 public interface EmotionAnalysisService {
-
-    /**
-     * 获取指定会话的情绪诊断书
-     * <p>
-     * 查询指定会话下最新的、最完整的情绪诊断数据
-     * </p>
-     *
-     * @param conversationId 会话 ID
-     * @return 情绪诊断书 VO 对象，包含核心情绪标签、情绪强度、调节建议等信息
-     */
-    EmotionDiagnosisVO getDiagnosis(Long conversationId);
 
     /**
      * 分页查询情绪分析列表

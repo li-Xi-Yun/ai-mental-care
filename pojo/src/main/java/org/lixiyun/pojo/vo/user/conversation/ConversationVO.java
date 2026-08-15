@@ -22,9 +22,6 @@ public class ConversationVO implements Serializable {
     @Schema(description = "会话名称")
     private String name;
 
-    @Schema(description = "当前轮次，在下次对话时，需前端自增加一，再传入对话接口中")
-    private Integer currentRound;
-
     @Schema(description = "创建时间")
     private LocalDateTime createdTime;
 

@@ -13,8 +13,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLeve
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -53,7 +54,8 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
     private static final int ROUND_THRESHOLD = 3;
 
     private final MessageStructuredProcessModel messageStructuredProcessModel;
-    private final ChatModelFactory chatModelFactory;
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -99,7 +101,6 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
         } else {
             log.info("输入侧-消息结构化处理-分支B-有效轮次({})达到阈值({})，调用大模型提取核心信息", validRoundCount, ROUND_THRESHOLD);
             String userPrompt = buildUserPrompt(validRounds);
-            ChatModel chatModel = chatModelFactory.getOllamaChatModel();
             CoreInfoExtractResult coreInfoExtractResult = messageStructuredProcessModel.callForResult(chatModel, userPrompt);
             inputResult.setCoreInfoExtractResult(coreInfoExtractResult);
         }

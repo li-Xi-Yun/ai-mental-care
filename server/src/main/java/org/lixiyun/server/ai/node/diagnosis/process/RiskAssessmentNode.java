@@ -13,8 +13,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.HistoryDiagnosisSummaryResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
-import org.lixiyun.server.ai.model.ChatModelFactory;
 import org.lixiyun.server.ai.model.diagnosis.process.RiskAssessmentProcessModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,8 @@ public class RiskAssessmentNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "riskAssessmentNode";
 
     private final RiskAssessmentProcessModel riskAssessmentProcessModel;
-    private final ChatModelFactory chatModelFactory;
+    @InjectChatModel(ChatModelType.DEEP_SEEK)
+    private ChatModel chatModel;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -54,7 +56,6 @@ public class RiskAssessmentNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.info("诊断处理侧-风险评估-构建用户提示词完成");
 
-        ChatModel chatModel = chatModelFactory.getDeepSeekChatModel();
         RiskAssessmentProcessModel.RiskAssessmentResult result = riskAssessmentProcessModel.callForResult(chatModel, userPrompt);
 
         if (result == null) {

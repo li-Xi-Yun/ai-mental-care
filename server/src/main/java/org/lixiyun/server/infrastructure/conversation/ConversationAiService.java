@@ -7,9 +7,9 @@ import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.server.ai.node.EmotionRecognitionNode;
-import org.lixiyun.server.ai.node.HistoryAnalysisCompressionNode;
-import org.lixiyun.server.ai.node.HistoryMessageCompressionNode;
+import org.lixiyun.server.ai.node.conversation.EmotionRecognitionNode;
+import org.lixiyun.server.ai.node.conversation.HistoryAnalysisCompressionNode;
+import org.lixiyun.server.ai.node.conversation.HistoryMessageCompressionNode;
 import org.lixiyun.server.ai.node.diagnosis.graph.DiagnosisGraph;
 import org.springframework.stereotype.Service;
 

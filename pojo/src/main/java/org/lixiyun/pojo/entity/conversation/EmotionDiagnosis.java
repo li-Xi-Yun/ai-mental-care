@@ -157,6 +157,16 @@ public class EmotionDiagnosis implements Serializable {
     private BigDecimal coreEmotionIntensityScore;
 
     /**
+     * 核心情绪
+     * <br>
+     * key:核心情绪标签（多个，如"烦躁,委屈,孤独"）;
+     * <br>
+     * value:核心情绪置信度（与次要标签一一对应，如"0.85,0.72,0.68"）
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, BigDecimal> coreEmotion;
+
+    /**
      * 次要情绪
      * <br>
      * key:次要情绪标签（多个，如"烦躁,委屈,孤独"）;

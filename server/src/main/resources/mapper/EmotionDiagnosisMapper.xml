@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="org.lixiyun.server.mapper.EmotionDiagnosisMapper">
+
+    <select id="selectDiagnosisConversationPage" resultType="org.lixiyun.pojo.vo.user.conversation.DiagnosisConversationVO">
+        SELECT
+            c.id AS conversationId,
+            c.name AS conversationName,
+            MAX(ed.round_num) AS latestRoundNum,
+            count(ed) as diagnosisCount
+            MAX(ed.updated_time) AS diagnosisUpdatedTime,
+            c.created_time AS conversationCreatedTime
+        FROM conversation c
+        INNER JOIN emotion_diagnosis ed ON c.id = ed.conversation_id AND ed.deleted = 0
+        WHERE c.user_id = #{userId}
+          AND c.deleted = 0
+          <if test="conversationName != null and conversationName != ''">
+            AND c.name LIKE CONCAT('%', #{conversationName}, '%')
+          </if>
+        GROUP BY c.id, c.name, c.created_time
+        ORDER BY diagnosisUpdatedTime DESC
+    </select>
+
+</mapper>

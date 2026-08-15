@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/scale")
+@RequestMapping("/user/scale")
 @Tag(name = "量表元数据相关接口", description = "量表元数据相关接口")
 public class ScaleController {
 

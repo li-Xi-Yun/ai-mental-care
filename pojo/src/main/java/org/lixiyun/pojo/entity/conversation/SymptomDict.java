@@ -1,7 +1,9 @@
 package org.lixiyun.pojo.entity.conversation;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 症状标准术语字典
@@ -56,7 +59,8 @@ public class SymptomDict implements Serializable {
     /**
      * 同义口语词数组，例：["睡不着","躺床上翻来覆去睡不着"]
      */
-    private String synonymWords;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> synonymWords;
 
     /**
      * 默认严重程度：1=轻度 2=中度 3=重度

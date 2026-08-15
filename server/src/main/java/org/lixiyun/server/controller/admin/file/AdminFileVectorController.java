@@ -31,6 +31,7 @@ public class AdminFileVectorController {
     private final AdminFileVectorService adminFileVectorService;
 
     @PostMapping("/{fileId}/load")
+//    @PreAuthorize("hasAuthority('admin:file:vector:load')")
     @Operation(summary = "文件向量加载", description = "根据文件ID加载文件向量，校验文件状态后进行向量加载")
     public Result<Void> loadFileVector(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId
@@ -41,6 +42,7 @@ public class AdminFileVectorController {
     }
 
     @DeleteMapping("/{fileId}")
+//    @PreAuthorize("hasAuthority('admin:file:vector:delete')")
     @Operation(summary = "文件向量删除", description = "根据文件ID删除文件向量数据")
     public Result<Void> deleteFileVector(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
@@ -50,6 +52,7 @@ public class AdminFileVectorController {
     }
 
     @GetMapping("/{fileId}")
+//    @PreAuthorize("hasAuthority('admin:file:vector:list')")
     @Operation(summary = "文件向量分页查询", description = "根据文件ID分页查询文件向量数据，按二次分块索引排序")
     public Result<PageResult<FileVectorVO>> queryFileVector(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId,
@@ -61,6 +64,7 @@ public class AdminFileVectorController {
     }
 
     @PostMapping("/{fileId}/interrupt")
+//    @PreAuthorize("hasAuthority('admin:file:vector:interrupt')")
     @Operation(summary = "文件向量解析中断", description = "中断指定文件的向量解析任务")
     public Result<Void> interruptFileVectorParsing(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
