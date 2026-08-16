@@ -51,7 +51,7 @@ public class AudioController {
         return Result.success(result);
     }
 
-    @MessageMapping("/audio/message/send")
+    @MessageMapping("/message/send")
     @Operation(summary = "发送语音消息（WebSocket）", description = "通过WebSocket发送用户语音消息，进行ASR语音转文本，实时展示处理结果")
     public void sendAudioMessage(
             @Payload @Valid AudioMessageSendDTO audioMessageSendDTO
@@ -60,7 +60,7 @@ public class AudioController {
         audioService.sendAudioMessage(audioMessageSendDTO);
     }
 
-    @MessageMapping("/audio/interrupt")
+    @MessageMapping("/interrupt")
     @Operation(summary = "中断语音对话（WebSocket）", description = "通过WebSocket中断当前正在进行的语音对话处理")
     public void interruptAudio(
             @Payload @Valid AudioInterruptDTO audioInterruptDTO

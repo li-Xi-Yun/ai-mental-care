@@ -219,26 +219,32 @@ public class TtsConnectionManager {
     public interface TtsResultCallback {
 
         /** 流式合成开始回调 */
-        void onSynthesisStart();
+        default void onSynthesisStart() {
+        }
 
         /** 服务端检测到一句话的开始 */
-        void onSentenceBegin();
+        default void onSentenceBegin() {
+        }
 
         /** 服务端检测到一句话的结束 */
-        void onSentenceEnd();
+        default void onSentenceEnd() {
+        }
 
         /**
          * 接收到音频数据回调
          *
          * @param audioData 音频数据字节数组
          */
-        void onAudioData(byte[] audioData);
+        default void onAudioData(byte[] audioData) {
+        }
 
         /** 增量时间戳回调 */
-        void onSentenceSynthesis();
+        default void onSentenceSynthesis() {
+        }
 
         /** 合成完成回调 */
-        void onSynthesisComplete();
+        default void onSynthesisComplete() {
+        }
 
         /**
          * 合成失败回调
@@ -246,7 +252,8 @@ public class TtsConnectionManager {
          * @param taskId     任务ID
          * @param statusText 错误状态描述
          */
-        void onFail(String taskId, String statusText);
+        default void onFail(String taskId, String statusText) {
+        }
     }
 
     /**
@@ -391,6 +398,11 @@ public class TtsConnectionManager {
         }
     }
 
+    /**
+    * 中断TTS合成
+    *
+    * @param userId 用户ID
+    */
     public void interrupt(Long userId) {
         TtsSession session = sessions.get(userId);
         if (session == null || session.closed.get()) {
@@ -418,32 +430,37 @@ public class TtsConnectionManager {
         log.info("用户{}TTS合成已中断", userId);
     }
 
-    public void cancel(Long userId) {
-        sessions.computeIfPresent(userId, (k, session) -> {
-            if (!session.closed.compareAndSet(false, true)) {
-                log.debug("用户{}TTS会话已关闭，忽略取消请求", userId);
-                return null;
-            }
+    /**
+     * 取消TTS会话
+     *
+     * @param userId 用户ID
+     */
+     public void cancel(Long userId) {
+          sessions.computeIfPresent(userId, (k, session) -> {
+              if (!session.closed.compareAndSet(false, true)) {
+                  log.debug("用户{}TTS会话已关闭，忽略取消请求", userId);
+                  return null;
+              }
 
-            session.synthesisId.incrementAndGet();
-            stopPing(session);
-            FlowingSpeechSynthesizer synthesizer = session.synthesizerRef.getAndSet(null);
-            if (synthesizer != null) {
-                try {
-                    synthesizer.close();
-                } catch (Exception e) {
-                    log.error("用户{}关闭TTS合成器失败", userId, e);
-                }
-            }
+              session.synthesisId.incrementAndGet();
+              stopPing(session);
+              FlowingSpeechSynthesizer synthesizer = session.synthesizerRef.getAndSet(null);
+              if (synthesizer != null) {
+                  try {
+                      synthesizer.close();
+                  } catch (Exception e) {
+                      log.error("用户{}关闭TTS合成器失败", userId, e);
+                  }
+              }
 
-            if (session.latch != null) {
-                session.latch.countDown();
-            }
+              if (session.latch != null) {
+                  session.latch.countDown();
+              }
 
-            session.release();
-            log.info("用户{}TTS会话已取消并清理", userId);
-            return null;
-        });
+              session.release();
+              log.info("用户{}TTS会话已取消并清理", userId);
+              return null;
+          });
     }
 
     /**
@@ -477,6 +494,13 @@ public class TtsConnectionManager {
         return (int) sessions.values().stream().filter(s -> !s.closed.get()).count();
     }
 
+    /**
+     * 创建TTS合成器回调监听器
+     *
+     * @param session TTS会话
+     * @param userId 用户ID
+     * @return TTS合成器回调监听器
+     */
     private FlowingSpeechSynthesizerListener createListener(TtsSession session, Long userId, int currentSynthesisId){
         return new FlowingSpeechSynthesizerListener() {
             private boolean firstRecvBinary = true;
@@ -564,6 +588,13 @@ public class TtsConnectionManager {
         };
     }
 
+    /**
+     * 创建TTS合成器实例
+     *
+     * @param listener TTS合成器回调监听器
+     * @return TTS合成器实例
+     * @throws Exception 如果创建合成器失败
+     */
     private FlowingSpeechSynthesizer createSynthesizer(FlowingSpeechSynthesizerListener listener) throws Exception {
         FlowingSpeechSynthesizer synthesizer = new FlowingSpeechSynthesizer(nlsClient, listener);
         synthesizer.setAppKey(ttsProperties.getAppKey());

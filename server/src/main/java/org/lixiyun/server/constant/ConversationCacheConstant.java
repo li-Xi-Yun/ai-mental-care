@@ -46,6 +46,8 @@ public interface ConversationCacheConstant {
     /** Hash Field - 会话中断标识，用于异常恢复和流程控制 */
     String HASH_FIELD_INTERRUPT_FLAG = "interrupt_flag";
 
+
+
     /** 会话缓存Hash的过期时间（秒） */
     long CONVERSATION_CACHE_EXPIRE_SECONDS = 3600L * 3;
 

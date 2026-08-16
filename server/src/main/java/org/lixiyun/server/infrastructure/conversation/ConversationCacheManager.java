@@ -182,8 +182,41 @@ public class ConversationCacheManager {
      * @param conversation   最新的会话实体
      */
     public void updateCacheMetadata(Long conversationId, Conversation conversation) {
+        updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA, conversation);
+    }
+
+    /**
+     * 更新缓存中的会话数据
+     *
+     * @param conversationId 会话ID
+     * @param hKey           缓存字段
+     * @param value          最新的值
+     */
+    public void updateCacheMapValue(Long conversationId, String hKey, Object value) {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
-        RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_METADATA, conversation);
+        RedisUtils.setCacheMapValue(cacheKey, hKey, value);
+    }
+
+    /**
+     * 获取缓存中的会话元数据
+     *
+     * @param conversationId 会话ID
+     * @return 会话实体
+     */
+    public Conversation getCacheMetadata(Long conversationId) {
+        return (Conversation) getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA);
+    }
+
+    /**
+     * 获取缓存中的会话数据
+     *
+     * @param conversationId 会话ID
+     * @param hKey           缓存字段
+     * @return 缓存值
+     */
+    public Object getCacheMapValue(Long conversationId, String hKey) {
+        String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+        return RedisUtils.getCacheMapValue(cacheKey, hKey);
     }
 
     /**

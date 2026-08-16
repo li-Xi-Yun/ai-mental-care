@@ -10,6 +10,7 @@ public interface AudioConstant {
 
     String AUDIO_ROUND = "/audio/round";
 
+    /** AI语音对话文本流式返回，需要在后面路径中添加/{conversationId} */
     String AI_AUDIO_REPLY = "/audio/reply";
 
 }

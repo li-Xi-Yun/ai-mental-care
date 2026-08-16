@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
@@ -17,13 +16,13 @@ import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
+import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.socket.constant.AudioConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 语音类型消息处理器
@@ -55,6 +54,7 @@ public class VoiceMessageProcessor implements MessageProcessor {
 
     private final TextMessageProcessorModel textMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
+    private final ConversationCacheManager conversationCacheManager;
     @InjectChatModel(ChatModelType.DEEP_SEEK)
     private ChatModel chatModel;
 
@@ -143,8 +143,7 @@ public class VoiceMessageProcessor implements MessageProcessor {
 
     private boolean isInterrupted(Long conversationId) {
         try {
-            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
-            String flag = RedisUtils.getCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
+            String flag = (String) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
             return ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE.equals(flag);
         } catch (Exception e) {
             log.error("AI对话语音处理器-读取中断标志失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
@@ -154,8 +153,7 @@ public class VoiceMessageProcessor implements MessageProcessor {
 
     private void clearInterruptFlag(Long conversationId) {
         try {
-            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
-            RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG,
+            conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG,
                     ConversationCacheConstant.INTERRUPT_FLAG_INACTIVE);
             log.info("AI对话语音处理器-清除中断标识成功，会话ID：{}", conversationId);
         } catch (Exception e) {
@@ -206,14 +204,11 @@ public class VoiceMessageProcessor implements MessageProcessor {
         log.info("AI对话语音处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 
         try {
-            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
-
-            List<ConversationMemory> existingHistory = RedisUtils.getCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
+            List<ConversationMemory> existingHistory = (List<ConversationMemory>) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
 
             existingHistory.add(conversationMemory);
 
-            RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
-            RedisUtils.expire(cacheKey, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
 
             log.info("AI对话语音处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
         } catch (Exception e) {

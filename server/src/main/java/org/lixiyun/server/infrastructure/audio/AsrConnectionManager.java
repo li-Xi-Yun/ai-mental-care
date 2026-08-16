@@ -203,14 +203,16 @@ public class AsrConnectionManager {
          * @param text         当前中间识别文本
          * @param sentenceIndex 句子编号，从1开始递增
          */
-        void onIntermediateResult(String text, int sentenceIndex);
+        default void onIntermediateResult(String text, int sentenceIndex) {
+        }
 
         /**
          * 识别开始回调
          *
          * @param taskId 服务端分配的识别任务ID
          */
-        void onTranscriberStart(String taskId);
+        default void onTranscriberStart(String taskId) {
+        }
 
         /**
          * 一句话开始回调（服务端智能断句）
@@ -218,7 +220,8 @@ public class AsrConnectionManager {
          * @param text 该句初始识别文本
          * @param sentenceIndex 句子编号，从1开始递增
          */
-        void onSentenceBegin(String text, int sentenceIndex);
+        default void onSentenceBegin(String text, int sentenceIndex) {
+        }
 
         /**
          * 一句话结束回调
@@ -229,10 +232,12 @@ public class AsrConnectionManager {
          * @param time          当前已处理的音频时长（毫秒）
          * @param confidence    该句识别置信度，0.0~1.0
          */
-        void onSentenceEnd(String text, int sentenceIndex, long beginTime, long time, double confidence);
+        default void onSentenceEnd(String text, int sentenceIndex, long beginTime, long time, double confidence) {
+        }
 
         /** 整轮识别完毕回调 */
-        void onComplete();
+        default void onComplete() {
+        }
 
         /**
          * 识别失败回调
@@ -240,7 +245,8 @@ public class AsrConnectionManager {
          * @param taskId     识别任务ID
          * @param statusText 错误状态描述
          */
-        void onError(String taskId, String statusText);
+        default void onError(String taskId, String statusText) {
+        }
     }
 
     /** ASR会话内部实体，封装单个用户的ASR长连接上下文 */
