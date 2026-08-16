@@ -402,6 +402,26 @@ websocket:
   # 用户单发消息前缀
   user-private-prefix: '/queue'
 
+asr:
+  nls:
+      app-key: ${asr.nls.app-key}
+      access-key-id: ${asr.nls.access-key-id}
+      access-key-secret: ${asr.nls.access-key-secret}
+      gateway-url: ${asr.nls.gateway-url}
+      token-refresh-hours: ${asr.nls.token-refresh-hours}
+
+tts:
+  nls:
+    app-key: ${tts.nls.app-key}
+    access-key-id: ${tts.nls.access-key-id}
+    access-key-secret: ${tts.nls.access-key-secret}
+    gateway-url: ${tts.nls.gateway-url}
+    token-refresh-hours: ${tts.nls.token-refresh-hours}
+    voice: ${tts.nls.voice}
+    volume: ${tts.nls.volume}
+    pitch-rate: ${tts.nls.pitch-rate}
+    speech-rate: ${tts.nls.speech-rate}
+
 weather:
   api-url: ${weather.api-url}
   id: ${weather.id}

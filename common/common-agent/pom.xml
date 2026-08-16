@@ -120,6 +120,31 @@
             <artifactId>spring-ai-tika-document-reader</artifactId>
         </dependency>
 
+        <!-- Milvus矢量数据库(原生) -->
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+        </dependency>
+
+
+        <!-- 语音转写 ASR -->
+        <dependency>
+            <groupId>com.alibaba.nls</groupId>
+            <artifactId>nls-sdk-transcriber</artifactId>
+        </dependency>
+
+        <!-- 语音合成 TTS -->
+        <dependency>
+            <groupId>com.alibaba.nls</groupId>
+            <artifactId>nls-sdk-tts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nls</groupId>
+            <artifactId>nls-sdk-common</artifactId>
+        </dependency>
+
+
+
         <!--        <dependency>-->
         <!--            <groupId>org.springframework.ai</groupId>-->
         <!--            <artifactId>spring-ai-pdf-document-reader</artifactId>-->
@@ -131,21 +156,12 @@
         <!--        </dependency>-->
 
         <!-- PDF文件原生读取 -->
-<!--        <dependency>-->
-<!--            <groupId>org.apache.pdfbox</groupId>-->
-<!--            <artifactId>pdfbox</artifactId>-->
-<!--            <version>3.0.5</version>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
-
-        <!-- Milvus矢量数据库(原生) -->
-        <dependency>
-            <groupId>io.milvus</groupId>
-            <artifactId>milvus-sdk-java</artifactId>
-        </dependency>
-
-
-
+        <!--        <dependency>-->
+        <!--            <groupId>org.apache.pdfbox</groupId>-->
+        <!--            <artifactId>pdfbox</artifactId>-->
+        <!--            <version>3.0.5</version>-->
+        <!--            <scope>compile</scope>-->
+        <!--        </dependency>-->
 
         <!--        <dependency>-->
         <!--            <groupId>org.springframework.ai</groupId>-->

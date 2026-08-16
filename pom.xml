@@ -86,6 +86,11 @@
         <!-- SMS 配置 -->
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
+        <netty.version>4.1.112.Final</netty.version>
+        <!-- 语音转写 ASR -->
+        <alibaba.asr.version>2.2.19</alibaba.asr.version>
+        <!-- 语音合成 TTS -->
+        <alibaba.tts.version>2.2.19</alibaba.tts.version>
 
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
@@ -114,6 +119,31 @@
                 <version>1.1.2</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+
+            <!-- 语音转写 ASR -->
+            <dependency>
+                <groupId>com.alibaba.nls</groupId>
+                <artifactId>nls-sdk-transcriber</artifactId>
+                <version>${alibaba.asr.version}</version>
+            </dependency>
+
+            <!-- 语音合成 TTS -->
+            <dependency>
+                <groupId>com.alibaba.nls</groupId>
+                <artifactId>nls-sdk-tts</artifactId>
+                <version>${alibaba.tts.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.nls</groupId>
+                <artifactId>nls-sdk-common</artifactId>
+                <version>${alibaba.tts.version}</version>
             </dependency>
 
             <dependency>

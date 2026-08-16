@@ -17,7 +17,7 @@ import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.socket.constant.TextConstant;
+import org.lixiyun.server.socket.constant.AudioConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Schedulers;
@@ -26,55 +26,49 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 文本类型消息处理器
+ * 语音类型消息处理器
  * <p>主线程执行流程：
  * <ol>
  *     <li>接收参数：临时消息数据、会话历史上下文、历史情绪分析结果、历史心理诊断结果</li>
  *     <li>调用LLM生成文本回答</li>
- *     <li>通过WebSocket流式发送消息</li>
- *     <li>将回答保存到数据库</li>
- *     <li>更新Redis缓存中的历史上下文</li>
- *     <li>异常处理与数据一致性保障</li>
+ *     <li>将LLM输出文本送入TTS模块，执行文本转语音</li>
+ *     <li>实时检测缓存内是否存在中断标志：
+ *         <ul>
+ *             <li>若存在中断标志：执行停止发送消息逻辑，直接跳转至DB数据存储会话上下文步骤</li>
+ *             <li>若不存在中断标志：通过WebSocket以流式方式推送语音消息</li>
+ *         </ul>
+ *     </li>
+ *     <li>持久化会话上下文数据至数据库</li>
+ *     <li>更新缓存中的历史上下文数据</li>
+ *     <li>清除缓存里的中断标识，流程结束</li>
  * </ol>
+ * 整个流程统一兜底处理：报错捕获、重试机制，保障数据一致性。
  * </p>
  *
  * @author lixiyun
- * @since 2026-07-14 21:36
+ * @since 2026-08-15
  */
 @Slf4j
-@Component(ConversationCacheConstant.CONVERSATION_TYPE_TEXT)
+@Component(ConversationCacheConstant.CONVERSATION_TYPE_AUDIO)
 @RequiredArgsConstructor
-public class TextMessageProcessor implements MessageProcessor {
+public class VoiceMessageProcessor implements MessageProcessor {
 
     private final TextMessageProcessorModel textMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
     @InjectChatModel(ChatModelType.DEEP_SEEK)
     private ChatModel chatModel;
 
-    /**
-     * 处理文本类型的会话消息
-     * <p>主线程执行流程（按图片要求）：</p>
-     * <ol>
-     *     <li>接收参数：临时消息数据、会话历史上下文、历史情绪分析结果、历史心理诊断结果</li>
-     *     <li>调用LLM生成文本回答</li>
-     *     <li>通过WebSocket流式发送消息</li>
-     *     <li>将回答保存到数据库</li>
-     *     <li>更新Redis缓存中的历史上下文</li>
-     * </ol>
-     *
-     * @param context 会话消息处理上下文 {@link ConversationProcessContextBO}
-     */
     @Override
     public void processMessage(ConversationProcessContextBO context) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
-            log.error("AI对话文本处理器-临时消息为空，跳过处理");
+            log.error("AI对话语音处理器-临时消息为空，跳过处理");
             throw new BusinessException(AIChatExceptionEnum.TEMPORARY_MESSAGES_EMPTY);
         }
 
         Long conversationId = context.getConversation().getId();
         int currentRound = context.getConversation().getCurrentRound();
         Long userId = context.getConversation().getUserId();
-        log.info("AI对话文本处理器-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
+        log.info("AI对话语音处理器-开始语音消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
 
         try {
             String prompt = buildPrompt(context);
@@ -90,39 +84,87 @@ public class TextMessageProcessor implements MessageProcessor {
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
 
-            log.info("AI对话文本处理器-文本消息处理完成，会话ID：{}", conversationId);
+            log.info("AI对话语音处理器-语音消息处理完成，会话ID：{}", conversationId);
         } catch (BusinessException e) {
-            log.error("AI对话文本处理器-文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
+            log.error("AI对话语音处理器-语音消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("AI对话文本处理器-文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("AI对话语音处理器-语音消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
             throw new BusinessException(AIChatExceptionEnum.MAIN_THREAD_EXECUTION_FAILED);
         }
     }
 
     private StreamEventListener buildListener(Long userId, Long conversationId, int currentRound) {
         return new StreamEventListener() {
+            private final StringBuilder fullText = new StringBuilder();
+
             @Override
             public void onContentChunk(String text) {
-                sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, text);
+                if (isInterrupted(conversationId)) {
+                    log.info("AI对话语音处理器-检测到中断标志，停止WebSocket推送，会话ID：{}", conversationId);
+                    return;
+                }
+                fullText.append(text);
+                textToSpeech(text);
+                sendViaWebSocket(userId, AudioConstant.AI_AUDIO_REPLY, conversationId, text);
             }
 
             @Override
             public void onModelComplete(org.springframework.ai.chat.messages.AssistantMessage message) {
-                log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
+                log.info("AI对话语音处理器-流式完成，会话ID：{}", conversationId);
+
+                String textContent = message.getText();
 
                 ConversationMemory finalMemory = ConversationMemory.builder()
                         .userId(userId)
                         .conversationId(conversationId)
-                        .content(message.getText())
+                        .content(textContent)
                         .type(MessageType.ASSISTANT.getName())
                         .state(ConversationMemory.STATE_PROCESSED)
                         .roundNum(currentRound)
                         .build();
 
                 updateCacheHistory(conversationId, finalMemory);
+                clearInterruptFlag(conversationId);
+            }
+
+            @Override
+            public void onError(Throwable err) {
+                log.error("AI对话语音处理器-流式处理异常，会话ID：{}，错误：{}", conversationId, err.getMessage(), err);
+                clearInterruptFlag(conversationId);
+            }
+
+            @Override
+            public void onFinished() {
+                log.info("AI对话语音处理器-流程结束，会话ID：{}", conversationId);
             }
         };
+    }
+
+    private boolean isInterrupted(Long conversationId) {
+        try {
+            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+            String flag = RedisUtils.getCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
+            return ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE.equals(flag);
+        } catch (Exception e) {
+            log.error("AI对话语音处理器-读取中断标志失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private void clearInterruptFlag(Long conversationId) {
+        try {
+            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+            RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG,
+                    ConversationCacheConstant.INTERRUPT_FLAG_INACTIVE);
+            log.info("AI对话语音处理器-清除中断标识成功，会话ID：{}", conversationId);
+        } catch (Exception e) {
+            log.error("AI对话语音处理器-清除中断标识失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+        }
+    }
+
+    private void textToSpeech(String text) {
+        // todo
     }
 
     private String buildPrompt(ConversationProcessContextBO context) {
@@ -156,15 +198,15 @@ public class TextMessageProcessor implements MessageProcessor {
     }
 
     private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, String response) {
-        log.info("AI对话文本处理器-WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
+        log.info("AI对话语音处理器-WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
     }
 
     private void updateCacheHistory(Long conversationId, ConversationMemory conversationMemory) {
-        log.info("AI对话文本处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
+        log.info("AI对话语音处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 
         try {
-            String cacheKey = ConversationCacheConstant.CONVERSATION_CACHE_KEY_PREFIX + conversationId;
+            String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
 
             List<ConversationMemory> existingHistory = RedisUtils.getCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
 
@@ -173,9 +215,9 @@ public class TextMessageProcessor implements MessageProcessor {
             RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
             RedisUtils.expire(cacheKey, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
 
-            log.info("AI对话文本处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
+            log.info("AI对话语音处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
         } catch (Exception e) {
-            log.error("AI对话文本处理器-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("AI对话语音处理器-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
         }
     }
 

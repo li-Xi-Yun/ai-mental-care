@@ -10,4 +10,6 @@ public interface AudioConstant {
 
     String AUDIO_ROUND = "/audio/round";
 
+    String AI_AUDIO_REPLY = "/audio/reply";
+
 }
