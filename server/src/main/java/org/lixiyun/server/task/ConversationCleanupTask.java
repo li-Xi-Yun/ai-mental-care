@@ -60,7 +60,7 @@ public class ConversationCleanupTask {
             new ThreadPoolExecutor.CallerRunsPolicy()  // 拒绝策略：调用者自己跑，起到背压作用
     );
 
-    @Scheduled(fixedRateString = "${conversation.task.scan-interval:1000}")
+    @Scheduled(fixedRateString = "${conversation.task.scan-interval:5000}") // 上一次任务**开始时间**算起，间隔多久执行下一次
     public void scanAndProcessConversationMessages() {
         log.debug("开始执行定时任务：扫描缓存消息ZSet集合");
 

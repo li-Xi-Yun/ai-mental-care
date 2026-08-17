@@ -11,6 +11,7 @@ import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -195,6 +196,7 @@ public class ConversationCacheManager {
     public void updateCacheMapValue(Long conversationId, String hKey, Object value) {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
         RedisUtils.setCacheMapValue(cacheKey, hKey, value);
+        expire(conversationId, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
     }
 
     /**
@@ -237,5 +239,39 @@ public class ConversationCacheManager {
             log.error("会话数据缓存失败，Key：{}", cacheKey, e);
             throw new RuntimeException("会话数据缓存失败", e);
         }
+    }
+
+    /**
+     * 设置会话缓存过期时间
+     *
+     * @param conversationId 会话ID
+     * @param conversationCacheExpireSeconds 缓存过期时间（秒）
+     * @param timeUnit 时间单位
+     */
+    public void expire(Long conversationId, long conversationCacheExpireSeconds, TimeUnit timeUnit) {
+        String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+        RedisUtils.expire(cacheKey, conversationCacheExpireSeconds, timeUnit);
+    }
+
+    /**
+     * 将消息时间戳保存到Redis有序集合
+     *
+     * @param conversationId 会话ID
+     * @param messageTime    消息时间戳
+     */
+    public void saveMessageToZSet(Long conversationId, LocalDateTime messageTime) {
+        String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
+        RedisUtils.addToScoredSortedSet(zSetKey, messageTime, String.valueOf(conversationId));
+        RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 从Redis有序集合中移除会话ID对应戳
+     *
+     * @param conversationId 会话ID
+     */
+    public void removeCacheZSetValue(Long conversationId) {
+        String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
+        RedisUtils.removeFromScoredSortedSet(zSetKey, String.valueOf(conversationId));
     }
 }

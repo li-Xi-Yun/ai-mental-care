@@ -1,10 +1,10 @@
 package org.lixiyun.server.infrastructure.conversation.processor;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
@@ -16,10 +16,14 @@ import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
+import org.lixiyun.server.infrastructure.audio.TtsConnectionManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
-import org.lixiyun.server.socket.constant.AudioConstant;
+import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
+import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
@@ -55,6 +59,10 @@ public class VoiceMessageProcessor implements MessageProcessor {
     private final TextMessageProcessorModel textMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
     private final ConversationCacheManager conversationCacheManager;
+    private final TtsConnectionManager ttsConnectionManager;
+    private final ConversationWebSocketManager conversationWebSocketManager;
+    private final ConversationStreamHolder conversationStreamHolder;
+
     @InjectChatModel(ChatModelType.DEEP_SEEK)
     private ChatModel chatModel;
 
@@ -80,9 +88,12 @@ public class VoiceMessageProcessor implements MessageProcessor {
                     .withListener(buildListener(userId, conversationId, currentRound))
                     .build();
 
-            processor.process(textMessageProcessorModel.stream(chatModel, prompt))
+            Flux<NodeOutput> stream = textMessageProcessorModel.stream(chatModel, prompt);
+            Disposable subscribe = processor.process(stream)
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
+
+            conversationStreamHolder.addStream(conversationId, subscribe);
 
             log.info("AI对话语音处理器-语音消息处理完成，会话ID：{}", conversationId);
         } catch (BusinessException e) {
@@ -94,19 +105,37 @@ public class VoiceMessageProcessor implements MessageProcessor {
         }
     }
 
+    /**
+     * 构建流式事件监听器，处理内容分块、模型完成、异常和结束事件
+     *
+     * @param userId         用户ID
+     * @param conversationId 会话ID
+     * @param currentRound   当前轮次
+     * @return 流式事件监听器
+     */
     private StreamEventListener buildListener(Long userId, Long conversationId, int currentRound) {
-        return new StreamEventListener() {
-            private final StringBuilder fullText = new StringBuilder();
+        final StringBuilder contentBuilder = new StringBuilder();
 
+        return new StreamEventListener() {
             @Override
             public void onContentChunk(String text) {
                 if (isInterrupted(conversationId)) {
                     log.info("AI对话语音处理器-检测到中断标志，停止WebSocket推送，会话ID：{}", conversationId);
+                    ConversationMemory finalMemory = ConversationMemory.builder()
+                            .userId(userId)
+                            .conversationId(conversationId)
+                            .content(contentBuilder.toString())
+                            .type(MessageType.ASSISTANT.getName())
+                            .state(ConversationMemory.STATE_PROCESSED)
+                            .roundNum(currentRound)
+                            .build();
+
+                    updateCacheHistory(conversationId, finalMemory);
                     return;
                 }
-                fullText.append(text);
-                textToSpeech(text);
-                sendViaWebSocket(userId, AudioConstant.AI_AUDIO_REPLY, conversationId, text);
+                contentBuilder.append(text);
+                ttsConnectionManager.sendTextSegment(userId, text);
+                conversationWebSocketManager.sendAudioStream(userId, conversationId, text);
             }
 
             @Override
@@ -125,32 +154,45 @@ public class VoiceMessageProcessor implements MessageProcessor {
                         .build();
 
                 updateCacheHistory(conversationId, finalMemory);
-                clearInterruptFlag(conversationId);
+
+                ttsConnectionManager.finishSynthesis(userId);
             }
 
             @Override
             public void onError(Throwable err) {
                 log.error("AI对话语音处理器-流式处理异常，会话ID：{}，错误：{}", conversationId, err.getMessage(), err);
-                clearInterruptFlag(conversationId);
             }
 
             @Override
             public void onFinished() {
+                conversationStreamHolder.removeStream(conversationId);
+                clearInterruptFlag(conversationId);
                 log.info("AI对话语音处理器-流程结束，会话ID：{}", conversationId);
             }
         };
     }
 
+    /**
+     * 检查会话是否存在中断标志
+     *
+     * @param conversationId 会话ID
+     * @return 是否被中断
+     */
     private boolean isInterrupted(Long conversationId) {
         try {
-            String flag = (String) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
-            return ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE.equals(flag);
+            int flag = (int) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
+            return flag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE;
         } catch (Exception e) {
             log.error("AI对话语音处理器-读取中断标志失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * 清除会话的中断标志，恢复为非中断状态
+     *
+     * @param conversationId 会话ID
+     */
     private void clearInterruptFlag(Long conversationId) {
         try {
             conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG,
@@ -161,10 +203,12 @@ public class VoiceMessageProcessor implements MessageProcessor {
         }
     }
 
-    private void textToSpeech(String text) {
-        // todo
-    }
-
+    /**
+     * 构建LLM提示词，拼接会话历史、情绪分析、心理诊断及当前临时消息
+     *
+     * @param context 会话处理上下文
+     * @return 拼接后的提示词字符串
+     */
     private String buildPrompt(ConversationProcessContextBO context) {
         StringBuilder sb = new StringBuilder();
 
@@ -195,11 +239,12 @@ public class VoiceMessageProcessor implements MessageProcessor {
         return sb.toString();
     }
 
-    private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, String response) {
-        log.info("AI对话语音处理器-WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
-        WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
-    }
-
+    /**
+     * 更新Redis缓存中的会话历史上下文，将新消息追加到已有历史列表
+     *
+     * @param conversationId     会话ID
+     * @param conversationMemory 待追加的会话记忆
+     */
     private void updateCacheHistory(Long conversationId, ConversationMemory conversationMemory) {
         log.info("AI对话语音处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 

@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.redis.utils.RedisUtils;
-import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
@@ -17,13 +15,13 @@ import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.socket.constant.TextConstant;
+import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
+import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 文本类型消息处理器
@@ -48,6 +46,9 @@ public class TextMessageProcessor implements MessageProcessor {
 
     private final TextMessageProcessorModel textMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
+    private final ConversationWebSocketManager conversationWebSocketManager;
+    private final ConversationCacheManager conversationCacheManager;
+
     @InjectChatModel(ChatModelType.DEEP_SEEK)
     private ChatModel chatModel;
 
@@ -104,7 +105,7 @@ public class TextMessageProcessor implements MessageProcessor {
         return new StreamEventListener() {
             @Override
             public void onContentChunk(String text) {
-                sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, text);
+                conversationWebSocketManager.sendTextStream(userId, conversationId, text);
             }
 
             @Override
@@ -155,24 +156,15 @@ public class TextMessageProcessor implements MessageProcessor {
         return sb.toString();
     }
 
-    private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, String response) {
-        log.info("AI对话文本处理器-WebSocket流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
-        WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
-    }
-
     private void updateCacheHistory(Long conversationId, ConversationMemory conversationMemory) {
         log.info("AI对话文本处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 
         try {
-            String cacheKey = ConversationCacheConstant.CONVERSATION_CACHE_KEY_PREFIX + conversationId;
-
-            List<ConversationMemory> existingHistory = RedisUtils.getCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
+            List<ConversationMemory> existingHistory = (List<ConversationMemory>) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
 
             existingHistory.add(conversationMemory);
 
-            RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
-            RedisUtils.expire(cacheKey, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
-
+            conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
             log.info("AI对话文本处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
         } catch (Exception e) {
             log.error("AI对话文本处理器-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);

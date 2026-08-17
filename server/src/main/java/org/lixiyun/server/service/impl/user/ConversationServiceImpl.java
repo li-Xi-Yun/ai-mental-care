@@ -77,9 +77,9 @@ public class ConversationServiceImpl implements ConversationService {
         }
 
         // 级联删除所有相关数据
-        conversationMemoryMapper.delete(new LambdaUpdateWrapper<ConversationMemory>()
-                .eq(ConversationMemory::getConversationId, conversationId));
         emotionAnalysisMapper.delete(new LambdaUpdateWrapper<EmotionAnalysis>()
                 .eq(EmotionAnalysis::getConversationId, conversationId));
+        conversationMemoryMapper.delete(new LambdaUpdateWrapper<ConversationMemory>()
+                .eq(ConversationMemory::getConversationId, conversationId));
     }
 }

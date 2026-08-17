@@ -3,14 +3,12 @@ package org.lixiyun.server.infrastructure.conversation;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.node.conversation.ConversationNameGenerationNode;
 import org.lixiyun.server.infrastructure.conversation.processor.MessageProcessor;
 import org.lixiyun.server.infrastructure.conversation.processor.ProcessorHolder;
-import org.lixiyun.server.socket.constant.TextConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -53,6 +51,8 @@ public class ConversationMessageProcessor {
     private ProcessorHolder processorHolder;
     @Autowired
     private ConversationNameGenerationNode conversationNameGenerationNode;
+    @Autowired
+    private ConversationWebSocketManager conversationWebSocketManager;
 
     @Autowired
     @Qualifier("diagnosisThreadPoolTaskExecutor")
@@ -210,7 +210,7 @@ public class ConversationMessageProcessor {
                 Conversation updatedConversation = conversationRepository.getConversationById(conversationId);
                 conversationCacheManager.updateCacheMetadata(conversationId, updatedConversation);
 
-                WebSocketUtils.sendToUserBySubDestination(userId.toString(), TextConstant.CONVERSATION_NAME + "/" + conversationId, conversationName);
+                conversationWebSocketManager.sendConversationName(userId, conversationId, conversationName);
 
                 log.info("会话名称生成完成，会话ID：{}，名称：{}", conversationId, conversationName);
             } catch (Exception e) {

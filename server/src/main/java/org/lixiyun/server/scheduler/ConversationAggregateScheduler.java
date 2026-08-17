@@ -47,8 +47,21 @@ public class ConversationAggregateScheduler {
             new ThreadPoolExecutor.CallerRunsPolicy()
     );
 
+    /** 默认延迟秒数 */
+    private static final long DEFAULT_DELAY_SECONDS = 3;
+
     @Autowired
     private ConversationMessageProcessor conversationMessageProcessor;
+
+    /**
+     * 添加会话聚合任务
+     * <p>原子操作：同一会话并发调用也不会出现任务泄漏</p>
+     *
+     * @param conversationId 会话ID
+     */
+    public void addTask(Long conversationId) {
+        resetAggregateTimer(conversationId, DEFAULT_DELAY_SECONDS);
+    }
 
     /**
      * 重置会话的聚合倒计时

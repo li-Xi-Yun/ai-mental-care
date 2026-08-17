@@ -5,10 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
-import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.user.conversation.UserMessageSendDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
@@ -16,6 +14,7 @@ import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.constant.ConversationCacheConstant;
+import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.service.user.AIChatService;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
 
 /**
  * AI聊天服务实现类
@@ -46,6 +44,7 @@ public class AIChatServiceImpl implements AIChatService {
 
     private final ConversationMapper conversationMapper;
     private final ConversationMemoryMapper conversationMemoryMapper;
+    private final ConversationCacheManager conversationCacheManager;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -139,16 +138,8 @@ public class AIChatServiceImpl implements AIChatService {
     }
 
     private void saveMessageToZSet(Long conversationId, LocalDateTime messageTime) {
-        String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
-
-        try {
-            RedisUtils.addToScoredSortedSet(zSetKey, messageTime, String.valueOf(conversationId));
-            RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);
-            log.debug("消息ZSet集合保存成功，Key：{}", zSetKey);
-        } catch (Exception e) {
-            log.error("保存消息到ZSet集合失败，会话ID：{}", conversationId, e);
-            throw new BusinessException(AIChatExceptionEnum.REDIS_OPERATION_FAILED);
-        }
+        conversationCacheManager.saveMessageToZSet(conversationId, messageTime);
+        log.debug("消息ZSet集合保存成功，会话ID：{}", conversationId);
     }
 
 }

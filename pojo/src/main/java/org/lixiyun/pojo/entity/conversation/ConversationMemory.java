@@ -20,10 +20,10 @@ import java.time.LocalDateTime;
 public class ConversationMemory implements Serializable {
     private static final long serialVersionUID = 420266596019691443L;
 
-    // 未处理状态
+    /** 未处理状态 */
     public static final int STATE_NOT_PROCESSED = 0;
 
-    // 已处理状态
+    /** 已处理状态 */
     public static final int STATE_PROCESSED = 1;
 
     /**

@@ -43,7 +43,6 @@ public class AIController {
     public Result<UserMessageSendVO> sendUserMessage(@RequestBody @Validated UserMessageSendDTO userMessageSendDTO) {
         log.info("接收用户消息发送请求：{}", userMessageSendDTO);
         UserMessageSendVO result = aiChatService.sendUserMessage(userMessageSendDTO);
-        log.info("用户消息发送成功，会话ID：{}，当前轮次：{}", result.getConversationId(), result.getCurrentRound());
         return Result.success(result);
     }
 

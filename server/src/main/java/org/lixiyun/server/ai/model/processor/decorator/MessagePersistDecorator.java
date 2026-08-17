@@ -68,7 +68,7 @@ public class MessagePersistDecorator extends AgentStreamDecorator {
             log.debug("持久化工具执行结果，会话ID：{}，轮次：{}", conversationId, round);
         } else if (event instanceof AgentStreamEvent.FullThinkCompleted thinkCompleted) {
             if (thinkCompleted.fullText() == null || thinkCompleted.fullText().isBlank()) {
-                log.warn("持久化思考内容失败，没有思考内容数据，检查是否有配置 ThinkAccumulateDecorator类，会话ID：{}，", conversationId);
+                log.warn("持久化思考内容失败，没有思考内容数据，检查是否有配置 ThinkAccumulateDecorator类或 配置顺序是否正确，会话ID：{}，", conversationId);
             } else {
                 Message thinkMessage = new ThinkMessage(thinkCompleted.fullText());
                 storage.save(userId, conversationId, round, thinkMessage);

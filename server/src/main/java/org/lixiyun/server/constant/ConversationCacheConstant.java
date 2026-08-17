@@ -73,10 +73,10 @@ public interface ConversationCacheConstant {
     String CONVERSATION_TYPE_AUDIO = "audio";
 
     /** 中断标识 - 激活状态（已中断） */
-    String INTERRUPT_FLAG_ACTIVE = "1";
+    int INTERRUPT_FLAG_ACTIVE = 1;
 
     /** 中断标识 - 非激活状态（正常/未中断） */
-    String INTERRUPT_FLAG_INACTIVE = "0";
+    int INTERRUPT_FLAG_INACTIVE = 0;
 
     static String buildConversationCacheKey(Long conversationId) {
         return CONVERSATION_CACHE_KEY_PREFIX + conversationId;
