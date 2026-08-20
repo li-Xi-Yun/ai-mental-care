@@ -14,7 +14,6 @@ import org.lixiyun.pojo.vo.user.conversation.AudioSessionInitVO;
 import org.lixiyun.server.service.user.AudioService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +37,6 @@ import org.springframework.web.bind.annotation.*;
 public class AudioController {
 
     private final AudioService audioService;
-    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/init")
     @Operation(summary = "初始化语音会话", description = "判断会话ID是否存在，不存在则创建新会话，返回会话信息和WebSocket连接地址；存在则检查状态是否正常")

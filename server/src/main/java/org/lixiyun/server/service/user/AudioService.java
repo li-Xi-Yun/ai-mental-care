@@ -109,7 +109,7 @@ public interface AudioService {
      *     <li>语音中断：设置中断标识、取消LLM流式订阅、中断TTS合成</li>
      *     <li>任务清理：取消时间轮调度器中的聚合任务</li>
      *     <li>ZSet移除：从Redis有序集合中移除该会话ID，停止自动聚合调度</li>
-     *     <li>DB模式切换：更新数据库中{@link org.lixiyun.pojo.entity.conversation.Conversation#chatMode}为文本对话模式</li>
+     *     <li>DB模式切换：更新数据库中对话模式为文本对话模式</li>
      *     <li>缓存模式切换：同步更新Redis Hash中的会话类型字段为文本模式</li>
      *     <li>ASR关闭：调用ASR连接管理器关闭用户的ASR长连接并释放资源</li>
      *     <li>TTS关闭：调用TTS连接管理器取消用户的TTS会话上下文并释放资源</li>
