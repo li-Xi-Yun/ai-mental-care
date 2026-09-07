@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/upload")
+@RequestMapping("/common/upload")
 @Tag(name = "上传接口", description = "上传接口")
 public class UploadController {
 

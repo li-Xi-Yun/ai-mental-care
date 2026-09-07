@@ -3,7 +3,6 @@ package org.lixiyun.server.infrastructure.audio;
 import com.alibaba.nls.client.AccessToken;
 import com.alibaba.nls.client.protocol.NlsClient;
 import com.alibaba.nls.client.protocol.OutputFormatEnum;
-import com.alibaba.nls.client.protocol.SampleRateEnum;
 import com.alibaba.nls.client.protocol.tts.FlowingSpeechSynthesizer;
 import com.alibaba.nls.client.protocol.tts.FlowingSpeechSynthesizerListener;
 import com.alibaba.nls.client.protocol.tts.FlowingSpeechSynthesizerResponse;
@@ -598,8 +597,14 @@ public class TtsConnectionManager {
     private FlowingSpeechSynthesizer createSynthesizer(FlowingSpeechSynthesizerListener listener) throws Exception {
         FlowingSpeechSynthesizer synthesizer = new FlowingSpeechSynthesizer(nlsClient, listener);
         synthesizer.setAppKey(ttsProperties.getAppKey());
-        synthesizer.setFormat(OutputFormatEnum.WAV);
-        synthesizer.setSampleRate(SampleRateEnum.SAMPLE_RATE_16K);
+        if (ttsProperties.getFormat() != null){
+            if(ttsProperties.getFormat().equalsIgnoreCase(OutputFormatEnum.WAV.name())){
+                synthesizer.setFormat(OutputFormatEnum.WAV);
+            } else if (ttsProperties.getFormat().equalsIgnoreCase(OutputFormatEnum.MP3.name())){
+                synthesizer.setFormat(OutputFormatEnum.MP3);
+            }
+        }
+        synthesizer.setSampleRate(ttsProperties.getSampleRate());
         synthesizer.setVoice(ttsProperties.getVoice());
         synthesizer.setVolume(ttsProperties.getVolume());
         synthesizer.setPitchRate(ttsProperties.getPitchRate());

@@ -50,8 +50,8 @@ public class SpringDocConfig {
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("user-api")
-                .pathsToMatch("/user/**", "/conversation/**", "/scale/**", "/common/**", "/ws/**", "/socket/**", "/temp/**")
-                .packagesToScan("org.lixiyun.server.controller.user", "org.lixiyun.server.controller.common")
+                .pathsToMatch("/user/**", "/ws/**", "/socket/**")
+                .packagesToScan("org.lixiyun.server.controller.user")
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info()
                             .title("心聆AI系统 - 用户接口")
@@ -69,18 +69,68 @@ public class SpringDocConfig {
     }
 
     /**
-     * 其他接口分组
+     * 公共接口分组
      */
     @Bean
-    public GroupedOpenApi otherApi() {
+    public GroupedOpenApi commonApi() {
         return GroupedOpenApi.builder()
-                .group("other-api")
+                .group("common-api")
+                .pathsToMatch("/common/**")
+                .packagesToScan("org.lixiyun.server.controller.common")
+                .addOpenApiCustomizer(openApi -> {
+                    openApi.info(new Info()
+                            .title("心聆AI系统 - 公共接口")
+                            .description("公共相关接口文档")
+                            .version("1.0.0")
+                            .contact(new Contact()
+                                    .name("离晞云")
+                                    .email("lixiyun@example.com")));
+                    // 配置开源许可证
+//                            .license(new License()
+//                                    .name("Apache 2.0")
+//                                    .url("https://www.apache.org/licenses/LICENSE-2.0.html")));
+                })
+                .build();
+    }
+
+    /**
+     * 临时接口分组
+     */
+    @Bean
+    public GroupedOpenApi tempApi() {
+        return GroupedOpenApi.builder()
+                .group("temp-api")
+                .pathsToMatch("/temp/**")
+                .packagesToScan("org.lixiyun.server.controller.temp")
+                .addOpenApiCustomizer(openApi -> {
+                    openApi.info(new Info()
+                            .title("心聆AI系统 - 临时接口")
+                            .description("临时相关接口文档")
+                            .version("1.0.0")
+                            .contact(new Contact()
+                                    .name("离晞云")
+                                    .email("lixiyun@example.com")));
+                    // 配置开源许可证
+//                            .license(new License()
+//                                    .name("Apache 2.0")
+//                                    .url("https://www.apache.org/licenses/LICENSE-2.0.html")));
+                })
+                .build();
+    }
+
+    /**
+     * Agent 接口分组
+     */
+    @Bean
+    public GroupedOpenApi agentApi() {
+        return GroupedOpenApi.builder()
+                .group("agent-api")
                 .pathsToMatch("/prompt/**", "/skill/**")
                 .packagesToScan("org.lixiyun.common.agent.skill.controller", "org.lixiyun.common.agent.prompt.controller", "org.lixiyun.server.controller.temp")
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info()
-                            .title("心聆AI系统 - 其他接口")
-                            .description("其他相关接口文档")
+                            .title("心聆AI系统 - Agent接口")
+                            .description("Agent相关接口文档")
                             .version("1.0.0")
                             .contact(new Contact()
                                     .name("离晞云")

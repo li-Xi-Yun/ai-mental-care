@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI文本对话测试</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <span>AI文本对话测试</span>
+  <span class="status" id="wsStatus">未连接</span>
+</div>
+
+<div class="chat-container" id="chatContainer"></div>
+
+<div class="input-area">
+  <textarea id="messageInput" rows="2" placeholder="输入消息..."></textarea>
+  <button id="sendBtn" disabled>发送</button>
+</div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="websocket.js"></script>
+<script>
+  const chatContainer = document.getElementById('chatContainer');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const wsStatus = document.getElementById('wsStatus');
+
+  let conversationId = null;
+  let currentRound = 0;
+  let currentAiMessageEl = null;
+  let currentAiText = '';
+  let isSending = false;
+
+  const ws = new ChatWebSocket();
+
+  ws.onConnected = () => {
+    wsStatus.textContent = '已连接';
+    wsStatus.classList.add('connected');
+    sendBtn.disabled = false;
+  };
+
+  ws.onDisconnected = () => {
+    wsStatus.textContent = '已断开';
+    wsStatus.classList.remove('connected');
+    sendBtn.disabled = true;
+  };
+
+  ws.onError = (error) => {
+    wsStatus.textContent = '连接错误';
+    wsStatus.classList.remove('connected');
+    sendBtn.disabled = true;
+  };
+
+  function addMessage(text, type) {
+    const el = document.createElement('div');
+    el.className = `message ${type}`;
+    el.textContent = text;
+    chatContainer.appendChild(el);
+    scrollToBottom();
+    return el;
+  }
+
+  function addSystemMessage(text) {
+    const el = document.createElement('div');
+    el.className = 'message system';
+    el.textContent = text;
+    chatContainer.appendChild(el);
+    scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text || isSending) return;
+
+    isSending = true;
+    sendBtn.disabled = true;
+    messageInput.value = '';
+
+    addMessage(text, 'user');
+
+    try {
+      const data = await ChatAPI.sendMessage(text, conversationId);
+
+      if (!conversationId) {
+        conversationId = data.conversationId;
+        currentRound = data.currentRound;
+        addSystemMessage(`新会话已创建，ID: ${conversationId}，轮次: ${currentRound}`);
+
+        ws.subscribeTextReply(conversationId, onTextReply);
+        ws.subscribeConversationName(conversationId, onConversationName);
+      } else {
+        currentRound = data.currentRound;
+        addSystemMessage(`轮次: ${currentRound}`);
+      }
+
+      currentAiText = '';
+      currentAiMessageEl = document.createElement('div');
+      currentAiMessageEl.className = 'message ai';
+      currentAiMessageEl.innerHTML = '<span class="typing-indicator">AI正在思考</span>';
+      chatContainer.appendChild(currentAiMessageEl);
+      scrollToBottom();
+
+    } catch (error) {
+      addSystemMessage(`发送失败: ${error.message}`);
+    } finally {
+      isSending = false;
+      sendBtn.disabled = false;
+    }
+  }
+
+  function onTextReply(chunk) {
+    if (!currentAiMessageEl) return;
+
+    currentAiText += chunk;
+    currentAiMessageEl.textContent = currentAiText;
+    scrollToBottom();
+  }
+
+  function onConversationName(name) {
+    addSystemMessage(`会话名称: ${name}`);
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  (async function init() {
+    addSystemMessage('正在连接WebSocket...');
+    try {
+      await ws.connect();
+      addSystemMessage('WebSocket连接成功，可以开始对话');
+    } catch (error) {
+      addSystemMessage(`WebSocket连接失败: ${error.message}`);
+    }
+  })();
+</script>
+
+</body>
+</html>

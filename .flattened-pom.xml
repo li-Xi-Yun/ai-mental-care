@@ -48,7 +48,7 @@
     <xxl-job.version>2.4.0</xxl-job.version>
     <spring-boot-admin.version>3.0.3</spring-boot-admin.version>
     <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
-    <netty.version>4.1.112.Final</netty.version>
+    <netty.version>4.1.121.Final</netty.version>
     <dynamic-ds.version>4.3.1</dynamic-ds.version>
     <hutool.version>5.8.35</hutool.version>
     <spring-boot.version>3.5.0</spring-boot.version>
@@ -96,8 +96,10 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-common</artifactId>
+        <artifactId>netty-bom</artifactId>
         <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.alibaba.nls</groupId>

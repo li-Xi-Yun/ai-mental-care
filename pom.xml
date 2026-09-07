@@ -86,7 +86,7 @@
         <!-- SMS 配置 -->
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
-        <netty.version>4.1.112.Final</netty.version>
+        <netty.version>4.1.121.Final</netty.version>
         <!-- 语音转写 ASR -->
         <alibaba.asr.version>2.2.19</alibaba.asr.version>
         <!-- 语音合成 TTS -->
@@ -123,8 +123,10 @@
 
             <dependency>
                 <groupId>io.netty</groupId>
-                <artifactId>netty-common</artifactId>
+                <artifactId>netty-bom</artifactId>
                 <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- 语音转写 ASR -->

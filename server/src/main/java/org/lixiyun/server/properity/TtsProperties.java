@@ -53,6 +53,16 @@ public class TtsProperties {
     private String voice = "siyue";
 
     /**
+     * 输出音频格式, 支持WAV和MP3格式
+     */
+    private String format;
+
+    /**
+     * 采样率，支持8K、16K、24K、48K采样率
+     */
+    private int sampleRate;
+
+    /**
      * 音量，范围0~100
      */
     private int volume = 50;

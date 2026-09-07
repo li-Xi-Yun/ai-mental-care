@@ -25,7 +25,7 @@ public class AccountController {
     private final UserAccountService userAccountService;
 
     @PostMapping("/register")
-    @Operation(summary = "用户注册", description = "用户通过邮箱号验证并进行注册")
+    @Operation(summary = "用户注册", description = "用户通过普通验证码验证并进行注册")
     public Result<?> register(@RequestBody @Validated RegisterUserDTO registerUser){
         log.info("用户注册：{}", registerUser);
         userAccountService.register(registerUser);

@@ -206,6 +206,8 @@ spring:
 
 mybatis:
   mapper-locations: classpath:mapper/**.xml
+  # 配置 MyBatis-Plus 的类型别名包
+  # 用于自动扫描和注册实体类
   type-aliases-package: ${mybatis-package}
   configuration:
     map-underscore-to-camel-case: true
@@ -407,7 +409,9 @@ asr:
       app-key: ${asr.nls.app-key}
       access-key-id: ${asr.nls.access-key-id}
       access-key-secret: ${asr.nls.access-key-secret}
+    # 网关地址
       gateway-url: ${asr.nls.gateway-url}
+      # Token刷新间隔(小时)
       token-refresh-hours: ${asr.nls.token-refresh-hours}
 
 tts:
@@ -415,16 +419,29 @@ tts:
     app-key: ${tts.nls.app-key}
     access-key-id: ${tts.nls.access-key-id}
     access-key-secret: ${tts.nls.access-key-secret}
+    # 网关地址
     gateway-url: ${tts.nls.gateway-url}
+    # Token刷新间隔(小时)
     token-refresh-hours: ${tts.nls.token-refresh-hours}
+    # 发音人
     voice: ${tts.nls.voice}
+    # 音量
     volume: ${tts.nls.volume}
+    # 语调
     pitch-rate: ${tts.nls.pitch-rate}
+    # 语速
     speech-rate: ${tts.nls.speech-rate}
+    # 输出音频格式, 支持WAV和MP3格式
+    format: ${tts.nls.format}
+    # 采样率，支持8K、16K、24K、48K采样率
+    sample-rate: ${tts.nls.sample-rate}
 
 weather:
+  # 天气接口地址
   api-url: ${weather.api-url}
+  # 应用ID
   id: ${weather.id}
+  # 应用Key
   key: ${weather.key}
 
 skill:
