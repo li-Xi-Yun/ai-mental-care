@@ -87,10 +87,12 @@ public class ConversationWebSocketManager {
      * @param response       消息内容
      */
     private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, String response) {
+        log.debug("[WebSocket] 发送消息，用户ID：{}，目标：{}/{}，消息长度：{}", userId, webSocketId, conversationId, response != null ? response.length() : 0);
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
     }
 
     private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, Object payload) {
+        log.debug("[WebSocket] 发送消息(Object)，用户ID：{}，目标：{}/{}，payload类型：{}", userId, webSocketId, conversationId, payload != null ? payload.getClass().getSimpleName() : "null");
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, payload);
     }
 

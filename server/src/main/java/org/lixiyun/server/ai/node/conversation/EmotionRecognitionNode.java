@@ -1,5 +1,6 @@
 package org.lixiyun.server.ai.node.conversation;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
@@ -9,13 +10,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.server.ai.model.conversation.EmotionRecognitionModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -35,9 +38,9 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "emotionRecognitionNode";
 
     private final EmotionRecognitionModel emotionRecognitionModel;
-
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
+    private final EmotionAnalysisMapper emotionAnalysisMapper;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
@@ -45,7 +48,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         return null;
     }
 
-    public String apply(ConversationProcessContextBO processContext) {
+    public EmotionRecognitionModel.EmotionRecognitionResult apply(ConversationProcessContextBO processContext) {
         log.debug("情感识别节点-开始执行");
 
         Conversation conversation = processContext.getConversation();
@@ -55,13 +58,25 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
 
         String prompt = buildPrompt(conversation, conversationHistory, temporaryMessages, emotionAnalyses);
 
-        AssistantMessage call;
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+
+        EmotionRecognitionModel.EmotionRecognitionResult result;
         try {
-            call = emotionRecognitionModel.call(chatModel, prompt);
+            result = emotionRecognitionModel.callForResult(chatModel, prompt, aiNodeConfig);
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);
         }
-        return call.getText();
+
+        EmotionAnalysis emotionAnalysis = BeanUtil.copyProperties(result, EmotionAnalysis.class);
+        emotionAnalysis.setConversationId(conversation.getId());
+        emotionAnalysis.setUserId(conversation.getUserId());
+        emotionAnalysis.setRoundNum(conversation.getCurrentRound());
+
+        emotionAnalysisMapper.insert(emotionAnalysis);
+        log.info("情感识别节点-情绪分析结果已持久化，会话ID：{}，轮次：{}", conversation.getId(), conversation.getCurrentRound());
+
+        return result;
     }
 
     private String buildPrompt(Conversation conversation,

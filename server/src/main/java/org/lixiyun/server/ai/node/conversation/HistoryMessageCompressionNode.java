@@ -10,9 +10,11 @@ import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.message.enums.MessageType;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.conversation.HistoryMessageCompressionModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -34,8 +36,8 @@ public class HistoryMessageCompressionNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "historyMessageCompressionNode";
 
     private final HistoryMessageCompressionModel historyMessageCompressionModel;
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -48,9 +50,12 @@ public class HistoryMessageCompressionNode implements NodeActionWithConfig {
 
         String prompt = buildPrompt(conversation, historyMessages);
 
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+
         AssistantMessage call;
         try {
-            call = historyMessageCompressionModel.call(chatModel, prompt);
+            call = historyMessageCompressionModel.call(chatModel, prompt, aiNodeConfig);
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);
         }

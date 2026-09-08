@@ -33,9 +33,11 @@ public class ConversationProcessTokenManager {
         String processFlagField = ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG;
         String notProcessedValue = String.valueOf(ConversationCacheConstant.PROCESS_FLAG_NOT_PROCESSED);
         String processingValue = String.valueOf(ConversationCacheConstant.PROCESS_FLAG_PROCESSING);
+        log.debug("[令牌] 尝试获取处理令牌，会话ID：{}，缓存Key：{}", conversationId, cacheKey);
 
         try {
             Object currentFlag = RedisUtils.getCacheMapValue(cacheKey, processFlagField);
+            log.debug("[令牌] 当前处理标识：{}，会话ID：{}", currentFlag, conversationId);
 
             Object expectValue = (currentFlag == null || notProcessedValue.equals(currentFlag.toString()))
                     ? currentFlag : null;
@@ -52,6 +54,7 @@ public class ConversationProcessTokenManager {
                     log.debug("成功获取处理令牌并设置为处理中，会话ID：{}", conversationId);
                     return true;
                 }
+                log.debug("[令牌] CAS操作失败，expectValue：{}，会话ID：{}", expectValue, conversationId);
             }
 
             log.debug("会话正在处理中或已处理，跳过，当前标识：{}，会话ID：{}", currentFlag, conversationId);
@@ -71,6 +74,7 @@ public class ConversationProcessTokenManager {
     public void clearProcessingFlag(Long conversationId) {
         try {
             String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+            log.debug("[令牌] 清理处理标识，会话ID：{}，缓存Key：{}", conversationId, cacheKey);
             RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG, ConversationCacheConstant.PROCESS_FLAG_NOT_PROCESSED);
             log.debug("清理模型处理标识成功，会话ID：{}", conversationId);
         } catch (Exception e) {
@@ -89,6 +93,7 @@ public class ConversationProcessTokenManager {
         try {
             String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
             LocalDateTime expireTime = LocalDateTime.now().plusSeconds(ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS);
+            log.debug("[令牌] 重新加入ZSet队列，会话ID：{}，ZSetKey：{}，过期时间：{}", conversationId, zSetKey, expireTime);
 
             RedisUtils.addToScoredSortedSet(zSetKey, expireTime, String.valueOf(conversationId));
             RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);

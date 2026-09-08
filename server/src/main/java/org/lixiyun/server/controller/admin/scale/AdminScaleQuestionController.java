@@ -14,7 +14,6 @@ import org.lixiyun.common.validation.group.UpdateGroup;
 import org.lixiyun.pojo.dto.user.scale.ScaleQuestionDTO;
 import org.lixiyun.pojo.vo.user.scale.ScaleQuestionVO;
 import org.lixiyun.server.service.admin.AdminScaleQuestionService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +32,7 @@ public class AdminScaleQuestionController {
     private final AdminScaleQuestionService adminScaleQuestionService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('scale:question:create')")
+//    @PreAuthorize("hasAuthority('scale:question:create')")
     @Operation(summary = "创建题目及选项", description = "级联创建题目和选项")
     public Result<?> createQuestionWithOptions(@RequestBody @Validated(AddGroup.class) ScaleQuestionDTO scaleQuestionDTO) {
         log.info("创建题目及选项，请求数据: {}", scaleQuestionDTO);
@@ -42,7 +41,7 @@ public class AdminScaleQuestionController {
     }
 
     @GetMapping("/list")
-    @PreAuthorize("hasAuthority('scale:question:list')")
+//    @PreAuthorize("hasAuthority('scale:question:list')")
     @Operation(summary = "分页查询量表题目列表", description = "分页展示指定量表下的所有题目及选项，量表需启用且未删除")
     public Result<PageResult<ScaleQuestionVO>> listQuestionsWithOptions(
             @RequestParam @Parameter(description = "量表ID", required = true) @NotNull Long scaleId,
@@ -55,7 +54,7 @@ public class AdminScaleQuestionController {
     }
 
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAuthority('scale:question:delete')")
+//    @PreAuthorize("hasAuthority('scale:question:delete')")
     @Operation(summary = "删除题目及选项", description = "级联删除题目和选项")
     public Result<?> deleteQuestionWithOptions(
             @PathVariable @Parameter(description = "题目ID") @NotNull Long questionId,
@@ -66,7 +65,7 @@ public class AdminScaleQuestionController {
     }
 
     @PutMapping("/{questionId}")
-    @PreAuthorize("hasAuthority('scale:question:update')")
+//    @PreAuthorize("hasAuthority('scale:question:update')")
     @Operation(summary = "修改题目数据", description = "仅修改题目数据信息，包含选项")
     public Result<?> updateQuestionMetadata(
             @PathVariable @Parameter(description = "题目ID") @NotNull Long questionId,

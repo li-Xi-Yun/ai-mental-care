@@ -47,7 +47,9 @@ public class ConversationRepository {
      * @return 会话实体，不存在时返回{@code null}
      */
     public Conversation getConversationById(Long conversationId) {
-        return conversationMapper.selectById(conversationId);
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        log.debug("[仓储] 根据ID查询会话，会话ID：{}，结果：{}", conversationId, conversation != null ? "存在" : "空");
+        return conversation;
     }
 
     /**
@@ -213,8 +215,10 @@ public class ConversationRepository {
      */
     @Transactional(rollbackFor = Exception.class)
     public void updateConversationState(Long conversationId, List<ConversationMemory> unprocessedMessages) {
+        log.debug("[仓储] 更新会话状态（事务），会话ID：{}，消息数：{}", conversationId, unprocessedMessages.size());
         updateMessagesToProcessedStatus(conversationId, unprocessedMessages);
         incrementConversationRound(conversationId);
+        log.debug("[仓储] 会话状态更新完成，会话ID：{}", conversationId);
     }
 
     /**
@@ -225,9 +229,11 @@ public class ConversationRepository {
      */
     public void updateMessagesToProcessedStatus(Long conversationId, List<ConversationMemory> unprocessedMessages) {
         if (unprocessedMessages.isEmpty()) {
+            log.debug("[仓储] 未处理消息列表为空，跳过状态更新，会话ID：{}", conversationId);
             return;
         }
 
+        log.debug("[仓储] 批量更新消息状态为已处理，数量：{}，会话ID：{}", unprocessedMessages.size(), conversationId);
         List<ConversationMemory> conversationMemoryList = unprocessedMessages.stream().map(item ->
                 ConversationMemory.builder()
                     .id(item.getId())
@@ -245,6 +251,7 @@ public class ConversationRepository {
      * @param conversationId 会话ID
      */
     public void incrementConversationRound(Long conversationId) {
+        log.debug("[仓储] 递增会话轮次，会话ID：{}", conversationId);
         conversationMapper.update(null,
                 new LambdaUpdateWrapper<Conversation>()
                         .eq(Conversation::getId, conversationId)
@@ -265,6 +272,10 @@ public class ConversationRepository {
      * @param contextSummaryRound  压缩时的轮次
      */
     public void updateConversationSummary(Long conversationId, String contextSummary, String analysisContextSummary, Integer contextSummaryRound) {
+        log.debug("[仓储] 更新语义压缩摘要，会话ID：{}，压缩轮次：{}，消息摘要长度：{}，分析摘要长度：{}",
+                conversationId, contextSummaryRound,
+                contextSummary != null ? contextSummary.length() : 0,
+                analysisContextSummary != null ? analysisContextSummary.length() : 0);
         conversationMapper.updateById(Conversation.builder()
                 .id(conversationId)
                 .contextSummary(contextSummary)
@@ -282,6 +293,7 @@ public class ConversationRepository {
      * @param name           新的会话名称
      */
     public void updateConversationName(Long conversationId, String name) {
+        log.debug("[仓储] 更新会话名称，会话ID：{}，新名称：{}", conversationId, name);
         conversationMapper.updateById(Conversation.builder()
                 .id(conversationId)
                 .name(name)

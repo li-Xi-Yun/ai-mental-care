@@ -89,6 +89,9 @@ public class ConversationStreamHolder {
      */
     public boolean hasActiveStream(Long conversationId) {
         Disposable disposable = activeStreams.get(conversationId);
-        return disposable != null && !disposable.isDisposed();
+        boolean active = disposable != null && !disposable.isDisposed();
+        log.debug("[流持有器] 检查活跃流，会话ID：{}，存在记录：{}，已disposed：{}，活跃：{}",
+                conversationId, disposable != null, disposable != null && disposable.isDisposed(), active);
+        return active;
     }
 }

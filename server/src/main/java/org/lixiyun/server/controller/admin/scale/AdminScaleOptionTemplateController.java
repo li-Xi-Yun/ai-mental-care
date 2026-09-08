@@ -12,7 +12,6 @@ import org.lixiyun.common.validation.group.UpdateGroup;
 import org.lixiyun.pojo.dto.admin.scale.ScaleOptionTemplateDTO;
 import org.lixiyun.pojo.vo.admin.scale.ScaleOptionTemplateVO;
 import org.lixiyun.server.service.admin.AdminScaleOptionTemplateService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +32,7 @@ public class AdminScaleOptionTemplateController {
     private final AdminScaleOptionTemplateService adminScaleOptionTemplateService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('scale:option-template:create')")
+//    @PreAuthorize("hasAuthority('scale:option-template:create')")
     @Operation(summary = "创建选项模板", description = "创建量表选项模板")
     public Result<Void> createTemplate(@Parameter(description = "选项模板信息") @RequestBody @Validated(AddGroup.class) List<ScaleOptionTemplateDTO> dtoList) {
         log.info("创建选项模板：{}", dtoList);
@@ -42,7 +41,7 @@ public class AdminScaleOptionTemplateController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('scale:option-template:list')")
+//    @PreAuthorize("hasAuthority('scale:option-template:list')")
     @Operation(summary = "查询选项模板列表", description = "根据量表ID查询选项模板列表")
     public Result<List<ScaleOptionTemplateVO>> listTemplates(@Parameter(description = "量表ID") @RequestParam @NotNull Long scaleId) {
         log.info("查询选项模板列表，量表ID: {}", scaleId);
@@ -51,7 +50,7 @@ public class AdminScaleOptionTemplateController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('scale:option-template:update')")
+//    @PreAuthorize("hasAuthority('scale:option-template:update')")
     @Operation(summary = "更新选项模板", description = "更新量表选项模板")
     public Result<Void> updateTemplate(
             @Parameter(description = "更新的选项模板信息") @RequestBody @Validated(UpdateGroup.class) List<ScaleOptionTemplateDTO> dtoList) {
@@ -61,7 +60,7 @@ public class AdminScaleOptionTemplateController {
     }
 
     @DeleteMapping("/{templateId}")
-    @PreAuthorize("hasAuthority('scale:option-template:delete')")
+//    @PreAuthorize("hasAuthority('scale:option-template:delete')")
     @Operation(summary = "删除选项模板", description = "删除量表选项模板")
     public Result<Void> deleteTemplate(@Parameter(description = "选项模板ID") @PathVariable @NotNull Long templateId) {
         log.info("删除选项模板，templateId: {}", templateId);

@@ -10,7 +10,9 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.server.ai.model.diagnosis.knowlegde.QueryTransformLayerModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -80,9 +82,8 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "queryTransformLayerNode";
 
     private final QueryTransformLayerModel queryTransformLayerModel;
-
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     /**
      * 节点执行入口
@@ -121,7 +122,9 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(knowledgeMatchRequest, isFirstRun, symptomNeed, diagnosisNeed, interventionNeed);
         log.info("知识侧-查询变换层-构建用户提示词完成");
 
-        QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+        QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
 
         if (result == null) {
             log.error("知识侧-查询变换层-模型输出解析失败");

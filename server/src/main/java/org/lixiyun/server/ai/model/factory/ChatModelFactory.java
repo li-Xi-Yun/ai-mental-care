@@ -28,4 +28,12 @@ public class ChatModelFactory {
     @Qualifier("ollamaChatModel")
     private ChatModel ollamaChatModel;
 
+    public ChatModel getChatModel(ChatModelType type) {
+        return switch (type) {
+            case OLLAMA -> ollamaChatModel;
+            case DEEP_SEEK -> deepSeekChatModel;
+            case DASH_SCOPE -> dashScopeChatModel;
+        };
+    }
+
 }

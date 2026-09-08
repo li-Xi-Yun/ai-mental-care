@@ -43,6 +43,7 @@ public class ConversationCacheManager {
         log.info("开始会话缓存加载，会话ID：{}", conversationId);
 
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+        log.debug("[缓存] 构建缓存Key：{}，会话ID：{}", cacheKey, conversationId);
 
         if (checkCacheExists(cacheKey)) {
             log.debug("会话缓存数据已存在，跳过加载，会话ID：{}", conversationId);
@@ -51,6 +52,7 @@ public class ConversationCacheManager {
 
         log.debug("会话缓存不存在，从数据库查询，会话ID：{}", conversationId);
         Map<String, Object> conversationData = conversationRepository.queryConversationFullData(conversationId);
+        log.debug("从数据库查询到会话完整数据，字段数量：{}，会话ID：{}", conversationData.size(), conversationId);
 
         if (conversationData.isEmpty()) {
             log.warn("未查询到会话完整数据，会话ID：{}", conversationId);
@@ -164,12 +166,15 @@ public class ConversationCacheManager {
     public void refreshMetadata(Long conversationId) {
         try {
             String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+            log.debug("[缓存] 刷新元数据，缓存Key：{}，会话ID：{}", cacheKey, conversationId);
 
             Conversation conversation = conversationRepository.getConversationById(conversationId);
             if (conversation != null) {
                 RedisUtils.setCacheMapValue(cacheKey, ConversationCacheConstant.HASH_FIELD_METADATA, conversation);
 
                 log.debug("保存元数据和时间戳成功，当前轮次：{}，会话ID：{}", conversation.getCurrentRound(), conversationId);
+            } else {
+                log.debug("[缓存] 刷新元数据时会话实体为空，跳过更新，会话ID：{}", conversationId);
             }
         } catch (Exception e) {
             log.error("保存元数据失败，会话ID：{}", conversationId, e);
@@ -183,6 +188,7 @@ public class ConversationCacheManager {
      * @param conversation   最新的会话实体
      */
     public void updateCacheMetadata(Long conversationId, Conversation conversation) {
+        log.debug("[缓存] 更新缓存元数据，会话ID：{}，当前轮次：{}", conversationId, conversation != null ? conversation.getCurrentRound() : "null");
         updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA, conversation);
     }
 
@@ -194,6 +200,7 @@ public class ConversationCacheManager {
      * @param value          最新的值
      */
     public void updateCacheMapValue(Long conversationId, String hKey, Object value) {
+        log.debug("[缓存] 更新缓存字段，会话ID：{}，字段：{}，值类型：{}", conversationId, hKey, value != null ? value.getClass().getSimpleName() : "null");
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
         RedisUtils.setCacheMapValue(cacheKey, hKey, value);
         expire(conversationId, ConversationCacheConstant.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
@@ -206,7 +213,9 @@ public class ConversationCacheManager {
      * @return 会话实体
      */
     public Conversation getCacheMetadata(Long conversationId) {
-        return (Conversation) getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA);
+        Conversation metadata = (Conversation) getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA);
+        log.debug("[缓存] 获取缓存元数据，会话ID：{}，结果：{}", conversationId, metadata != null ? "存在" : "空");
+        return metadata;
     }
 
     /**
@@ -218,7 +227,9 @@ public class ConversationCacheManager {
      */
     public Object getCacheMapValue(Long conversationId, String hKey) {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
-        return RedisUtils.getCacheMapValue(cacheKey, hKey);
+        Object value = RedisUtils.getCacheMapValue(cacheKey, hKey);
+        log.debug("[缓存] 获取缓存字段，会话ID：{}，字段：{}，值存在：{}", conversationId, hKey, value != null);
+        return value;
     }
 
     /**
@@ -250,6 +261,7 @@ public class ConversationCacheManager {
      */
     public void expire(Long conversationId, long conversationCacheExpireSeconds, TimeUnit timeUnit) {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+        log.debug("[缓存] 设置过期时间，会话ID：{}，Key：{}，过期：{}{}", conversationId, cacheKey, conversationCacheExpireSeconds, timeUnit);
         RedisUtils.expire(cacheKey, conversationCacheExpireSeconds, timeUnit);
     }
 
@@ -261,6 +273,7 @@ public class ConversationCacheManager {
      */
     public void saveMessageToZSet(Long conversationId, LocalDateTime messageTime) {
         String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
+        log.debug("[缓存] 保存消息到ZSet，会话ID：{}，ZSetKey：{}，score：{}", conversationId, zSetKey, messageTime);
         RedisUtils.addToScoredSortedSet(zSetKey, messageTime, String.valueOf(conversationId));
         RedisUtils.expire(zSetKey, ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS, TimeUnit.SECONDS);
     }
@@ -272,6 +285,7 @@ public class ConversationCacheManager {
      */
     public void removeCacheZSetValue(Long conversationId) {
         String zSetKey = ConversationCacheConstant.CONVERSATION_MESSAGE_ZSET_KEY_PREFIX;
+        log.debug("[缓存] 从ZSet移除会话，会话ID：{}，ZSetKey：{}", conversationId, zSetKey);
         RedisUtils.removeFromScoredSortedSet(zSetKey, String.valueOf(conversationId));
     }
 }

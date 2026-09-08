@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 
 /**
  * AI诊断节点配置表(AiNodeConfig)实体类
+ * <p>
+ * 模型类型在 org.lixiyun.server.ai.model.factory.ChatModelType 中定义
  *
  * @author lixiyun
  * @since 2026-09-07
@@ -26,16 +28,10 @@ public class AiNodeConfig implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 启用 */
     public static final int ENABLED_YES = 1;
+    /** 禁用 */
     public static final int ENABLED_NO = 0;
-
-    public static final String MODEL_TYPE_DEEP_SEEK = "DEEP_SEEK";
-    public static final String MODEL_TYPE_OLLAMA = "OLLAMA";
-    public static final String MODEL_TYPE_DASH_SCOPE = "DASH_SCOPE";
-
-    public static final String NODE_GROUP_PROCESS = "process";
-    public static final String NODE_GROUP_INPUT = "input";
-    public static final String NODE_GROUP_KNOWLEDGE = "knowledge";
 
     /** 自增主键ID */
     @TableId(type = IdType.AUTO)
@@ -53,8 +49,8 @@ public class AiNodeConfig implements Serializable {
     /** 系统提示词，定义模型角色、输出格式、字段说明、注意事项等 */
     private String systemPrompt;
 
-    /** 默认使用的模型类型：DEEP_SEEK/OLLAMA/DASH_SCOPE */
-    private String modelType;
+    /** 默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE */
+    private Integer modelType;
 
     /** DeepSeek模型名称 */
     private String deepseekModelName;

@@ -19,6 +19,8 @@ public class ProcessorHolder {
     private final Map<String, MessageProcessor> processors = new HashMap<>();
 
     public MessageProcessor getProcessor(String type) {
-        return processors.get(type);
+        MessageProcessor processor = processors.get(type);
+        log.debug("[处理器路由] 获取处理器，类型：{}，结果：{}", type, processor != null ? processor.getClass().getSimpleName() : "null");
+        return processor;
     }
 }

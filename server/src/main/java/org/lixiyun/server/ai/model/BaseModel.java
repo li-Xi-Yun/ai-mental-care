@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -51,9 +52,10 @@ public abstract class BaseModel implements Model {
      * 获取系统提示词
      * <p>定义模型的角色、职责、输出格式等约束信息，作为System Message注入对话上下文</p>
      *
+     * @param config 节点配置，可为null（使用默认值）
      * @return 系统提示词文本
      */
-    protected abstract String getSystemPrompt();
+    protected abstract String getSystemPrompt(AiNodeConfig config);
 
     /**
      * 获取Agent名称
@@ -75,9 +77,10 @@ public abstract class BaseModel implements Model {
      * 构建Ollama模型的ChatOptions配置
      * <p>针对Ollama本地部署模型的推理参数配置，包括温度、采样策略、上下文长度等</p>
      *
+     * @param config 节点配置，可为null（使用默认值）
      * @return Ollama模型的ChatOptions实例
      */
-    protected ChatOptions buildOllamaCompanionOptions(){
+    protected ChatOptions buildOllamaCompanionOptions(AiNodeConfig config){
         return null;
     }
 
@@ -85,9 +88,10 @@ public abstract class BaseModel implements Model {
      * 构建DashScope模型的ChatOptions配置
      * <p>针对阿里云DashScope云端模型的推理参数配置，包括温度、采样策略、思维链等</p>
      *
+     * @param config 节点配置，可为null（使用默认值）
      * @return DashScope模型的ChatOptions实例
      */
-    protected ChatOptions buildDashScopeCompanionOptions(){
+    protected ChatOptions buildDashScopeCompanionOptions(AiNodeConfig config){
         return null;
     }
 
@@ -95,9 +99,10 @@ public abstract class BaseModel implements Model {
      * 构建DeepSeek模型的ChatOptions配置
      * <p>针对DeepSeek云端模型的推理参数配置，包括温度、采样策略、JSON输出格式等</p>
      *
+     * @param config 节点配置，可为null（使用默认值）
      * @return DeepSeek模型的ChatOptions实例
      */
-    protected ChatOptions buildDeepSeekCompanionOptions(){
+    protected ChatOptions buildDeepSeekCompanionOptions(AiNodeConfig config){
         return null;
     }
 
@@ -105,9 +110,10 @@ public abstract class BaseModel implements Model {
      * 构建默认ChatOptions配置
      * <p>当ChatModel实例不属于Ollama/DashScope/DeepSeek时的兜底配置</p>
      *
+     * @param config 节点配置，可为null（使用默认值）
      * @return 默认ChatOptions实例
      */
-    protected abstract ChatOptions buildDefaultCompanionOptions();
+    protected abstract ChatOptions buildDefaultCompanionOptions(AiNodeConfig config);
 
     // ==================== 输出类型（默认null表示非固定JSON体） ====================
 
@@ -136,11 +142,12 @@ public abstract class BaseModel implements Model {
      *
      * @param chatModel  具体的ChatModel实例（Ollama/DashScope/DeepSeek等）
      * @param userPrompt 用户提示词
+     * @param config     节点配置，可为null（使用默认值）
      * @return 模型响应的AssistantMessage
      * @throws GraphRunnerException Agent执行异常
      */
-    protected AssistantMessage doCall(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return buildAgent(chatModel).call(userPrompt);
+    protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return buildAgent(chatModel, config).call(userPrompt);
     }
 
     /**
@@ -152,11 +159,12 @@ public abstract class BaseModel implements Model {
      *
      * @param chatModel  具体的ChatModel实例
      * @param userPrompt 用户提示词
+     * @param config     节点配置，可为null（使用默认值）
      * @return 模型响应的NodeOutput流
      * @throws GraphRunnerException Agent执行异常
      */
-    protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return buildAgent(chatModel).stream(userPrompt);
+    protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return buildAgent(chatModel, config).stream(userPrompt);
     }
 
     /**
@@ -169,14 +177,15 @@ public abstract class BaseModel implements Model {
      *
      * @param chatModel  具体的ChatModel实例
      * @param userPrompt 用户提示词
+     * @param config     节点配置，可为null（使用默认值）
      * @param <T>        结果类型，由子类的{@link #getOutputType}决定
      * @return 反序列化后的结果对象
      * @throws GraphRunnerException           Agent执行异常
      * @throws UnsupportedOperationException 如果{@link #getOutputType}返回null（非固定JSON体输出）
      */
     @SuppressWarnings("unchecked")
-    protected <T> T doCallForResult(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        AssistantMessage message = doCall(chatModel, userPrompt);
+    protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        AssistantMessage message = doCall(chatModel, userPrompt, config);
         return (T) deserializeResult(message);
     }
 
@@ -191,11 +200,12 @@ public abstract class BaseModel implements Model {
      * </p>
      *
      * @param chatModel 具体的ChatModel实例
+     * @param config    节点配置，可为null（使用默认值）
      * @return 构建完成的ReactAgent实例
      */
-    protected ReactAgent buildAgent(ChatModel chatModel) {
-        com.alibaba.cloud.ai.graph.agent.Builder builder = reactAgentBuilder(chatModel)
-                .systemPrompt(getSystemPrompt());
+    protected ReactAgent buildAgent(ChatModel chatModel, AiNodeConfig config) {
+        com.alibaba.cloud.ai.graph.agent.Builder builder = reactAgentBuilder(chatModel, config)
+                .systemPrompt(getSystemPrompt(config));
         Class<?> outputType = getOutputType();
         if (outputType != null) {
             builder.outputType(outputType);
@@ -235,10 +245,11 @@ public abstract class BaseModel implements Model {
      * </p>
      *
      * @param chatModel 具体的ChatModel实例，不可为null
+     * @param config    节点配置，可为null（使用默认值）
      * @return 已配置模型/名称/描述/ChatOptions的ReactAgent Builder
      * @throws BusinessException 如果chatModel为null，抛出{@link ConversationExceptionEnum#MODEL_NOT_EXIST}
      */
-    public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel) {
+    public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel, AiNodeConfig config) {
         if (chatModel == null) {
             throw new BusinessException(ConversationExceptionEnum.MODEL_NOT_EXIST);
         }
@@ -246,7 +257,7 @@ public abstract class BaseModel implements Model {
                 .model(chatModel)
                 .name(getAgentName())
                 .description(getAgentDescription())
-                .chatOptions(chatOptions(chatModel))
+                .chatOptions(chatOptions(chatModel, config))
                 .enableLogging(false);
     }
 
@@ -255,25 +266,26 @@ public abstract class BaseModel implements Model {
      * <p>
      * 支持的模型类型路由：
      * <ul>
-     *     <li>{@link OllamaChatModel} → {@link #buildOllamaCompanionOptions()}</li>
-     *     <li>{@link DashScopeChatModel} → {@link #buildDashScopeCompanionOptions()}</li>
-     *     <li>{@link DeepSeekChatModel} → {@link #buildDeepSeekCompanionOptions()}</li>
-     *     <li>其他 → {@link #buildDefaultCompanionOptions()}</li>
+     *     <li>{@link OllamaChatModel} → {@link #buildOllamaCompanionOptions(AiNodeConfig)}</li>
+     *     <li>{@link DashScopeChatModel} → {@link #buildDashScopeCompanionOptions(AiNodeConfig)}</li>
+     *     <li>{@link DeepSeekChatModel} → {@link #buildDeepSeekCompanionOptions(AiNodeConfig)}</li>
+     *     <li>其他 → {@link #buildDefaultCompanionOptions(AiNodeConfig)}</li>
      * </ul>
      * </p>
      *
      * @param chatModel 具体的ChatModel实例
+     * @param config    节点配置，可为null（使用默认值）
      * @return 与模型类型匹配的ChatOptions实例
      */
-    protected ChatOptions chatOptions(ChatModel chatModel) {
+    protected ChatOptions chatOptions(ChatModel chatModel, AiNodeConfig config) {
         if (chatModel instanceof OllamaChatModel) {
-            return buildOllamaCompanionOptions();
+            return buildOllamaCompanionOptions(config);
         } else if (chatModel instanceof DashScopeChatModel) {
-            return buildDashScopeCompanionOptions();
+            return buildDashScopeCompanionOptions(config);
         } else if (chatModel instanceof DeepSeekChatModel) {
-            return buildDeepSeekCompanionOptions();
+            return buildDeepSeekCompanionOptions(config);
         } else {
-            return buildDefaultCompanionOptions();
+            return buildDefaultCompanionOptions(config);
         }
     }
 }

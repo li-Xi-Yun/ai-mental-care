@@ -13,7 +13,6 @@ import org.lixiyun.common.validation.group.UpdateGroup;
 import org.lixiyun.pojo.dto.admin.scale.ScaleOptionBatchAddDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
 import org.lixiyun.server.service.admin.AdminScaleOptionService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +33,7 @@ public class AdminScaleOptionController {
     private final AdminScaleOptionService adminScaleOptionService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('scale:option:create')")
+//    @PreAuthorize("hasAuthority('scale:option:create')")
     @Operation(summary = "批量新增选项", description = "为指定题目批量新增选项，需要验证题目是否存在")
     public Result<Void> batchAddOptions(
             @Parameter(description = "批量新增选项信息") @RequestBody @Validated(AddGroup.class) ScaleOptionBatchAddDTO addDTO) {
@@ -44,7 +43,7 @@ public class AdminScaleOptionController {
     }
 
     @DeleteMapping
-    @PreAuthorize("hasAuthority('scale:option:delete')")
+//    @PreAuthorize("hasAuthority('scale:option:delete')")
     @Operation(summary = "删除选项", description = "删除同一题目下的多个选项")
     public Result<Void> deleteOptions(
             @RequestParam @Parameter(description = "题目ID") @NotNull Long questionId,
@@ -55,7 +54,7 @@ public class AdminScaleOptionController {
     }
 
     @PutMapping("/update/{optionId}")
-    @PreAuthorize("hasAuthority('scale:option:update')")
+//    @PreAuthorize("hasAuthority('scale:option:update')")
     @Operation(summary = "更新选项", description = "更新选项的元数据信息")
     public Result<Void> updateOption(
             @PathVariable @Parameter(description = "选项ID") @NotNull Long optionId,

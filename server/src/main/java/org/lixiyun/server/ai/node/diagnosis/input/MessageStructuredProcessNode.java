@@ -15,7 +15,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtrac
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -54,8 +56,8 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
     private static final int ROUND_THRESHOLD = 3;
 
     private final MessageStructuredProcessModel messageStructuredProcessModel;
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -101,7 +103,9 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
         } else {
             log.info("输入侧-消息结构化处理-分支B-有效轮次({})达到阈值({})，调用大模型提取核心信息", validRoundCount, ROUND_THRESHOLD);
             String userPrompt = buildUserPrompt(validRounds);
-            CoreInfoExtractResult coreInfoExtractResult = messageStructuredProcessModel.callForResult(chatModel, userPrompt);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+            CoreInfoExtractResult coreInfoExtractResult = messageStructuredProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
             inputResult.setCoreInfoExtractResult(coreInfoExtractResult);
         }
 

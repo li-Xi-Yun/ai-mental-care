@@ -9,9 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.message.enums.MessageType;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.conversation.ConversationNameGenerationModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -34,8 +36,8 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "conversationNameGenerationNode";
 
     private final ConversationNameGenerationModel conversationNameGenerationModel;
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -47,9 +49,12 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
 
         String prompt = buildPrompt(temporaryMessages);
 
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+
         AssistantMessage call;
         try {
-            call = conversationNameGenerationModel.call(chatModel, prompt);
+            call = conversationNameGenerationModel.call(chatModel, prompt, aiNodeConfig);
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);
         }

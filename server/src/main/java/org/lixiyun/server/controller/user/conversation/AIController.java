@@ -39,7 +39,7 @@ public class AIController {
             - 如果传入会话ID，系统会验证会话有效性并返回当前轮次（在上次轮次基础上加一）
             - 返回的会话ID和轮次信息用于后续对话和前端状态管理
             """)
-    @RateLimit(type = RateLimit.RateLimitType.INTERFACE, key = "user-text", maxRequests = 1, windowSizeInMillis = 2000)
+    @RateLimit(type = RateLimit.RateLimitType.INTERFACE, key = "user-text", maxRequests = 1, windowSizeInMillis = 200)
     public Result<UserMessageSendVO> sendUserMessage(@RequestBody @Validated UserMessageSendDTO userMessageSendDTO) {
         log.info("接收用户消息发送请求：{}", userMessageSendDTO);
         UserMessageSendVO result = aiChatService.sendUserMessage(userMessageSendDTO);

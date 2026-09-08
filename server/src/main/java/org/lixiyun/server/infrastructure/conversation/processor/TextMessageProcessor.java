@@ -5,16 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.ai.model.conversation.TextMessageProcessorModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.springframework.ai.chat.model.ChatModel;
@@ -44,13 +46,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TextMessageProcessor implements MessageProcessor {
 
+    public static final String NODE_NAME = "textMessageProcessor";
+
     private final TextMessageProcessorModel textMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
     private final ConversationWebSocketManager conversationWebSocketManager;
     private final ConversationCacheManager conversationCacheManager;
-
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     /**
      * 处理文本类型的会话消息
@@ -76,9 +79,14 @@ public class TextMessageProcessor implements MessageProcessor {
         int currentRound = context.getConversation().getCurrentRound();
         Long userId = context.getConversation().getUserId();
         log.info("AI对话文本处理器-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
+        log.debug("[文本处理] 会话ID：{}，用户ID：{}，当前轮次：{}，历史消息数：{}，情绪分析数：{}",
+                conversationId, userId, currentRound,
+                context.getConversationHistory() != null ? context.getConversationHistory().size() : 0,
+                context.getEmotionAnalyses() != null ? context.getEmotionAnalyses().size() : 0);
 
         try {
             String prompt = buildPrompt(context);
+            log.debug("[文本处理] Prompt构建完成，长度：{}，会话ID：{}", prompt.length(), conversationId);
 
             AgentStreamProcessor processor = AgentStreamProcessorBuilder.create()
                     .withThinkAccumulate()
@@ -86,8 +94,13 @@ public class TextMessageProcessor implements MessageProcessor {
                     .withPersistence(conversationHistoryMessagesStorage, userId, conversationId, currentRound)
                     .withListener(buildListener(userId, conversationId, currentRound))
                     .build();
+            log.debug("[文本处理] AgentStreamProcessor构建完成，会话ID：{}", conversationId);
 
-            processor.process(textMessageProcessorModel.stream(chatModel, prompt))
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+            log.debug("[文本处理] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
+
+            processor.process(textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig))
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();
 
@@ -102,15 +115,18 @@ public class TextMessageProcessor implements MessageProcessor {
     }
 
     private StreamEventListener buildListener(Long userId, Long conversationId, int currentRound) {
+        log.debug("[文本处理] 构建流式监听器，用户ID：{}，会话ID：{}，轮次：{}", userId, conversationId, currentRound);
         return new StreamEventListener() {
             @Override
             public void onContentChunk(String text) {
+                log.debug("[文本处理] 收到内容分块，长度：{}，会话ID：{}", text != null ? text.length() : 0, conversationId);
                 conversationWebSocketManager.sendTextStream(userId, conversationId, text);
             }
 
             @Override
             public void onModelComplete(org.springframework.ai.chat.messages.AssistantMessage message) {
                 log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
+                log.debug("[文本处理] 模型输出完成，内容长度：{}，会话ID：{}", message.getText() != null ? message.getText().length() : 0, conversationId);
 
                 ConversationMemory finalMemory = ConversationMemory.builder()
                         .userId(userId)
@@ -127,6 +143,7 @@ public class TextMessageProcessor implements MessageProcessor {
     }
 
     private String buildPrompt(ConversationProcessContextBO context) {
+        log.debug("[文本处理] 开始构建Prompt");
         StringBuilder sb = new StringBuilder();
 
         if (context.getConversationHistory() != null && !context.getConversationHistory().isEmpty()) {
@@ -134,6 +151,7 @@ public class TextMessageProcessor implements MessageProcessor {
             context.getConversationHistory().forEach(msg ->
                     sb.append(MessageType.getDescription(msg.getType())).append("：").append(msg.getContent()).append("\n")
             );
+            log.debug("[文本处理] 拼接历史消息，数量：{}", context.getConversationHistory().size());
         }
 
         if (context.getEmotionAnalyses() != null && !context.getEmotionAnalyses().isEmpty()) {
@@ -141,17 +159,20 @@ public class TextMessageProcessor implements MessageProcessor {
             context.getEmotionAnalyses().forEach(analysis ->
                     sb.append("- ").append(analysis.toString()).append("\n")
             );
+            log.debug("[文本处理] 拼接情绪分析，数量：{}", context.getEmotionAnalyses().size());
         }
 
         if (context.getEmotionDiagnosis() != null) {
             sb.append("\n【历史心理诊断结果】\n");
             sb.append(context.getEmotionDiagnosis().toString()).append("\n");
+            log.debug("[文本处理] 拼接心理诊断结果");
         }
 
         sb.append("本次用户发送的消息为：");
         context.getTemporaryMessages().forEach(msg ->
                 sb.append(msg.getContent()).append("\n")
         );
+        log.debug("[文本处理] 拼接临时消息，数量：{}", context.getTemporaryMessages().size());
 
         return sb.toString();
     }
@@ -161,6 +182,7 @@ public class TextMessageProcessor implements MessageProcessor {
 
         try {
             List<ConversationMemory> existingHistory = (List<ConversationMemory>) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
+            log.debug("[文本处理] 获取现有历史消息数：{}，会话ID：{}", existingHistory != null ? existingHistory.size() : 0, conversationId);
 
             existingHistory.add(conversationMemory);
 

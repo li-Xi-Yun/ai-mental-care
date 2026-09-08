@@ -42,7 +42,7 @@ public class ConversationCleanupTask {
 
     private final String LUA_SCRIPT =
             "-- 1. 从ZSet中获取分数 ≤ 阈值的成员（带数量限制）\n" +
-                    "local expiredIds = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, tonumber(ARGV[2]))\n" +
+                    "local expiredIds = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', 0, ARGV[2])\n" +
                     "\n" +
                     "-- 2. 有命中则删除（原子操作）\n" +
                     "if #expiredIds > 0 then\n" +
@@ -90,7 +90,7 @@ public class ConversationCleanupTask {
         // 2. 转成UTC毫秒戳（和写入ZSet的转换逻辑完全统一）
         long currentUtcMilli = dateUtils.toUtcZoned(nowLocal).toInstant().toEpochMilli();
         // 3. 基于UTC时间计算过期阈值（阈值也是UTC毫秒）
-        long expireThreshold = currentUtcMilli - (ConversationCacheConstant.MESSAGE_ZSET_EXPIRE_SECONDS * 1000);
+        long expireThreshold = currentUtcMilli - (ConversationCacheConstant.MESSAGE_ZSET_READD_INTERVAL_SECONDS * 1000L);
 
         List<Object> result = RedisUtils.executeLuaScript(
                 LUA_SCRIPT,
@@ -104,7 +104,9 @@ public class ConversationCleanupTask {
                 .filter(Objects::nonNull)
                 .map(obj -> {
                     try {
+                        log.debug("原始值话ID：{}", obj);
                         return Long.valueOf(obj.toString().trim());
+
                     } catch (NumberFormatException e) {
                         log.warn("转换会话ID失败，原始值：{}", obj);
                         return null;
@@ -132,7 +134,7 @@ public class ConversationCleanupTask {
     }
 
     public void processConversationMessage(Long conversationId) {
-        log.info("开始处理会话消息（暂未实现），会话ID：{}", conversationId);
+        log.info("开始处理会话消息，会话ID：{}", conversationId);
         conversationMessageProcessor.processConversationMessage(conversationId);
     }
 

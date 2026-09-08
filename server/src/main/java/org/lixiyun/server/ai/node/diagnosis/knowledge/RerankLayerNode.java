@@ -16,7 +16,9 @@ import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.server.ai.model.diagnosis.knowlegde.RerankLayerModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.springframework.ai.chat.model.ChatModel;
@@ -168,9 +170,9 @@ public class RerankLayerNode implements NodeActionWithConfig {
             ⚠️ 以上内容为通用参考信息，不构成任何针对性干预方案。如有需要，请务必咨询专业心理健康服务提供者。
             """;
 
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final ChatModelFactory chatModelFactory;
     private final RerankLayerModel rerankLayerModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final InfraFileMapper infraFileMapper;
 
@@ -387,7 +389,9 @@ public class RerankLayerNode implements NodeActionWithConfig {
                 symptomSliceIdMap, diagnosisSliceIdMap, interventionSliceIdMap);
         log.info("知识侧-重排层节点-构建用户提示词完成");
 
-        RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+        RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
 
         if (rerankResult == null) {
             log.error("知识侧-重排层节点-模型输出解析失败");

@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.BaseModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -27,15 +28,14 @@ import java.util.List;
 @Component
 public class HistoryAnalysisCompressionModel extends BaseModel {
 
-    private final String deepseekModelName = "deepseek-chat";
-    private final String ollamaModelName = "qwen3:7b-chat-thinking";
-    private final String dashscopeModelName = "qwen-max";
+    private final String defaultDeepseekModelName = "deepseek-chat";
+    private final String defaultOllamaModelName = "qwen3:7b-chat-thinking";
+    private final String defaultDashscopeModelName = "qwen-max";
 
     /**
      * 系统提示词：定义AI的角色和行为准则（历史情绪分析压缩专家）
      */
-    // todo 之后要提取这个系统提示词到配置文件中
-    private final String systemPrompt = """
+    private final String defaultSystemPrompt = """
             Role: 历史情绪分析压缩专家
             Profile:
               description: 你是一个专注于心理健康对话的情绪分析摘要引擎，擅长从多条情绪分析记录中提取核心情绪变化趋势和关键心理特征。
@@ -56,12 +56,14 @@ public class HistoryAnalysisCompressionModel extends BaseModel {
               3. 在有限篇幅内准确概括用户的心理状态演变轨迹。
             """;
 
-    /** 最大生成token数 */
-    private static final int maxToken = 2000;
+    private final int defaultMaxToken = 2000;
 
     @Override
-    protected String getSystemPrompt() {
-        return systemPrompt;
+    protected String getSystemPrompt(AiNodeConfig config) {
+        if (config != null && config.getSystemPrompt() != null) {
+            return config.getSystemPrompt();
+        }
+        return defaultSystemPrompt;
     }
 
     @Override
@@ -75,116 +77,121 @@ public class HistoryAnalysisCompressionModel extends BaseModel {
     }
 
     @Override
-    protected ChatOptions buildOllamaCompanionOptions() {
+    protected ChatOptions buildOllamaCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getOllamaModelName() != null ? config.getOllamaModelName() : defaultOllamaModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.15;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.82;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Integer topK = config != null ? config.getTopK() : 20;
+        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.25;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+        Integer seed = config != null ? config.getSeed() : 42;
+
         return OllamaChatOptions.builder()
-
-                .model(ollamaModelName)
+                .model(modelName)
                 .keepAlive("30m")
-
-                .temperature(0.15)
-                .topK(20)
-                .topP(0.82)
+                .temperature(temperature)
+                .topK(topK)
+                .topP(topP)
                 .numPredict(maxToken)
-                .seed(42)
-
-                .repeatPenalty(1.25)
-                .frequencyPenalty(0.7)
-                .presencePenalty(0.3)
+                .seed(seed)
+                .repeatPenalty(repeatPenalty)
+                .frequencyPenalty(frequencyPenalty)
+                .presencePenalty(presencePenalty)
                 .repeatLastN(30)
                 .penalizeNewline(true)
-
                 .stop(List.of("\n\n\n", "```", "## ", "### ", "【", "】"))
                 .truncate(true)
                 .format(null)
-
                 .numCtx(8192)
                 .numThread(Math.max(2, Runtime.getRuntime().availableProcessors() / 2))
                 .numBatch(1024)
-
                 .mirostat(2)
                 .mirostatTau(2.5f)
                 .mirostatEta(0.1f)
-
                 .useMMap(true)
                 .useMLock(false)
                 .numGPU(-1)
                 .lowVRAM(false)
-
                 .build();
     }
 
     @Override
-    protected ChatOptions buildDashScopeCompanionOptions() {
+    protected ChatOptions buildDashScopeCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getDashscopeModelName() != null ? config.getDashscopeModelName() : defaultDashscopeModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.15;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.82;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Integer topK = config != null ? config.getTopK() : 20;
+        Integer seed = config != null ? config.getSeed() : 42;
+
         return DashScopeChatOptions.builder()
-
-                .model(dashscopeModelName)
-                .temperature(0.15)
-                .topP(0.82)
-                .topK(20)
-                .seed(42)
+                .model(modelName)
+                .temperature(temperature)
+                .topP(topP)
+                .topK(topK)
+                .seed(seed)
                 .maxToken(maxToken)
-
                 .repetitionPenalty(1.25)
-
                 .stop(List.of("\n\n\n", "```", "【", "】"))
                 .responseFormat(DashScopeResponseFormat.builder()
                         .type(DashScopeResponseFormat.Type.TEXT)
                         .build())
-
                 .enableThinking(false)
-
                 .enableSearch(false)
                 .stream(false)
                 .incrementalOutput(false)
                 .multiModel(false)
                 .vlHighResolutionImages(false)
-
                 .tools(null)
                 .toolChoice("none")
                 .internalToolExecutionEnabled(false)
                 .toolContext(java.util.Map.of())
-
                 .build();
     }
 
     @Override
-    protected ChatOptions buildDeepSeekCompanionOptions() {
+    protected ChatOptions buildDeepSeekCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getDeepseekModelName() != null ? config.getDeepseekModelName() : defaultDeepseekModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.15;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.82;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+
         return DeepSeekChatOptions.builder()
-
-                .model(deepseekModelName)
-                .temperature(0.15)
-                .topP(0.82)
+                .model(modelName)
+                .temperature(temperature)
+                .topP(topP)
                 .maxTokens(maxToken)
-
-                .frequencyPenalty(0.7)
-                .presencePenalty(0.3)
-
+                .frequencyPenalty(frequencyPenalty)
+                .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
                         .type(ResponseFormat.Type.TEXT)
                         .build())
-
                 .stop(List.of("\n\n\n", "```", "【", "】", "1.", "2.", "3."))
-
                 .logprobs(false)
                 .topLogprobs(null)
-
                 .tools(null)
                 .toolChoice("none")
                 .internalToolExecutionEnabled(false)
                 .toolContext(java.util.Map.of())
                 .toolCallbacks(java.util.List.of())
-
                 .build();
     }
 
     @Override
-    protected ChatOptions buildDefaultCompanionOptions() {
+    protected ChatOptions buildDefaultCompanionOptions(AiNodeConfig config) {
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.15;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+
         return ChatOptions.builder()
                 .topK(20)
                 .topP(0.82)
                 .frequencyPenalty(0.7)
                 .presencePenalty(0.3)
-                .temperature(0.15)
+                .temperature(temperature)
                 .maxTokens(maxToken)
                 .build();
     }
@@ -195,13 +202,13 @@ public class HistoryAnalysisCompressionModel extends BaseModel {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
-    public AssistantMessage call(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return doCall(chatModel, userPrompt);
+    public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doCall(chatModel, userPrompt, config);
     }
 
     @Override
-    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return doStream(chatModel, userPrompt);
+    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doStream(chatModel, userPrompt, config);
     }
 
 }

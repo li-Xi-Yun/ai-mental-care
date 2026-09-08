@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.BaseModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -34,13 +35,13 @@ import java.io.Serializable;
 @Component
 public class SocialFunctionImpactProcessModel extends BaseModel {
 
-    private final String deepseekModelName = "deepseek-chat";
-    private final String ollamaModelName = "qwen3:7b-chat-thinking";
-    private final String dashscopeModelName = "qwen-max";
+    private final String defaultDeepseekModelName = "deepseek-chat";
+    private final String defaultOllamaModelName = "qwen3:7b-chat-thinking";
+    private final String defaultDashscopeModelName = "qwen-max";
 
-    private final int maxToken = 2048;
+    private final int defaultMaxToken = 2048;
 
-    private final String systemPrompt = """
+    private final String defaultSystemPrompt = """
             你是一个心理健康领域的社会功能影响评估助手。你的任务是根据用户的对话内容，评估社会功能受损程度、识别受影响的具体领域并描述对日常生活的影响。
 
             ## 核心约束
@@ -75,8 +76,11 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
             """;
 
     @Override
-    protected String getSystemPrompt() {
-        return systemPrompt;
+    protected String getSystemPrompt(AiNodeConfig config) {
+        if (config != null && config.getSystemPrompt() != null) {
+            return config.getSystemPrompt();
+        }
+        return defaultSystemPrompt;
     }
 
     @Override
@@ -95,22 +99,32 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
     }
 
     @Override
-    protected ChatOptions buildOllamaCompanionOptions() {
+    protected ChatOptions buildOllamaCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getOllamaModelName() != null ? config.getOllamaModelName() : defaultOllamaModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.2;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.85;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Integer topK = config != null ? config.getTopK() : 30;
+        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+        Integer seed = config != null ? config.getSeed() : 42;
+
         return OllamaChatOptions.builder()
-                .model(ollamaModelName)
-                .temperature(0.2)
-                .topK(30)
-                .topP(0.85)
+                .model(modelName)
+                .temperature(temperature)
+                .topK(topK)
+                .topP(topP)
                 .numPredict(maxToken)
-                .repeatPenalty(1.2)
-                .frequencyPenalty(0.7)
-                .presencePenalty(0.3)
+                .repeatPenalty(repeatPenalty)
+                .frequencyPenalty(frequencyPenalty)
+                .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .numCtx(maxToken)
                 .numThread(Runtime.getRuntime().availableProcessors())
                 .format("json")
                 .truncate(true)
-                .seed(42)
+                .seed(seed)
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.05f)
@@ -122,13 +136,20 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
     }
 
     @Override
-    protected ChatOptions buildDashScopeCompanionOptions() {
+    protected ChatOptions buildDashScopeCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getDashscopeModelName() != null ? config.getDashscopeModelName() : defaultDashscopeModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.2;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.85;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Integer topK = config != null ? config.getTopK() : 40;
+        Integer seed = config != null ? config.getSeed() : 42;
+
         return DashScopeChatOptions.builder()
-                .model(dashscopeModelName)
-                .temperature(0.2)
-                .topP(0.85)
-                .topK(40)
-                .seed(42)
+                .model(modelName)
+                .temperature(temperature)
+                .topP(topP)
+                .topK(topK)
+                .seed(seed)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
                 .responseFormat(DashScopeResponseFormat.builder()
@@ -145,14 +166,21 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
     }
 
     @Override
-    protected ChatOptions buildDeepSeekCompanionOptions() {
+    protected ChatOptions buildDeepSeekCompanionOptions(AiNodeConfig config) {
+        String modelName = config != null && config.getDeepseekModelName() != null ? config.getDeepseekModelName() : defaultDeepseekModelName;
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.2;
+        double topP = config != null ? config.getTopP().doubleValue() : 0.85;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+
         return DeepSeekChatOptions.builder()
-                .model(deepseekModelName)
-                .temperature(0.2)
-                .topP(0.85)
+                .model(modelName)
+                .temperature(temperature)
+                .topP(topP)
                 .maxTokens(maxToken)
-                .frequencyPenalty(0.7)
-                .presencePenalty(0.3)
+                .frequencyPenalty(frequencyPenalty)
+                .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
                         .type(ResponseFormat.Type.JSON_OBJECT)
                         .build())
@@ -162,13 +190,16 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
     }
 
     @Override
-    protected ChatOptions buildDefaultCompanionOptions() {
+    protected ChatOptions buildDefaultCompanionOptions(AiNodeConfig config) {
+        double temperature = config != null ? config.getTemperature().doubleValue() : 0.4;
+        int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
+
         return ChatOptions.builder()
                 .topK(40)
                 .topP(0.9)
                 .frequencyPenalty(0.6)
                 .presencePenalty(0.2)
-                .temperature(0.4)
+                .temperature(temperature)
                 .maxTokens(maxToken)
                 .build();
     }
@@ -180,8 +211,8 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
     @Override
-    public AssistantMessage call(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return doCall(chatModel, userPrompt);
+    public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doCall(chatModel, userPrompt, config);
     }
 
     @Retryable(
@@ -190,13 +221,13 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
-    public SocialFunctionImpactResult callForResult(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return doCallForResult(chatModel, userPrompt);
+    public SocialFunctionImpactResult callForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doCallForResult(chatModel, userPrompt, config);
     }
 
     @Override
-    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt) throws GraphRunnerException {
-        return doStream(chatModel, userPrompt);
+    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doStream(chatModel, userPrompt, config);
     }
 
     @Data

@@ -11,9 +11,11 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.conversation.HistoryAnalysisCompressionModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -33,8 +35,8 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "historyAnalysisCompressionNode";
 
     private final HistoryAnalysisCompressionModel historyAnalysisCompressionModel;
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -47,9 +49,12 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
 
         String prompt = buildPrompt(conversation, emotionAnalyses);
 
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+
         AssistantMessage call;
         try {
-            call = historyAnalysisCompressionModel.call(chatModel, prompt);
+            call = historyAnalysisCompressionModel.call(chatModel, prompt, aiNodeConfig);
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);
         }

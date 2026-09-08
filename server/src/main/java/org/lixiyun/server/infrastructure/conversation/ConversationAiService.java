@@ -45,6 +45,7 @@ public class ConversationAiService {
      * @param processContext  会话处理上下文，包含历史消息等数据
      */
     public void checkAndTriggerSemanticCompression(Long conversationId, ConversationProcessContextBO processContext) {
+        log.debug("[语义压缩] 检查是否需要语义压缩，会话ID：{}", conversationId);
         List<ConversationMemory> conversationHistory = processContext.getConversationHistory();
 
         if (conversationHistory.isEmpty()) {
@@ -53,6 +54,7 @@ public class ConversationAiService {
         }
 
         int messageCount = conversationHistory.size();
+        log.debug("[语义压缩] 历史消息数量：{}，阈值：{}，会话ID：{}", messageCount, MAX_CONTEXT_MESSAGES, conversationId);
 
         if (messageCount > MAX_CONTEXT_MESSAGES) {
             log.info("历史消息数量（{}）超过阈值（{}），需要语义压缩，会话ID：{}", messageCount, MAX_CONTEXT_MESSAGES, conversationId);
@@ -75,6 +77,8 @@ public class ConversationAiService {
         List<ConversationMemory> historyMessages = processContext.getConversationHistory();
         Conversation conversation = processContext.getConversation();
         List<EmotionAnalysis> emotionAnalyses = processContext.getEmotionAnalyses();
+        log.debug("[语义压缩] 构建压缩BO，历史消息数：{}，情绪分析数：{}，当前轮次：{}，会话ID：{}",
+                historyMessages.size(), emotionAnalyses != null ? emotionAnalyses.size() : 0, conversation.getCurrentRound(), conversationId);
 
         HistoryCompressionBO historyCompressionBO = HistoryCompressionBO.builder()
                 .conversation(conversation)
@@ -82,10 +86,17 @@ public class ConversationAiService {
                 .emotionAnalyses(emotionAnalyses)
                 .build();
 
+        long startTime = System.currentTimeMillis();
         String historyMessageCompression = historyMessageCompressionNode.apply(historyCompressionBO);
+        log.debug("[语义压缩] 历史消息压缩完成，耗时：{}ms，摘要长度：{}，会话ID：{}",
+                System.currentTimeMillis() - startTime, historyMessageCompression != null ? historyMessageCompression.length() : 0, conversationId);
 
+        long startTime2 = System.currentTimeMillis();
         String historyAnalysisCompression = historyAnalysisCompressionNode.apply(historyCompressionBO);
+        log.debug("[语义压缩] 历史分析压缩完成，耗时：{}ms，摘要长度：{}，会话ID：{}",
+                System.currentTimeMillis() - startTime2, historyAnalysisCompression != null ? historyAnalysisCompression.length() : 0, conversationId);
 
+        log.debug("[语义压缩] 更新数据库压缩摘要，压缩轮次：{}，会话ID：{}", conversation.getCurrentRound(), conversationId);
         conversationRepository.updateConversationSummary(
                 conversationId,
                 historyMessageCompression,
@@ -94,7 +105,9 @@ public class ConversationAiService {
         );
 
         Conversation updatedConversation = conversationRepository.getConversationById(conversationId);
+        log.debug("[语义压缩] 查询更新后的会话实体，当前轮次：{}，会话ID：{}", updatedConversation != null ? updatedConversation.getCurrentRound() : "null", conversationId);
         conversationCacheManager.updateCacheMetadata(conversationId, updatedConversation);
+        log.debug("[语义压缩] 缓存元数据更新完成，会话ID：{}", conversationId);
     }
 
     /**
@@ -106,7 +119,14 @@ public class ConversationAiService {
      */
     public void analysisAndDiagnosis(Long conversationId, ConversationProcessContextBO processContext) {
         log.info("分析与诊断功能，会话ID：{}", conversationId);
+        log.debug("[分析诊断] 开始情绪识别，会话ID：{}", conversationId);
+        long startTime = System.currentTimeMillis();
         emotionRecognitionNode.apply(processContext);
+        log.debug("[分析诊断] 情绪识别完成，耗时：{}ms，会话ID：{}", System.currentTimeMillis() - startTime, conversationId);
+
+        log.debug("[分析诊断] 开始执行诊断图，会话ID：{}", conversationId);
+        long startTime2 = System.currentTimeMillis();
         diagnosisGraph.executeGraph(processContext);
+        log.debug("[分析诊断] 诊断图执行完成，耗时：{}ms，会话ID：{}", System.currentTimeMillis() - startTime2, conversationId);
     }
 }

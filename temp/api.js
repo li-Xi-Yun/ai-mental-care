@@ -22,7 +22,7 @@ class ChatAPI {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      const result = await response.json();
+      const result = parseJSONWithBigInt(await response.text());
 
       if (result.code !== 200 && result.code !== 0) {
         throw new Error(result.msg || '请求失败');

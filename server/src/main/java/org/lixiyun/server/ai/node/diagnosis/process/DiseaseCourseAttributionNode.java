@@ -14,8 +14,10 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtrac
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.KeyEventItem;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.server.ai.model.diagnosis.process.DiseaseCourseAttributionProcessModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -38,8 +40,8 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
     public static final String NODE_NAME = "diseaseCourseAttributionNode";
 
     private final DiseaseCourseAttributionProcessModel diseaseCourseAttributionProcessModel;
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
+    private final ChatModelFactory chatModelFactory;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -57,7 +59,9 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.info("诊断处理侧-病程归因组-构建用户提示词完成");
 
-        DiseaseCourseAttributionProcessModel.DiseaseCourseAttributionResult result = diseaseCourseAttributionProcessModel.callForResult(chatModel, userPrompt);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+        DiseaseCourseAttributionProcessModel.DiseaseCourseAttributionResult result = diseaseCourseAttributionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
 
         if (result == null) {
             log.error("诊断处理侧-病程归因组-模型输出解析失败");

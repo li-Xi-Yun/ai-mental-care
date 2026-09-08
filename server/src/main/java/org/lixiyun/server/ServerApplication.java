@@ -6,9 +6,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @EnableRetry // 开启重试功能
+@EnableScheduling // 开启定时任务功能
 @EnableTransactionManagement
 @MapperScan("org.lixiyun.server.mapper")
 @SpringBootApplication(scanBasePackages = {"org.lixiyun"})

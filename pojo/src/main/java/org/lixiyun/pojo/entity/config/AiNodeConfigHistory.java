@@ -1,10 +1,7 @@
 package org.lixiyun.pojo.entity.config;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
-import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,11 +42,11 @@ public class AiNodeConfigHistory implements Serializable {
     /** 修改后的系统提示词 */
     private String newSystemPrompt;
 
-    /** 修改前的模型类型 */
-    private String oldModelType;
+    /** 修改前的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE */
+    private Integer oldModelType;
 
-    /** 修改后的模型类型 */
-    private String newModelType;
+    /** 修改后的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE */
+    private Integer newModelType;
 
     /** 修改前的推理参数快照（temperature/topP/maxToken等） */
     @TableField(typeHandler = JacksonTypeHandler.class)
@@ -72,5 +69,6 @@ public class AiNodeConfigHistory implements Serializable {
     private LocalDateTime createdTime;
 
     /** 变更操作人用户ID */
+    @TableField(fill = FieldFill.INSERT)
     private Long createdBy;
 }

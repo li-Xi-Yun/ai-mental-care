@@ -5,5 +5,7 @@ ScaleExceptionEnum:1600
 FileExceptionEnum:1800
 SkillExceptionEnum:2000
 AIChatExceptionEnum:2200
+SymptomDictExceptionEnum:2400
+AiNodeConfigExceptionEnum:2600
 
 SystemExceptionEnum:10000

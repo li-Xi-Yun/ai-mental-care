@@ -17,7 +17,9 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.SymptomRawItem
 import org.lixiyun.pojo.entity.conversation.SymptomDict;
 import org.lixiyun.server.ai.model.diagnosis.input.SymptomNormalizeModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
-import org.lixiyun.server.ai.model.factory.InjectChatModel;
+import org.lixiyun.server.ai.model.factory.ChatModelFactory;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.springframework.ai.chat.model.ChatModel;
@@ -82,10 +84,10 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
     );
 
     private final SymptomNormalizeModel symptomNormalizeModel;
+    private final AiNodeConfigManager aiNodeConfigManager;
     private final SymptomDictMapper symptomDictMapper;
 
-    @InjectChatModel(ChatModelType.DEEP_SEEK)
-    private ChatModel chatModel;
+    private final ChatModelFactory chatModelFactory;
 
     /**
      * 节点主执行方法，编排完整的症状语义归一化处理流程
@@ -469,7 +471,9 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
                                  List<String> stillUnmatchedTexts) {
         String userPrompt = buildModelUserPrompt(unmatchedTexts, dictList);
         try {
-            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt, aiNodeConfig);
 
             if (modelOutput == null || modelOutput.getTermList() == null) {
                 log.warn("输入侧-语义归一化处理-模型输出为空，全部保留原文");

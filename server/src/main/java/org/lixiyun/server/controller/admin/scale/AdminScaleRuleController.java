@@ -12,7 +12,6 @@ import org.lixiyun.common.validation.group.UpdateGroup;
 import org.lixiyun.pojo.dto.user.scale.ScaleResultRuleDTO;
 import org.lixiyun.pojo.vo.user.scale.ScaleResultRuleVO;
 import org.lixiyun.server.service.admin.AdminScaleRuleService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +32,7 @@ public class AdminScaleRuleController {
     private final AdminScaleRuleService adminScaleRuleService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('scale:rule:create')")
+//    @PreAuthorize("hasAuthority('scale:rule:create')")
     @Operation(summary = "创建量表结果规则", description = "创建量表结果规则")
     public Result<Void> createRule(@Parameter(description = "规则信息") @RequestBody @Validated(AddGroup.class) ScaleResultRuleDTO dto) {
         log.info("创建规则：{}", dto);
@@ -42,7 +41,7 @@ public class AdminScaleRuleController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('scale:rule:list')")
+//    @PreAuthorize("hasAuthority('scale:rule:list')")
     @Operation(summary = "展示量表结果规则", description = "只展示规则本身, 不展示量表信息")
     public Result<List<ScaleResultRuleVO>> listRules(@Parameter(description = "量表ID") @RequestParam @NotNull Long scaleId) {
         log.info("查询规则列表，量表ID: {}", scaleId);
@@ -51,7 +50,7 @@ public class AdminScaleRuleController {
     }
 
     @PutMapping("/{ruleId}")
-    @PreAuthorize("hasAuthority('scale:rule:update')")
+//    @PreAuthorize("hasAuthority('scale:rule:update')")
     @Operation(summary = "修改量表结果规则", description = "只修改规则本身")
     public Result<Void> updateRule(
             @Parameter(description = "规则ID") @PathVariable @NotNull Long ruleId,
@@ -62,7 +61,7 @@ public class AdminScaleRuleController {
     }
 
     @DeleteMapping("/{ruleId}")
-    @PreAuthorize("hasAuthority('scale:rule:delete')")
+//    @PreAuthorize("hasAuthority('scale:rule:delete')")
     @Operation(summary = "删除量表结果规则", description = "只删除规则本身")
     public Result<Void> deleteRule(@Parameter(description = "规则ID") @PathVariable @NotNull Long ruleId) {
         log.info("删除规则，ruleId: {}", ruleId);

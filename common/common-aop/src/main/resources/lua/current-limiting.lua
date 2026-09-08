@@ -16,7 +16,7 @@ if currentCount < tonumber(ARGV[3]) then
     -- 4. 未超限：将当前请求添加到ZSET中（分数=时间戳，成员=唯一标识）
     redis.call('ZADD', KEYS[1], ARGV[1], ARGV[4])
     -- 5. 为KEY设置过期时间（避免冷数据永久占用内存）。过期时间应略大于窗口大小。
-    redis.call('EXPIRE', KEYS[1], (tonumber(ARGV[2]) / 1000) + 10) -- 窗口秒数 + 10秒缓冲
+    redis.call('EXPIRE', KEYS[1], math.floor(tonumber(ARGV[2]) / 1000) + 10) -- 窗口秒数 + 10秒缓冲
     return 1 -- 允许请求
 else
     return 0 -- 拒绝请求

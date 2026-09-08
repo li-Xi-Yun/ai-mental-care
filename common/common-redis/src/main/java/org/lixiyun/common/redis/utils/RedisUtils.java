@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.lixiyun.common.core.utils.DateUtils;
 import org.redisson.api.*;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
@@ -525,13 +526,13 @@ public class RedisUtils {
      * @return 脚本执行结果
      */
     public static <T> T executeLuaScript(String scriptContent, RScript.ReturnType returnType, List<String> keys, Object... args) {
-        RScript rScript = CLIENT.getScript();
+        RScript rScript = CLIENT.getScript(StringCodec.INSTANCE);
 
         return (T) rScript.eval(
                 RScript.Mode.READ_WRITE,
                 scriptContent,
                 returnType,
-                Collections.singletonList(keys),
+                new ArrayList<>(keys),
                 args
         );
     }
@@ -577,7 +578,7 @@ public class RedisUtils {
      * @param value 值（通常为会话ID等标识）
      */
     public static void addToScoredSortedSet(String key, double score, String value) {
-        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key, StringCodec.INSTANCE);
         scoredSortedSet.add(score, value);
     }
 
@@ -589,7 +590,7 @@ public class RedisUtils {
      * @return 是否成功移除
      */
     public static boolean removeFromScoredSortedSet(String key, String value) {
-        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key, StringCodec.INSTANCE);
         return scoredSortedSet.remove(value);
     }
 
@@ -600,7 +601,7 @@ public class RedisUtils {
      * @return 有序集合的所有值（按分数升序排列）
      */
     public static Collection<String> getScoredSortedSetValues(String key) {
-        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key, StringCodec.INSTANCE);
         return scoredSortedSet.readAll();
     }
 
@@ -613,7 +614,7 @@ public class RedisUtils {
      * @return 符合条件的值集合
      */
     public static Collection<String> getScoredSortedSetByScoreRange(String key, double startScore, double endScore) {
-        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key);
+        RScoredSortedSet<String> scoredSortedSet = CLIENT.getScoredSortedSet(key, StringCodec.INSTANCE);
         return scoredSortedSet.valueRange(startScore, true, endScore, true);
     }
 
