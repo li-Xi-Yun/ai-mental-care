@@ -100,8 +100,8 @@ public class AdminAiNodePromptServiceImpl implements AdminAiNodePromptService {
                 Map.entry("topK", oldConfig.getTopK() != null ? oldConfig.getTopK() : "null"),
                 Map.entry("frequencyPenalty", oldConfig.getFrequencyPenalty() != null ? oldConfig.getFrequencyPenalty() : "null"),
                 Map.entry("presencePenalty", oldConfig.getPresencePenalty() != null ? oldConfig.getPresencePenalty() : "null"),
-                Map.entry("repeatPenalty", oldConfig.getRepeatPenalty() != null ? oldConfig.getRepeatPenalty() : "null"),
-                Map.entry("seed", oldConfig.getSeed() != null ? oldConfig.getSeed() : "null"),
+                Map.entry("responseFormat", oldConfig.getResponseFormat() != null ? oldConfig.getResponseFormat() : "null"),
+                Map.entry("stopSequences", oldConfig.getStopSequences() != null ? oldConfig.getStopSequences() : "null"),
                 Map.entry("retryMaxAttempts", oldConfig.getRetryMaxAttempts()),
                 Map.entry("retryDelay", oldConfig.getRetryDelay()),
                 Map.entry("retryMultiplier", oldConfig.getRetryMultiplier())

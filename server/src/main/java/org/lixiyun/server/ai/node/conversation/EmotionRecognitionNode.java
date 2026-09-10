@@ -17,11 +17,14 @@ import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.server.ai.model.conversation.EmotionRecognitionModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
+import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +44,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
     private final AiNodeConfigManager aiNodeConfigManager;
     private final ChatModelFactory chatModelFactory;
     private final EmotionAnalysisMapper emotionAnalysisMapper;
+    private final ConversationCacheManager conversationCacheManager;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
@@ -57,6 +61,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         List<EmotionAnalysis> emotionAnalyses = processContext.getEmotionAnalyses();
 
         String prompt = buildPrompt(conversation, conversationHistory, temporaryMessages, emotionAnalyses);
+        log.debug("情感识别节点-构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -64,6 +69,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         EmotionRecognitionModel.EmotionRecognitionResult result;
         try {
             result = emotionRecognitionModel.callForResult(chatModel, prompt, aiNodeConfig);
+            log.debug("情感识别节点-模型返回结果：{}", result);
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);
         }
@@ -74,7 +80,23 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         emotionAnalysis.setRoundNum(conversation.getCurrentRound());
 
         emotionAnalysisMapper.insert(emotionAnalysis);
+        log.debug("情感识别节点-持久化数据：{}", emotionAnalysis);
         log.info("情感识别节点-情绪分析结果已持久化，会话ID：{}，轮次：{}", conversation.getId(), conversation.getCurrentRound());
+
+        try {
+            List<EmotionAnalysis> cachedEmotionAnalyses = (List<EmotionAnalysis>) conversationCacheManager.getCacheMapValue(
+                    conversation.getId(), ConversationCacheConstant.HASH_FIELD_EMOTION_ANALYSIS_LIST);
+            if (cachedEmotionAnalyses == null) {
+                cachedEmotionAnalyses = new ArrayList<>();
+            }
+            cachedEmotionAnalyses.add(emotionAnalysis);
+            conversationCacheManager.updateCacheMapValue(
+                    conversation.getId(), ConversationCacheConstant.HASH_FIELD_EMOTION_ANALYSIS_LIST, cachedEmotionAnalyses);
+            log.info("情感识别节点-情绪分析结果已追加至Redis缓存，会话ID：{}，轮次：{}，当前缓存条数：{}",
+                    conversation.getId(), conversation.getCurrentRound(), cachedEmotionAnalyses.size());
+        } catch (Exception e) {
+            log.error("情感识别节点-追加Redis缓存失败（不影响主流程），会话ID：{}，错误：{}", conversation.getId(), e.getMessage(), e);
+        }
 
         return result;
     }

@@ -70,6 +70,12 @@ public class AiNodeConfig implements Serializable {
     /** Top-P核采样参数，范围[0,1] */
     private BigDecimal topP;
 
+    /** 输出格式：0-自由文本(TEXT) 1-结构化JSON(JSON_OBJECT) */
+    private Integer responseFormat;
+
+    /** 停止序列，JSON数组格式存储，如["\n\n\n","```"] */
+    private String stopSequences;
+
     /** Top-K采样参数，限制候选词数量 */
     private Integer topK;
 
@@ -78,12 +84,6 @@ public class AiNodeConfig implements Serializable {
 
     /** 存在惩罚，增加新词出现概率 */
     private BigDecimal presencePenalty;
-
-    /** 重复惩罚（Ollama专用） */
-    private BigDecimal repeatPenalty;
-
-    /** 随机种子，固定种子可复现输出 */
-    private Integer seed;
 
     /** 重试最大次数 */
     private Integer retryMaxAttempts;

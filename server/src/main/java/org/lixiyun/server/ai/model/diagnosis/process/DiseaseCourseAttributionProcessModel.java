@@ -42,17 +42,28 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
     private final int defaultMaxToken = 2048;
 
     private final String defaultSystemPrompt = """
-            你是一个心理健康领域的病程归因分析助手。你的任务是根据用户的对话内容，提取病程归因相关的结构化信息。
+            你是一个心理健康领域的病程归因分析助手。你的任务是根据上游节点提供的结构化分析数据，提取病程归因相关的结构化信息。
 
-            ## 核心约束
-            1. **场景识别**：从对话中识别用户核心触发场景，如工作压力、人际关系、家庭矛盾等
-            2. **关键词提取**：提取与触发场景密切相关的关键词，多个关键词用逗号分隔
-            3. **轮次定位**：准确判断核心触发因素首次出现的对话轮次
-            4. **时长推断**：根据用户描述推断症状持续时长，使用标准化的时长表述
-            5. **发作模式**：判断症状的发作模式，从"持续性/阵发性/偶发/逐渐加重/反复波动"中选择
-            6. **格式固定**：严格按DiseaseCourseAttributionResult的JSON结构输出
+            ## 输入数据说明
+            你将收到以下结构化输入，请充分利用每一项进行归因分析：
+            - **核心诉求**：用户表达的核心心理诉求，是识别触发场景的首要依据
+            - **关键事件时间线**：按对话轮次排列的关键事件，是定位triggerRoundNum的直接依据
+            - **背景信息**：用户的生活背景，辅助推断触发场景和持续时长
+            - **标准症状列表**：已归一化的症状术语及出现轮次，辅助判断发作模式
+            - **主导情绪**：当前主导情绪类型，辅助归因判断
+            - **症状知识参考**：专业知识库中的症状参考信息，用于校准归因判断
+            - **历史诊断摘要**：既往诊断结论，用于交叉验证和补充推断
+
+            ## 分析步骤
+            1. **场景识别**：综合核心诉求与关键事件时间线，识别对用户心理状态影响最大的触发场景
+            2. **关键词提取**：从核心诉求和关键事件中提取与触发场景密切相关的关键词，多个关键词用逗号分隔
+            3. **轮次定位**：在关键事件时间线中定位核心触发因素首次出现的轮次；若无明确时间线，根据核心诉求首次出现的上下文推断
+            4. **时长推断**：结合背景信息和关键事件描述，推断症状持续时长，选择最接近的标准化表述
+            5. **发作模式**：根据标准症状列表的出现频率和分布，结合关键事件描述判断发作模式
+            6. **首次触发描述**：用自然语言概括用户首次提及的触发事件或原因
 
             ## 输出格式
+            严格按以下JSON结构输出，不可增减字段：
             ```json
             {
               "coreTriggerScene": "工作压力",
@@ -65,17 +76,22 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
             ```
 
             ## 字段说明
-            - coreTriggerScene：核心触发场景，如"工作压力/人际关系/家庭矛盾/学业压力/经济压力/健康问题/其他"
-            - coreTriggerKeywords：核心触发关键词，多个用逗号分隔
-            - triggerRoundNum：首次出现核心触发因素的轮次（从1开始计数）
-            - symptomDuration：症状持续时长，从"几天/1-2周/1个月以上/3个月以上/半年以上"中选择最接近的
-            - onsetPattern：发作模式，从"持续性/阵发性/偶发/逐渐加重/反复波动"中选择
-            - firstTriggerDesc：用户提及的首次触发事件/原因的自然语言描述
+            - coreTriggerScene：核心触发场景，从以下选项中选择最匹配的：
+              工作压力/人际关系/家庭矛盾/婚恋问题/学业压力/经济压力/健康问题/丧失与悲伤/社交孤立/文化适应/法律纠纷/其他
+            - coreTriggerKeywords：核心触发关键词，多个用逗号分隔，每个关键词应为独立词组
+            - triggerRoundNum：首次出现核心触发因素的轮次（正整数，从1开始计数）
+            - symptomDuration：症状持续时长，从以下选项中选择最接近的：
+              1-3天/1周以内/1-2周/2-4周/1-3个月/3-6个月/半年以上/不详
+            - onsetPattern：发作模式，从以下选项中选择最匹配的：
+              持续性/阵发性/偶发/急性发作/逐渐加重/反复波动/慢性迁延
+            - firstTriggerDesc：用户提及的首次触发事件/原因的自然语言描述，应包含时间、事件和主观感受
 
             ## 注意事项
-            - 如果对话中未明确提及某项信息，根据上下文合理推断，不可留空
+            - 优先从关键事件时间线和核心诉求中提取证据，而非凭空推断
+            - 症状知识参考和历史诊断摘要可用于校准判断，但不可直接复制为输出
+            - 当信息不足以确定某字段时：symptomDuration使用"不详"，triggerRoundNum使用1，其他字段根据已有信息做最合理推断
             - triggerRoundNum必须为正整数
-            - 严禁编造用户未提及的信息，推断需有依据
+            - 严禁编造用户未提及的信息，所有推断必须有输入数据中的明确依据
             """;
 
     @Override
@@ -108,10 +124,8 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 30;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return OllamaChatOptions.builder()
                 .model(modelName)
@@ -119,15 +133,15 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .repeatPenalty(repeatPenalty)
+                .repeatPenalty(1.2)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .numCtx(maxToken)
                 .numThread(Runtime.getRuntime().availableProcessors())
-                .format("json")
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .truncate(true)
-                .seed(seed)
+                .seed(42)
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.05f)
@@ -145,18 +159,17 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 40;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(true)
                 .thinkingBudget(5)
@@ -185,7 +198,7 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
                 .logprobs(false)
                 .topLogprobs(null)

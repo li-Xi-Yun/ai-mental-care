@@ -6,6 +6,8 @@ export const useUserStore = defineStore(
   () => {
     const token = ref("");
     const userInfo = ref<Record<string, any>>({});
+    const loginDialogVisible = ref(false);
+    const loginDialogTab = ref<"login" | "register">("login");
 
     function setToken(val: string) {
       token.value = val;
@@ -20,7 +22,26 @@ export const useUserStore = defineStore(
       userInfo.value = {};
     }
 
-    return { token, userInfo, setToken, setUserInfo, clearUser };
+    function openLoginDialog(tab: "login" | "register" = "login") {
+      loginDialogTab.value = tab;
+      loginDialogVisible.value = true;
+    }
+
+    function closeLoginDialog() {
+      loginDialogVisible.value = false;
+    }
+
+    return {
+      token,
+      userInfo,
+      loginDialogVisible,
+      loginDialogTab,
+      setToken,
+      setUserInfo,
+      clearUser,
+      openLoginDialog,
+      closeLoginDialog,
+    };
   },
   {
     persist: {

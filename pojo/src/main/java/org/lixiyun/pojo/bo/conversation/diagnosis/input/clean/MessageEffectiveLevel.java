@@ -1,7 +1,9 @@
 package org.lixiyun.pojo.bo.conversation.diagnosis.input.clean;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 
 import java.io.Serializable;
@@ -12,6 +14,8 @@ import java.io.Serializable;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MessageEffectiveLevel implements Serializable {
     private static final long serialVersionUID = 1L;
 

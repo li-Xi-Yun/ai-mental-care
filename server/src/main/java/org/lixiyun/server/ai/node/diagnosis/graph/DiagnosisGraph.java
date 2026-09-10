@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import org.lixiyun.server.ai.node.diagnosis.DiagnosisPersistNode;
 import org.lixiyun.server.ai.node.diagnosis.InputNode;
 import org.lixiyun.server.ai.node.diagnosis.KnowledgeNode;
 import org.lixiyun.server.ai.node.diagnosis.ProcessNode;
+import org.lixiyun.server.ai.node.diagnosis.serializer.DiagnosisStateSerializer;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.stereotype.Component;
 
@@ -65,6 +67,8 @@ public class DiagnosisGraph {
      * @return 诊断数据结果
      */
     public DiagnosisData executeGraph(ConversationProcessContextBO contextBO) {
+        log.debug("DiagnosisGraph-执行参数context:{}", contextBO);
+
         if (contextBO == null) {
             log.error("DiagnosisGraph-参数错误:会话上下文为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -117,7 +121,7 @@ public class DiagnosisGraph {
         CompiledGraph compiledGraph = null;
 
         try {
-            StateGraph workflow = new StateGraph(keyStrategyFactory)
+            StateGraph workflow = new StateGraph(keyStrategyFactory, (StateSerializer) new DiagnosisStateSerializer(OverAllState::new))
                     .addNode(InputNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(inputNode))
                     .addNode(KnowledgeNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(knowledgeNode))
                     .addNode(ProcessNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(processNode))

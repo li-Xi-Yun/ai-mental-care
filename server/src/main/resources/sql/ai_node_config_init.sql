@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS `ai_node_config` (
     `top_k` int DEFAULT NULL COMMENT 'Top-K采样参数，限制候选词数量',
     `frequency_penalty` decimal(5,4) DEFAULT NULL COMMENT '频率惩罚，降低高频词出现概率',
     `presence_penalty` decimal(5,4) DEFAULT NULL COMMENT '存在惩罚，增加新词出现概率',
-    `repeat_penalty` decimal(5,4) DEFAULT NULL COMMENT '重复惩罚（Ollama专用）',
-    `seed` int DEFAULT NULL COMMENT '随机种子，固定种子可复现输出',
+    `response_format` tinyint DEFAULT NULL COMMENT '输出格式：0-自由文本(TEXT) 1-结构化JSON(JSON_OBJECT)',
+    `stop_sequences` varchar(500) DEFAULT NULL COMMENT '停止序列，JSON数组格式存储，如["\\n\\n\\n","```"]',
     `retry_max_attempts` int NOT NULL DEFAULT 3 COMMENT '重试最大次数',
     `retry_delay` int NOT NULL DEFAULT 1000 COMMENT '重试初始间隔（毫秒）',
     `retry_multiplier` int NOT NULL DEFAULT 2 COMMENT '重试间隔乘数（指数退避）',
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `ai_node_config_history` (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI节点配置变更历史表';
 
 
-INSERT INTO `ai_node_config` (`node_key`, `node_name`, `node_group`, `system_prompt`, `model_type`, `deepseek_model_name`, `ollama_model_name`, `dashscope_model_name`, `max_token`, `temperature`, `top_p`, `top_k`, `frequency_penalty`, `presence_penalty`, `repeat_penalty`, `seed`, `retry_max_attempts`, `retry_delay`, `retry_multiplier`, `enabled`, `sort`, `remark`, `version`, `created_by`, `updated_by`, `deleted`) VALUES
+INSERT INTO `ai_node_config` (`node_key`, `node_name`, `node_group`, `system_prompt`, `model_type`, `deepseek_model_name`, `ollama_model_name`, `dashscope_model_name`, `max_token`, `temperature`, `top_p`, `top_k`, `frequency_penalty`, `presence_penalty`, `response_format`, `stop_sequences`, `retry_max_attempts`, `retry_delay`, `retry_multiplier`, `enabled`, `sort`, `remark`, `version`, `created_by`, `updated_by`, `deleted`) VALUES
 
 
 -- ============================================================
@@ -75,11 +75,11 @@ INSERT INTO `ai_node_config` (`node_key`, `node_name`, `node_group`, `system_pro
 
 ('emotionalCompanionNode', '专业心理健康陪伴助手', 'conversation',
 '你是一位温暖专业的心理陪伴师。你的任务是：\n1. 用共情的方式理解用户的情绪状态\n2. 提供温暖、专业的情感支持建议\n3. 使用简洁通俗的语言（避免专业术语）\n4. 回复控制在80-150字，保持亲切自然\n5. 如遇严重心理问题，建议寻求专业心理咨询师帮助',
-0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 1.1800, 42, 3, 1000, 2, 1, 1, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 0, NULL, 3, 1000, 2, 1, 1, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 ('conversationNameGenerationNode', '会话名称生成', 'conversation',
 'Role: 会话命名专家\nProfile:\n  description: 你是一个专注于心理健康对话的命名引擎，擅长从用户的首条消息中提炼核心主题，生成简洁、贴切的会话名称。\nGoals:\n  1. 根据用户发送的消息内容，生成一个简短且能概括对话主题的会话名称。\n  2. 名称应体现用户的核心关注点或情绪状态。\nConstraints:\n  1. 名称长度不超过15个字。\n  2. 不得虚构或推测用户未提及的内容。\n  3. 仅输出名称文本本身，不添加引号、标题、解释或任何额外内容。\n  4. 禁止使用Markdown格式、表情符号或非简体中文字符。\n  5. 若输入为空或无有效内容，返回"新对话"。\nSkills:\n  1. 识别用户消息中的核心情感和关注焦点。\n  2. 用精炼的语言概括对话主题。',
-0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 128, 0.3000, 0.8500, 20, 0.7000, 0.3000, 1.2000, 42, 3, 1000, 2, 1, 2, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 128, 0.3000, 0.8500, 20, 0.7000, 0.3000, 0, NULL, 3, 1000, 2, 1, 2, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 ('emotionRecognitionNode', '情感识别', 'conversation',
 '',
@@ -87,19 +87,19 @@ INSERT INTO `ai_node_config` (`node_key`, `node_name`, `node_group`, `system_pro
 
 ('historyMessageCompressionNode', '专业对话语义压缩助手', 'conversation',
 'Role: 对话语义压缩专家\nProfile:\n  description: 你是一个专注于心理健康对话的语义压缩引擎，擅长从多轮心理陪伴对话中提取核心信息并生成高度凝练的第三人称摘要。\nGoals:\n  1. 将用户与AI心理陪伴助手之间的完整对话历史（含情感交流、建议互动）压缩为一段连贯、准确、无冗余的中文摘要。\n  2. 保留关键情感变化节点和重要建议内容。\n  3. 突出用户的情绪状态演变和关注焦点。\n  4. 仅输出摘要文本本身，不添加标题、解释或额外内容。\nConstraints:\n  1. 不得虚构或推测原文未提及的内容。\n  2. 保持客观中立的语气，准确反映对话实质。\n  3. 摘要长度控制在2000字，确保信息密度最大化。\n  4. 使用结构化表达：按时间顺序描述对话演进过程。\n  5. 若输入为空或无有效内容，返回空字符串。\n  6. 不得保留任何 ReAct 格式的痕迹（如 Thought/Action/Observation 标签）。\n  7. 禁止使用 Markdown、表情符号、换行符或非简体中文字符。\nSkills:\n  1. 识别对话中的情感转折点和关键咨询节点。\n  2. 融合多轮交互信息，消除重复，保持时序逻辑清晰。\n  3. 在有限篇幅内准确概括用户的心理状态变化轨迹和AI提供的核心建议。',
-0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 2000, 0.1200, 0.8000, 18, 0.7500, 0.3500, 1.2800, 42, 3, 1000, 2, 1, 4, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 2000, 0.1200, 0.8000, 18, 0.7500, 0.3500, 0, NULL, 3, 1000, 2, 1, 4, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 ('historyAnalysisCompressionNode', '专业历史情绪分析数据压缩助手', 'conversation',
 'Role: 历史情绪分析压缩专家\nProfile:\n  description: 你是一个专注于心理健康对话的情绪分析摘要引擎，擅长从多条情绪分析记录中提取核心情绪变化趋势和关键心理特征。\nGoals:\n  1. 将多条历史情绪分析结果压缩为一段连贯、准确、无冗余的中文摘要。\n  2. 保留关键情绪指标（PAD三维情绪值、正负向情绪占比变化趋势）。\n  3. 突出情绪转折点和显著心理特征。\n  4. 仅输出摘要文本本身，不添加标题、解释或额外内容。\nConstraints:\n  1. 不得虚构或推测原文未提及的情绪数据。\n  2. 保持客观专业的语气，避免主观臆断。\n  3. 摘要长度控制在2000字，确保信息密度最大化。\n  4. 使用结构化表达：按时间顺序描述情绪演变过程。\n  5. 若输入为空或无有效内容，返回空字符串。\nSkills:\n  1. 识别情绪分析中的关键数值变化（如P/A/D分数波动）。\n  2. 融合多轮分析结果，消除冗余，突出趋势。\n  3. 在有限篇幅内准确概括用户的心理状态演变轨迹。',
-0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 2000, 0.1500, 0.8200, 20, 0.7000, 0.3000, 1.2500, 42, 3, 1000, 2, 1, 5, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen2.5:7b', 'qwen-max', 2000, 0.1500, 0.8200, 20, 0.7000, 0.3000, 0, NULL, 3, 1000, 2, 1, 5, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 ('textMessageProcessor', '文本消息处理器', 'conversation',
 '你是一位温暖专业的心理陪伴师。你的任务是：\n1. 用共情的方式理解用户的情绪状态\n2. 提供温暖、专业的情感支持建议\n3. 使用简洁通俗的语言（避免专业术语）\n4. 回复控制在80-150字，保持亲切自然\n5. 如遇严重心理问题，建议寻求专业心理咨询师帮助',
-0, 'deepseek-chat', 'qwen3:7b-chat-thinking', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 1.1800, 42, 3, 1000, 2, 1, 6, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen3:7b-chat-thinking', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 0, NULL, 3, 1000, 2, 1, 6, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 ('voiceMessageProcessor', '语音消息处理器', 'conversation',
 '你是一位温暖专业的心理陪伴师。你的任务是：\n1. 用共情的方式理解用户的情绪状态\n2. 提供温暖、专业的情感支持建议\n3. 使用简洁通俗的语言（避免专业术语）\n4. 回复控制在80-150字，保持亲切自然\n5. 如遇严重心理问题，建议寻求专业心理咨询师帮助',
-0, 'deepseek-chat', 'qwen3:7b-chat-thinking', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 1.1800, 42, 3, 1000, 2, 1, 7, NULL, 1, 209682336638289345, 209682336638289345, 0),
+0, 'deepseek-chat', 'qwen3:7b-chat-thinking', 'qwen-max', 200, 0.6500, 0.8800, 25, 0.4500, 0.1500, 0, NULL, 3, 1000, 2, 1, 7, NULL, 1, 209682336638289345, 209682336638289345, 0),
 
 -- ============================================================
 -- input 组：诊断输入处理相关模型

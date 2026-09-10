@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.server.ai.node.diagnosis.knowledge.*;
+import org.lixiyun.server.ai.node.diagnosis.serializer.KnowledgeStateSerializer;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -134,7 +136,7 @@ public class KnowledgeGraph {
         CompiledGraph compiledGraph = null;
 
         try {
-            StateGraph workflow = new StateGraph(keyStrategyFactory)
+            StateGraph workflow = new StateGraph(keyStrategyFactory, (StateSerializer) new KnowledgeStateSerializer(OverAllState::new))
                     .addNode(QueryTransformLayerNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(queryTransformLayerNode))
                     .addNode(SymptomKnowledgeRepositoryNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(symptomKnowledgeRepositoryNode))
                     .addNode(DiagnosisStandardRepositoryNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(diagnosisStandardRepositoryNode))

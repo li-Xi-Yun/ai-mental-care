@@ -3,6 +3,7 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -10,14 +11,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.server.ai.node.diagnosis.input.*;
+import org.lixiyun.server.ai.node.diagnosis.serializer.InputStateSerializer;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 
 /**
@@ -81,14 +83,22 @@ public class InputGraph {
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
 
-        Optional<InputResult> inputResultOpt = result.value(InputResult.NAME);
-        if (inputResultOpt.isEmpty()) {
-            log.error("InputGraph-执行失败，inputResult为空");
-            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        // 替换原来直接强转代码
+        Object rawObj = result.value(InputResult.NAME).orElseThrow(() -> new RuntimeException("子图未产出InputResult"));
+
+        InputResult inputResult;
+        if (rawObj instanceof InputResult) {
+            inputResult = (InputResult) rawObj;
+        } else if (rawObj instanceof Map<?, ?> mapData) {
+            // map -> pojo，复用全局ObjectMapper
+            inputResult = JsonUtils.convertMapToObj(mapData, InputResult.class);
+        } else {
+            throw new RuntimeException("InputResult类型不支持，类型：" + rawObj.getClass().getName());
         }
 
-        log.info("InputGraph-执行成功");
-        return inputResultOpt.get();
+        log.debug("InputGraph-执行结果:{}", inputResult);
+
+        return inputResult;
     }
 
     /**
@@ -121,7 +131,7 @@ public class InputGraph {
         CompiledGraph compiledGraph = null;
 
         try {
-            StateGraph workflow = new StateGraph(keyStrategyFactory)
+            StateGraph workflow = new StateGraph(keyStrategyFactory, (StateSerializer) new InputStateSerializer(OverAllState::new))
                     .addNode(PreCleanNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(preCleanNode))
                     .addNode(MessageStructuredProcessNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(messageStructuredProcessNode))
                     .addNode(EmotionStatisticsNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(emotionStatisticsNode))

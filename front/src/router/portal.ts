@@ -9,7 +9,7 @@ const portalRoutes: RouteRecordRaw[] = [
       {
         path: "",
         name: "PortalHome",
-        component: () => import("@/portal/views/conversation/index.vue"),
+        component: () => import("@/portal/views/home/index.vue"),
         meta: { title: "首页" },
       },
       {
@@ -19,10 +19,22 @@ const portalRoutes: RouteRecordRaw[] = [
         meta: { title: "AI对话" },
       },
       {
-        path: "emotion",
-        name: "PortalEmotion",
+        path: "diagnosis",
+        name: "PortalDiagnosis",
         component: () => import("@/portal/views/emotion/index.vue"),
-        meta: { title: "情绪分析" },
+        meta: { title: "心理诊断" },
+      },
+      {
+        path: "diagnosis/:sessionId",
+        name: "PortalDiagnosisList",
+        component: () => import("@/portal/views/emotion/diagnosis-list.vue"),
+        meta: { title: "诊断记录" },
+      },
+      {
+        path: "diagnosis/:sessionId/:diagnosisId",
+        name: "PortalDiagnosisDetail",
+        component: () => import("@/portal/views/emotion/diagnosis-detail.vue"),
+        meta: { title: "诊断详情" },
       },
       {
         path: "scale",
@@ -31,18 +43,30 @@ const portalRoutes: RouteRecordRaw[] = [
         meta: { title: "量表测评" },
       },
       {
+        path: "scale/:scaleId/answer",
+        name: "PortalScaleAnswer",
+        component: () => import("@/portal/views/scale/answer.vue"),
+        meta: { title: "量表答题" },
+      },
+      {
+        path: "scale/records",
+        name: "PortalScaleRecords",
+        component: () => import("@/portal/views/scale/records.vue"),
+        meta: { title: "测评记录" },
+      },
+      {
+        path: "scale/records/:recordId",
+        name: "PortalScaleRecordDetail",
+        component: () => import("@/portal/views/scale/record-detail.vue"),
+        meta: { title: "测评详情" },
+      },
+      {
         path: "profile",
         name: "PortalProfile",
         component: () => import("@/portal/views/profile/index.vue"),
         meta: { title: "个人中心" },
       },
     ],
-  },
-  {
-    path: "/login",
-    name: "PortalLogin",
-    component: () => import("@/portal/views/login/index.vue"),
-    meta: { title: "用户登录", noAuth: true },
   },
 ];
 

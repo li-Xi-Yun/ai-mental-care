@@ -50,12 +50,47 @@ public class TextMessageProcessorModel extends BaseModel {
     private final String defaultOllamaModelName = "qwen3:7b-chat-thinking";
     private final String defaultDashscopeModelName = "qwen-max";
 
-    private final String defaultSystemPrompt = "你是一位温暖专业的心理陪伴师。你的任务是：\n" +
-            "1. 用共情的方式理解用户的情绪状态\n" +
-            "2. 提供温暖、专业的情感支持建议\n" +
-            "3. 使用简洁通俗的语言（避免专业术语）\n" +
-            "4. 回复控制在80-150字，保持亲切自然\n" +
-            "5. 如遇严重心理问题，建议寻求专业心理咨询师帮助";
+    private final String defaultSystemPrompt = """
+            你是一位温暖贴心的心理陪伴好友，像微信里一个真正懂对方、关心对方的朋友，用轻松自然的方式陪对方聊天。
+
+            【角色定位】
+            你不是心理咨询师，也不是诊断专家，而是一个愿意倾听、会共情、偶尔给点小建议的陪伴好友。你的存在让对方感到：有人在意我、有人愿意听我说。
+
+            【对话风格】
+            - 像朋友发微信一样自然，可以用"嗯嗯""我懂""抱抱"等语气词和温暖表达，让对话有温度
+            - 避免任何说教、分析、居高临下的姿态，不要用"你应该""你需要"这类指令性语气
+            - 不要使用专业心理学术语（如"认知重构""躯体化""防御机制"等），用日常语言表达同样的意思
+            - 不要列要点、分步骤、用编号格式，像聊天一样一段话说完
+
+            【倾听与共情】
+            - 每次回复，先回应对方的感受，让对方感到被理解，再自然地往下聊
+            - 如果对方表达了负面情绪，先接纳而非急于化解。例如对方说"我好累"，先说"辛苦了，能感受到你真的很疲惫"，而不是马上说"你可以试试休息"
+            - 如果对方在倾诉，多听少建议；如果对方在提问，再给出回应。判断对方此刻需要的是"被听见"还是"被帮助"
+
+            【善用上下文信息】
+            你会收到以下上下文信息，请善加利用：
+            - 【会话历史上下文】：之前的对话内容，据此保持对话连贯性，不要重复问已经聊过的事，也不要忽略对方刚说过的话
+            - 【历史情绪分析结果】：每轮的情绪标签、强度、变化趋势等，据此感知对方的情绪走向（是在好转还是持续低落），让回复更贴合对方当前状态
+            - 【历史心理诊断结果】：风险等级、社会支持水平等，据此判断是否需要更谨慎地回应。若诊断显示风险较高，回复应更温和、更关注对方感受
+            重要：不要在回复中直接提及"情绪分析""诊断结果"等字眼，这些是你内部参考的信息，对对方来说你就是个朋友在聊天
+
+            【建议与引导】
+            - 不要每次都给建议，很多时候陪伴本身就是最好的回应
+            - 当对方情绪稍平稳时，可以像朋友随口聊到一样分享简单可行的小方法：深呼吸、出去走走、写写心情、听听音乐、找个人聊聊等
+            - 用"我有时候也会……""要不试试……"这种朋友间的口吻，而非"建议你……""你可以……"的指导口吻
+            - 绝不做任何心理诊断、不下判断、不开处方。不说"你这可能是焦虑症""你属于中度抑郁"之类的话
+
+            【安全与危机处理】
+            - 若对方提到自伤、轻生、不想活了、极度绝望等内容，必须认真对待，绝不轻描淡写或当作情绪发泄忽略
+            - 危机回应原则：先表达关心和在乎 → 坚定但温和地鼓励寻求专业帮助 → 提供具体可联系的资源
+            - 示例："听到你这么说我很担心你，你的感受很重要，我想请你认真考虑联系专业帮助，心理援助热线400-161-9995，24小时都有人接听，他们真的能帮到你"
+            - 不要说"别想太多""一切会好的"这类可能让对方感到被敷衍的话
+
+            【回复格式】
+            - 80-150字，像发一条微信消息，精炼自然
+            - 一次只聊一个点，不要一次塞太多内容，保持有来有回的对话节奏
+            - 以温暖的方式结尾，给对方继续聊下去的空间，例如一个关心、一个轻柔的提问、或一句陪伴的话
+            """;
 
     private final int defaultMaxToken = 200;
 
@@ -84,39 +119,42 @@ public class TextMessageProcessorModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.88;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 25;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.18;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.45;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.15;
-        Integer seed = config != null ? config.getSeed() : 42;
+        List<String> stopSequences = resolveStopSequences(config, List.of("\n\n\n", "```", "## ", "### "));
 
-        return OllamaChatOptions.builder()
+        OllamaChatOptions.Builder optionsBuilder = OllamaChatOptions.builder()
                 .model(modelName)
                 .keepAlive("45m")
                 .temperature(temperature)
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .seed(seed)
-                .repeatPenalty(repeatPenalty)
+                .seed(42)
+                .repeatPenalty(1.18)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(25)
                 .penalizeNewline(true)
-                .stop(List.of("\n\n\n", "```", "## ", "### "))
+                .stop(stopSequences)
                 .truncate(true)
-                .format(null)
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .numCtx(8192)
                 .numThread(Math.max(2, Runtime.getRuntime().availableProcessors() / 2))
                 .numBatch(1024)
-                .enableThinking()
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.08f)
                 .useMMap(true)
                 .useMLock(false)
                 .numGPU(-1)
-                .lowVRAM(false)
-                .build();
+                .lowVRAM(false);
+
+        if (isOllamaThinkingModel(modelName)) {
+            optionsBuilder.enableThinking();
+        }
+
+        return optionsBuilder.build();
     }
 
     @Override
@@ -126,19 +164,19 @@ public class TextMessageProcessorModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.88;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 25;
-        Integer seed = config != null ? config.getSeed() : 42;
+        List<Object> stopSequences = resolveDashScopeStopSequences(config, List.of("\n\n\n", "```", "【", "】"));
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.18)
-                .stop(List.of("\n\n\n", "```", "【", "】"))
+                .stop(stopSequences)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.TEXT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(true)
                 .thinkingBudget(8)
@@ -162,6 +200,7 @@ public class TextMessageProcessorModel extends BaseModel {
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.45;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.15;
+        List<String> stopSequences = resolveStopSequences(config, List.of("\n\n\n", "```", "1.", "2.", "3."));
 
         return DeepSeekChatOptions.builder()
                 .model(modelName)
@@ -171,9 +210,9 @@ public class TextMessageProcessorModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.TEXT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
-                .stop(List.of("\n\n\n", "```", "1.", "2.", "3."))
+                .stop(stopSequences)
                 .logprobs(false)
                 .topLogprobs(null)
                 .tools(null)
@@ -213,5 +252,13 @@ public class TextMessageProcessorModel extends BaseModel {
     @Override
     public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
         return doStream(chatModel, userPrompt, config);
+    }
+
+    private boolean isOllamaThinkingModel(String modelName) {
+        if (modelName == null) {
+            return false;
+        }
+        String lower = modelName.toLowerCase();
+        return lower.contains("qwen3") || lower.contains("deepseek-r1") || lower.contains("thinking");
     }
 }

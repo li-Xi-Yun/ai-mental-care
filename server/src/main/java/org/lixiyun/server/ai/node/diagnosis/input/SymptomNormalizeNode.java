@@ -144,16 +144,19 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
         List<String> unmatchedTexts = new ArrayList<>();
         matchByDictionary(groupedByCleanedText, dictList, ruleMatchedMap, unmatchedTexts);
         log.info("输入侧-语义归一化处理-规则匹配成功：{}，待模型处理：{}", ruleMatchedMap.size(), unmatchedTexts.size());
+        log.debug("输入侧-语义归一化处理-规则匹配详情，匹配结果：{}，未匹配文本：{}", ruleMatchedMap, unmatchedTexts);
 
         Map<String, ModelMatchEntry> modelMatchedMap = new LinkedHashMap<>();
         List<String> stillUnmatchedTexts = new ArrayList<>();
         if (!unmatchedTexts.isEmpty()) {
             normalizeByModel(unmatchedTexts, dictList, modelMatchedMap, stillUnmatchedTexts);
             log.info("输入侧-语义归一化处理-模型匹配成功：{}，未匹配保留原文：{}", modelMatchedMap.size(), stillUnmatchedTexts.size());
+            log.debug("输入侧-语义归一化处理-模型匹配详情，匹配结果：{}，未匹配文本：{}", modelMatchedMap, stillUnmatchedTexts);
         }
 
         SymptomNormalizeResult result = aggregateAndBuildResult(
                 groupedByCleanedText, ruleMatchedMap, modelMatchedMap, stillUnmatchedTexts);
+        log.debug("输入侧-语义归一化处理-聚合结果：{}", result);
 
         inputResult.setSymptomNormalizeResult(result);
         log.info("输入侧-语义归一化处理-完成，标准化标签数：{}", result.getTermList().size());
@@ -470,10 +473,12 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
                                  Map<String, ModelMatchEntry> modelMatchedMap,
                                  List<String> stillUnmatchedTexts) {
         String userPrompt = buildModelUserPrompt(unmatchedTexts, dictList);
+        log.debug("输入侧-语义归一化处理-模型归一化-构建用户提示词完成，提示词：{}", userPrompt);
         try {
             AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+            log.debug("输入侧-语义归一化处理-模型返回结果：{}", modelOutput);
 
             if (modelOutput == null || modelOutput.getTermList() == null) {
                 log.warn("输入侧-语义归一化处理-模型输出为空，全部保留原文");

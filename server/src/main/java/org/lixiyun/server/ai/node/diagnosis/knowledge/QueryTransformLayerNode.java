@@ -120,11 +120,12 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
         }
 
         String userPrompt = buildUserPrompt(knowledgeMatchRequest, isFirstRun, symptomNeed, diagnosisNeed, interventionNeed);
-        log.info("知识侧-查询变换层-构建用户提示词完成");
+        log.debug("知识侧-查询变换层-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("知识侧-查询变换层-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("知识侧-查询变换层-模型输出解析失败");
@@ -140,6 +141,9 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
         if (isFirstRun || interventionNeed) {
             knowledgeMatchRequest.setInterventionPrompt(result.getInterventionPrompt());
         }
+
+        log.debug("知识侧-查询变换层-写入结果完成，症状Query：{}，诊断Query：{}，干预Query：{}",
+                result.getSymptomPrompt(), result.getDiagnosisPrompt(), result.getInterventionPrompt());
 
         log.info("知识侧-查询变换层-完成，症状Query：{}，诊断Query：{}，干预Query：{}",
                 knowledgeMatchRequest.getSymptomPrompt(),

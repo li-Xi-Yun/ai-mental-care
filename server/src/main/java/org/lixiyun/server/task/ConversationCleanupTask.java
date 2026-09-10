@@ -62,13 +62,13 @@ public class ConversationCleanupTask {
 
     @Scheduled(fixedRateString = "${conversation.task.scan-interval:5000}") // 上一次任务**开始时间**算起，间隔多久执行下一次
     public void scanAndProcessConversationMessages() {
-        log.debug("开始执行定时任务：扫描缓存消息ZSet集合");
+//        log.debug("开始执行定时任务：扫描缓存消息ZSet集合");
 
         try {
             Set<Long> conversationIds = scanExpiredConversationsFromZSet();
 
             if (conversationIds.isEmpty()) {
-                log.debug("没有发现满足时间条件的会话ID");
+//                log.debug("没有发现满足时间条件的会话ID");
                 return;
             }
 
@@ -83,7 +83,7 @@ public class ConversationCleanupTask {
     }
 
     private Set<Long> scanExpiredConversationsFromZSet() {
-        log.debug("开始通过Lua脚本扫描ZSet集合，数量限制：{}", ConversationCleanupTask.SCAN_BATCH_SIZE);
+//        log.debug("开始通过Lua脚本扫描ZSet集合，数量限制：{}", ConversationCleanupTask.SCAN_BATCH_SIZE);
 
         // 1. 获取当前东八区LocalDateTime
         LocalDateTime nowLocal = LocalDateTime.now();
@@ -115,7 +115,7 @@ public class ConversationCleanupTask {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        log.debug("Lua脚本扫描完成，获取到{}个满足条件的会话ID", scannedConversationIds.size());
+//        log.debug("Lua脚本扫描完成，获取到{}个满足条件的会话ID", scannedConversationIds.size());
         return scannedConversationIds;
     }
 

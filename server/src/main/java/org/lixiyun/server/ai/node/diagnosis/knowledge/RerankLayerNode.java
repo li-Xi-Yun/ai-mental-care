@@ -387,11 +387,12 @@ public class RerankLayerNode implements NodeActionWithConfig {
         String userPrompt = buildUserPrompt(request,
                 symptomDocs, diagnosisDocs, interventionDocs,
                 symptomSliceIdMap, diagnosisSliceIdMap, interventionSliceIdMap);
-        log.info("知识侧-重排层节点-构建用户提示词完成");
+        log.debug("知识侧-重排层节点-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("知识侧-重排层节点-模型返回结果：{}", rerankResult);
 
         if (rerankResult == null) {
             log.error("知识侧-重排层节点-模型输出解析失败");
@@ -408,6 +409,8 @@ public class RerankLayerNode implements NodeActionWithConfig {
                 diagnosisDocs, diagnosisModelScores, diagnosisSliceIdMap, maxDiagnosisCount, minScoreThreshold);
         List<KnowledgeDocument> filteredInterventionDocs = rerankFilterDocs(
                 interventionDocs, interventionModelScores, interventionSliceIdMap, maxInterventionCount, minScoreThreshold);
+        log.debug("知识侧-重排层节点-重排过滤完成，症状文档：{}，诊断文档：{}，干预文档：{}",
+                filteredSymptomDocs, filteredDiagnosisDocs, filteredInterventionDocs);
 
         List<Long> fileIds = Stream.of(filteredSymptomDocs, filteredDiagnosisDocs, filteredInterventionDocs)
                 .flatMap(Collection::stream)

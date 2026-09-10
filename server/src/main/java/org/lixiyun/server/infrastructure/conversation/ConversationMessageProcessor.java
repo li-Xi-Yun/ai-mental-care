@@ -68,24 +68,24 @@ public class ConversationMessageProcessor {
      * @throws RuntimeException 消息处理失败时抛出
      */
     public void processConversationMessage(Long conversationId) {
-        log.info("开始会话消息处理，会话ID：{}", conversationId);
+        log.info("[流程编排] 开始会话消息处理，会话ID：{}", conversationId);
         log.debug("[流程编排] 步骤1/9：尝试获取处理令牌，会话ID：{}", conversationId);
 
         try {
             boolean tokenAcquired = conversationProcessTokenManager.acquireProcessingToken(conversationId);
             if (!tokenAcquired) {
-                log.warn("获取处理令牌失败，重新加入ZSet队列，会话ID：{}", conversationId);
+                log.warn("[流程编排] 获取处理令牌失败，重新加入ZSet队列，会话ID：{}", conversationId);
                 log.debug("[流程编排] 令牌抢占失败，将重新入队，会话ID：{}", conversationId);
                 conversationProcessTokenManager.readdToZSetQueue(conversationId);
                 return;
             }
 
-            log.debug("成功获取处理令牌，开始处理，会话ID：{}", conversationId);
+            log.debug("[流程编排] 成功获取处理令牌，开始处理，会话ID：{}", conversationId);
             log.debug("[流程编排] 步骤2/9：加载会话缓存，会话ID：{}", conversationId);
 
             boolean cacheLoaded = conversationCacheManager.loadConversationCache(conversationId);
             if (!cacheLoaded) {
-                log.warn("会话缓存加载失败，清理处理标识并结束，会话ID：{}", conversationId);
+                log.warn("[流程编排] 会话缓存加载失败，清理处理标识并结束，会话ID：{}", conversationId);
                 log.debug("[流程编排] 缓存加载返回false，提前退出流程，会话ID：{}", conversationId);
                 conversationProcessTokenManager.clearProcessingFlag(conversationId);
                 return;
@@ -114,9 +114,9 @@ public class ConversationMessageProcessor {
             log.debug("[流程编排] 步骤5/9：提交异步语义压缩任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
                 try {
-                    log.debug("[异步] 语义压缩任务开始执行，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 语义压缩任务开始执行，会话ID：{}", conversationId);
                     conversationAiService.checkAndTriggerSemanticCompression(conversationId, processContext);
-                    log.debug("[异步] 语义压缩任务执行完成，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 语义压缩任务执行完成，会话ID：{}", conversationId);
                 } catch (Exception e) {
                     log.error("异步语义压缩异常，会话ID：{}", conversationId, e);
                 }
@@ -125,9 +125,9 @@ public class ConversationMessageProcessor {
             log.debug("[流程编排] 步骤6/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
                 try {
-                    log.debug("[异步] 分析与诊断任务开始执行，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 分析与诊断任务开始执行，会话ID：{}", conversationId);
                     conversationAiService.analysisAndDiagnosis(conversationId, processContext);
-                    log.debug("[异步] 分析与诊断任务执行完成，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 分析与诊断任务执行完成，会话ID：{}", conversationId);
                 } catch (Exception e) {
                     log.error("异步分析与诊断异常，会话ID：{}", conversationId, e);
                 }
@@ -139,9 +139,9 @@ public class ConversationMessageProcessor {
             log.debug("[流程编排] 提交异步会话名称生成任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
                 try {
-                    log.debug("[异步] 会话名称生成任务开始执行，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 会话名称生成任务开始执行，会话ID：{}", conversationId);
                     generateConversationNameIfFirstRound(conversationId, processContext);
-                    log.debug("[异步] 会话名称生成任务执行完成，会话ID：{}", conversationId);
+                    log.debug("[流程编排 - 异步] 会话名称生成任务执行完成，会话ID：{}", conversationId);
                 } catch (Exception e) {
                     log.error("异步会话名称生成异常，会话ID：{}", conversationId, e);
                 }
@@ -158,9 +158,9 @@ public class ConversationMessageProcessor {
             conversationProcessTokenManager.clearProcessingFlag(conversationId);
             log.debug("[流程编排] 处理令牌已释放，会话ID：{}", conversationId);
 
-            log.info("会话消息处理完成，会话ID：{}，处理消息数：{}", conversationId, unprocessedMessages.size());
+            log.info("[流程编排] 会话消息处理完成，会话ID：{}，处理消息数：{}", conversationId, unprocessedMessages.size());
         } catch (Exception e) {
-            log.error("会话消息处理异常，会话ID：{}", conversationId, e);
+            log.error("[[流程编排 - 异常] 会话消息处理异常，会话ID：{}", conversationId, e);
             log.debug("[流程编排] 异常后清理处理标识，会话ID：{}", conversationId);
             conversationProcessTokenManager.clearProcessingFlag(conversationId);
             throw new RuntimeException("会话消息处理失败", e);
@@ -192,7 +192,7 @@ public class ConversationMessageProcessor {
      */
     private void executeMainThread(Long conversationId, ConversationProcessContextBO processContext, MessageProcessor executorInstance) {
         String executorName = executorInstance != null ? executorInstance.getClass().getSimpleName() : "null";
-        log.info("开始主线程执行，会话ID：{}，执行器：{}", conversationId, executorName);
+        log.info("[主线程] 开始主线程执行，会话ID：{}，执行器：{}", conversationId, executorName);
         log.debug("[主线程] 会话ID：{}，处理器类型：{}，上下文轮次：{}", conversationId, executorName,
                 processContext.getConversation() != null ? processContext.getConversation().getCurrentRound() : "null");
 
@@ -202,7 +202,7 @@ public class ConversationMessageProcessor {
         }
 
         try {
-            log.info("开始调用消息处理器，会话ID：{}", conversationId);
+            log.info("[主线程] 开始调用消息处理器，会话ID：{}", conversationId);
             log.debug("[主线程] 调用{}.processMessage()，会话ID：{}", executorName, conversationId);
 
             long startTime = System.currentTimeMillis();
@@ -212,10 +212,10 @@ public class ConversationMessageProcessor {
             long endTime = System.currentTimeMillis();
             long elapsed = endTime - startTime;
 
-            log.info("主线程执行完成，会话ID：{}，耗时：{}ms", conversationId, elapsed);
+            log.info("[主线程] 主线程执行完成，会话ID：{}，耗时：{}ms", conversationId, elapsed);
             log.debug("[主线程] 消息处理器执行耗时明细：{}ms，处理器：{}，会话ID：{}", elapsed, executorName, conversationId);
         } catch (BusinessException e) {
-            log.error("主线程执行业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
+            log.error("[主线程] 主线程执行业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             log.debug("[主线程] 业务异常详情，错误代码：{}，会话ID：{}", e.getCode(), conversationId);
             throw e;
         } catch (Exception e) {
@@ -240,7 +240,7 @@ public class ConversationMessageProcessor {
         log.debug("[会话命名] 判断是否首次对话，会话ID：{}，当前轮次：{}，用户ID：{}", conversationId, currentRound, userId);
 
         if (currentRound != null && currentRound == 1) {
-            log.info("首次对话，开始生成会话名称，会话ID：{}", conversationId);
+            log.info("[会话命名] 首次对话，开始生成会话名称，会话ID：{}", conversationId);
             try {
                 long startTime = System.currentTimeMillis();
                 String conversationName = conversationNameGenerationNode.apply(processContext);
@@ -258,9 +258,9 @@ public class ConversationMessageProcessor {
                 conversationWebSocketManager.sendConversationName(userId, conversationId, conversationName);
                 log.debug("[会话命名] WebSocket推送会话名称完成，用户ID：{}，会话ID：{}", userId, conversationId);
 
-                log.info("会话名称生成完成，会话ID：{}，名称：{}", conversationId, conversationName);
+                log.info("[会话命名] 会话名称生成完成，会话ID：{}，名称：{}", conversationId, conversationName);
             } catch (Exception e) {
-                log.error("会话名称生成异常，会话ID：{}", conversationId, e);
+                log.error("[会话命名] 会话名称生成异常，会话ID：{}", conversationId, e);
             }
         } else {
             log.debug("[会话命名] 非首次对话，跳过会话名称生成，会话ID：{}，当前轮次：{}", conversationId, currentRound);

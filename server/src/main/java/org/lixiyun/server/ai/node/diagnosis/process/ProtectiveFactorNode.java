@@ -55,11 +55,12 @@ public class ProtectiveFactorNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-保护性因素分析-构建用户提示词完成");
+        log.debug("诊断处理侧-保护性因素分析-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         ProtectiveFactorProcessModel.ProtectiveFactorResult result = protectiveFactorProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-保护性因素分析-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-保护性因素分析-模型输出解析失败");
@@ -75,6 +76,7 @@ public class ProtectiveFactorNode implements NodeActionWithConfig {
         diagnosisData.setSocialSupportLevel(result.getSocialSupportLevel());
         diagnosisData.setProtectiveFactors(result.getProtectiveFactors());
         diagnosisData.setCopingStyle(result.getCopingStyle());
+        log.debug("诊断处理侧-保护性因素分析-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-保护性因素分析-完成，社会支持水平：{}，应对方式：{}",
                 result.getSocialSupportLevel(), result.getCopingStyle());

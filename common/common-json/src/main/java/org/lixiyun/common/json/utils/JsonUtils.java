@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JSON 工具类
@@ -108,6 +109,20 @@ public class JsonUtils {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 将Map（LinkedHashMap）转为指定POJO对象，复用项目全局ObjectMapper
+     * 专门用于Spring AI Graph轻量clone后LinkedHashMap -> 目标BO，解决ClassCastException
+     * @param map 原始Map（可以是LinkedHashMap）
+     * @param clazz 目标POJO Class
+     * @return 转换后的对象
+     */
+    public static <T> T convertMapToObj(Map<?,?> map, Class<T> clazz) {
+        if (ObjectUtil.isNull(map)) {
+            return null;
+        }
+        return OBJECT_MAPPER.convertValue(map, clazz);
     }
 
 }

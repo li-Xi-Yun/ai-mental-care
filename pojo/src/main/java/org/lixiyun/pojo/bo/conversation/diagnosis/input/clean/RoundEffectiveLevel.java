@@ -1,7 +1,9 @@
 package org.lixiyun.pojo.bo.conversation.diagnosis.input.clean;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 
 import java.io.Serializable;
@@ -13,6 +15,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RoundEffectiveLevel implements Serializable {
     private static final long serialVersionUID = 1L;
 

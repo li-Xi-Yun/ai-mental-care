@@ -58,11 +58,12 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-情绪综合分析-构建用户提示词完成");
+        log.debug("诊断处理侧-情绪综合分析-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         ComprehensiveDiagnosisProcessModel.EmotionComprehensiveResult result = comprehensiveDiagnosisProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-情绪综合分析-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-情绪综合分析-模型输出解析失败");
@@ -80,6 +81,7 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
         fillCoreEmotionDimension(diagnosisData, emotionStats);
         fillEmotionDistributionDimension(diagnosisData, emotionStats);
         fillEmotionDynamicDimension(diagnosisData, emotionStats);
+        log.debug("诊断处理侧-情绪综合分析-填充情绪维度数据完成，diagnosisData：{}", diagnosisData);
 
         diagnosisData.setNegativeEmotionDetail(convertToBigDecimalMap(result.getNegativeEmotionDetail()));
         diagnosisData.setPositiveEmotionDetail(convertToBigDecimalMap(result.getPositiveEmotionDetail()));

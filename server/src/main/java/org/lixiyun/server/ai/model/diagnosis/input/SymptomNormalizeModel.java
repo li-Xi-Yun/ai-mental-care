@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,39 +44,41 @@ public class SymptomNormalizeModel extends BaseModel {
     private final int defaultMaxToken = 2048;
 
     private final String defaultSystemPrompt = """
-            你是一个心理健康领域的症状语义归一化助手。你的任务是将用户口语化的症状表述映射到标准症状术语。
+            你是心理健康领域的症状语义归一化助手，负责将用户口语化的症状表述映射到标准症状术语。
 
             ## 核心约束
-            1. **范围限定**：你只能从给定的「标准症状库」中选择最匹配的标签，严禁自创术语。如果标准症状库中没有合适的匹配项，对应映射的matchedTermId设为null。
-            2. **语义严谨**：严格基于原文语义匹配，严禁过度推断、延伸用户未提及的症状。
-            3. **格式固定**：按SymptomNormalizeResult的JSON结构输出，包含termList和termOriginalMapping两个字段。
+            1. **范围限定**：只能从用户提示词中给定的「标准症状库」选择匹配项，严禁自创术语。若标准症状库中无合适匹配，matchedTermId设为null。
+            2. **语义严谨**：严格基于原文语义匹配，严禁过度推断或延伸用户未提及的症状。
+            3. **完整覆盖**：每条待匹配原文必须在termList中出现且originalText保持原文不变，不可遗漏。
 
             ## 输出格式
+            按以下JSON结构输出，仅包含termList一个字段：
             ```json
             {
               "termList": [
                 {
-                  "symptomDict": {"id": 1, "symptomTerm": "入睡困难"},
+                  "originalText": "睡不着",
+                  "matchedTermId": 1,
                   "matchConfidence": 0.85
+                },
+                {
+                  "originalText": "心里堵得慌",
+                  "matchedTermId": null,
+                  "matchConfidence": null
                 }
-              ],
-              "termOriginalMapping": {
-                "1": [
-                  {"originalText": "睡不着", "matchedTermId": 1}
-                ]
-              }
+              ]
             }
             ```
 
             ## 字段说明
-            - termList：匹配到的标准术语列表，每项包含symptomDict（只需填id和symptomTerm）和matchConfidence（0-1置信度）
-            - termOriginalMapping：术语ID到原文的映射，key为标准术语ID（字符串），value为该术语匹配到的所有原文列表
-            - 如果某条表述无法匹配到任何标准术语，放入termOriginalMapping时key使用"unmatched"，matchedTermId设为null
+            - **originalText**：待匹配的用户症状原文，必须与输入中的原文完全一致，不可改写或省略
+            - **matchedTermId**：匹配到的标准症状术语ID，必须与标准症状库中的ID完全一致；无法匹配时设为null
+            - **matchConfidence**：语义匹配置信度，范围0~1，无法匹配时设为null
 
-            ## 注意事项
-            - matchConfidence范围0-1，表示语义匹配置信度
-            - 每条待匹配原文必须出现在termOriginalMapping中，不可遗漏
-            - symptomDict中的id必须与标准症状库中的ID完全一致
+            ## 匹配策略
+            - 优先精确语义匹配：用户表述与标准术语含义一致时，取最高置信度
+            - 次选近义匹配：用户表述与标准术语语义相近但不完全等同时，适当降低置信度
+            - 无法匹配：标准症状库中确实无合理对应项时，matchedTermId和matchConfidence均设为null，切勿强行归类
             """;
 
     @Override
@@ -108,10 +111,8 @@ public class SymptomNormalizeModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 30;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return OllamaChatOptions.builder()
                 .model(modelName)
@@ -119,15 +120,15 @@ public class SymptomNormalizeModel extends BaseModel {
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .repeatPenalty(repeatPenalty)
+                .repeatPenalty(1.2)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .numCtx(maxToken)
                 .numThread(Runtime.getRuntime().availableProcessors())
-                .format("json")
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .truncate(true)
-                .seed(seed)
+                .seed(42)
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.05f)
@@ -145,18 +146,17 @@ public class SymptomNormalizeModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 40;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(true)
                 .thinkingBudget(5)
@@ -185,7 +185,7 @@ public class SymptomNormalizeModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
                 .logprobs(false)
                 .topLogprobs(null)
@@ -234,6 +234,7 @@ public class SymptomNormalizeModel extends BaseModel {
     }
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SymptomNormalizeModelResult implements Serializable {

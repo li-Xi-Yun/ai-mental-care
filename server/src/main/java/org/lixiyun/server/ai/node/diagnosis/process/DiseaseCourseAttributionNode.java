@@ -57,11 +57,12 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-病程归因组-构建用户提示词完成");
+        log.debug("诊断处理侧-病程归因组-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         DiseaseCourseAttributionProcessModel.DiseaseCourseAttributionResult result = diseaseCourseAttributionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-病程归因组-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-病程归因组-模型输出解析失败");
@@ -80,6 +81,7 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
         diagnosisData.setSymptomDuration(result.getSymptomDuration());
         diagnosisData.setOnsetPattern(result.getOnsetPattern());
         diagnosisData.setFirstTriggerDesc(result.getFirstTriggerDesc());
+        log.debug("诊断处理侧-病程归因组-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-病程归因组-完成，核心触发场景：{}，发作模式：{}",
                 result.getCoreTriggerScene(), result.getOnsetPattern());

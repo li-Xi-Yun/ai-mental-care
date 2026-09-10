@@ -54,34 +54,36 @@ public class InterventionSuggestionNode implements NodeActionWithConfig {
         InputResult inputResult = diagnosisDataRequest.getInputResult();
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
-        String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-干预建议生成-构建用户提示词完成");
-
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
-        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        InterventionSuggestionProcessModel.InterventionSuggestionResult result = interventionSuggestionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
-
-        if (result == null) {
-            log.error("诊断处理侧-干预建议生成-模型输出解析失败");
-            throw new BusinessException(ConversationExceptionEnum.DIAGNOSIS_PROCESS_RESULT_PARSE_FAILED);
-        }
-
         Optional<DiagnosisData> diagnosisDataOpt = state.value(DiagnosisData.NAME);
         if (diagnosisDataOpt.isEmpty()) {
             log.error("诊断处理侧-干预建议生成-诊断结果数据为空");
             throw new BusinessException(ConversationExceptionEnum.DIAGNOSIS_DATA_RESULT_NOT_EXIST);
         }
         DiagnosisData diagnosisData = diagnosisDataOpt.get();
+
+        String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult, diagnosisData);
+        log.debug("诊断处理侧-干预建议生成-构建用户提示词完成，提示词：{}", userPrompt);
+
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
+        InterventionSuggestionProcessModel.InterventionSuggestionResult result = interventionSuggestionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-干预建议生成-模型返回结果：{}", result);
+
+        if (result == null) {
+            log.error("诊断处理侧-干预建议生成-模型输出解析失败");
+            throw new BusinessException(ConversationExceptionEnum.DIAGNOSIS_PROCESS_RESULT_PARSE_FAILED);
+        }
         diagnosisData.setSelfHelpSuggestion(result.getSelfHelpSuggestion());
         diagnosisData.setSocialSupportSuggestion(result.getSocialSupportSuggestion());
         diagnosisData.setProfessionalInterveneSuggestion(result.getProfessionalInterveneSuggestion());
         diagnosisData.setSuggestionPriority(result.getSuggestionPriority());
+        log.debug("诊断处理侧-干预建议生成-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-干预建议生成-完成，建议优先级：{}", result.getSuggestionPriority());
         return Map.of();
     }
 
-    private String buildUserPrompt(InputResult inputResult, KnowledgeRetrieveResult knowledgeRetrieveResult) {
+    private String buildUserPrompt(InputResult inputResult, KnowledgeRetrieveResult knowledgeRetrieveResult, DiagnosisData diagnosisData) {
         StringBuilder sb = new StringBuilder();
         sb.append("请根据以下用户信息，生成干预建议：\n\n");
 
@@ -117,6 +119,59 @@ public class InterventionSuggestionNode implements NodeActionWithConfig {
             sb.append("## 主导情绪\n")
                     .append(inputResult.getEmotionStatisticsResult().getBaseInfo().getDominantEmotion().getLabel())
                     .append("\n\n");
+        }
+
+        if (diagnosisData != null) {
+            StringBuilder assessmentSb = new StringBuilder();
+            if (diagnosisData.getPsychologicalState() != null && !diagnosisData.getPsychologicalState().isBlank()) {
+                assessmentSb.append("- 心理状态评估：").append(diagnosisData.getPsychologicalState()).append("\n");
+            }
+            if (diagnosisData.getSymptomSummary() != null && !diagnosisData.getSymptomSummary().isBlank()) {
+                assessmentSb.append("- 核心症状：").append(diagnosisData.getSymptomSummary()).append("\n");
+            }
+            if (diagnosisData.getSymptomDuration() != null && !diagnosisData.getSymptomDuration().isBlank()) {
+                assessmentSb.append("- 症状持续时长：").append(diagnosisData.getSymptomDuration()).append("\n");
+            }
+            if (diagnosisData.getSocialFunctionImpact() != null && !diagnosisData.getSocialFunctionImpact().isBlank()) {
+                assessmentSb.append("- 社会功能受损程度：").append(diagnosisData.getSocialFunctionImpact()).append("\n");
+            }
+            if (diagnosisData.getImpactDomains() != null && !diagnosisData.getImpactDomains().isBlank()) {
+                assessmentSb.append("- 受影响领域：").append(diagnosisData.getImpactDomains()).append("\n");
+            }
+            if (diagnosisData.getEmotionRiskLevel() != null) {
+                String[] riskLabels = {"低", "中", "高", "危急", "无法判断"};
+                String riskLabel = diagnosisData.getEmotionRiskLevel() < riskLabels.length
+                        ? riskLabels[diagnosisData.getEmotionRiskLevel()] : "未知";
+                assessmentSb.append("- 情绪风险等级：").append(riskLabel)
+                        .append("（编码=").append(diagnosisData.getEmotionRiskLevel()).append("）\n");
+            }
+            if (diagnosisData.getSelfHarmRiskLevel() != null) {
+                assessmentSb.append("- 自伤风险等级编码：").append(diagnosisData.getSelfHarmRiskLevel()).append("\n");
+            }
+            if (diagnosisData.getSuicideRiskLevel() != null) {
+                assessmentSb.append("- 自杀风险等级编码：").append(diagnosisData.getSuicideRiskLevel()).append("\n");
+            }
+            if (diagnosisData.getRiskDetail() != null && !diagnosisData.getRiskDetail().isBlank()) {
+                assessmentSb.append("- 风险细节：").append(diagnosisData.getRiskDetail()).append("\n");
+            }
+            if (diagnosisData.getNeedManualIntervene() != null) {
+                assessmentSb.append("- 是否需要人工干预：").append(diagnosisData.getNeedManualIntervene() == 1 ? "是" : "否").append("\n");
+            }
+            if (diagnosisData.getCrisisWarning() != null) {
+                assessmentSb.append("- 是否触发危机预警：").append(diagnosisData.getCrisisWarning() == 1 ? "是" : "否").append("\n");
+            }
+            if (diagnosisData.getProtectiveFactors() != null && !diagnosisData.getProtectiveFactors().isBlank()) {
+                assessmentSb.append("- 保护性因素：").append(diagnosisData.getProtectiveFactors()).append("\n");
+            }
+            if (diagnosisData.getCopingStyle() != null && !diagnosisData.getCopingStyle().isBlank()) {
+                assessmentSb.append("- 应对方式：").append(diagnosisData.getCopingStyle()).append("\n");
+            }
+            if (diagnosisData.getSocialSupportLevel() != null) {
+                assessmentSb.append("- 社会支持水平编码：").append(diagnosisData.getSocialSupportLevel()).append("\n");
+            }
+            if (assessmentSb.length() > 0) {
+                sb.append("## 评估结果\n").append(assessmentSb).append("\n");
+            }
         }
 
         if (knowledgeRetrieveResult != null && knowledgeRetrieveResult.getInterventionReferencePrompt() != null

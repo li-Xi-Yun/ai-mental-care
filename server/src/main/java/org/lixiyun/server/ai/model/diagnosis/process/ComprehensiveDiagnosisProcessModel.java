@@ -43,14 +43,27 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
     private final int defaultMaxToken = 2048;
 
     private final String defaultSystemPrompt = """
-            你是一个心理健康领域的情绪综合分析助手。你的任务是根据用户的情绪统计数据，分析整体情绪趋势、负向情绪细分占比和正向情绪细分占比。
+            你是一个心理健康领域的情绪细分占比分析助手。你的任务是根据用户提供的情绪统计数据，将负向情绪和正向情绪分别按具体类别拆分，计算各类别在其所属极性内的占比。
 
-            ## 核心约束
-            1. **负向细分**：将负向情绪按具体类别拆分，计算各类别占比，所有负向情绪占比之和应为1.0
-            2. **正向细分**：将正向情绪按具体类别拆分，计算各类别占比，所有正向情绪占比之和应为1.0
-            3. **格式固定**：严格按EmotionComprehensiveResult的JSON结构输出
+            ## 输入数据说明
+            用户提示词中包含以下结构化统计数据，你应以此作为推导依据：
+            - **主情绪标签分布**：各主标签的出现轮次、占比、平均强度、峰值强度
+            - **细分情绪标签分布**：各细分标签的出现轮次、占比（这是推导细分占比的核心依据）
+            - **正负向情绪占比**：平均正向/中性/负向情绪占比
+            - **量化指标**：PAD均值、全局情绪强度均值
+            - **情绪动态趋势**：整体趋势、平稳轮次、稳定性得分、情绪变化次数、负向恶化次数
+
+            ## 推导逻辑
+            1. 从"细分情绪标签分布"中提取所有细分标签及其占比
+            2. 将每个细分标签归入负向或正向极性：
+               - 负向：不满/暴怒/抱怨/愤慨/失落/悲痛/无助/心碎/害怕/恐慌/畏惧/紧张/担忧/不安/反感/厌恶/自责/懊悔/尴尬/羞愧/迷茫/犹豫
+               - 正向：欣慰/兴奋/满足/愉悦/期待/乐观/意外/震惊（正面惊讶）
+               - 中性标签（平静/淡漠/麻木）不参与正负向占比计算
+            3. 在同一极性内，按各细分标签的占比做归一化，使该极性内所有value之和为1.0
+            4. 若细分标签分布数据不足，可结合"主情绪标签分布"中的占比和强度信息进行合理推断
 
             ## 输出格式
+            严格按以下JSON结构输出：
             ```json
             {
               "negativeEmotionDetail": {"焦虑": 0.45, "愤怒": 0.25, "悲伤": 0.10, "恐惧": 0.10, "厌恶": 0.10},
@@ -59,15 +72,18 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
             ```
 
             ## 字段说明
-            - negativeEmotionDetail：负向情绪细分占比，key为具体负向情绪标签（如焦虑、愤怒、悲伤、恐惧、厌恶等），value为该情绪在所有负向情绪中的占比（0~1，所有值之和为1.0）
-            - positiveEmotionDetail：正向情绪细分占比，key为具体正向情绪标签（如开心、欣慰、放松、期待、平静等），value为该情绪在所有正向情绪中的占比（0~1，所有值之和为1.0）
+            - **negativeEmotionDetail**：负向情绪细分占比
+              - key：具体负向情绪标签，必须从以下标准词汇中选取：不满、暴怒、抱怨、愤慨、失落、悲痛、无助、心碎、害怕、恐慌、畏惧、紧张、担忧、不安、反感、厌恶、自责、懊悔、尴尬、羞愧、迷茫、犹豫
+              - value：该情绪在所有负向情绪中的占比（0~1），所有value之和必须为1.0
+            - **positiveEmotionDetail**：正向情绪细分占比
+              - key：具体正向情绪标签，必须从以下标准词汇中选取：开心、欣慰、兴奋、满足、愉悦、期待、乐观、放松、平静
+              - value：该情绪在所有正向情绪中的占比（0~1），所有value之和必须为1.0
 
-            ## 注意事项
-            - negativeEmotionDetail中所有value之和必须为1.0
-            - positiveEmotionDetail中所有value之和必须为1.0
-            - 如果用户无负向情绪表现，negativeEmotionDetail输出为空对象{}
-            - 如果用户无正向情绪表现，positiveEmotionDetail输出为空对象{}
-            - 情绪标签应使用标准的中文情绪词汇，不可自创
+            ## 边界场景
+            - 用户无负向情绪表现 → negativeEmotionDetail输出空对象{}
+            - 用户无正向情绪表现 → positiveEmotionDetail输出空对象{}
+            - 某极性仅有一种情绪 → 该情绪占比为1.0
+            - 占比极小（<0.05）的细分情绪可合并至该极性中占比最大的类别，避免碎片化
             """;
 
     @Override
@@ -100,10 +116,8 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 30;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return OllamaChatOptions.builder()
                 .model(modelName)
@@ -111,15 +125,15 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .repeatPenalty(repeatPenalty)
+                .repeatPenalty(1.2)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .numCtx(maxToken)
                 .numThread(Runtime.getRuntime().availableProcessors())
-                .format("json")
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .truncate(true)
-                .seed(seed)
+                .seed(42)
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.05f)
@@ -137,18 +151,17 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 40;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(true)
                 .thinkingBudget(5)
@@ -177,7 +190,7 @@ public class ComprehensiveDiagnosisProcessModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
                 .logprobs(false)
                 .topLogprobs(null)

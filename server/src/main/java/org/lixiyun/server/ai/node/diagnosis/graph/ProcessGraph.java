@@ -2,6 +2,7 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
@@ -13,6 +14,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.server.ai.node.diagnosis.process.*;
+import org.lixiyun.server.ai.node.diagnosis.serializer.ProcessStateSerializer;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -131,7 +133,7 @@ public class ProcessGraph {
         CompiledGraph compiledGraph = null;
 
         try {
-            StateGraph workflow = new StateGraph(keyStrategyFactory)
+            StateGraph workflow = new StateGraph(keyStrategyFactory, (StateSerializer) new ProcessStateSerializer(OverAllState::new))
                     .addNode(ComprehensiveDiagnosisNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(comprehensiveDiagnosisNode))
                     .addNode(DiseaseCourseAttributionNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(diseaseCourseAttributionNode))
                     .addNode(PsychologicalStateNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(psychologicalStateNode))

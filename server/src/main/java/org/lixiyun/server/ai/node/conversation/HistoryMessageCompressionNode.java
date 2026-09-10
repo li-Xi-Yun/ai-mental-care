@@ -49,6 +49,7 @@ public class HistoryMessageCompressionNode implements NodeActionWithConfig {
         List<ConversationMemory> historyMessages = historyCompressionBO.getHistoryMessages();
 
         String prompt = buildPrompt(conversation, historyMessages);
+        log.debug("历史消息压缩节点-构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -56,6 +57,7 @@ public class HistoryMessageCompressionNode implements NodeActionWithConfig {
         AssistantMessage call;
         try {
             call = historyMessageCompressionModel.call(chatModel, prompt, aiNodeConfig);
+            log.debug("历史消息压缩节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);
         }

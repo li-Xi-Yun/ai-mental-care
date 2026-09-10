@@ -10,6 +10,6 @@ public interface TextConstant {
     String AI_TEXT_REPLY = "/text/reply";
 
     /** 会话名称，客户端订阅时，需要在后面路径中添加/{conversationId} */
-    String CONVERSATION_NAME = "conversation/name";
+    String CONVERSATION_NAME = "/conversation/name";
 
 }

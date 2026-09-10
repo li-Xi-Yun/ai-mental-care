@@ -83,11 +83,12 @@ public class AiNodeConfigDTO implements Serializable {
     @Schema(description = "存在惩罚，增加新词出现概率，范围[-2,2]", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "0.3")
     private BigDecimal presencePenalty;
 
-    @Schema(description = "重复惩罚（Ollama专用）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1.1")
-    private BigDecimal repeatPenalty;
+    @NumberOfRanges(min = 0, max = 1)
+    @Schema(description = "输出格式：0-自由文本(TEXT) 1-结构化JSON(JSON_OBJECT)", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1")
+    private Integer responseFormat;
 
-    @Schema(description = "随机种子，固定种子可复现输出", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "42")
-    private Integer seed;
+    @Schema(description = "停止序列，JSON数组格式，如[\"\\n\\n\\n\",\"```\"]", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "[\"\\n\\n\\n\",\"```\"]")
+    private String stopSequences;
 
     @NotNull(message = "重试最大次数不能为空", groups = {AddGroup.class, UpdateGroup.class})
     @Schema(description = "重试最大次数", requiredMode = Schema.RequiredMode.REQUIRED, example = "3")

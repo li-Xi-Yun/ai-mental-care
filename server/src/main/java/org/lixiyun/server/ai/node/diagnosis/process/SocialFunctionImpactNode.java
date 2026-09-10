@@ -55,11 +55,12 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-社会功能影响评估-构建用户提示词完成");
+        log.debug("诊断处理侧-社会功能影响评估-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         SocialFunctionImpactProcessModel.SocialFunctionImpactResult result = socialFunctionImpactProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-社会功能影响评估-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-社会功能影响评估-模型输出解析失败");
@@ -75,6 +76,7 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig {
         diagnosisData.setSocialFunctionImpact(result.getSocialFunctionImpact());
         diagnosisData.setImpactDomains(result.getImpactDomains());
         diagnosisData.setDailyLifeInfluence(result.getDailyLifeInfluence());
+        log.debug("诊断处理侧-社会功能影响评估-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-社会功能影响评估-完成，受损程度：{}，影响领域：{}",
                 result.getSocialFunctionImpact(), result.getImpactDomains());

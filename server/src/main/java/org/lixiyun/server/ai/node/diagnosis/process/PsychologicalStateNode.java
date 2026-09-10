@@ -55,11 +55,12 @@ public class PsychologicalStateNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-心理状态与症状评估-构建用户提示词完成");
+        log.debug("诊断处理侧-心理状态与症状评估-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         PsychologicalStateProcessModel.PsychologicalStateResult result = psychologicalStateProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-心理状态与症状评估-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-心理状态与症状评估-模型输出解析失败");
@@ -75,6 +76,7 @@ public class PsychologicalStateNode implements NodeActionWithConfig {
         diagnosisData.setPsychologicalState(result.getPsychologicalState());
         diagnosisData.setSymptomSummary(result.getSymptomSummary());
         diagnosisData.setSymptomTags(result.getSymptomTags());
+        log.debug("诊断处理侧-心理状态与症状评估-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-心理状态与症状评估-完成，心理状态：{}，症状标签：{}",
                 result.getPsychologicalState(), result.getSymptomTags());

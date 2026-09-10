@@ -70,11 +70,11 @@ public class AiNodeConfigVO implements Serializable {
     @Schema(description = "存在惩罚", example = "0.3")
     private BigDecimal presencePenalty;
 
-    @Schema(description = "重复惩罚（Ollama专用）", example = "1.1")
-    private BigDecimal repeatPenalty;
+    @Schema(description = "输出格式：0-自由文本(TEXT) 1-结构化JSON(JSON_OBJECT)", example = "1")
+    private Integer responseFormat;
 
-    @Schema(description = "随机种子", example = "42")
-    private Integer seed;
+    @Schema(description = "停止序列，JSON数组格式", example = "[\"\\n\\n\\n\",\"```\"]")
+    private String stopSequences;
 
     @Schema(description = "重试最大次数", example = "3")
     private Integer retryMaxAttempts;

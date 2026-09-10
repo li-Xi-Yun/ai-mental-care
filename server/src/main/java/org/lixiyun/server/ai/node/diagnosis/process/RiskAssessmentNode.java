@@ -56,11 +56,12 @@ public class RiskAssessmentNode implements NodeActionWithConfig {
         KnowledgeRetrieveResult knowledgeRetrieveResult = diagnosisDataRequest.getKnowledgeRetrieveResult();
 
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
-        log.info("诊断处理侧-风险评估-构建用户提示词完成");
+        log.debug("诊断处理侧-风险评估-构建用户提示词完成，提示词：{}", userPrompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         RiskAssessmentProcessModel.RiskAssessmentResult result = riskAssessmentProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        log.debug("诊断处理侧-风险评估-模型返回结果：{}", result);
 
         if (result == null) {
             log.error("诊断处理侧-风险评估-模型输出解析失败");
@@ -80,6 +81,7 @@ public class RiskAssessmentNode implements NodeActionWithConfig {
         diagnosisData.setSuicideRiskLevel(result.getSuicideRiskLevel());
         diagnosisData.setRiskDetail(result.getRiskDetail());
         diagnosisData.setCrisisWarning(result.getCrisisWarning());
+        log.debug("诊断处理侧-风险评估-写入诊断数据完成，结果：{}", result);
 
         log.info("诊断处理侧-风险评估-完成，情绪风险：{}，自伤风险：{}，自杀风险：{}，人工干预：{}，危机预警：{}",
                 result.getEmotionRiskLevel(), result.getSelfHarmRiskLevel(), result.getSuicideRiskLevel(),

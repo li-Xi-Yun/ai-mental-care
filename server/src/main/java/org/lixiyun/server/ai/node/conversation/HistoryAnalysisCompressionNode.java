@@ -48,6 +48,7 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
         List<EmotionAnalysis> emotionAnalyses = historyCompressionBO.getEmotionAnalyses();
 
         String prompt = buildPrompt(conversation, emotionAnalyses);
+        log.debug("历史情绪分析压缩节点-构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -55,6 +56,7 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
         AssistantMessage call;
         try {
             call = historyAnalysisCompressionModel.call(chatModel, prompt, aiNodeConfig);
+            log.debug("历史情绪分析压缩节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);
         }

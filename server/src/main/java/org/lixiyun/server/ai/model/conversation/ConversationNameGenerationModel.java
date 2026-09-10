@@ -38,21 +38,31 @@ public class ConversationNameGenerationModel extends BaseModel {
     private final int defaultMaxToken = 128;
 
     private final String defaultSystemPrompt = """
-            Role: 会话命名专家
-            Profile:
-              description: 你是一个专注于心理健康对话的命名引擎，擅长从用户的首条消息中提炼核心主题，生成简洁、贴切的会话名称。
-            Goals:
-              1. 根据用户发送的消息内容，生成一个简短且能概括对话主题的会话名称。
-              2. 名称应体现用户的核心关注点或情绪状态。
-            Constraints:
-              1. 名称长度不超过15个字。
-              2. 不得虚构或推测用户未提及的内容。
-              3. 仅输出名称文本本身，不添加引号、标题、解释或任何额外内容。
-              4. 禁止使用Markdown格式、表情符号或非简体中文字符。
-              5. 若输入为空或无有效内容，返回"新对话"。
-            Skills:
-              1. 识别用户消息中的核心情感和关注焦点。
-              2. 用精炼的语言概括对话主题。
+            你是一个会话命名助手，根据用户发送的消息内容，生成一个简短的会话名称，用于在聊天列表中展示。
+
+            【命名原则】
+            - 名称应抓住用户最核心的关注点或情绪状态，让人一眼看出这段对话在聊什么
+            - 风格简洁自然，像给聊天起个备注名，不要像公文标题或学术摘要
+            - 只从用户消息中提取信息，不要推测或添加消息中未提及的内容
+
+            【格式要求】
+            - 不超过15个字
+            - 仅输出名称本身，不要加引号、标点、解释或任何额外内容
+            - 不要使用Markdown格式、表情符号
+            - 若输入为空或无有效内容，返回：新对话
+
+            【示例】
+            用户消息："最近工作压力好大，每天加班到很晚"
+            输出：工作压力太大了
+
+            用户消息："我和男朋友又吵架了，好烦"
+            输出：和男朋友吵架了
+
+            用户消息："今天心情不错，出去跑了步"
+            输出：跑步后心情不错
+
+            用户消息："睡不着，脑子里一直在想事情"
+            输出：失眠想太多
             """;
 
     @Override
@@ -80,10 +90,9 @@ public class ConversationNameGenerationModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 20;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
-        Integer seed = config != null ? config.getSeed() : 42;
+        List<String> stopSequences = resolveStopSequences(config, List.of("\n\n\n", "```", "## ", "### ", "【", "】"));
 
         return OllamaChatOptions.builder()
                 .model(modelName)
@@ -92,15 +101,15 @@ public class ConversationNameGenerationModel extends BaseModel {
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .seed(seed)
-                .repeatPenalty(repeatPenalty)
+                .seed(42)
+                .repeatPenalty(1.2)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .penalizeNewline(true)
-                .stop(List.of("\n\n\n", "```", "## ", "### ", "【", "】"))
+                .stop(stopSequences)
                 .truncate(true)
-                .format(null)
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .numCtx(2048)
                 .numThread(Math.max(2, Runtime.getRuntime().availableProcessors() / 2))
                 .numBatch(512)
@@ -121,19 +130,19 @@ public class ConversationNameGenerationModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 20;
-        Integer seed = config != null ? config.getSeed() : 42;
+        List<Object> stopSequences = resolveDashScopeStopSequences(config, List.of("\n\n\n", "```", "【", "】"));
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
-                .stop(List.of("\n\n\n", "```", "【", "】"))
+                .stop(stopSequences)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.TEXT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(false)
                 .enableSearch(false)
@@ -156,6 +165,7 @@ public class ConversationNameGenerationModel extends BaseModel {
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+        List<String> stopSequences = resolveStopSequences(config, List.of("\n\n\n", "```", "【", "】"));
 
         return DeepSeekChatOptions.builder()
                 .model(modelName)
@@ -165,9 +175,9 @@ public class ConversationNameGenerationModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.TEXT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
-                .stop(List.of("\n\n\n", "```", "【", "】"))
+                .stop(stopSequences)
                 .logprobs(false)
                 .topLogprobs(null)
                 .tools(null)

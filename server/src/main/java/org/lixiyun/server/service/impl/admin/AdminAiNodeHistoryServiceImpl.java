@@ -127,8 +127,8 @@ public class AdminAiNodeHistoryServiceImpl implements AdminAiNodeHistoryService 
                 Map.entry("topK", currentConfig.getTopK() != null ? currentConfig.getTopK() : "null"),
                 Map.entry("frequencyPenalty", currentConfig.getFrequencyPenalty() != null ? currentConfig.getFrequencyPenalty() : "null"),
                 Map.entry("presencePenalty", currentConfig.getPresencePenalty() != null ? currentConfig.getPresencePenalty() : "null"),
-                Map.entry("repeatPenalty", currentConfig.getRepeatPenalty() != null ? currentConfig.getRepeatPenalty() : "null"),
-                Map.entry("seed", currentConfig.getSeed() != null ? currentConfig.getSeed() : "null"),
+                Map.entry("responseFormat", currentConfig.getResponseFormat() != null ? currentConfig.getResponseFormat() : "null"),
+                Map.entry("stopSequences", currentConfig.getStopSequences() != null ? currentConfig.getStopSequences() : "null"),
                 Map.entry("retryMaxAttempts", currentConfig.getRetryMaxAttempts()),
                 Map.entry("retryDelay", currentConfig.getRetryDelay()),
                 Map.entry("retryMultiplier", currentConfig.getRetryMultiplier())

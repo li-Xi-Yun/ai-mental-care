@@ -17,6 +17,7 @@ import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
+import org.lixiyun.server.scheduler.ConversationAggregateScheduler;
 import org.lixiyun.server.service.user.AIChatService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ public class AIChatServiceImpl implements AIChatService {
     private final ConversationMapper conversationMapper;
     private final ConversationMemoryMapper conversationMemoryMapper;
     private final ConversationCacheManager conversationCacheManager;
+    private final ConversationAggregateScheduler aggregateScheduler;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -78,6 +80,9 @@ public class AIChatServiceImpl implements AIChatService {
 
         log.debug("在缓存中存储消息ZSet集合，会话ID：{}", conversationId);
         saveMessageToZSet(conversationId, messageTime);
+
+        log.debug("触发聚合调度器，会话ID：{}", conversationId);
+        aggregateScheduler.addTask(conversationId);
 
         log.info("用户消息发送完成，会话ID：{}，当前轮次：{}", conversationId, currentRound);
         return UserMessageSendVO.builder()

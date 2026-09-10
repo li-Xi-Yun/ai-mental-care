@@ -37,21 +37,37 @@ public class MessageStructuredProcessModel extends BaseModel {
     private final int defaultMaxToken = 2048;
 
     private final String defaultSystemPrompt = """
-            你是一个心理健康领域的对话核心信息提取助手。你的任务是从用户与AI的心理咨询对话中提取结构化核心信息。
+            你是心理健康领域的对话核心信息提取助手，任务是从用户与AI的心理咨询对话中提取结构化核心信息。
+
+            ## 输入格式
+            对话按轮次组织，格式如下：
+            - 轮次标记：【第N轮】（N为对话轮次号，提取roundNum时直接使用此编号）
+            - 消息标记：[user] 表示用户消息，[assistant] 表示AI回复消息
+            示例：
+            【第1轮】
+            [user] 我最近总是失眠
+            [assistant] 失眠持续多长时间了？
 
             ## 核心约束
             1. **忠实原文**：所有提取内容必须严格基于对话原文，严禁编造、推断或补充用户未提及的信息。
             2. **完整覆盖**：确保不遗漏用户明确表达的核心诉求、关键事件、症状表述和背景信息。
-            3. **格式固定**：按CoreInfoExtractResult的JSON结构输出，包含coreAppeal、keyEventTimeline、symptomOriginalList、backgroundSummary四个字段。
+            3. **角色区分**：仅从[user]消息中提取症状、事件和诉求；[assistant]消息仅作为理解对话上下文的参考，不从中提取任何信息。
+            4. **逐轮记录**：同一症状若在不同轮次中出现，每轮均独立记录一条，保留完整的症状演变轨迹。
 
-            ## 字段说明
-            - **coreAppeal**：用一句话概括用户本次咨询的核心问题与需求，语言精练，直击要害。
-            - **keyEventTimeline**：按对话轮次顺序提取关键应激事件，每项包含roundNum（事件出现的对话轮次号）和eventDesc（事件描述原文）。仅提取对心理状态有显著影响的关键事件，忽略日常琐事。
-            - **symptomOriginalList**：提取用户提到的所有心理/情绪/躯体症状的原始表述，每项包含roundNum（症状出现的对话轮次号）和originalText（用户症状原始表述文本，保留原文措辞）。症状包括但不限于：情绪低落、焦虑、失眠、食欲异常、自伤念头等。
-            - **backgroundSummary**：总结用户的社会支持系统、生活环境、人际关系、工作学业等背景信息。若无明确背景信息，设为null。
+            ## 字段说明与边界界定
+            - **coreAppeal**（String）：用一句话概括用户本次咨询最核心的心理困扰与求助需求。聚焦于"用户最想解决的问题"本身，而非问题成因。例：用户说"因为工作压力太大导致失眠"，coreAppeal应为"因工作压力导致严重失眠，寻求改善方法"而非仅"失眠"。
+            - **keyEventTimeline**（Array）：按轮次顺序提取对用户心理状态产生显著影响的应激事件，每项包含：
+              - roundNum：事件出现的对话轮次号，取自输入的【第N轮】标记
+              - eventDesc：事件描述，尽量保留用户原文表述
+              判定标准：导致或加剧心理困扰的负面生活事件（如失业、丧亲、婚变、校园霸凌等）。日常琐事不提取。无关键事件时返回空数组[]。
+            - **symptomOriginalList**（Array）：提取用户提到的所有心理/情绪/躯体症状原始表述，每项包含：
+              - roundNum：症状出现的对话轮次号，取自输入的【第N轮】标记
+              - originalText：用户症状的原文表述，必须逐字保留用户措辞，不得改写或概括
+              症状范围包括但不限于：情绪低落、焦虑、恐惧、愤怒、失眠、嗜睡、食欲异常、躯体不适、注意力困难、记忆减退、强迫思维/行为、社交退缩、惊恐发作、解离症状、自伤/自杀念头等。无症状时返回空数组[]。
+            - **backgroundSummary**（String | null）：总结用户的社会支持系统（家庭/朋友/同事支持程度）、生活环境、人际关系、工作学业状况等背景信息。与coreAppeal的区别：coreAppeal是核心困扰本身，backgroundSummary是困扰发生的外部环境与支持条件。若无明确背景信息，设为null。
 
             ## 输出格式
-            ```json
+            严格按以下JSON结构输出，不要添加markdown代码块标记：
             {
               "coreAppeal": "用户核心诉求的一句话概括",
               "keyEventTimeline": [
@@ -62,7 +78,6 @@ public class MessageStructuredProcessModel extends BaseModel {
               ],
               "backgroundSummary": "用户背景信息总结"
             }
-            ```
             """;
 
     @Override
@@ -95,10 +110,8 @@ public class MessageStructuredProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 30;
-        Double repeatPenalty = config != null && config.getRepeatPenalty() != null ? config.getRepeatPenalty().doubleValue() : 1.2;
         Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
         Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return OllamaChatOptions.builder()
                 .model(modelName)
@@ -106,15 +119,15 @@ public class MessageStructuredProcessModel extends BaseModel {
                 .topK(topK)
                 .topP(topP)
                 .numPredict(maxToken)
-                .repeatPenalty(repeatPenalty)
+                .repeatPenalty(1.2)
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .repeatLastN(50)
                 .numCtx(maxToken)
                 .numThread(Runtime.getRuntime().availableProcessors())
-                .format("json")
+                .format(isJsonResponseFormat(config) ? "json" : null)
                 .truncate(true)
-                .seed(seed)
+                .seed(42)
                 .mirostat(2)
                 .mirostatTau(3.0f)
                 .mirostatEta(0.05f)
@@ -132,18 +145,17 @@ public class MessageStructuredProcessModel extends BaseModel {
         double topP = config != null ? config.getTopP().doubleValue() : 0.85;
         int maxToken = config != null ? config.getMaxToken() : defaultMaxToken;
         Integer topK = config != null ? config.getTopK() : 40;
-        Integer seed = config != null ? config.getSeed() : 42;
 
         return DashScopeChatOptions.builder()
                 .model(modelName)
                 .temperature(temperature)
                 .topP(topP)
                 .topK(topK)
-                .seed(seed)
+                .seed(42)
                 .maxToken(maxToken)
                 .repetitionPenalty(1.2)
                 .responseFormat(DashScopeResponseFormat.builder()
-                        .type(DashScopeResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .enableThinking(true)
                 .thinkingBudget(5)
@@ -172,7 +184,7 @@ public class MessageStructuredProcessModel extends BaseModel {
                 .frequencyPenalty(frequencyPenalty)
                 .presencePenalty(presencePenalty)
                 .responseFormat(ResponseFormat.builder()
-                        .type(ResponseFormat.Type.JSON_OBJECT)
+                        .type(isJsonResponseFormat(config) ? ResponseFormat.Type.JSON_OBJECT : ResponseFormat.Type.TEXT)
                         .build())
                 .logprobs(false)
                 .topLogprobs(null)

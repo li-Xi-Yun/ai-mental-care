@@ -1,5 +1,6 @@
 package org.lixiyun.server.ai.model;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -15,6 +16,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import reactor.core.publisher.Flux;
+
+import java.util.List;
 
 /**
  * AI模型基类 - 模板方法模式
@@ -287,5 +290,54 @@ public abstract class BaseModel implements Model {
         } else {
             return buildDefaultCompanionOptions(config);
         }
+    }
+
+    // ==================== 配置读取辅助方法 ====================
+
+    /**
+     * 判断是否为结构化JSON输出格式
+     *
+     * @param config 节点配置，可为null
+     * @return true表示JSON输出，false表示自由文本
+     */
+    protected boolean isJsonResponseFormat(AiNodeConfig config) {
+        return config != null && config.getResponseFormat() != null && config.getResponseFormat() == 1;
+    }
+
+    /**
+     * 从配置中解析停止序列（字符串类型）
+     * <p>适用于Ollama、DeepSeek等{@code stop(List<String>)}签名的模型</p>
+     *
+     * @param config       节点配置，可为null
+     * @param defaultStops 默认停止序列
+     * @return 停止序列列表
+     */
+    protected List<String> resolveStopSequences(AiNodeConfig config, List<String> defaultStops) {
+        if (config != null && StrUtil.isNotBlank(config.getStopSequences())) {
+            try {
+                List<String> parsed = JsonUtils.parseArray(config.getStopSequences(), String.class);
+                if (parsed != null && !parsed.isEmpty()) {
+                    return parsed;
+                }
+            } catch (Exception e) {
+                log.warn("停止序列解析失败，使用默认值: {}", config.getStopSequences(), e);
+            }
+        }
+        return defaultStops;
+    }
+
+    /**
+     * 从配置中解析停止序列（DashScope适配类型）
+     * <p>
+     * DashScope的{@code stop}字段类型为{@code List<Object>}（支持字符串和整数token ID），
+     * 此方法在{@link #resolveStopSequences}基础上进行泛型适配，供DashScope模型直接使用。
+     * </p>
+     *
+     * @param config       节点配置，可为null
+     * @param defaultStops 默认停止序列
+     * @return 适配DashScope的Object类型停止序列
+     */
+    protected List<Object> resolveDashScopeStopSequences(AiNodeConfig config, List<String> defaultStops) {
+        return resolveStopSequences(config, defaultStops).stream().map(s -> (Object) s).toList();
     }
 }

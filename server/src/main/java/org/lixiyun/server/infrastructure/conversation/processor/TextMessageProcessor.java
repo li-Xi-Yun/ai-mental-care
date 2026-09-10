@@ -71,22 +71,22 @@ public class TextMessageProcessor implements MessageProcessor {
     @Override
     public void processMessage(ConversationProcessContextBO context) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
-            log.error("AI对话文本处理器-临时消息为空，跳过处理");
+            log.error("[AI对话文本处理器]-临时消息为空，跳过处理");
             throw new BusinessException(AIChatExceptionEnum.TEMPORARY_MESSAGES_EMPTY);
         }
 
         Long conversationId = context.getConversation().getId();
         int currentRound = context.getConversation().getCurrentRound();
         Long userId = context.getConversation().getUserId();
-        log.info("AI对话文本处理器-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
-        log.debug("[文本处理] 会话ID：{}，用户ID：{}，当前轮次：{}，历史消息数：{}，情绪分析数：{}",
+        log.info("[AI对话文本处理器]-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
+        log.debug("[AI对话文本处理器] 会话ID：{}，用户ID：{}，当前轮次：{}，历史消息数：{}，情绪分析数：{}",
                 conversationId, userId, currentRound,
                 context.getConversationHistory() != null ? context.getConversationHistory().size() : 0,
                 context.getEmotionAnalyses() != null ? context.getEmotionAnalyses().size() : 0);
 
         try {
             String prompt = buildPrompt(context);
-            log.debug("[文本处理] Prompt构建完成，长度：{}，会话ID：{}", prompt.length(), conversationId);
+            log.debug("[AI对话文本处理器] Prompt构建完成，长度：{}，会话ID：{}", prompt.length(), conversationId);
 
             AgentStreamProcessor processor = AgentStreamProcessorBuilder.create()
                     .withThinkAccumulate()
@@ -94,39 +94,42 @@ public class TextMessageProcessor implements MessageProcessor {
                     .withPersistence(conversationHistoryMessagesStorage, userId, conversationId, currentRound)
                     .withListener(buildListener(userId, conversationId, currentRound))
                     .build();
-            log.debug("[文本处理] AgentStreamProcessor构建完成，会话ID：{}", conversationId);
+            log.debug("[AI对话文本处理器] AgentStreamProcessor构建完成，会话ID：{}", conversationId);
 
             AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-            log.debug("[文本处理] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
+            log.debug("[AI对话文本处理器] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
 
             processor.process(textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig))
                     .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe();
+                    .subscribe(
+                            event -> {},
+                            error -> log.error("[AI对话文本处理器]-流式订阅异常（流外异常，未进入装饰器管道），会话ID：{}，用户ID：{}，错误：{}", conversationId, userId, error.getMessage(), error)
+                    );
 
-            log.info("AI对话文本处理器-文本消息处理完成，会话ID：{}", conversationId);
+            log.info("[AI对话文本处理器]-流式订阅已启动，会话ID：{}，用户ID：{}", conversationId, userId);
         } catch (BusinessException e) {
-            log.error("AI对话文本处理器-文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
+            log.error("[AI对话文本处理器]-文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("AI对话文本处理器-文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("[AI对话文本处理器]-文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
             throw new BusinessException(AIChatExceptionEnum.MAIN_THREAD_EXECUTION_FAILED);
         }
     }
 
     private StreamEventListener buildListener(Long userId, Long conversationId, int currentRound) {
-        log.debug("[文本处理] 构建流式监听器，用户ID：{}，会话ID：{}，轮次：{}", userId, conversationId, currentRound);
+        log.debug("[AI对话文本处理器] 构建流式监听器，用户ID：{}，会话ID：{}，轮次：{}", userId, conversationId, currentRound);
         return new StreamEventListener() {
             @Override
             public void onContentChunk(String text) {
-                log.debug("[文本处理] 收到内容分块，长度：{}，会话ID：{}", text != null ? text.length() : 0, conversationId);
+                log.debug("[AI对话文本处理器] 收到内容分块，长度：{}，会话ID：{}", text != null ? text.length() : 0, conversationId);
                 conversationWebSocketManager.sendTextStream(userId, conversationId, text);
             }
 
             @Override
             public void onModelComplete(org.springframework.ai.chat.messages.AssistantMessage message) {
-                log.info("AI对话文本处理器-流式完成，会话ID：{}", conversationId);
-                log.debug("[文本处理] 模型输出完成，内容长度：{}，会话ID：{}", message.getText() != null ? message.getText().length() : 0, conversationId);
+                log.info("[AI对话文本处理器] -流式完成，会话ID：{}", conversationId);
+                log.debug("[AI对话文本处理器] 模型输出完成，内容长度：{}，会话ID：{}", message.getText() != null ? message.getText().length() : 0, conversationId);
 
                 ConversationMemory finalMemory = ConversationMemory.builder()
                         .userId(userId)
@@ -139,11 +142,21 @@ public class TextMessageProcessor implements MessageProcessor {
 
                 updateCacheHistory(conversationId, finalMemory);
             }
+
+            @Override
+            public void onError(Throwable err) {
+                log.error("[AI对话文本处理器]-流式处理异常（流内异常，已进入装饰器管道），会话ID：{}，用户ID：{}，错误：{}", conversationId, userId, err.getMessage(), err);
+            }
+
+            @Override
+            public void onFinished() {
+                log.info("[AI对话文本处理器]-流式处理完成，会话ID：{}，用户ID：{}", conversationId, userId);
+            }
         };
     }
 
     private String buildPrompt(ConversationProcessContextBO context) {
-        log.debug("[文本处理] 开始构建Prompt");
+        log.debug("[AI对话文本处理器] 开始构建Prompt");
         StringBuilder sb = new StringBuilder();
 
         if (context.getConversationHistory() != null && !context.getConversationHistory().isEmpty()) {
@@ -151,7 +164,7 @@ public class TextMessageProcessor implements MessageProcessor {
             context.getConversationHistory().forEach(msg ->
                     sb.append(MessageType.getDescription(msg.getType())).append("：").append(msg.getContent()).append("\n")
             );
-            log.debug("[文本处理] 拼接历史消息，数量：{}", context.getConversationHistory().size());
+            log.debug("[AI对话文本处理器] 拼接历史消息，数量：{}", context.getConversationHistory().size());
         }
 
         if (context.getEmotionAnalyses() != null && !context.getEmotionAnalyses().isEmpty()) {
@@ -159,37 +172,37 @@ public class TextMessageProcessor implements MessageProcessor {
             context.getEmotionAnalyses().forEach(analysis ->
                     sb.append("- ").append(analysis.toString()).append("\n")
             );
-            log.debug("[文本处理] 拼接情绪分析，数量：{}", context.getEmotionAnalyses().size());
+            log.debug("[AI对话文本处理器] 拼接情绪分析，数量：{}", context.getEmotionAnalyses().size());
         }
 
         if (context.getEmotionDiagnosis() != null) {
             sb.append("\n【历史心理诊断结果】\n");
             sb.append(context.getEmotionDiagnosis().toString()).append("\n");
-            log.debug("[文本处理] 拼接心理诊断结果");
+            log.debug("[AI对话文本处理器] 拼接心理诊断结果");
         }
 
         sb.append("本次用户发送的消息为：");
         context.getTemporaryMessages().forEach(msg ->
                 sb.append(msg.getContent()).append("\n")
         );
-        log.debug("[文本处理] 拼接临时消息，数量：{}", context.getTemporaryMessages().size());
+        log.debug("[AI对话文本处理器] 拼接临时消息，数量：{}", context.getTemporaryMessages().size());
 
         return sb.toString();
     }
 
     private void updateCacheHistory(Long conversationId, ConversationMemory conversationMemory) {
-        log.info("AI对话文本处理器-更新Redis缓存历史上下文，会话ID：{}", conversationId);
+        log.info("[AI对话文本处理器]-更新Redis缓存历史上下文，会话ID：{}", conversationId);
 
         try {
             List<ConversationMemory> existingHistory = (List<ConversationMemory>) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);
-            log.debug("[文本处理] 获取现有历史消息数：{}，会话ID：{}", existingHistory != null ? existingHistory.size() : 0, conversationId);
+            log.debug("[AI对话文本处理器] 获取现有历史消息数：{}，会话ID：{}", existingHistory != null ? existingHistory.size() : 0, conversationId);
 
             existingHistory.add(conversationMemory);
 
             conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, existingHistory);
-            log.info("AI对话文本处理器-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
+            log.info("[AI对话文本处理器]-缓存历史上下文更新成功，当前消息数：{}，会话ID：{}", existingHistory.size(), conversationId);
         } catch (Exception e) {
-            log.error("AI对话文本处理器-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("[AI对话文本处理器]-更新缓存历史上下文失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
         }
     }
 

@@ -1,5 +1,6 @@
 package org.lixiyun.server.infrastructure.conversation;
 
+import cn.hutool.core.map.MapUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.redis.utils.RedisUtils;
@@ -45,23 +46,26 @@ public class ConversationCacheManager {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
         log.debug("[缓存] 构建缓存Key：{}，会话ID：{}", cacheKey, conversationId);
 
-        if (checkCacheExists(cacheKey)) {
-            log.debug("会话缓存数据已存在，跳过加载，会话ID：{}", conversationId);
+        Object conversation = getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_METADATA);
+        log.debug("[缓存] 从Redis缓存中获取会话原始数据，会话ID：{}，结果：{}", conversationId, conversation);
+        if (conversation != null) {
+            log.debug("[缓存] 会话缓存数据已存在，会话ID：{}", conversationId);
             return true;
         }
 
-        log.debug("会话缓存不存在，从数据库查询，会话ID：{}", conversationId);
+        log.debug("[缓存] 会话缓存不存在，从数据库查询，会话ID：{}", conversationId);
         Map<String, Object> conversationData = conversationRepository.queryConversationFullData(conversationId);
-        log.debug("从数据库查询到会话完整数据，字段数量：{}，会话ID：{}", conversationData.size(), conversationId);
+        log.debug("[缓存] 从数据库查询到会话完整数据，会话上下文缓存数据Map：{}，会话ID：{}", conversationData, conversationId);
+        MapUtil.removeNullValue(conversationData);
 
         if (conversationData.isEmpty()) {
-            log.warn("未查询到会话完整数据，会话ID：{}", conversationId);
+            log.warn("[缓存] 未查询到会话完整数据，会话ID：{}", conversationId);
             return false;
         }
 
         saveToCache(cacheKey, conversationData);
 
-        log.info("会话缓存加载完成，会话ID：{}", conversationId);
+        log.info("[缓存] 会话缓存加载完成，会话ID：{}", conversationId);
         return true;
     }
 
@@ -86,9 +90,10 @@ public class ConversationCacheManager {
     private Map<String, Object> getConversationContextData(Long conversationId) {
         String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
         Map<String, Object> contextData = RedisUtils.getCacheMap(cacheKey);
+        log.debug("[缓存] 从Redis缓存中获取会话上下文数据，会话ID：{}，结果：{}", conversationId, contextData);
 
         if (contextData == null || contextData.isEmpty()) {
-            log.warn("会话缓存数据为空，会话ID：{}", conversationId);
+            log.warn("[缓存] 会话缓存数据为空，会话ID：{}", conversationId);
             return new HashMap<>();
         }
 
@@ -109,6 +114,7 @@ public class ConversationCacheManager {
         log.debug("开始构建处理上下文，会话ID：{}", conversationId);
 
         Map<String, Object> contextData = getConversationContextData(conversationId);
+        log.debug("[缓存] 从Redis缓存中获取会话上下文数据，会话ID：{}，结果：{}", conversationId, contextData);
 
         Conversation conversation = (Conversation) contextData.get(ConversationCacheConstant.HASH_FIELD_METADATA);
         List<ConversationMemory> conversationHistory = (List<ConversationMemory>) contextData.get(ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES);

@@ -20,7 +20,7 @@ router.beforeEach((to, _from, next) => {
     if (to.path.startsWith("/admin")) {
       next({ name: "AdminLogin" });
     } else {
-      next({ name: "PortalLogin" });
+      next();
     }
   }
 });

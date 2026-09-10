@@ -85,7 +85,6 @@ public class FinalAnswerNode implements NodeActionWithConfig {
                     .numThread(Runtime.getRuntime().availableProcessors()) // 适配CPU核心数，提升生成速度
                     .numBatch(512)                   // 批量处理prompt，减少响应延迟
 
-                    .enableThinking()                // 启用模型思考模式（Qwen3/DeepSeek专属），理解"emo/摆烂"等青年表达
                     .mirostat(2)                     // Mirostat 2.0采样，平衡回复的自然度与一致性
                     .mirostatTau(2.0f)               // 降低困惑度，保证回复贴合陪伴师角色设定
                     .mirostatEta(0.05f)              // 缓慢调整采样策略，避免回复风格突变

@@ -48,6 +48,7 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
         List<ConversationMemory> temporaryMessages = processContext.getTemporaryMessages();
 
         String prompt = buildPrompt(temporaryMessages);
+        log.debug("会话名称生成节点-构建提示词完成，提示词：{}", prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -55,6 +56,7 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
         AssistantMessage call;
         try {
             call = conversationNameGenerationModel.call(chatModel, prompt, aiNodeConfig);
+            log.debug("会话名称生成节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);
         }

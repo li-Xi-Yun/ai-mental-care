@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI Mental Care - 前端页面设计图（修订版）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;padding-bottom:60px}
+.pt{text-align:center;padding:40px 0 8px;font-size:32px;font-weight:700;color:#1a1a2e}
+.ps{text-align:center;padding:0 0 30px;font-size:16px;color:#666}
+.sec{margin:0 auto 50px;max-width:1400px;padding:0 30px}
+.st{font-size:22px;font-weight:600;color:#1a1a2e;margin-bottom:8px;border-left:4px solid #6c63ff;padding-left:12px}
+.sd{font-size:14px;color:#888;margin-bottom:20px;padding-left:16px}
+.pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(640px,1fr));gap:30px}
+.cd{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden}
+.ch{padding:16px 20px;background:linear-gradient(135deg,#6c63ff,#3f3d9e);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.ch h3{font-size:16px;font-weight:600}
+.ch .rt{font-size:12px;opacity:.8;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px}
+.cb{padding:20px}
+.wf{border:1px dashed #ccc;border-radius:8px;overflow:hidden;font-size:12px;color:#555}
+.pl{display:flex;flex-direction:column;min-height:380px}
+.ph{height:48px;background:#e8e6ff;display:flex;align-items:center;padding:0 16px;gap:16px;border-bottom:1px solid #d0cef8}
+.ph .logo{font-weight:700;color:#6c63ff;font-size:14px;margin-right:20px}
+.ph .ni{padding:4px 12px;border-radius:4px;font-size:12px}
+.ph .ni.a{background:#6c63ff;color:#fff}
+.ph .sp{flex:1}
+.ph .ua{width:28px;height:28px;border-radius:50%;background:#6c63ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer}
+.pm{flex:1;background:#fafafa;padding:16px}
+.al{display:flex;min-height:380px}
+.as{width:180px;background:#1a1a2e;color:#ccc;padding:12px 0;flex-shrink:0}
+.as .alo{padding:12px 16px;font-size:13px;font-weight:600;color:#fff;border-bottom:1px solid #333;margin-bottom:8px}
+.as .mi{padding:10px 20px;font-size:12px;display:flex;align-items:center;gap:8px}
+.as .mi.a{background:#6c63ff;color:#fff}
+.as .mic{width:16px;height:16px;border-radius:3px;background:rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;font-size:9px}
+.ar{flex:1;display:flex;flex-direction:column}
+.ah{height:48px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 16px;justify-content:space-between}
+.am{flex:1;background:#f5f5f5;padding:16px}
+.bp{display:inline-block;padding:4px 12px;border-radius:4px;font-size:11px}
+.b1{background:#6c63ff;color:#fff}
+.b2{background:#fff;border:1px solid #d9d9d9;color:#333}
+.inp{border:1px solid #d9d9d9;border-radius:4px;padding:4px 8px;font-size:11px;display:inline-block;min-width:120px;background:#fff}
+.tg{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px}
+.tb{background:#e6f7ff;color:#1890ff}
+.tgn{background:#f6ffed;color:#52c41a}
+.to{background:#fff7e6;color:#fa8c16}
+.tr{background:#fff1f0;color:#ff4d4f}
+.wt{width:100%;border-collapse:collapse;font-size:11px}
+.wt th{background:#fafafa;padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600}
+.wt td{padding:6px 8px;border-bottom:1px solid #f0f0f0}
+.sbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.pgn{display:flex;justify-content:flex-end;margin-top:10px;gap:4px;align-items:center;font-size:11px}
+.pgn .pb{padding:2px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:11px}
+.pgn .pb.a{background:#6c63ff;color:#fff;border-color:#6c63ff}
+.csw{width:60px;height:60px;border-radius:10px;margin-bottom:4px}
+.csl{font-size:11px;color:#666}
+.csv{font-size:10px;color:#999}
+.csi{text-align:center}
+.chg{background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#ad6800}
+.chg b{color:#8c6d1f}
+@media(max-width:700px){.pg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="pt">AI Mental Care 前端页面设计图（修订版）</div>
+<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 根据反馈修订的静态页面方案</div>
+
+<!-- 修订说明 -->
+<div class="sec">
+<div class="st">修订说明</div>
+<div class="sd">根据反馈对以下 4 处设计进行了调整</div>
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div style="padding:16px;background:#fffbe6;border-radius:8px;border:1px solid #ffe58f;">
+<div style="font-size:14px;font-weight:600;color:#8c6d1f;margin-bottom:8px;">修订 1：管理端文件管理</div>
+<div style="font-size:13px;color:#666;line-height:1.8;">
+<b>原方案：</b>文件网格卡片布局<br/>
+<b>新方案：</b>列表/表格形式，与用户管理、量表管理风格统一<br/>
+<b>原因：</b>管理端以数据驱动为主，表格更高效
+</div>
+</div>
+<div style="padding:16px;background:#fffbe6;border-radius:8px;border:1px solid #ffe58f;">
+<div style="font-size:14px;font-weight:600;color:#8c6d1f;margin-bottom:8px;">修订 2：用户端登录/注册</div>
+<div style="font-size:13px;color:#666;line-height:1.8;">
+<b>原方案：</b>独立页面 /login<br/>
+<b>新方案：</b>弹窗（Dialog）形式，在当前页面弹出<br/>
+<b>原因：</b>用户无需跳转页面，体验更流畅
+</div>
+</div>
+<div style="padding:16px;background:#fffbe6;border-radius:8px;border:1px solid #ffe58f;">
+<div style="font-size:14px;font-weight:600;color:#8c6d1f;margin-bottom:8px;">修订 3：AI 对话页三栏布局</div>
+<div style="font-size:13px;color:#666;line-height:1.8;">
+<b>原方案：</b>左侧对话列表 + 右侧聊天窗口（两栏）<br/>
+<b>新方案：</b>左栏（对话列表，窄）+ 中栏（聊天窗口）+ 右栏（情绪分析面板）<br/>
+<b>关键：</b>三栏相互独立，可分别开关显示/隐藏
+</div>
+</div>
+<div style="padding:16px;background:#fffbe6;border-radius:8px;border:1px solid #ffe58f;">
+<div style="font-size:14px;font-weight:600;color:#8c6d1f;margin-bottom:8px;">修订 4：情绪分析 → 心理诊断</div>
+<div style="font-size:13px;color:#666;line-height:1.8;">
+<b>原方案：</b>情绪分析页（图表+卡片总览）<br/>
+<b>新方案：</b>心理诊断页，展示有诊断数据的会话列表，点击查看详细诊断数据，每条可折叠<br/>
+<b>原因：</b>以会话为维度组织诊断数据，更贴合业务逻辑
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 整体架构图 -->
+<div class="sec">
+<div class="st">整体页面架构（修订后）</div>
+<div class="sd">黄色标记 = 本次修订变更的页面</div>
+<div style="background:#fff;border-radius:12px;padding:30px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+<svg viewBox="0 0 1300 440" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#6c63ff"/><stop offset="100%" style="stop-color:#3f3d9e"/></linearGradient>
+<filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.1"/></filter>
+</defs>
+<rect x="540" y="10" width="220" height="50" rx="25" fill="url(#g1)" filter="url(#sh)"/>
+<text x="650" y="42" text-anchor="middle" fill="#fff" font-size="16" font-weight="600">AI Mental Care</text>
+<line x1="590" y1="60" x2="280" y2="100" stroke="#6c63ff" stroke-width="2" stroke-dasharray="6,3"/>
+<line x1="710" y1="60" x2="1020" y2="100" stroke="#ff6b6b" stroke-width="2" stroke-dasharray="6,3"/>
+<rect x="100" y="100" width="360" height="50" rx="10" fill="#f0eeff" stroke="#6c63ff" stroke-width="2" filter="url(#sh)"/>
+<text x="280" y="130" text-anchor="middle" fill="#6c63ff" font-size="15" font-weight="600">用户端 Portal (路径: /)</text>
+<rect x="840" y="100" width="360" height="50" rx="10" fill="#fff0f0" stroke="#ff6b6b" stroke-width="2" filter="url(#sh)"/>
+<text x="1020" y="130" text-anchor="middle" fill="#ff6b6b" font-size="15" font-weight="600">管理端 Admin (路径: /admin)</text>
+<line x1="180" y1="150" x2="120" y2="185" stroke="#6c63ff" stroke-width="1.5" opacity=".5"/>
+<line x1="240" y1="150" x2="260" y2="185" stroke="#6c63ff" stroke-width="1.5" opacity=".5"/>
+<line x1="320" y1="150" x2="400" y2="185" stroke="#6c63ff" stroke-width="1.5" opacity=".5"/>
+<line x1="360" y1="150" x2="540" y2="185" stroke="#6c63ff" stroke-width="1.5" opacity=".5"/>
+<rect x="30" y="185" width="140" height="40" rx="8" fill="#fffbe6" stroke="#fa8c16" stroke-width="1.5"/>
+<text x="100" y="210" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">登录/注册弹窗</text>
+<rect x="190" y="185" width="140" height="40" rx="8" fill="#fffbe6" stroke="#fa8c16" stroke-width="1.5"/>
+<text x="260" y="210" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">AI对话(三栏)</text>
+<rect x="350" y="185" width="140" height="40" rx="8" fill="#fffbe6" stroke="#fa8c16" stroke-width="1.5"/>
+<text x="420" y="210" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">心理诊断页</text>
+<rect x="510" y="185" width="140" height="40" rx="8" fill="#fff" stroke="#6c63ff" stroke-width="1.5"/>
+<text x="580" y="210" text-anchor="middle" fill="#333" font-size="12" font-weight="500">量表测评页</text>
+<line x1="280" y1="150" x2="280" y2="250" stroke="#6c63ff" stroke-width="1.5" opacity=".5"/>
+<rect x="210" y="250" width="140" height="40" rx="8" fill="#fff" stroke="#6c63ff" stroke-width="1.5"/>
+<text x="280" y="275" text-anchor="middle" fill="#333" font-size="12" font-weight="500">个人中心页</text>
+<line x1="920" y1="150" x2="870" y2="185" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<line x1="980" y1="150" x2="1020" y2="185" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<line x1="1040" y1="150" x2="1170" y2="185" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<line x1="1080" y1="150" x2="1320" y2="185" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<rect x="800" y="185" width="140" height="40" rx="8" fill="#fff" stroke="#ff6b6b" stroke-width="1.5"/>
+<text x="870" y="210" text-anchor="middle" fill="#333" font-size="12" font-weight="500">管理员登录</text>
+<rect x="960" y="185" width="140" height="40" rx="8" fill="#fff" stroke="#ff6b6b" stroke-width="1.5"/>
+<text x="1030" y="210" text-anchor="middle" fill="#333" font-size="12" font-weight="500">用户管理</text>
+<rect x="1120" y="185" width="140" height="40" rx="8" fill="#fffbe6" stroke="#fa8c16" stroke-width="1.5"/>
+<text x="1190" y="210" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">文件管理(列表)</text>
+<line x1="1020" y1="150" x2="960" y2="250" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<line x1="1060" y1="150" x2="1120" y2="250" stroke="#ff6b6b" stroke-width="1.5" opacity=".5"/>
+<rect x="890" y="250" width="140" height="40" rx="8" fill="#fff" stroke="#ff6b6b" stroke-width="1.5"/>
+<text x="960" y="275" text-anchor="middle" fill="#333" font-size="12" font-weight="500">量表管理</text>
+<rect x="1050" y="250" width="140" height="40" rx="8" fill="#fff" stroke="#ff6b6b" stroke-width="1.5"/>
+<text x="1120" y="275" text-anchor="middle" fill="#333" font-size="12" font-weight="500">症状字典</text>
+<rect x="30" y="330" width="1240" height="90" rx="8" fill="#fafafa" stroke="#e5e7eb"/>
+<text x="60" y="358" fill="#333" font-size="13" font-weight="600">技术栈：</text>
+<text x="140" y="358" fill="#666" font-size="12">Vue 3 + TypeScript</text>
+<text x="300" y="358" fill="#666" font-size="12">Element Plus (UI组件库)</text>
+<text x="500" y="358" fill="#666" font-size="12">Tailwind CSS (样式工具)</text>
+<text x="690" y="358" fill="#666" font-size="12">Pinia (状态管理)</text>
+<text x="840" y="358" fill="#666" font-size="12">Vue Router (路由)</text>
+<text x="1000" y="358" fill="#666" font-size="12">Axios (HTTP请求)</text>
+<text x="60" y="382" fill="#333" font-size="13" font-weight="600">设计原则：</text>
+<text x="140" y="382" fill="#666" font-size="12">柔和紫蓝色调（心理健康主题）</text>
+<text x="370" y="382" fill="#666" font-size="12">圆角卡片式布局</text>
+<text x="520" y="382" fill="#666" font-size="12">响应式设计</text>
+<text x="650" y="382" fill="#666" font-size="12">温暖友好的交互体验</text>
+<text x="860" y="382" fill="#666" font-size="12">先静态Mock数据，后对接API</text>
+<rect x="60" y="396" width="12" height="12" rx="2" fill="#fffbe6" stroke="#fa8c16" stroke-width="1"/>
+<text x="80" y="407" fill="#8c6d1f" font-size="12">黄色标记 = 本次修订变更的页面</text>
+</svg>
+</div>
+</div>
+
+<!-- 用户端页面 -->
+<div class="sec">
+<div class="st">用户端（Portal）页面设计</div>
+<div class="sd">面向普通用户的核心功能页面，以温暖、安全、私密感为设计基调</div>
+<div class="pg">
+
+<!-- 1. Login/Register Dialog -->
+<div class="cd">
+<div class="ch"><h3>🔑 登录/注册弹窗</h3><span class="rt">Dialog 弹窗（非独立页面）</span></div>
+<div class="cb">
+<div class="chg"><b>修订：</b>从独立页面改为弹窗形式，用户点击导航栏"登录"时弹出，无需跳转页面</div>
+<div class="wf" style="min-height:380px;position:relative;background:#fafafa;">
+<div style="padding:16px;opacity:.5;">
+<div style="height:40px;background:#e8e6ff;border-radius:6px;display:flex;align-items:center;padding:0 16px;gap:16px;margin-bottom:12px;">
+<span style="font-weight:700;color:#6c63ff;font-size:13px;">AI Mental Care</span>
+<span style="font-size:11px;">首页</span>
+<span style="font-size:11px;">AI对话</span>
+<span style="font-size:11px;">心理诊断</span>
+<span style="font-size:11px;">量表测评</span>
+<span style="font-size:11px;">个人中心</span>
+<span style="flex:1;"></span>
+<span style="font-size:11px;color:#6c63ff;cursor:pointer;">登录</span>
+</div>
+<div style="height:200px;background:#fff;border-radius:6px;border:1px solid #f0f0f0;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;">页面内容区域（被遮罩覆盖）</div>
+</div>
+<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
+<div style="background:#fff;border-radius:12px;padding:28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+<div style="text-align:center;font-size:18px;font-weight:700;color:#6c63ff;margin-bottom:4px;">AI Mental Care</div>
+<div style="text-align:center;font-size:11px;color:#999;margin-bottom:16px;">AI 心理健康关怀平台</div>
+<div style="display:flex;margin-bottom:16px;border-bottom:2px solid #f0f0f0;">
+<div style="flex:1;text-align:center;padding:8px 0;font-size:12px;font-weight:600;color:#6c63ff;border-bottom:2px solid #6c63ff;margin-bottom:-2px;">登录</div>
+<div style="flex:1;text-align:center;padding:8px 0;font-size:12px;color:#999;">注册</div>
+</div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">用户名</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入用户名</div></div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">密码</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入密码</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:10px;">
+<label style="color:#666;"><input type="checkbox" checked/> 记住我</label>
+<a href="#" style="color:#6c63ff;">忘记密码？</a>
+</div>
+<div style="width:100%;padding:8px;background:#6c63ff;color:#fff;border-radius:6px;font-size:12px;text-align:center;margin-top:8px;">登 录</div>
+<div style="text-align:center;margin-top:10px;font-size:10px;color:#999;">其他方式：<span style="color:#6c63ff;">微信</span> | <span style="color:#6c63ff;">手机验证码</span></div>
+</div>
+</div>
+</div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>LoginDialog（弹窗容器）、LoginForm / RegisterForm（Tab切换）<br/>
+<b>交互：</b>点击导航栏"登录"弹出 → Tab切换登录/注册 → 表单校验 → 关闭弹窗回到原页面<br/>
+<b>路由：</b>不再需要 /login 独立路由，弹窗由 Pinia store 控制显隐
+</div>
+</div>
+</div>
+
+<!-- 2. Conversation Page (3-column) -->
+<div class="cd">
+<div class="ch"><h3>💬 AI 对话页（三栏布局）</h3><span class="rt">/conversation</span></div>
+<div class="cb">
+<div class="chg"><b>修订：</b>左侧对话列表缩窄 + 新增右侧情绪分析面板 + 三栏相互独立可分别开关</div>
+<div class="wf">
+<div class="pl">
+<div class="ph">
+<span class="logo">AI Mental Care</span>
+<span class="ni">首页</span>
+<span class="ni a">AI对话</span>
+<span class="ni">心理诊断</span>
+<span class="ni">量表测评</span>
+<span class="ni">个人中心</span>
+<span class="sp"></span>
+<span class="ua">U</span>
+</div>
+<div class="pm" style="padding:0;">
+<div style="display:flex;height:340px;">
+<div style="width:160px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;">
+<div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+<span style="font-size:12px;font-weight:600;">对话</span>
+<span class="bp b1" style="font-size:9px;padding:2px 6px;">+</span>
+</div>
+<div style="flex:1;overflow:hidden;">
+<div style="padding:8px 10px;background:#f0eeff;border-bottom:1px solid #f5f5f5;">
+<div style="font-size:11px;font-weight:500;margin-bottom:1px;">心情困扰</div>
+<div style="font-size:9px;color:#999;">今天 14:30</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid #f5f5f5;">
+<div style="font-size:11px;font-weight:500;margin-bottom:1px;">工作压力</div>
+<div style="font-size:9px;color:#999;">昨天</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid #f5f5f5;">
+<div style="font-size:11px;font-weight:500;margin-bottom:1px;">睡眠问题</div>
+<div style="font-size:9px;color:#999;">3天前</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid #f5f5f5;">
+<div style="font-size:11px;font-weight:500;margin-bottom:1px;">人际关系</div>
+<div style="font-size:9px;color:#999;">5天前</div>
+</div>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;background:#fafafa;min-width:0;">
+<div style="height:36px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 12px;justify-content:space-between;">
+<span style="font-size:12px;font-weight:500;">心情困扰</span>
+<div style="display:flex;gap:6px;">
+<span class="bp b2" style="font-size:9px;padding:2px 6px;" title="切换对话列表">☰</span>
+<span class="bp b1" style="font-size:9px;padding:2px 6px;" title="切换情绪面板">📊</span>
+</div>
+</div>
+<div style="flex:1;padding:10px;overflow:hidden;">
+<div style="display:flex;margin-bottom:8px;">
+<div style="max-width:70%;padding:7px 10px;border-radius:10px 10px 10px 2px;font-size:11px;line-height:1.5;background:#fff;border:1px solid #e5e7eb;">你好！我是你的AI心理健康助手，有什么想和我聊聊的吗？</div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+<div style="max-width:70%;padding:7px 10px;border-radius:10px 10px 2px 10px;font-size:11px;line-height:1.5;background:#6c63ff;color:#fff;">最近工作压力很大，经常失眠...</div>
+</div>
+<div style="display:flex;margin-bottom:8px;">
+<div style="max-width:70%;padding:7px 10px;border-radius:10px 10px 10px 2px;font-size:11px;line-height:1.5;background:#fff;border:1px solid #e5e7eb;">我理解工作压力带来的困扰。能具体说说是什么让你感到压力吗？</div>
+</div>
+</div>
+<div style="padding:8px 10px;background:#fff;border-top:1px solid #e5e7eb;display:flex;gap:6px;align-items:flex-end;">
+<div style="flex:1;border:1px solid #d9d9d9;border-radius:6px;padding:6px 8px;min-height:32px;font-size:11px;background:#fafafa;color:#999;">输入消息...</div>
+<span class="bp b2" style="font-size:10px;">🎤</span>
+<span class="bp b1" style="font-size:10px;">发送</span>
+</div>
+</div>
+<div style="width:200px;background:#fff;border-left:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;">
+<div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+<span style="font-size:12px;font-weight:600;">情绪分析</span>
+<span style="font-size:10px;color:#999;cursor:pointer;">✕</span>
+</div>
+<div style="flex:1;padding:10px;overflow:hidden;font-size:11px;">
+<div style="margin-bottom:10px;">
+<div style="font-weight:500;margin-bottom:4px;">当前情绪</div>
+<div style="display:flex;align-items:center;gap:8px;">
+<div style="width:50px;height:50px;border-radius:50%;background:conic-gradient(#6c63ff 0% 40%,#ff6b6b 40% 65%,#52c41a 65% 85%,#fa8c16 85% 100%);"></div>
+<div style="line-height:1.8;font-size:10px;">
+<span style="color:#6c63ff;">●</span> 平静<br/>
+<span style="color:#ff6b6b;">●</span> 焦虑<br/>
+<span style="color:#52c41a;">●</span> 开心<br/>
+<span style="color:#fa8c16;">●</span> 低落
+</div>
+</div>
+</div>
+<div style="margin-bottom:10px;">
+<div style="font-weight:500;margin-bottom:4px;">情绪趋势</div>
+<svg viewBox="0 0 160 50" width="100%" height="50">
+<polyline points="5,40 25,25 45,35 65,15 85,28 105,12 125,22 145,8" fill="none" stroke="#6c63ff" stroke-width="1.5"/>
+</svg>
+</div>
+<div style="margin-bottom:10px;">
+<div style="font-weight:500;margin-bottom:4px;">关键词</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px;">
+<span class="tg to" style="font-size:9px;">工作压力</span>
+<span class="tg tr" style="font-size:9px;">失眠</span>
+<span class="tg tb" style="font-size:9px;">焦虑</span>
+<span class="tg tgn" style="font-size:9px;">倾诉</span>
+</div>
+</div>
+<div>
+<div style="font-weight:500;margin-bottom:4px;">诊断建议</div>
+<div style="font-size:10px;color:#666;line-height:1.6;">建议尝试放松训练和规律作息，如持续失眠建议就医。</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>ConversationList（左栏，可隐藏）、ChatWindow（中栏，核心）、EmotionPanel（右栏，可隐藏）<br/>
+<b>三栏控制：</b>中栏顶部工具栏有 ☰ 和 📊 两个开关按钮，分别控制左栏和右栏的显示/隐藏<br/>
+<b>交互：</b>新建/切换/删除对话、发送文字/语音、右栏实时展示当前会话情绪分析
+</div>
+</div>
+</div>
+
+<!-- 3. Psychological Diagnosis Page -->
+<div class="cd">
+<div class="ch"><h3>🧠 心理诊断页</h3><span class="rt">/diagnosis（原 /emotion）</span></div>
+<div class="cb">
+<div class="chg"><b>修订：</b>原"情绪分析"页改为"心理诊断"页。展示有诊断数据的会话列表，点击展开详细诊断数据，每条可折叠</div>
+<div class="wf">
+<div class="pl">
+<div class="ph">
+<span class="logo">AI Mental Care</span>
+<span class="ni">首页</span><span class="ni">AI对话</span><span class="ni a">心理诊断</span><span class="ni">量表测评</span><span class="ni">个人中心</span>
+<span class="sp"></span><span class="ua">U</span>
+</div>
+<div class="pm">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<h3 style="font-size:15px;font-weight:600;">心理诊断</h3>
+<div style="display:flex;gap:6px;">
+<span class="bp b2">全部</span>
+<span class="bp b1">需关注</span>
+<span class="bp b2">正常</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;">
+<div style="background:#fff;border-radius:8px;border:1px solid #f0f0f0;overflow:hidden;">
+<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;background:#f8f7ff;">
+<span style="font-size:14px;">💬</span>
+<div style="flex:1;">
+<div style="font-size:13px;font-weight:600;">心情困扰与工作压力</div>
+<div style="font-size:10px;color:#999;margin-top:2px;">最近诊断：2026-09-08 | 共3条诊断记录</div>
+</div>
+<span class="tg to" style="font-size:9px;">轻度焦虑</span>
+<span style="font-size:10px;color:#6c63ff;">▼</span>
+</div>
+<div style="padding:0 14px 10px;border-top:1px solid #f5f5f5;">
+<div style="margin-top:8px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;overflow:hidden;">
+<div style="padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="font-size:11px;">📋</span>
+<div style="flex:1;">
+<span style="font-size:11px;font-weight:500;">诊断 #1 — 轻度焦虑倾向</span>
+<span style="font-size:9px;color:#999;margin-left:6px;">2026-09-08 14:30</span>
+</div>
+<span class="tg to" style="font-size:8px;">轻度</span>
+<span style="font-size:9px;color:#999;">▼</span>
+</div>
+<div style="padding:6px 10px 8px;border-top:1px solid #f0f0f0;font-size:10px;color:#666;line-height:1.7;">
+<div style="margin-bottom:4px;"><b>主要情绪：</b>焦虑(45%)、紧张(30%)、低落(25%)</div>
+<div style="margin-bottom:4px;"><b>触发因素：</b>工作截止日期临近、睡眠不足</div>
+<div><b>AI建议：</b>建议每日进行10分钟深呼吸放松训练，保持规律作息</div>
+</div>
+</div>
+<div style="margin-top:6px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;">
+<div style="padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="font-size:11px;">📋</span>
+<div style="flex:1;">
+<span style="font-size:11px;font-weight:500;">诊断 #2 — 情绪波动正常</span>
+<span style="font-size:9px;color:#999;margin-left:6px;">2026-09-06 09:15</span>
+</div>
+<span class="tg tgn" style="font-size:8px;">正常</span>
+<span style="font-size:9px;color:#999;">▶</span>
+</div>
+</div>
+<div style="margin-top:6px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;">
+<div style="padding:8px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="font-size:11px;">📋</span>
+<div style="flex:1;">
+<span style="font-size:11px;font-weight:500;">诊断 #3 — 工作压力相关</span>
+<span style="font-size:9px;color:#999;margin-left:6px;">2026-09-03 20:00</span>
+</div>
+<span class="tg tb" style="font-size:8px;">关注</span>
+<span style="font-size:9px;color:#999;">▶</span>
+</div>
+</div>
+</div>
+</div>
+<div style="background:#fff;border-radius:8px;border:1px solid #f0f0f0;">
+<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+<span style="font-size:14px;">💭</span>
+<div style="flex:1;">
+<div style="font-size:13px;font-weight:600;">睡眠质量讨论</div>
+<div style="font-size:10px;color:#999;margin-top:2px;">最近诊断：2026-09-05 | 共2条诊断记录</div>
+</div>
+<span class="tg tgn" style="font-size:9px;">正常</span>
+<span style="font-size:10px;color:#999;">▶</span>
+</div>
+</div>
+<div style="background:#fff;border-radius:8px;border:1px solid #f0f0f0;">
+<div style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+<span style="font-size:14px;">🌙</span>
+<div style="flex:1;">
+<div style="font-size:13px;font-weight:600;">人际关系困扰</div>
+<div style="font-size:10px;color:#999;margin-top:2px;">最近诊断：2026-09-01 | 共1条诊断记录</div>
+</div>
+<span class="tg to" style="font-size:9px;">轻度</span>
+<span style="font-size:10px;color:#999;">▶</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>DiagnosisConversationList（会话列表）、DiagnosisConversationItem（会话项，可展开）、DiagnosisDetailItem（诊断详情项，可折叠）<br/>
+<b>交互：</b>筛选（全部/需关注/正常）→ 点击会话展开诊断列表 → 点击诊断项展开/折叠详情 → 每条详情含情绪占比、触发因素、AI建议
+</div>
+</div>
+</div>
+
+<!-- 4. Scale Assessment Page -->
+<div class="cd">
+<div class="ch"><h3>📋 量表测评页</h3><span class="rt">/scale</span></div>
+<div class="cb">
+<div class="wf">
+<div class="pl">
+<div class="ph">
+<span class="logo">AI Mental Care</span>
+<span class="ni">首页</span><span class="ni">AI对话</span><span class="ni">心理诊断</span><span class="ni a">量表测评</span><span class="ni">个人中心</span>
+<span class="sp"></span><span class="ua">U</span>
+</div>
+<div class="pm">
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<span class="bp b1" style="border-radius:16px;">全部</span><span class="bp b2" style="border-radius:16px;">焦虑评估</span><span class="bp b2" style="border-radius:16px;">抑郁评估</span><span class="bp b2" style="border-radius:16px;">压力评估</span><span class="bp b2" style="border-radius:16px;">睡眠评估</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+<div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #f0f0f0;text-align:center;"><div style="width:36px;height:36px;border-radius:8px;margin:0 auto 6px;background:#fff0f0;display:flex;align-items:center;justify-content:center;font-size:18px;">😰</div><div style="font-size:11px;font-weight:600;margin-bottom:2px;">SAS 焦虑自评量表</div><div style="font-size:9px;color:#999;margin-bottom:6px;">评估焦虑状态程度</div><span class="bp b1" style="font-size:9px;">开始测评</span></div>
+<div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #f0f0f0;text-align:center;"><div style="width:36px;height:36px;border-radius:8px;margin:0 auto 6px;background:#f0f5ff;display:flex;align-items:center;justify-content:center;font-size:18px;">😔</div><div style="font-size:11px;font-weight:600;margin-bottom:2px;">SDS 抑郁自评量表</div><div style="font-size:9px;color:#999;margin-bottom:6px;">评估抑郁状态程度</div><span class="bp b1" style="font-size:9px;">开始测评</span></div>
+<div style="background:#fff;border-radius:8px;padding:12px;border:1px solid #f0f0f0;text-align:center;"><div style="width:36px;height:36px;border-radius:8px;margin:0 auto 6px;background:#f0fff0;display:flex;align-items:center;justify-content:center;font-size:18px;">😴</div><div style="font-size:11px;font-weight:600;margin-bottom:2px;">PSQI 睡眠质量量表</div><div style="font-size:9px;color:#999;margin-bottom:6px;">评估睡眠质量状况</div><span class="bp b1" style="font-size:9px;">开始测评</span></div>
+</div>
+<div style="margin-top:12px;background:#fff;border-radius:8px;padding:10px;border:1px solid #f0f0f0;">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px;">我的测评记录</div>
+<table class="wt"><tr><th>量表名称</th><th>测评时间</th><th>得分</th><th>结果</th><th>操作</th></tr>
+<tr><td>SAS 焦虑自评</td><td>2026-09-08</td><td>52</td><td><span class="tg to">轻度焦虑</span></td><td><span style="color:#6c63ff;font-size:10px;">查看详情</span></td></tr>
+<tr><td>SDS 抑郁自评</td><td>2026-09-05</td><td>38</td><td><span class="tg tgn">正常</span></td><td><span style="color:#6c63ff;font-size:10px;">查看详情</span></td></tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>ScaleCategory、ScaleCard、ScaleRecordTable、ScaleDialog<br/>
+<b>交互：</b>分类筛选、开始测评（步骤式答题）、查看历史记录
+</div>
+</div>
+</div>
+
+<!-- 5. Profile Page -->
+<div class="cd">
+<div class="ch"><h3>👤 个人中心页</h3><span class="rt">/profile</span></div>
+<div class="cb">
+<div class="wf">
+<div class="pl">
+<div class="ph">
+<span class="logo">AI Mental Care</span>
+<span class="ni">首页</span><span class="ni">AI对话</span><span class="ni">心理诊断</span><span class="ni">量表测评</span><span class="ni a">个人中心</span>
+<span class="sp"></span><span class="ua">U</span>
+</div>
+<div class="pm">
+<div style="display:grid;grid-template-columns:240px 1fr;gap:14px;">
+<div style="background:#fff;border-radius:8px;padding:16px;text-align:center;border:1px solid #f0f0f0;">
+<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#3f3d9e);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;">U</div>
+<div style="font-size:14px;font-weight:600;">张小明</div>
+<div style="font-size:10px;color:#999;margin-bottom:10px;">xiaoming@example.com</div>
+<div style="text-align:left;">
+<div style="padding:6px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;background:#f0eeff;color:#6c63ff;font-weight:500;">基本信息</div>
+<div style="padding:6px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;">修改密码</div>
+<div style="padding:6px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;">健康报告</div>
+<div style="padding:6px 10px;font-size:11px;border-radius:4px;">偏好设置</div>
+</div>
+</div>
+<div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #f0f0f0;">
+<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">基本信息</div>
+<div style="display:flex;align-items:center;margin-bottom:10px;"><label style="width:70px;font-size:11px;color:#666;">用户名</label><div class="inp" style="flex:1;">zhangxiaoming</div></div>
+<div style="display:flex;align-items:center;margin-bottom:10px;"><label style="width:70px;font-size:11px;color:#666;">昵称</label><div class="inp" style="flex:1;">张小明</div></div>
+<div style="display:flex;align-items:center;margin-bottom:10px;"><label style="width:70px;font-size:11px;color:#666;">手机号</label><div class="inp" style="flex:1;">138****5678</div></div>
+<div style="display:flex;align-items:center;margin-bottom:10px;"><label style="width:70px;font-size:11px;color:#666;">邮箱</label><div class="inp" style="flex:1;">xiaoming@example.com</div></div>
+<div style="margin-top:12px;"><span class="bp b1">保存修改</span><span class="bp b2" style="margin-left:6px;">取消</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>ProfileSidebar、ProfileForm、PasswordForm、HealthReport<br/>
+<b>交互：</b>编辑/保存信息、修改密码、查看健康报告、退出登录
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- 管理端页面 -->
+<div class="sec">
+<div class="st" style="border-left-color:#ff6b6b;">管理端（Admin）页面设计</div>
+<div class="sd">面向管理员的后台管理页面，以高效、清晰、数据驱动为设计基调</div>
+<div class="pg">
+
+<!-- Admin Login -->
+<div class="cd">
+<div class="ch" style="background:linear-gradient(135deg,#ff6b6b,#c44569);"><h3>🔑 管理员登录页</h3><span class="rt">/admin/login</span></div>
+<div class="cb">
+<div class="wf" style="min-height:320px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6b6b,#c44569);">
+<div style="background:#fff;border-radius:12px;padding:28px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.15);">
+<div style="text-align:center;font-size:18px;font-weight:700;color:#ff6b6b;margin-bottom:4px;">管理后台</div>
+<div style="text-align:center;font-size:11px;color:#999;margin-bottom:16px;">AI Mental Care 管理系统</div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">管理员账号</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入管理员账号</div></div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">密码</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入密码</div></div>
+<div style="width:100%;padding:8px;background:#ff6b6b;color:#fff;border-radius:6px;font-size:12px;text-align:center;margin-top:8px;">登 录</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- User Management -->
+<div class="cd">
+<div class="ch" style="background:linear-gradient(135deg,#ff6b6b,#c44569);"><h3>👥 用户管理页</h3><span class="rt">/admin/user</span></div>
+<div class="cb">
+<div class="wf">
+<div class="al">
+<div class="as"><div class="alo">AI Mental Care</div><div class="mi a"><span class="mic">👥</span> 用户管理</div><div class="mi"><span class="mic">📁</span> 文件管理</div><div class="mi"><span class="mic">📊</span> 量表管理</div><div class="mi"><span class="mic">🏥</span> 症状字典</div></div>
+<div class="ar">
+<div class="ah"><span style="font-size:13px;font-weight:500;">用户管理</span><span style="font-size:11px;color:#999;">管理员：admin</span></div>
+<div class="am">
+<div class="sbar"><span class="inp" style="min-width:160px;color:#999;">搜索用户名/手机号</span><span class="tg tb">状态</span><span class="bp b2">查询</span><span class="bp b2">重置</span><span style="flex:1;"></span><span class="bp b1">+ 新增用户</span></div>
+<table class="wt"><tr><th><input type="checkbox"/></th><th>用户ID</th><th>用户名</th><th>手机号</th><th>注册时间</th><th>状态</th><th>操作</th></tr>
+<tr><td><input type="checkbox"/></td><td>1001</td><td>zhangxm</td><td>138****5678</td><td>2026-08-15</td><td><span class="tg tgn">正常</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1002</td><td>lisi</td><td>139****1234</td><td>2026-08-20</td><td><span class="tg tgn">正常</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1003</td><td>wangwu</td><td>137****9876</td><td>2026-09-01</td><td><span class="tg tr">禁用</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#52c41a;font-size:10px;">启用</span></td></tr></table>
+<div class="pgn"><span>共 156 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">»</span></div>
+</div></div></div></div>
+</div>
+</div>
+
+<!-- File Management (LIST) -->
+<div class="cd">
+<div class="ch" style="background:linear-gradient(135deg,#ff6b6b,#c44569);"><h3>📁 文件管理页（列表形式）</h3><span class="rt">/admin/file</span></div>
+<div class="cb">
+<div class="chg"><b>修订：</b>从网格卡片改为列表/表格形式，与其它管理页面风格统一</div>
+<div class="wf">
+<div class="al">
+<div class="as"><div class="alo">AI Mental Care</div><div class="mi"><span class="mic">👥</span> 用户管理</div><div class="mi a"><span class="mic">📁</span> 文件管理</div><div class="mi"><span class="mic">📊</span> 量表管理</div><div class="mi"><span class="mic">🏥</span> 症状字典</div></div>
+<div class="ar">
+<div class="ah"><span style="font-size:13px;font-weight:500;">文件管理</span><span style="font-size:11px;color:#999;">管理员：admin</span></div>
+<div class="am">
+<div class="sbar"><span class="inp" style="color:#999;">搜索文件名</span><span class="tg tb">分类</span><span class="tg tb">文件类型</span><span class="bp b2">查询</span><span class="bp b2">重置</span><span style="flex:1;"></span><span class="bp b1">📤 上传文件</span></div>
+<table class="wt"><tr><th><input type="checkbox"/></th><th>文件名</th><th>分类</th><th>文件类型</th><th>大小</th><th>上传时间</th><th>上传者</th><th>操作</th></tr>
+<tr><td><input type="checkbox"/></td><td>📄 心理健康指南.pdf</td><td><span class="tg tb">资料</span></td><td>PDF</td><td>2.3 MB</td><td>2026-09-01</td><td>admin</td><td><span style="color:#6c63ff;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>🖼️ 情绪图谱.png</td><td><span class="tg to">图表</span></td><td>PNG</td><td>1.1 MB</td><td>2026-08-28</td><td>admin</td><td><span style="color:#6c63ff;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>📊 量表数据.xlsx</td><td><span class="tg tgn">数据</span></td><td>Excel</td><td>0.8 MB</td><td>2026-08-25</td><td>admin</td><td><span style="color:#6c63ff;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>📝 咨询记录.docx</td><td><span class="tg tb">资料</span></td><td>Word</td><td>0.5 MB</td><td>2026-08-20</td><td>admin</td><td><span style="color:#6c63ff;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>🎵 冥想引导.mp3</td><td><span class="tg to">音频</span></td><td>MP3</td><td>5.2 MB</td><td>2026-08-15</td><td>admin</td><td><span style="color:#6c63ff;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr></table>
+<div class="pgn"><span>共 48 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">»</span></div>
+</div></div></div></div>
+<div style="margin-top:10px;font-size:12px;color:#888;">
+<b>组件拆分：</b>FileTable（文件表格）、FileUpload（上传弹窗）、FileCategory（分类管理）<br/>
+<b>交互：</b>上传/下载/删除、按分类/类型筛选、批量操作、分页
+</div>
+</div>
+</div>
+
+<!-- Scale Management -->
+<div class="cd">
+<div class="ch" style="background:linear-gradient(135deg,#ff6b6b,#c44569);"><h3>📊 量表管理页</h3><span class="rt">/admin/scale</span></div>
+<div class="cb">
+<div class="wf">
+<div class="al">
+<div class="as"><div class="alo">AI Mental Care</div><div class="mi"><span class="mic">👥</span> 用户管理</div><div class="mi"><span class="mic">📁</span> 文件管理</div><div class="mi a"><span class="mic">📊</span> 量表管理</div><div class="mi"><span class="mic">🏥</span> 症状字典</div></div>
+<div class="ar">
+<div class="ah"><span style="font-size:13px;font-weight:500;">量表管理</span><span style="font-size:11px;color:#999;">管理员：admin</span></div>
+<div class="am">
+<div class="sbar"><span class="inp" style="color:#999;">搜索量表名称</span><span class="bp b2">查询</span><span style="flex:1;"></span><span class="bp b1">+ 新增量表</span></div>
+<table class="wt"><tr><th>量表ID</th><th>量表名称</th><th>分类</th><th>题目数</th><th>状态</th><th>操作</th></tr>
+<tr><td>S001</td><td>SAS 焦虑自评量表</td><td><span class="tg tr">焦虑</span></td><td>20</td><td><span class="tg tgn">启用</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#1890ff;font-size:10px;">题目</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td>S002</td><td>SDS 抑郁自评量表</td><td><span class="tg tb">抑郁</span></td><td>20</td><td><span class="tg tgn">启用</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#1890ff;font-size:10px;">题目</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td>S003</td><td>PSQI 睡眠质量</td><td><span class="tg to">睡眠</span></td><td>19</td><td><span class="tg tgn">启用</span></td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#1890ff;font-size:10px;">题目</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr></table>
+</div></div></div></div>
+</div>
+</div>
+
+<!-- Symptom Dictionary -->
+<div class="cd">
+<div class="ch" style="background:linear-gradient(135deg,#ff6b6b,#c44569);"><h3>🏥 症状字典页</h3><span class="rt">/admin/symptom</span></div>
+<div class="cb">
+<div class="wf">
+<div class="al">
+<div class="as"><div class="alo">AI Mental Care</div><div class="mi"><span class="mic">👥</span> 用户管理</div><div class="mi"><span class="mic">📁</span> 文件管理</div><div class="mi"><span class="mic">📊</span> 量表管理</div><div class="mi a"><span class="mic">🏥</span> 症状字典</div></div>
+<div class="ar">
+<div class="ah"><span style="font-size:13px;font-weight:500;">症状字典</span><span style="font-size:11px;color:#999;">管理员：admin</span></div>
+<div class="am">
+<div class="sbar"><span class="inp" style="color:#999;">搜索症状名称</span><span class="bp b2">查询</span><span style="flex:1;"></span><span class="bp b1">+ 新增症状</span></div>
+<table class="wt"><tr><th>症状ID</th><th>症状名称</th><th>分类</th><th>严重等级</th><th>关联量表</th><th>操作</th></tr>
+<tr><td>SY001</td><td>入睡困难</td><td><span class="tg to">睡眠</span></td><td>⭐⭐⭐</td><td>PSQI</td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td>SY002</td><td>持续焦虑</td><td><span class="tg tr">焦虑</span></td><td>⭐⭐⭐⭐</td><td>SAS</td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<tr><td>SY003</td><td>情绪低落</td><td><span class="tg tb">抑郁</span></td><td>⭐⭐⭐</td><td>SDS</td><td><span style="color:#6c63ff;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr></table>
+</div></div></div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- 配色方案 -->
+<div class="sec">
+<div class="st">配色方案与设计规范</div>
+<div class="sd">以心理健康为主题，采用柔和、温暖、安全的色调</div>
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+<div style="display:flex;gap:40px;flex-wrap:wrap;">
+<div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">主色调（Portal 用户端）</h4>
+<div style="display:flex;gap:12px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#6c63ff;"></div><div class="csl">主色</div><div class="csv">#6c63ff</div></div>
+<div class="csi"><div class="csw" style="background:#3f3d9e;"></div><div class="csl">深色</div><div class="csv">#3f3d9e</div></div>
+<div class="csi"><div class="csw" style="background:#f0eeff;"></div><div class="csl">浅底</div><div class="csv">#f0eeff</div></div>
+<div class="csi"><div class="csw" style="background:#e8e6ff;"></div><div class="csl">浅色</div><div class="csv">#e8e6ff</div></div>
+</div>
+</div>
+<div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">辅助色（Admin 管理端）</h4>
+<div style="display:flex;gap:12px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#ff6b6b;"></div><div class="csl">主色</div><div class="csv">#ff6b6b</div></div>
+<div class="csi"><div class="csw" style="background:#c44569;"></div><div class="csl">深色</div><div class="csv">#c44569</div></div>
+<div class="csi"><div class="csw" style="background:#fff0f0;"></div><div class="csl">浅底</div><div class="csv">#fff0f0</div></div>
+</div>
+</div>
+<div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">功能色</h4>
+<div style="display:flex;gap:12px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#52c41a;"></div><div class="csl">成功</div><div class="csv">#52c41a</div></div>
+<div class="csi"><div class="csw" style="background:#fa8c16;"></div><div class="csl">警告</div><div class="csv">#fa8c16</div></div>
+<div class="csi"><div class="csw" style="background:#ff4d4f;"></div><div class="csl">危险</div><div class="csv">#ff4d4f</div></div>
+<div class="csi"><div class="csw" style="background:#1890ff;"></div><div class="csl">信息</div><div class="csv">#1890ff</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 实现步骤 -->
+<div class="sec">
+<div class="st">实现步骤规划</div>
+<div class="sd">分阶段实现，每个阶段独立可验证</div>
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+<svg viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg">
+<defs><filter id="s2"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-opacity="0.08"/></filter></defs>
+<rect x="30" y="20" width="260" height="260" rx="12" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#s2)"/>
+<rect x="30" y="20" width="260" height="40" rx="12" fill="#6c63ff"/>
+<rect x="30" y="48" width="260" height="12" fill="#6c63ff"/>
+<text x="160" y="46" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">

@@ -246,8 +246,8 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
                 Map.entry("topK", config.getTopK() != null ? config.getTopK() : "null"),
                 Map.entry("frequencyPenalty", config.getFrequencyPenalty() != null ? config.getFrequencyPenalty() : "null"),
                 Map.entry("presencePenalty", config.getPresencePenalty() != null ? config.getPresencePenalty() : "null"),
-                Map.entry("repeatPenalty", config.getRepeatPenalty() != null ? config.getRepeatPenalty() : "null"),
-                Map.entry("seed", config.getSeed() != null ? config.getSeed() : "null"),
+                Map.entry("responseFormat", config.getResponseFormat() != null ? config.getResponseFormat() : "null"),
+                Map.entry("stopSequences", config.getStopSequences() != null ? config.getStopSequences() : "null"),
                 Map.entry("retryMaxAttempts", config.getRetryMaxAttempts()),
                 Map.entry("retryDelay", config.getRetryDelay()),
                 Map.entry("retryMultiplier", config.getRetryMultiplier())
@@ -265,8 +265,8 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
                 Map.entry("topK", dto.getTopK() != null ? dto.getTopK() : "null"),
                 Map.entry("frequencyPenalty", dto.getFrequencyPenalty() != null ? dto.getFrequencyPenalty() : "null"),
                 Map.entry("presencePenalty", dto.getPresencePenalty() != null ? dto.getPresencePenalty() : "null"),
-                Map.entry("repeatPenalty", dto.getRepeatPenalty() != null ? dto.getRepeatPenalty() : "null"),
-                Map.entry("seed", dto.getSeed() != null ? dto.getSeed() : "null"),
+                Map.entry("responseFormat", dto.getResponseFormat() != null ? dto.getResponseFormat() : "null"),
+                Map.entry("stopSequences", dto.getStopSequences() != null ? dto.getStopSequences() : "null"),
                 Map.entry("retryMaxAttempts", dto.getRetryMaxAttempts()),
                 Map.entry("retryDelay", dto.getRetryDelay()),
                 Map.entry("retryMultiplier", dto.getRetryMultiplier())
