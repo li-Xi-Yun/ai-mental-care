@@ -20,9 +20,11 @@ import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,7 +38,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DiagnosisSummaryNode implements NodeActionWithConfig {
+public class DiagnosisSummaryNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "diagnosisSummaryNode";
 
@@ -278,5 +280,24 @@ public class DiagnosisSummaryNode implements NodeActionWithConfig {
 
         sb.append("请综合以上所有信息，生成诊断书核心内容总结，并提取核心情绪标签、核心情绪平均置信度和核心情绪强度分值。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        state.value(DiagnosisDataRequest.NAME).ifPresent(req -> input.put("diagnosisDataRequest", req));
+        state.value(DiagnosisData.NAME).ifPresent(data -> input.put("diagnosisData", data));
+        return input.isEmpty() ? null : input;
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "diagnosisContent", (Object) data.getDiagnosisContent(),
+                "coreEmotionLabel", (Object) data.getCoreEmotionLabel(),
+                "coreEmotionConfAvg", (Object) data.getCoreEmotionConfAvg(),
+                "coreEmotionIntensityScore", (Object) data.getCoreEmotionIntensityScore()
+        )).orElse(null);
     }
 }

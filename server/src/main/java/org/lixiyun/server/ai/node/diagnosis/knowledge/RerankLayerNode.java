@@ -19,6 +19,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.springframework.ai.chat.model.ChatModel;
@@ -105,7 +106,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RerankLayerNode implements NodeActionWithConfig {
+public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "rerankLayerNode";
 
@@ -791,4 +792,39 @@ public class RerankLayerNode implements NodeActionWithConfig {
      * @param score 综合分值
      */
     private record ScoredDoc(KnowledgeDocument doc, double score) {}
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        state.value(KnowledgeMatchRequest.NAME).ifPresent(req -> input.put("knowledgeMatchRequest", req));
+        state.value(KnowledgeRetrieveResult.NAME).ifPresent(result -> input.put("knowledgeRetrieveResult", result));
+        return input.isEmpty() ? null : input;
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Map<String, Object> output = new LinkedHashMap<>();
+        Optional<KnowledgeRetrieveResult> resultOpt = state.value(KnowledgeRetrieveResult.NAME);
+        resultOpt.ifPresent(result -> output.put("knowledgeRetrieveResult", Map.of(
+                "symptomSliceList", result.getSymptomSliceList(),
+                "diagnosisSliceList", result.getDiagnosisSliceList(),
+                "interventionSliceList", result.getInterventionSliceList(),
+                "symptomReferencePrompt", result.getSymptomReferencePrompt(),
+                "diagnosisReferencePrompt", result.getDiagnosisReferencePrompt(),
+                "interventionReferencePrompt", result.getInterventionReferencePrompt()
+        )));
+        Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
+        reqOpt.ifPresent(req -> output.put("knowledgeMatchRequest", Map.of(
+                "symptomNeedTransform", req.isSymptomNeedTransform(),
+                "diagnosisNeedTransform", req.isDiagnosisNeedTransform(),
+                "interventionNeedTransform", req.isInterventionNeedTransform(),
+                "symptomRetryCount", req.getSymptomRetryCount(),
+                "diagnosisRetryCount", req.getDiagnosisRetryCount(),
+                "interventionRetryCount", req.getInterventionRetryCount(),
+                "symptomQueryLevel", req.getSymptomQueryLevel(),
+                "diagnosisQueryLevel", req.getDiagnosisQueryLevel(),
+                "interventionQueryLevel", req.getInterventionQueryLevel()
+        )));
+        return output.isEmpty() ? null : output;
+    }
 }

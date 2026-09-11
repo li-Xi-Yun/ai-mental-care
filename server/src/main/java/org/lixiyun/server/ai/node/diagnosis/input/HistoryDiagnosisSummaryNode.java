@@ -15,6 +15,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionDim
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPADStat;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -59,7 +60,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig {
+public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "history-diagnosis-summary-node";
 
@@ -847,4 +848,16 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig {
                 .build());
     }
 
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(ConversationProcessContextBO.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(ir -> Map.of(
+                "historyDiagnosisSummaryResult", (Object) ir.getHistoryDiagnosisSummaryResult()
+        )).orElse(null);
+    }
 }

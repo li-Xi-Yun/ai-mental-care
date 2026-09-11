@@ -20,6 +20,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.springframework.ai.chat.model.ChatModel;
@@ -61,7 +62,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SymptomNormalizeNode implements NodeActionWithConfig {
+public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "symptomNormalizeNode";
 
@@ -713,5 +714,20 @@ public class SymptomNormalizeNode implements NodeActionWithConfig {
             this.matchSource = matchSource;
             this.confidence = new ArrayList<>();
         }
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(InputResult::getCoreInfoExtractResult).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(ir -> Map.of(
+                "symptomNormalizeResult", (Object) ir.getSymptomNormalizeResult(),
+                "interrupted", ir.isInterrupted()
+        )).orElse(null);
     }
 }

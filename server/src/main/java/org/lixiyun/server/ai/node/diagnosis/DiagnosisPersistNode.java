@@ -11,9 +11,11 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,7 +29,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DiagnosisPersistNode implements NodeActionWithConfig {
+public class DiagnosisPersistNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "diagnosisPersistNode";
 
@@ -65,5 +67,18 @@ public class DiagnosisPersistNode implements NodeActionWithConfig {
         emotionDiagnosis.setConversationId(contextBO.getConversation().getId());
         emotionDiagnosis.setUserId(contextBO.getConversation().getUserId());
         return emotionDiagnosis;
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        state.value(DiagnosisData.NAME).ifPresent(data -> input.put("diagnosisData", data));
+        state.value(ConversationProcessContextBO.NAME).ifPresent(ctx -> input.put("conversationProcessContextBO", ctx));
+        return input.isEmpty() ? null : input;
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        return null;
     }
 }

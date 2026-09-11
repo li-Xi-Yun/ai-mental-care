@@ -11,9 +11,11 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.ProcessGraph;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,7 +30,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProcessNode implements NodeActionWithConfig {
+public class ProcessNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "processNode";
 
@@ -62,5 +64,18 @@ public class ProcessNode implements NodeActionWithConfig {
 
         log.info("诊断流程-处理侧节点-完成");
         return Map.of(DiagnosisData.NAME, diagnosisData);
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        state.value(InputResult.NAME).ifPresent(ir -> input.put("inputResult", ir));
+        state.value(KnowledgeRetrieveResult.NAME).ifPresent(kr -> input.put("knowledgeRetrieveResult", kr));
+        return input.isEmpty() ? null : input;
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        return state.value(DiagnosisData.NAME).orElse(null);
     }
 }

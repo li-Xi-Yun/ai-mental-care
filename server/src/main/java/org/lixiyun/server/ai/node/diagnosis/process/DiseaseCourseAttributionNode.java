@@ -13,11 +13,12 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.KeyEventItem;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.diagnosis.process.DiseaseCourseAttributionProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +36,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
+public class DiseaseCourseAttributionNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "diseaseCourseAttributionNode";
 
@@ -154,5 +155,23 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig {
 
         sb.append("请分析并输出病程归因结果，包括核心触发场景、触发关键词、首次出现轮次、症状持续时长、发作模式和首次触发事件描述。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "coreTriggerScene", (Object) data.getCoreTriggerScene(),
+                "coreTriggerKeywords", (Object) data.getCoreTriggerKeywords(),
+                "triggerRoundNum", (Object) data.getTriggerRoundNum(),
+                "symptomDuration", (Object) data.getSymptomDuration(),
+                "onsetPattern", (Object) data.getOnsetPattern(),
+                "firstTriggerDesc", (Object) data.getFirstTriggerDesc()
+        )).orElse(null);
     }
 }

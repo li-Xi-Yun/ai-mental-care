@@ -13,11 +13,12 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.HistoryDiagnosisSummaryResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.diagnosis.process.RiskAssessmentProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +35,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RiskAssessmentNode implements NodeActionWithConfig {
+public class RiskAssessmentNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "riskAssessmentNode";
 
@@ -157,5 +158,24 @@ public class RiskAssessmentNode implements NodeActionWithConfig {
 
         sb.append("请审慎评估并输出风险评估结果，包括情绪风险等级、情绪调节建议、自伤风险等级、自杀风险等级、风险细节描述、是否需要人工干预和是否触发危机预警。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "emotionRiskLevel", data.getEmotionRiskLevel(),
+                "emotionAdjustSuggestion", data.getEmotionAdjustSuggestion(),
+                "needManualIntervene", data.getNeedManualIntervene(),
+                "selfHarmRiskLevel", data.getSelfHarmRiskLevel(),
+                "suicideRiskLevel", data.getSuicideRiskLevel(),
+                "riskDetail", data.getRiskDetail(),
+                "crisisWarning", (Object) data.getCrisisWarning()
+        )).orElse(null);
     }
 }

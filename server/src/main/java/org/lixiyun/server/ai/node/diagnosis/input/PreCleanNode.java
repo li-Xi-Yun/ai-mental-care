@@ -14,6 +14,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLeve
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PreCleanNode implements NodeActionWithConfig {
+public class PreCleanNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "preCleanNode";
 
@@ -198,5 +199,18 @@ public class PreCleanNode implements NodeActionWithConfig {
             return SessionCleanResult.LEVEL_WEAK;
         }
         return SessionCleanResult.LEVEL_VALID;
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(ConversationProcessContextBO.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(ir -> Map.of(
+                "sessionCleanResult", (Object) ir.getSessionCleanResult()
+        )).orElse(null);
     }
 }

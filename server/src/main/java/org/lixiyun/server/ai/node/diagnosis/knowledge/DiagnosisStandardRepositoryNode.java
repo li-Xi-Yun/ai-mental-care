@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig {
+public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "diagnosisStandardRepositoryNode";
 
@@ -76,5 +77,18 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig {
 
         log.info("知识侧-查询诊断标准库-完成，检索到 {} 条记录", diagnosisSliceIds.size());
         return Map.of();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(KnowledgeMatchRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
+        return reqOpt.map(req -> Map.of(
+                "diagnosisSliceIds", (Object) req.getDiagnosisSliceIds()
+        )).orElse(null);
     }
 }

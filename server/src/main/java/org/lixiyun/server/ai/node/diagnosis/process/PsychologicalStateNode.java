@@ -12,11 +12,12 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.diagnosis.process.PsychologicalStateProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PsychologicalStateNode implements NodeActionWithConfig {
+public class PsychologicalStateNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "psychologicalStateNode";
 
@@ -153,5 +154,20 @@ public class PsychologicalStateNode implements NodeActionWithConfig {
 
         sb.append("请评估并输出心理状态与症状评估结果，包括整体心理状态评估、核心症状总结和症状标签集合。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "psychologicalState", (Object) data.getPsychologicalState(),
+                "symptomSummary", (Object) data.getSymptomSummary(),
+                "symptomTags", (Object) data.getSymptomTags()
+        )).orElse(null);
     }
 }

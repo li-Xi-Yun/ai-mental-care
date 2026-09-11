@@ -4,8 +4,10 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class DiagnosisGraph {
     private final KnowledgeNode knowledgeNode;
     private final ProcessNode processNode;
     private final DiagnosisPersistNode diagnosisPersistNode;
+    private final ObservationRegistry observationRegistry;
 
     @Getter
     private static CompiledGraph diagnosisGraph;
@@ -138,7 +141,11 @@ public class DiagnosisGraph {
             workflow.addEdge(ProcessNode.NODE_NAME, DiagnosisPersistNode.NODE_NAME);
             workflow.addEdge(DiagnosisPersistNode.NODE_NAME, StateGraph.END);
 
-            compiledGraph = workflow.compile();
+            compiledGraph = workflow.compile(
+                    CompileConfig.builder()
+                            .withLifecycleListener(new GraphObservationLifecycleListener(observationRegistry))
+                            .build()
+            );
             log.info("诊断主流程图构建完成");
         } catch (GraphStateException e) {
             log.error("诊断主流程图构建失败：{}", e.getMessage());

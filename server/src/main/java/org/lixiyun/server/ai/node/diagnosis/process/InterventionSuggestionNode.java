@@ -17,9 +17,11 @@ import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,7 +35,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class InterventionSuggestionNode implements NodeActionWithConfig {
+public class InterventionSuggestionNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "interventionSuggestionNode";
 
@@ -188,5 +190,24 @@ public class InterventionSuggestionNode implements NodeActionWithConfig {
 
         sb.append("请生成并输出干预建议结果，包括自助调节建议、社会支持建议、专业干预建议和建议优先级。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        state.value(DiagnosisDataRequest.NAME).ifPresent(req -> input.put("diagnosisDataRequest", req));
+        state.value(DiagnosisData.NAME).ifPresent(data -> input.put("diagnosisData", data));
+        return input.isEmpty() ? null : input;
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "selfHelpSuggestion", (Object) data.getSelfHelpSuggestion(),
+                "socialSupportSuggestion", (Object) data.getSocialSupportSuggestion(),
+                "professionalInterveneSuggestion", (Object) data.getProfessionalInterveneSuggestion(),
+                "suggestionPriority", (Object) data.getSuggestionPriority()
+        )).orElse(null);
     }
 }

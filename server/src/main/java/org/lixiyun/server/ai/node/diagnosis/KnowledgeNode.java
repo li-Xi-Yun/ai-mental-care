@@ -14,6 +14,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.EmotionStatis
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.KnowledgeGraph;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +33,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class KnowledgeNode implements NodeActionWithConfig {
+public class KnowledgeNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "knowledgeNode";
 
@@ -55,6 +56,16 @@ public class KnowledgeNode implements NodeActionWithConfig {
 
         log.info("诊断流程-知识侧节点-完成");
         return Map.of(KnowledgeRetrieveResult.NAME, knowledgeRetrieveResult);
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(InputResult.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        return state.value(KnowledgeRetrieveResult.NAME).orElse(null);
     }
 
     private KnowledgeMatchRequest buildKnowledgeMatchRequest(InputResult inputResult) {

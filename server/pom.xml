@@ -107,6 +107,38 @@
             <artifactId>netty-common</artifactId>
         </dependency>
 
+
+        <!-- 自动配置: Graph Observation (一键启用图执行观测) -->
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud.ai</groupId>-->
+<!--            <artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; 观测基础设施 &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.micrometer</groupId>-->
+<!--            <artifactId>micrometer-tracing</artifactId>         &lt;!&ndash; Trace 抽象 &ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.micrometer</groupId>-->
+<!--            <artifactId>micrometer-tracing-bridge-otel</artifactId> &lt;!&ndash; Micrometer → OTel 桥接 &ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.micrometer</groupId>-->
+<!--            <artifactId>micrometer-registry-otlp</artifactId>      &lt;!&ndash; Metrics OTLP 导出 &ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.opentelemetry</groupId>-->
+<!--            <artifactId>opentelemetry-exporter-otlp</artifactId>   &lt;!&ndash; Trace OTLP 导出 &ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.opentelemetry.instrumentation</groupId>-->
+<!--            <artifactId>opentelemetry-logback-appender-1.0</artifactId> &lt;!&ndash; Logs OTLP 导出 &ndash;&gt;-->
+<!--            <version>2.14.0-alpha</version>-->
+<!--        </dependency>-->
+
+
+
     </dependencies>
 
     <build>

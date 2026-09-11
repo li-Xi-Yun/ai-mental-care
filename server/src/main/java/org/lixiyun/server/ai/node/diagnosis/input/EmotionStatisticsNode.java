@@ -11,6 +11,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLeve
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,7 +56,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class EmotionStatisticsNode implements NodeActionWithConfig {
+public class EmotionStatisticsNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     /**
      * 节点名称标识
@@ -657,5 +658,20 @@ public class EmotionStatisticsNode implements NodeActionWithConfig {
      */
     private BigDecimal bd(Number num) {
         return new BigDecimal(num.toString());
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(InputResult::getSessionCleanResult).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(ir -> Map.of(
+                "emotionStatisticsResult", (Object) ir.getEmotionStatisticsResult(),
+                "interrupted", ir.isInterrupted()
+        )).orElse(null);
     }
 }

@@ -12,11 +12,12 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.diagnosis.process.SocialFunctionImpactProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SocialFunctionImpactNode implements NodeActionWithConfig {
+public class SocialFunctionImpactNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "socialFunctionImpactNode";
 
@@ -135,5 +136,20 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig {
 
         sb.append("请评估并输出社会功能影响评估结果，包括社会功能受损程度、受影响的具体领域和对日常生活影响的描述。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "socialFunctionImpact", (Object) data.getSocialFunctionImpact(),
+                "impactDomains", (Object) data.getImpactDomains(),
+                "dailyLifeInfluence", (Object) data.getDailyLifeInfluence()
+        )).orElse(null);
     }
 }

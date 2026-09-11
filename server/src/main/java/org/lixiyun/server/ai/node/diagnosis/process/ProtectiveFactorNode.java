@@ -12,11 +12,12 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.diagnosis.process.ProtectiveFactorProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProtectiveFactorNode implements NodeActionWithConfig {
+public class ProtectiveFactorNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "protectiveFactorNode";
 
@@ -131,5 +132,20 @@ public class ProtectiveFactorNode implements NodeActionWithConfig {
 
         sb.append("请分析并输出保护性因素分析结果，包括社会支持水平、保护性因素/心理资源和应对方式。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.of(
+                "socialSupportLevel", (Object) data.getSocialSupportLevel(),
+                "protectiveFactors", (Object) data.getProtectiveFactors(),
+                "copingStyle", (Object) data.getCopingStyle()
+        )).orElse(null);
     }
 }

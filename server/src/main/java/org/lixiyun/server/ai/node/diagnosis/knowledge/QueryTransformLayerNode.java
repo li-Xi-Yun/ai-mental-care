@@ -13,6 +13,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +78,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class QueryTransformLayerNode implements NodeActionWithConfig {
+public class QueryTransformLayerNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "queryTransformLayerNode";
 
@@ -253,5 +254,20 @@ public class QueryTransformLayerNode implements NodeActionWithConfig {
             case 2 -> "极简版（仅保留核心症状关键词，最大化召回）";
             default -> "精准版";
         };
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(KnowledgeMatchRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
+        return reqOpt.map(req -> Map.of(
+                "symptomPrompt", req.getSymptomPrompt(),
+                "diagnosisPrompt", req.getDiagnosisPrompt(),
+                "interventionPrompt", req.getInterventionPrompt()
+        )).orElse(null);
     }
 }

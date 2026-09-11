@@ -18,6 +18,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
+public class ComprehensiveDiagnosisNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "comprehensiveDiagnosisNode";
 
@@ -195,6 +196,40 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig {
 
         sb.append("请分析并输出情绪综合分析结果，包括整体情绪趋势、负向情绪细分占比和正向情绪细分占比。\n");
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(DiagnosisDataRequest.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("coreEmotionLabel", data.getCoreEmotionLabel()),
+                Map.entry("coreEmotionConfAvg", data.getCoreEmotionConfAvg()),
+                Map.entry("coreEmotionIntensityScore", data.getCoreEmotionIntensityScore()),
+                Map.entry("coreEmotion", data.getCoreEmotion()),
+                Map.entry("secondaryEmotion", data.getSecondaryEmotion()),
+                Map.entry("negativeEmotionRatio", data.getNegativeEmotionRatio()),
+                Map.entry("positiveEmotionRatio", data.getPositiveEmotionRatio()),
+                Map.entry("neutralEmotionRatio", data.getNeutralEmotionRatio()),
+                Map.entry("negativeEmotionDetail", data.getNegativeEmotionDetail()),
+                Map.entry("positiveEmotionDetail", data.getPositiveEmotionDetail()),
+                Map.entry("emotionTrend", data.getEmotionTrend()),
+                Map.entry("emotionPeakRound", data.getEmotionPeakRound()),
+                Map.entry("emotionValleyRound", data.getEmotionValleyRound()),
+                Map.entry("emotionFluctuationAmplitude", data.getEmotionFluctuationAmplitude()),
+                Map.entry("emotionStableRounds", data.getEmotionStableRounds()),
+                Map.entry("emotionStabilityScore", data.getEmotionStabilityScore()),
+                Map.entry("avgP", data.getAvgP()),
+                Map.entry("stdP", data.getStdP()),
+                Map.entry("avgA", data.getAvgA()),
+                Map.entry("stdA", data.getStdA()),
+                Map.entry("avgD", data.getAvgD()),
+                Map.entry("stdD", data.getStdD())
+        )).orElse(null);
     }
 
     private Map<String, BigDecimal> convertToBigDecimalMap(Map<String, Double> source) {

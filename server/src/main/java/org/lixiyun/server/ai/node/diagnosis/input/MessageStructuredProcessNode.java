@@ -18,6 +18,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -48,7 +49,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MessageStructuredProcessNode implements NodeActionWithConfig {
+public class MessageStructuredProcessNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "messageStructuredProcessNode";
 
@@ -149,5 +150,20 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig {
             }
         }
         return sb.toString();
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(InputResult::getSessionCleanResult).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        Optional<InputResult> irOpt = state.value(InputResult.NAME);
+        return irOpt.map(ir -> Map.of(
+                "coreInfoExtractResult", (Object) ir.getCoreInfoExtractResult(),
+                "interrupted", ir.isInterrupted()
+        )).orElse(null);
     }
 }

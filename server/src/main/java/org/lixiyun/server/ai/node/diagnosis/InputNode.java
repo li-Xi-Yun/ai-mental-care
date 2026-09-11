@@ -9,6 +9,7 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.InputGraph;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.stereotype.Component;
@@ -26,7 +27,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class InputNode implements NodeActionWithConfig {
+public class InputNode implements NodeActionWithConfig, NodeExecutionSummary {
 
     public static final String NODE_NAME = "inputNode";
 
@@ -52,5 +53,15 @@ public class InputNode implements NodeActionWithConfig {
 
         log.info("诊断流程-输入侧节点-完成");
         return Map.of(InputResult.NAME, inputResult);
+    }
+
+    @Override
+    public Object inputSummary(OverAllState state) {
+        return state.value(ConversationProcessContextBO.NAME).orElse(null);
+    }
+
+    @Override
+    public Object outputSummary(OverAllState state) {
+        return state.value(InputResult.NAME).orElse(null);
     }
 }
