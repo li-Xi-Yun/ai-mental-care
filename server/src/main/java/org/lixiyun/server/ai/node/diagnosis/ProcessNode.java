@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
@@ -55,12 +56,14 @@ public class ProcessNode implements NodeActionWithConfig, NodeExecutionSummary {
         InputResult inputResult = inputResultOpt.get();
         KnowledgeRetrieveResult knowledgeRetrieveResult = knowledgeRetrieveResultOpt.get();
 
+        ConversationMetadata metadata = (ConversationMetadata) state.value(ConversationMetadata.NAME).orElse(null);
+
         DiagnosisDataRequest diagnosisDataRequest = DiagnosisDataRequest.builder()
                 .inputResult(inputResult)
                 .knowledgeRetrieveResult(knowledgeRetrieveResult)
                 .build();
 
-        DiagnosisData diagnosisData = processGraph.executeGraph(diagnosisDataRequest);
+        DiagnosisData diagnosisData = processGraph.executeGraph(diagnosisDataRequest, metadata);
 
         log.info("诊断流程-处理侧节点-完成");
         return Map.of(DiagnosisData.NAME, diagnosisData);

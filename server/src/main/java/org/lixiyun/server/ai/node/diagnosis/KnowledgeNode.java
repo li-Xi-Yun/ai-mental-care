@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomNormalizeResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.BaseInfo;
@@ -50,9 +51,12 @@ public class KnowledgeNode implements NodeActionWithConfig, NodeExecutionSummary
         }
 
         InputResult inputResult = inputResultOpt.get();
+
+        ConversationMetadata metadata = (ConversationMetadata) state.value(ConversationMetadata.NAME).orElse(null);
+
         KnowledgeMatchRequest knowledgeMatchRequest = buildKnowledgeMatchRequest(inputResult);
 
-        KnowledgeRetrieveResult knowledgeRetrieveResult = knowledgeGraph.executeGraph(knowledgeMatchRequest);
+        KnowledgeRetrieveResult knowledgeRetrieveResult = knowledgeGraph.executeGraph(knowledgeMatchRequest, metadata);
 
         log.info("诊断流程-知识侧节点-完成");
         return Map.of(KnowledgeRetrieveResult.NAME, knowledgeRetrieveResult);

@@ -60,7 +60,7 @@ public class ProtectiveFactorNode implements NodeActionWithConfig, NodeExecution
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        ProtectiveFactorProcessModel.ProtectiveFactorResult result = protectiveFactorProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        ProtectiveFactorProcessModel.ProtectiveFactorResult result = protectiveFactorProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-保护性因素分析-模型返回结果：{}", result);
 
         if (result == null) {

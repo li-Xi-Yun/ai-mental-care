@@ -60,7 +60,7 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig, NodeExecu
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        SocialFunctionImpactProcessModel.SocialFunctionImpactResult result = socialFunctionImpactProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        SocialFunctionImpactProcessModel.SocialFunctionImpactResult result = socialFunctionImpactProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-社会功能影响评估-模型返回结果：{}", result);
 
         if (result == null) {

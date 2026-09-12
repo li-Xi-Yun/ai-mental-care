@@ -430,6 +430,20 @@ public class RedisUtils {
     }
 
     /**
+     * 递增Hash中的字段值（HINCRBY）
+     * <p>对Hash中指定字段执行原子递增操作，底层对应Redis HINCRBY命令</p>
+     *
+     * @param key   Redis键
+     * @param hKey  Hash字段键
+     * @param delta 递增量（可为负数实现递减）
+     * @return 递增后的值
+     */
+    public static long incrementCacheMapValue(final String key, final String hKey, final long delta) {
+        RMap<String, Long> rMap = CLIENT.getMap(key, StringCodec.INSTANCE);
+        return rMap.addAndGet(hKey, delta);
+    }
+
+    /**
      * 设置原子值
      *
      * @param key   Redis键

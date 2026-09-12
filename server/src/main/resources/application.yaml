@@ -502,3 +502,8 @@ skill:
       # 建议：应大于命令的最大执行时间（timeout-seconds）+ 缓冲时间
       # 例如：命令超时120秒 + 缓冲180秒 = 300秒
       lock-lease-time-seconds: ${skill.terminal.docker.lock-lease-time-seconds}
+
+ai:
+  evaluation:
+    recording:
+      enabled: ${ai.evaluation.recording.enabled}

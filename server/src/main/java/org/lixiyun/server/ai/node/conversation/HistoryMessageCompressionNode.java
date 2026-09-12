@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
@@ -56,7 +57,15 @@ public class HistoryMessageCompressionNode implements NodeActionWithConfig {
 
         AssistantMessage call;
         try {
-            call = historyMessageCompressionModel.call(chatModel, prompt, aiNodeConfig);
+            ConversationMetadata metadata = ConversationMetadata.builder()
+                    .conversationId(conversation.getId())
+                    .userId(conversation.getUserId())
+                    .currentRound(conversation.getCurrentRound())
+                    .build();
+            RunnableConfig runnableConfig = RunnableConfig.builder()
+                    .addMetadata(ConversationMetadata.NAME, metadata)
+                    .build();
+            call = historyMessageCompressionModel.call(chatModel, prompt, aiNodeConfig, runnableConfig);
             log.debug("历史消息压缩节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);

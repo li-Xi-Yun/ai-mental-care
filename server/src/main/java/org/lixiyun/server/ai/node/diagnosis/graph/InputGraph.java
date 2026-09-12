@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.server.ai.node.diagnosis.input.*;
@@ -58,9 +59,10 @@ public class InputGraph {
      * 执行输入侧图
      *
      * @param contextBO 会话处理上下文
+     * @param metadata  会话元数据
      * @return 输入侧流程聚合结果
      */
-    public InputResult executeGraph(ConversationProcessContextBO contextBO) {
+    public InputResult executeGraph(ConversationProcessContextBO contextBO, ConversationMetadata metadata) {
         if (contextBO == null) {
             log.error("InputGraph-参数错误:会话上下文为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -70,10 +72,12 @@ public class InputGraph {
                 .addParallelNodeExecutor(MessageStructuredProcessNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(EmotionStatisticsNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(HistoryDiagnosisSummaryNode.NODE_NAME, ForkJoinPool.commonPool())
+                .addMetadata(ConversationMetadata.NAME, metadata)
                 .build();
 
         Map<String, Object> stateMap = Map.of(
                 ConversationProcessContextBO.NAME, contextBO,
+                ConversationMetadata.NAME, metadata,
                 InputResult.NAME, new InputResult()
         );
 
@@ -124,6 +128,7 @@ public class InputGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
             keyStrategyMap.put(ConversationProcessContextBO.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(InputResult.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };

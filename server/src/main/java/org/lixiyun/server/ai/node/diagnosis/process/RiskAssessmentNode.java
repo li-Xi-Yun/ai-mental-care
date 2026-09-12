@@ -61,7 +61,7 @@ public class RiskAssessmentNode implements NodeActionWithConfig, NodeExecutionSu
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        RiskAssessmentProcessModel.RiskAssessmentResult result = riskAssessmentProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        RiskAssessmentProcessModel.RiskAssessmentResult result = riskAssessmentProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-风险评估-模型返回结果：{}", result);
 
         if (result == null) {

@@ -60,7 +60,7 @@ public class PsychologicalStateNode implements NodeActionWithConfig, NodeExecuti
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        PsychologicalStateProcessModel.PsychologicalStateResult result = psychologicalStateProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        PsychologicalStateProcessModel.PsychologicalStateResult result = psychologicalStateProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-心理状态与症状评估-模型返回结果：{}", result);
 
         if (result == null) {

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
@@ -77,11 +78,22 @@ public class DiagnosisGraph {
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
 
+        ConversationMetadata metadata = ConversationMetadata.builder()
+                .conversationId(contextBO.getConversation().getId())
+                .userId(contextBO.getConversation().getUserId())
+                .currentRound(contextBO.getConversation().getCurrentRound())
+                .build();
+
         Map<String, Object> stateMap = Map.of(
-                ConversationProcessContextBO.NAME, contextBO
+                ConversationProcessContextBO.NAME, contextBO,
+                ConversationMetadata.NAME, metadata
         );
 
-        OverAllState result = diagnosisGraph.invoke(stateMap).orElse(null);
+        RunnableConfig runnableConfig = RunnableConfig.builder()
+                .addMetadata(ConversationMetadata.NAME, metadata)
+                .build();
+
+        OverAllState result = diagnosisGraph.invoke(stateMap, runnableConfig).orElse(null);
         if (result == null) {
             log.error("DiagnosisGraph-执行失败，result为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -115,6 +127,7 @@ public class DiagnosisGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
             keyStrategyMap.put(ConversationProcessContextBO.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(InputResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(KnowledgeRetrieveResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(DiagnosisData.NAME, new ReplaceStrategy());

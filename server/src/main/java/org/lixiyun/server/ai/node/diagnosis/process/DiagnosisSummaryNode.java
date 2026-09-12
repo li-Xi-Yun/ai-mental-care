@@ -68,7 +68,7 @@ public class DiagnosisSummaryNode implements NodeActionWithConfig, NodeExecution
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         DiagnosisSummaryProcessModel.DiagnosisSummaryResult result =
-                diagnosisSummaryProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+                diagnosisSummaryProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-诊断书生成-模型返回结果：{}", result);
 
         if (result == null) {

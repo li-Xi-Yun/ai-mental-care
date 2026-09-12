@@ -6,7 +6,9 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
@@ -55,7 +57,16 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
 
         AssistantMessage call;
         try {
-            call = conversationNameGenerationModel.call(chatModel, prompt, aiNodeConfig);
+            Conversation conversation = processContext.getConversation();
+            ConversationMetadata metadata = ConversationMetadata.builder()
+                    .conversationId(conversation.getId())
+                    .userId(conversation.getUserId())
+                    .currentRound(conversation.getCurrentRound())
+                    .build();
+            RunnableConfig runnableConfig = RunnableConfig.builder()
+                    .addMetadata(ConversationMetadata.NAME, metadata)
+                    .build();
+            call = conversationNameGenerationModel.call(chatModel, prompt, aiNodeConfig, runnableConfig);
             log.debug("会话名称生成节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);

@@ -125,7 +125,7 @@ public class QueryTransformLayerNode implements NodeActionWithConfig, NodeExecut
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("知识侧-查询变换层-模型返回结果：{}", result);
 
         if (result == null) {

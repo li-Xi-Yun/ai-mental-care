@@ -3,6 +3,7 @@ package org.lixiyun.server.ai.model.diagnosis.process;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -227,8 +228,13 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
     @Override
+    public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        return doCall(chatModel, userPrompt, config, runnableConfig);
+    }
+
+    @Override
     public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        return doCall(chatModel, userPrompt, config);
+        return call(chatModel, userPrompt, config, null);
     }
 
     @Retryable(
@@ -237,13 +243,22 @@ public class DiseaseCourseAttributionProcessModel extends BaseModel {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
+    public DiseaseCourseAttributionResult callForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        return doCallForResult(chatModel, userPrompt, config, runnableConfig);
+    }
+
     public DiseaseCourseAttributionResult callForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        return doCallForResult(chatModel, userPrompt, config);
+        return callForResult(chatModel, userPrompt, config, null);
+    }
+
+    @Override
+    public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        return doStream(chatModel, userPrompt, config, runnableConfig);
     }
 
     @Override
     public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        return doStream(chatModel, userPrompt, config);
+        return stream(chatModel, userPrompt, config, null);
     }
 
     @Data

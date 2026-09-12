@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.server.ai.node.diagnosis.knowledge.*;
@@ -69,9 +70,10 @@ public class KnowledgeGraph {
      * <p>构建初始状态和配置，调用编译后的图执行，返回知识检索结果</p>
      *
      * @param knowledgeMatchRequest 知识匹配请求
+     * @param metadata              会话元数据
      * @return 知识检索结果
      */
-    public KnowledgeRetrieveResult executeGraph(KnowledgeMatchRequest knowledgeMatchRequest) {
+    public KnowledgeRetrieveResult executeGraph(KnowledgeMatchRequest knowledgeMatchRequest, ConversationMetadata metadata) {
         if (knowledgeMatchRequest == null) {
             log.error("KnowledgeGraph-参数错误:知识匹配请求为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -81,10 +83,12 @@ public class KnowledgeGraph {
                 .addParallelNodeExecutor(SymptomKnowledgeRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(DiagnosisStandardRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(InterventionPlanRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
+                .addMetadata(ConversationMetadata.NAME, metadata)
                 .build();
 
         Map<String, Object> stateMap = Map.of(
                 KnowledgeMatchRequest.NAME, knowledgeMatchRequest,
+                ConversationMetadata.NAME, metadata,
                 KnowledgeRetrieveResult.NAME, new KnowledgeRetrieveResult()
         );
 
@@ -128,6 +132,7 @@ public class KnowledgeGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
             keyStrategyMap.put(KnowledgeMatchRequest.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(KnowledgeRetrieveResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(RerankLayerNode.ROUTING_DECISION_KEY, new ReplaceStrategy());
             return keyStrategyMap;

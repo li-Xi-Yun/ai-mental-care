@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.springframework.stereotype.Component;
 
 /**
@@ -29,7 +30,15 @@ public abstract class BaseModelInterceptor extends ModelInterceptor {
         long duration = System.currentTimeMillis() - startTime;
         log.debug("模型响应耗时: {}ms, {}s", duration, duration / 1000);
         if(duration > 5000){
-            log.warn("{} 模型响应时间过长，请检查代码", request.getContext().get("model"));
+            ConversationMetadata metadata = (ConversationMetadata) request.getContext().get(ConversationMetadata.NAME);
+            String modelName = request.getOptions() != null ? request.getOptions().getModel() : "unknown";
+            if (metadata != null) {
+                log.warn("会话[{}] 用户[{}] 轮次[{}] 模型[{}] 响应时间过长({}ms)，请检查代码",
+                        metadata.getConversationId(), metadata.getUserId(),
+                        metadata.getCurrentRound(), modelName, duration);
+            } else {
+                log.warn("模型[{}] 响应时间过长({}ms)，请检查代码", modelName, duration);
+            }
         }
 
         return response;

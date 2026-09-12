@@ -8,10 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.conversation.HistoryAnalysisCompressionModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
@@ -55,7 +56,15 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
 
         AssistantMessage call;
         try {
-            call = historyAnalysisCompressionModel.call(chatModel, prompt, aiNodeConfig);
+            ConversationMetadata metadata = ConversationMetadata.builder()
+                    .conversationId(conversation.getId())
+                    .userId(conversation.getUserId())
+                    .currentRound(conversation.getCurrentRound())
+                    .build();
+            RunnableConfig runnableConfig = RunnableConfig.builder()
+                    .addMetadata(ConversationMetadata.NAME, metadata)
+                    .build();
+            call = historyAnalysisCompressionModel.call(chatModel, prompt, aiNodeConfig, runnableConfig);
             log.debug("历史情绪分析压缩节点-模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);

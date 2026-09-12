@@ -150,7 +150,7 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
         Map<String, ModelMatchEntry> modelMatchedMap = new LinkedHashMap<>();
         List<String> stillUnmatchedTexts = new ArrayList<>();
         if (!unmatchedTexts.isEmpty()) {
-            normalizeByModel(unmatchedTexts, dictList, modelMatchedMap, stillUnmatchedTexts);
+            normalizeByModel(unmatchedTexts, dictList, modelMatchedMap, stillUnmatchedTexts, config);
             log.info("输入侧-语义归一化处理-模型匹配成功：{}，未匹配保留原文：{}", modelMatchedMap.size(), stillUnmatchedTexts.size());
             log.debug("输入侧-语义归一化处理-模型匹配详情，匹配结果：{}，未匹配文本：{}", modelMatchedMap, stillUnmatchedTexts);
         }
@@ -463,22 +463,23 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
      * </ol>
      * <p>
      * 异常兜底：模型调用失败时，全部未匹配文本保留原文，不强行归类
+     *  @param unmatchedTexts      规则匹配失败的文本列表
      *
-     * @param unmatchedTexts      规则匹配失败的文本列表
      * @param dictList            规则词典列表（用于构建模型prompt与校验模型输出）
      * @param modelMatchedMap     输出参数：模型匹配成功的映射（key=原文，value=携带字典记录与置信度的匹配条目）
      * @param stillUnmatchedTexts 输出参数：模型也无法匹配的文本列表，保留原文作为临时标签
+     * @param config
      */
     private void normalizeByModel(List<String> unmatchedTexts,
-                                 List<SymptomDict> dictList,
-                                 Map<String, ModelMatchEntry> modelMatchedMap,
-                                 List<String> stillUnmatchedTexts) {
+                                  List<SymptomDict> dictList,
+                                  Map<String, ModelMatchEntry> modelMatchedMap,
+                                  List<String> stillUnmatchedTexts, RunnableConfig config) {
         String userPrompt = buildModelUserPrompt(unmatchedTexts, dictList);
         log.debug("输入侧-语义归一化处理-模型归一化-构建用户提示词完成，提示词：{}", userPrompt);
         try {
             AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+            SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
             log.debug("输入侧-语义归一化处理-模型返回结果：{}", modelOutput);
 
             if (modelOutput == null || modelOutput.getTermList() == null) {

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
@@ -44,7 +45,10 @@ public class InputNode implements NodeActionWithConfig, NodeExecutionSummary {
         }
 
         ConversationProcessContextBO contextBO = contextBOOpt.get();
-        InputResult inputResult = inputGraph.executeGraph(contextBO);
+
+        ConversationMetadata metadata = (ConversationMetadata) state.value(ConversationMetadata.NAME).orElse(null);
+
+        InputResult inputResult = inputGraph.executeGraph(contextBO, metadata);
 
         if (inputResult.isInterrupted()) {
             log.info("诊断流程-输入侧节点-输入侧流程被中断，终止诊断流程");

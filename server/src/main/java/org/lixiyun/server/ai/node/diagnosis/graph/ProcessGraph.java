@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.server.ai.node.diagnosis.process.*;
@@ -62,9 +63,10 @@ public class ProcessGraph {
      * 执行处理侧图
      *
      * @param diagnosisDataRequest 处理侧提示词数据
+     * @param metadata             会话元数据
      * @return 诊断数据结果
      */
-    public DiagnosisData executeGraph(DiagnosisDataRequest diagnosisDataRequest) {
+    public DiagnosisData executeGraph(DiagnosisDataRequest diagnosisDataRequest, ConversationMetadata metadata) {
         if (diagnosisDataRequest == null) {
             log.error("ProcessGraph-参数错误:诊断数据请求为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -77,10 +79,12 @@ public class ProcessGraph {
                 .addParallelNodeExecutor(SocialFunctionImpactNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(ProtectiveFactorNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(RiskAssessmentNode.NODE_NAME, ForkJoinPool.commonPool())
+                .addMetadata(ConversationMetadata.NAME, metadata)
                 .build();
 
         Map<String, Object> stateMap = Map.of(
                 DiagnosisDataRequest.NAME, diagnosisDataRequest,
+                ConversationMetadata.NAME, metadata,
                 DiagnosisData.NAME, new DiagnosisData()
         );
 
@@ -126,6 +130,7 @@ public class ProcessGraph {
         KeyStrategyFactory keyStrategyFactory = () -> {
             Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
             keyStrategyMap.put(DiagnosisDataRequest.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(DiagnosisData.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };

@@ -220,7 +220,7 @@ public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSumma
         }
 
         // ==================== 阶段2：重排 ====================
-        RerankOutput rerankOutput = executeRerank(request);
+        RerankOutput rerankOutput = executeRerank(request, config);
 
         // ==================== 阶段3：后置检查 ====================
         String postRouting = postRerankCheck(request, result, rerankOutput);
@@ -353,10 +353,11 @@ public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSumma
      * </ol>
      *
      * @param request 知识匹配请求，包含sliceIds和用户信息
+     * @param config
      * @return 重排输出结果，包含过滤后的切片列表和参考提示词
      * @throws Exception 当模型调用失败时抛出
      */
-    private RerankOutput executeRerank(KnowledgeMatchRequest request) throws Exception {
+    private RerankOutput executeRerank(KnowledgeMatchRequest request, RunnableConfig config) throws Exception {
         Map<Long, Double> symptomSliceIdMap = request.getSymptomSliceIds() != null ? request.getSymptomSliceIds() : Map.of();
         Map<Long, Double> diagnosisSliceIdMap = request.getDiagnosisSliceIds() != null ? request.getDiagnosisSliceIds() : Map.of();
         Map<Long, Double> interventionSliceIdMap = request.getInterventionSliceIds() != null ? request.getInterventionSliceIds() : Map.of();
@@ -392,7 +393,7 @@ public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSumma
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("知识侧-重排层节点-模型返回结果：{}", rerankResult);
 
         if (rerankResult == null) {

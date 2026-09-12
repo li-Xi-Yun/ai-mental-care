@@ -63,7 +63,7 @@ public class ComprehensiveDiagnosisNode implements NodeActionWithConfig, NodeExe
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        ComprehensiveDiagnosisProcessModel.EmotionComprehensiveResult result = comprehensiveDiagnosisProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        ComprehensiveDiagnosisProcessModel.EmotionComprehensiveResult result = comprehensiveDiagnosisProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-情绪综合分析-模型返回结果：{}", result);
 
         if (result == null) {

@@ -1,10 +1,12 @@
 package org.lixiyun.server.infrastructure.conversation.processor;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
@@ -101,7 +103,15 @@ public class VoiceMessageProcessor implements MessageProcessor {
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             log.debug("[语音处理] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
 
-            Flux<NodeOutput> stream = textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig);
+            ConversationMetadata metadata = ConversationMetadata.builder()
+                    .conversationId(conversationId)
+                    .userId(userId)
+                    .currentRound(currentRound)
+                    .build();
+            RunnableConfig runnableConfig = RunnableConfig.builder()
+                    .addMetadata(ConversationMetadata.NAME, metadata)
+                    .build();
+            Flux<NodeOutput> stream = textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig, runnableConfig);
             Disposable subscribe = processor.process(stream)
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe();

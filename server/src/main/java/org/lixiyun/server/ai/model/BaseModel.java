@@ -3,6 +3,7 @@ package org.lixiyun.server.ai.model;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.extern.slf4j.Slf4j;
@@ -10,11 +11,13 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.infrastructure.log.RecordingModelInterceptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -48,6 +51,9 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseModel implements Model {
+
+    @Autowired(required = false)
+    private RecordingModelInterceptor recordingModelInterceptor;
 
     // ==================== 抽象钩子方法 ====================
 
@@ -149,8 +155,16 @@ public abstract class BaseModel implements Model {
      * @return 模型响应的AssistantMessage
      * @throws GraphRunnerException Agent执行异常
      */
+    protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        ReactAgent agent = buildAgent(chatModel, config);
+        if (runnableConfig != null) {
+            return agent.call(userPrompt, runnableConfig);
+        }
+        return agent.call(userPrompt);
+    }
+
     protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        return buildAgent(chatModel, config).call(userPrompt);
+        return doCall(chatModel, userPrompt, config, null);
     }
 
     /**
@@ -166,8 +180,16 @@ public abstract class BaseModel implements Model {
      * @return 模型响应的NodeOutput流
      * @throws GraphRunnerException Agent执行异常
      */
+    protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        ReactAgent agent = buildAgent(chatModel, config);
+        if (runnableConfig != null) {
+            return agent.stream(userPrompt, runnableConfig);
+        }
+        return agent.stream(userPrompt);
+    }
+
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        return buildAgent(chatModel, config).stream(userPrompt);
+        return doStream(chatModel, userPrompt, config, null);
     }
 
     /**
@@ -187,9 +209,14 @@ public abstract class BaseModel implements Model {
      * @throws UnsupportedOperationException 如果{@link #getOutputType}返回null（非固定JSON体输出）
      */
     @SuppressWarnings("unchecked")
-    protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
-        AssistantMessage message = doCall(chatModel, userPrompt, config);
+    protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        AssistantMessage message = doCall(chatModel, userPrompt, config, runnableConfig);
         return (T) deserializeResult(message);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
+        return doCallForResult(chatModel, userPrompt, config, null);
     }
 
 
@@ -256,12 +283,18 @@ public abstract class BaseModel implements Model {
         if (chatModel == null) {
             throw new BusinessException(ConversationExceptionEnum.MODEL_NOT_EXIST);
         }
-        return ReactAgent.builder()
+        com.alibaba.cloud.ai.graph.agent.Builder builder = ReactAgent.builder()
                 .model(chatModel)
                 .name(getAgentName())
                 .description(getAgentDescription())
                 .chatOptions(chatOptions(chatModel, config))
                 .enableLogging(false);
+
+        if (recordingModelInterceptor != null) {
+            builder.interceptors(recordingModelInterceptor);
+        }
+
+        return builder;
     }
 
     /**

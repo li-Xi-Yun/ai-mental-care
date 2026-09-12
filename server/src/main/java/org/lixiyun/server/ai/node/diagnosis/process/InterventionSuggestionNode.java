@@ -68,7 +68,7 @@ public class InterventionSuggestionNode implements NodeActionWithConfig, NodeExe
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
-        InterventionSuggestionProcessModel.InterventionSuggestionResult result = interventionSuggestionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig);
+        InterventionSuggestionProcessModel.InterventionSuggestionResult result = interventionSuggestionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-干预建议生成-模型返回结果：{}", result);
 
         if (result == null) {
