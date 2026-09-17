@@ -12,17 +12,18 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.MessageEffectiveLe
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel;
-import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
-import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.pojo.entity.config.AiNodeConfig;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.constant.GraphConstant;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -161,9 +162,11 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig, NodeE
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<InputResult> irOpt = state.value(InputResult.NAME);
-        return irOpt.map(ir -> Map.of(
-                "coreInfoExtractResult", (Object) ir.getCoreInfoExtractResult(),
-                "interrupted", ir.isInterrupted()
-        )).orElse(null);
+        return irOpt.map(ir -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("coreInfoExtractResult", ir.getCoreInfoExtractResult());
+            map.put("interrupted", ir.isInterrupted());
+            return map;
+        }).orElse(null);
     }
 }

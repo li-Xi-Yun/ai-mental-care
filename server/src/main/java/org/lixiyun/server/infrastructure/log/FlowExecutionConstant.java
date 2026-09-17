@@ -35,7 +35,7 @@ public interface FlowExecutionConstant {
     String FIELD_NODE_SEQUENCE = "node_sequence";
 
     /** 流程上下文TTL（分钟） */
-    int CTX_TTL_MINUTES = 30;
+    int CTX_TTL_MINUTES = 5;
 
     /**
      * 构建流程上下文Redis Hash的Key

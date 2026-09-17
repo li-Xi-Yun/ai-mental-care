@@ -209,8 +209,10 @@ public class PreCleanNode implements NodeActionWithConfig, NodeExecutionSummary 
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<InputResult> irOpt = state.value(InputResult.NAME);
-        return irOpt.map(ir -> Map.of(
-                "sessionCleanResult", (Object) ir.getSessionCleanResult()
-        )).orElse(null);
+        return irOpt.map(ir -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("sessionCleanResult", ir.getSessionCleanResult());
+            return map;
+        }).orElse(null);
     }
 }

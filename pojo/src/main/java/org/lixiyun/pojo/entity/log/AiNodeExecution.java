@@ -42,6 +42,12 @@ public class AiNodeExecution implements Serializable {
     /** 流程唯一标识（雪花算法），关联ai_flow_execution.trace_id */
     private Long traceId;
 
+    /** 节点模型配置id */
+    private Long nodeConfigId;
+
+    /** 节点唯一标识，如psychologicalState/riskAssessment */
+    private String nodeKey;
+
     /** 节点名称 */
     private String nodeName;
 

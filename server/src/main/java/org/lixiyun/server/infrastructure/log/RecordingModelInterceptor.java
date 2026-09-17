@@ -5,9 +5,11 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.log.AiModelCall;
 import org.lixiyun.server.ai.interceptor.ModelInterceptor.BaseModelInterceptor;
 import org.lixiyun.server.ai.model.BaseModel;
+import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.mapper.AiModelCallMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -17,7 +19,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 同步模型调用记录拦截器
@@ -111,13 +115,52 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         extractPrompts(request, record);
 
         ConversationMetadata conversationMetadata = (ConversationMetadata) request.getContext().get(ConversationMetadata.NAME);
+        log.debug("[模型调用日志拦截器-模型上下文]: {}", conversationMetadata);
 
         record.setModelName(
                 request.getOptions() != null ? request.getOptions().getModel() : "unknown"
         );
 
+        AiNodeConfig aiNodeConfig = (AiNodeConfig) request.getContext().get(AiNodeConfig.NAME);
+        log.debug("[模型调用日志拦截器-节点配置]: {}", aiNodeConfig);
+
+        if (aiNodeConfig != null) {
+            record.setNodeKey(aiNodeConfig.getNodeKey());
+            record.setNodeName(aiNodeConfig.getNodeName());
+            record.setModelProvider(ChatModelType.fromType(aiNodeConfig.getModelType()).factoryKey);
+
+            Map<String, Object> modelParams = new HashMap<>();
+            if (aiNodeConfig.getTemperature() != null) {
+                modelParams.put("temperature", aiNodeConfig.getTemperature());
+            }
+            if (aiNodeConfig.getTopP() != null) {
+                modelParams.put("topP", aiNodeConfig.getTopP());
+            }
+            if (aiNodeConfig.getTopK() != null) {
+                modelParams.put("topK", aiNodeConfig.getTopK());
+            }
+            if (aiNodeConfig.getMaxToken() != null) {
+                modelParams.put("maxToken", aiNodeConfig.getMaxToken());
+            }
+            if (aiNodeConfig.getStopSequences() != null) {
+                modelParams.put("stopSequences", aiNodeConfig.getStopSequences());
+            }
+            if (aiNodeConfig.getFrequencyPenalty() != null) {
+                modelParams.put("frequencyPenalty", aiNodeConfig.getFrequencyPenalty());
+            }
+            if (aiNodeConfig.getPresencePenalty() != null) {
+                modelParams.put("presencePenalty", aiNodeConfig.getPresencePenalty());
+            }
+            if (!modelParams.isEmpty()) {
+                record.setModelParams(modelParams);
+            }
+        }
+
+        Long traceId = null;
         if (conversationMetadata != null) {
-            record.setTraceId(flowExecutionContextManager.getTraceId(conversationMetadata.getConversationId()));
+            traceId = flowExecutionContextManager.getTraceId(conversationMetadata.getConversationId());
+            record.setTraceId(traceId);
+            log.debug("[模型调用日志拦截器-traceId]: {}", traceId);
         }
 
         long start = System.currentTimeMillis();
@@ -150,7 +193,7 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
             try {
                 mapper.insert(record);
             } catch (Exception e) {
-                log.error("模型调用记录持久化失败", e);
+                log.error("模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}", conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
             }
         }
 

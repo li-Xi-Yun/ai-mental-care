@@ -11,7 +11,14 @@ const CONFIG = {
   },
 
   api: {
-    sendMessage: '/user/conversation/ai-chat/user-message'
+    sendMessage: '/user/conversation/ai-chat/user-message',
+    conversationList: '/user/conversation/list',
+    dialogueMemory: '/user/conversaion/dialogue/',
+    emotionAnalysisList: '/user/conversation/emotion-analysis/list/',
+    emotionAnalysisDetail: '/user/conversation/emotion-analysis/detail/',
+    emotionDiagnosisList: '/user/conversation/emotion-diagnosis/list/',
+    emotionDiagnosisDetail: '/user/conversation/emotion-diagnosis/detail/',
+    conversationTestSend: '/temp/conversation-test/send'
   },
 
   auth: {

@@ -26,6 +26,8 @@ import java.time.LocalDateTime;
 @TableName(value = "ai_node_config")
 public class AiNodeConfig implements Serializable {
 
+    public static final String NAME = "aiNodeConfig";
+
     private static final long serialVersionUID = 1L;
 
     /** 启用 */

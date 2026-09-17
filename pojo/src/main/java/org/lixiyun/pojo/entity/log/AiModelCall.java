@@ -49,6 +49,12 @@ public class AiModelCall implements Serializable {
     /** 关联的节点执行记录ID，关联ai_node_execution.id */
     private Long nodeId;
 
+    /** 节点唯一标识，如psychologicalState/riskAssessment */
+    private String nodeKey;
+
+    /** 节点中文名称，如心理状态与症状评估 */
+    private String nodeName;
+
     /** 调用类型（1=同步调用 2=流式调用） */
     private Integer callType;
 

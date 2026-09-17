@@ -100,11 +100,11 @@ public class FlowExecutionAspect {
             if (conversation != null) {
                 roundNum = conversation.getCurrentRound();
                 userId = conversation.getUserId();
-                log.debug("反查Conversation成功, conversationId={}, roundNum={}, userId={}", conversationId, roundNum, userId);
+                log.debug("[会话流程日志管理器] 反查Conversation成功, conversationId={}, roundNum={}, userId={}", conversationId, roundNum, userId);
                 flowExecutionContextManager.initContext(conversationId, traceId, roundNum, userId);
             }
         } catch (Exception e) {
-            log.error("反查Conversation失败, conversationId={}", conversationId, e);
+            log.error("[会话流程日志管理器] 反查Conversation失败, conversationId={}", conversationId, e);
             throw new RuntimeException("反查Conversation失败", e);
         }
 
@@ -118,7 +118,7 @@ public class FlowExecutionAspect {
                 .startedAt(startedAt)
                 .build();
         aiFlowExecutionMapper.insert(flowExecution);
-        log.debug("INSERT ai_flow_execution, traceId={}, conversationId={}", traceId, conversationId);
+        log.debug("[会话流程日志管理器] INSERT ai_flow_execution, traceId={}, conversationId={}", traceId, conversationId);
 
         Throwable caughtException = null;
         Object result = null;
@@ -131,12 +131,7 @@ public class FlowExecutionAspect {
             try {
                 updateFlowExecutionOnFinish(traceId, conversationId, startedAt, caughtException);
             } catch (Exception e) {
-                log.error("UPDATE ai_flow_execution 失败, traceId={}, conversationId={}", traceId, conversationId, e);
-            }
-            try {
-                flowExecutionContextManager.removeContext(conversationId);
-            } catch (Exception e) {
-                log.error("removeContext 失败, conversationId={}", conversationId, e);
+                log.error("[会话流程日志管理器] UPDATE ai_flow_execution 失败, traceId={}, conversationId={}", traceId, conversationId, e);
             }
         }
 
@@ -176,6 +171,6 @@ public class FlowExecutionAspect {
                 .set(AiFlowExecution::getUpdatedTime, finishedAt);
 
         aiFlowExecutionMapper.update(null, updateWrapper);
-        log.debug("UPDATE ai_flow_execution, traceId={}, status={}, durationMs={}", traceId, status, durationMs);
+        log.debug("[会话流程日志管理器]UPDATE ai_flow_execution, traceId={}, status={}, durationMs={}", traceId, status, durationMs);
     }
 }

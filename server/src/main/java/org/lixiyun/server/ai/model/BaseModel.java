@@ -158,7 +158,10 @@ public abstract class BaseModel implements Model {
     protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
         if (runnableConfig != null) {
-            return agent.call(userPrompt, runnableConfig);
+            RunnableConfig build = RunnableConfig.builder(runnableConfig)
+                    .addMetadata(AiNodeConfig.NAME, config)
+                    .build();
+            return agent.call(userPrompt, build);
         }
         return agent.call(userPrompt);
     }
@@ -183,7 +186,10 @@ public abstract class BaseModel implements Model {
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
         if (runnableConfig != null) {
-            return agent.stream(userPrompt, runnableConfig);
+            RunnableConfig build = RunnableConfig.builder(runnableConfig)
+                    .addMetadata(AiNodeConfig.NAME, config)
+                    .build();
+            return agent.stream(userPrompt, build);
         }
         return agent.stream(userPrompt);
     }

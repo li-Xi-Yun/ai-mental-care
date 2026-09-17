@@ -122,7 +122,10 @@ public class ConversationMessageProcessor {
                 }
             });
 
-            log.debug("[流程编排] 步骤6/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
+            log.debug("[流程编排] 步骤6/9：主线程消息处理，会话ID：{}", conversationId);
+            executeMainThread(conversationId, processContext, executorInstance);
+
+            log.debug("[流程编排] 步骤7/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
                 try {
                     log.debug("[流程编排 - 异步] 分析与诊断任务开始执行，会话ID：{}", conversationId);
@@ -132,9 +135,6 @@ public class ConversationMessageProcessor {
                     log.error("异步分析与诊断异常，会话ID：{}", conversationId, e);
                 }
             });
-
-            log.debug("[流程编排] 步骤7/9：主线程消息处理，会话ID：{}", conversationId);
-            executeMainThread(conversationId, processContext, executorInstance);
 
             log.debug("[流程编排] 提交异步会话名称生成任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {

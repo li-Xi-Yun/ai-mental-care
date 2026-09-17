@@ -36,9 +36,15 @@ public class LoggingDecorator extends AgentStreamDecorator {
 
     private void logEvent(AgentStreamEvent event) {
         if (event instanceof AgentStreamEvent.ModelContentChunk chunk) {
-            log.debug("文本对话-[模型流式输出] 会话ID：{}，长度：{}", conversationId, chunk.text().length());
+            String text = chunk.text();
+            if (text != null) {
+                log.debug("文本对话-[模型流式输出] 会话ID：{}，长度：{}", conversationId, text.length());
+            }
         } else if (event instanceof AgentStreamEvent.ModelThinkChunk chunk) {
-            log.debug("文本对话-[模型思考输出] 会话ID：{}，长度：{}", conversationId, chunk.reasoning().length());
+            String reasoning = chunk.reasoning();
+            if (reasoning != null) {
+                log.debug("文本对话-[模型思考输出] 会话ID：{}，长度：{}", conversationId, reasoning.length());
+            }
         } else if (event instanceof AgentStreamEvent.ModelComplete complete) {
             log.info("文本对话-模型流式输出完成，会话ID：{}，内容长度：{}",
                     conversationId, complete.message().getText().length());

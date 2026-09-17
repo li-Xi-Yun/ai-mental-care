@@ -856,8 +856,10 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<InputResult> irOpt = state.value(InputResult.NAME);
-        return irOpt.map(ir -> Map.of(
-                "historyDiagnosisSummaryResult", (Object) ir.getHistoryDiagnosisSummaryResult()
-        )).orElse(null);
+        return irOpt.map(ir -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("historyDiagnosisSummaryResult", ir.getHistoryDiagnosisSummaryResult());
+            return map;
+        }).orElse(null);
     }
 }

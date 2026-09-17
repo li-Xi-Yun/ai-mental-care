@@ -102,10 +102,7 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-common</artifactId>
-        </dependency>
+
 
 
         <!-- 自动配置: Graph Observation (一键启用图执行观测) -->

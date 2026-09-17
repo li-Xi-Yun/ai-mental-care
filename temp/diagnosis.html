@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>评估诊断结果</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .page-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .back-btn:hover { background: rgba(255, 255, 255, 0.35); }
+
+    .page-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .loading-state, .empty-state, .error-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 15px;
+    }
+
+    .error-state { color: #ff4d4f; }
+
+    .diagnosis-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .diagnosis-card-header {
+      padding: 16px 20px;
+      background: #fafafa;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .diagnosis-card-header .round-info {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .diagnosis-card-header .time-info {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .diagnosis-card-body {
+      padding: 20px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a90d9;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e8f0fe;
+    }
+
+    .section-content {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #555;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .metric-item {
+      background: #f9f9fb;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .metric-item .label {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .metric-item .value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .metric-item .value.risk-low { color: #52c41a; }
+    .metric-item .value.risk-mid { color: #faad14; }
+    .metric-item .value.risk-high { color: #ff4d4f; }
+    .metric-item .value.risk-critical { color: #cf1322; font-weight: 700; }
+
+    .emotion-map {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .emotion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .emotion-chip.core { background: #e6f7ff; color: #1890ff; }
+    .emotion-chip.secondary { background: #f6ffed; color: #52c41a; }
+    .emotion-chip.negative { background: #fff2f0; color: #ff4d4f; }
+    .emotion-chip.positive { background: #f6ffed; color: #52c41a; }
+
+    .ratio-bar {
+      display: flex;
+      height: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .ratio-bar .positive-part { background: #52c41a; }
+    .ratio-bar .neutral-part  { background: #faad14; }
+    .ratio-bar .negative-part { background: #ff4d4f; }
+
+    .ratio-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #999;
+    }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 20px 0;
+    }
+
+    .pagination button {
+      padding: 8px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination span {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-item {
+      padding: 2px 10px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .detail-toggle-btn {
+      margin-top: 12px;
+      padding: 8px 20px;
+      background: #4a90d9;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .detail-toggle-btn:hover { background: #357abd; }
+
+    .detail-expand {
+      display: none;
+      margin-top: 12px;
+      padding: 16px;
+      background: #f9f9fb;
+      border-radius: 8px;
+      border: 1px solid #e8e8ef;
+    }
+
+    .detail-expand.open { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h2>评估诊断结果</h2>
+  <button class="back-btn" onclick="window.close()">返回</button>
+</div>
+
+<div class="page-container" id="pageContainer">
+  <div class="loading-state">加载中...</div>
+</div>
+
+<div class="pagination" id="pagination" style="display:none;">
+  <button id="prevBtn">上一页</button>
+  <span id="pageInfo">1 / 1</span>
+  <button id="nextBtn">下一页</button>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const conversationId = params.get('conversationId');
+  const token = params.get('token');
+  const host = params.get('host') || 'localhost';
+  const port = params.get('port') || '8088';
+  const baseUrl = `http://${host}:${port}`;
+
+  const ID_FIELD_PATTERNS = [
+    'id', 'conversationId', 'userId', 'adminId', 'analysisId',
+    'currentRound', 'roundNum', 'emotionPeakRound',
+    'emotionValleyRound', 'emotionStableRounds',
+    'triggerRoundNum', 'needManualIntervene', 'scaleCategoryId', 'scaleId'
+  ];
+
+  function parseJSONWithBigInt(text) {
+    if (typeof text !== 'string') return text;
+    try {
+      let processedText = text;
+      const idFieldRegex = new RegExp(`("(?:${ID_FIELD_PATTERNS.join('|')})")\\s*:\\s*(\\d+)`, 'g');
+      processedText = processedText.replace(idFieldRegex, '$1:"$2"');
+      const bigIntRegex = /:\s*(\d{16,})(?=\s*[,}\]])/g;
+      processedText = processedText.replace(bigIntRegex, ':"$1"');
+      return JSON.parse(processedText);
+    } catch {
+      try { return JSON.parse(text); } catch { return text; }
+    }
+  }
+
+  function isUnsafeInteger(value) {
+    if (typeof value === 'number') return Math.abs(value) > Number.MAX_SAFE_INTEGER;
+    if (typeof value === 'string') { const num = Number(value); return !isNaN(num) && Math.abs(num) > Number.MAX_SAFE_INTEGER; }
+    return false;
+  }
+
+  function safeNumberToString(value) {
+    if (value === null || value === undefined) return value;
+    if (typeof value === 'number') return isUnsafeInteger(value) ? value.toString() : value;
+    if (typeof value === 'string') { const num = Number(value); if (!isNaN(num) && isUnsafeInteger(num)) return value; }
+    return value;
+  }
+
+  function processBigIntFields(obj, fields) {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(item => typeof item === 'object' && item !== null ? processBigIntFields(item, fields) : item);
+    if (typeof obj !== 'object') return obj;
+    const result = { ...obj };
+    for (const key in result) {
+      if (result.hasOwnProperty(key)) {
+        const value = result[key];
+        if (fields && fields.length > 0) {
+          if (fields.includes(key)) { result[key] = safeNumberToString(value); }
+          else if (typeof value === 'object') { result[key] = processBigIntFields(value, fields); }
+        } else {
+          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) { result[key] = safeNumberToString(value); }
+          else if (typeof value === 'object') { result[key] = processBigIntFields(value); }
+        }
+      }
+    }
+    return result;
+  }
+
+  function processIdFields(obj) {
+    return processBigIntFields(obj, [...ID_FIELD_PATTERNS]);
+  }
+
+  function safeBigIntEqual(a, b) {
+    return String(a) === String(b);
+  }
+
+  async function apiRequest(url, options = {}) {
+    const headers = {
+      'Content-Type': 'application/json',
+      'user-token': token
+    };
+    const response = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    const result = parseJSONWithBigInt(await response.text());
+    if (result.code !== 200 && result.code !== 0) {
+      throw new Error(result.msg || '请求失败');
+    }
+    return processIdFields(result.data);
+  }
+
+  async function getDiagnosisList(convId, pageNum, pageSize) {
+    const url = `${baseUrl}/user/conversation/emotion-diagnosis/list/${convId}`;
+    return apiRequest(url, {
+      method: 'POST',
+      body: JSON.stringify({ pageNum, pageSize })
+    });
+  }
+
+  async function getDiagnosisDetail(diagnosisId) {
+    const url = `${baseUrl}/user/conversation/emotion-diagnosis/detail/${diagnosisId}`;
+    return apiRequest(url, { method: 'GET' });
+  }
+
+  const pageContainer = document.getElementById('pageContainer');
+  const pagination = document.getElementById('pagination');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageInfo = document.getElementById('pageInfo');
+
+  let pageNum = 1;
+  const pageSize = 5;
+  let totalPages = 1;
+  let diagnosisListCache = [];
+
+  const RISK_LEVEL_MAP = { 0: '低', 1: '中', 2: '高', 3: '危急', 4: '无法判断' };
+  const RISK_CLASS_MAP = { 0: 'risk-low', 1: 'risk-mid', 2: 'risk-high', 3: 'risk-critical', 4: '' };
+  const SELF_HARM_MAP = { 0: '无', 1: '低', 2: '中', 3: '高', 4: '极高', 5: '无法判断' };
+  const TREND_MAP = { 0: '上升', 1: '下降', 2: '平稳', 3: '无法判断' };
+  const SUPPORT_MAP = { 0: '良好', 1: '一般', 2: '较差', 3: '匮乏', 4: '无法判断' };
+  const PRIORITY_MAP = { 1: '自助为主', 2: '建议寻求支持', 3: '强烈建议专业干预', 4: '无法判断' };
+
+  function formatTime(t) {
+    if (!t) return '-';
+    return String(t).replace('T', ' ').substring(0, 19);
+  }
+
+  function pct(v) {
+    return v != null ? (Number(v) * 100).toFixed(1) + '%' : '-';
+  }
+
+  function dec(v, d = 2) {
+    return v != null ? Number(v).toFixed(d) : '-';
+  }
+
+  async function loadList() {
+    if (!conversationId) {
+      pageContainer.innerHTML = '<div class="error-state">缺少会话ID参数</div>';
+      return;
+    }
+
+    pageContainer.innerHTML = '<div class="loading-state">加载中...</div>';
+    pagination.style.display = 'none';
+
+    try {
+      const data = await getDiagnosisList(conversationId, pageNum, pageSize);
+      const list = data.records || [];
+      const total = data.total || 0;
+      totalPages = Math.max(1, Math.ceil(total / pageSize));
+      diagnosisListCache = list;
+
+      if (list.length === 0) {
+        pageContainer.innerHTML = '<div class="empty-state">该会话暂无评估诊断结果</div>';
+        return;
+      }
+
+      pageContainer.innerHTML = '';
+      for (const item of list) {
+        pageContainer.appendChild(createListCard(item));
+      }
+
+      pageInfo.textContent = `${pageNum} / ${totalPages}`;
+      prevBtn.disabled = pageNum <= 1;
+      nextBtn.disabled = pageNum >= totalPages;
+      pagination.style.display = 'flex';
+    } catch (error) {
+      pageContainer.innerHTML = `<div class="error-state">加载失败: ${error.message}</div>`;
+    }
+  }
+
+  function createListCard(item) {
+    const card = document.createElement('div');
+    card.className = 'diagnosis-card';
+
+    const header = document.createElement('div');
+    header.className = 'diagnosis-card-header';
+    header.innerHTML = `
+      <span class="round-info">第 ${item.roundNum || '-'} 轮诊断</span>
+      <span class="time-info">更新: ${formatTime(item.updatedTime)}</span>
+    `;
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'diagnosis-card-body';
+    body.innerHTML = '<div class="loading-state" style="padding:20px;">点击加载详情...</div>';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'detail-toggle-btn';
+    toggleBtn.textContent = '展开详情';
+    card.appendChild(toggleBtn);
+
+    const detailExpand = document.createElement('div');
+    detailExpand.className = 'detail-expand';
+    card.appendChild(detailExpand);
+
+    let loaded = false;
+    toggleBtn.addEventListener('click', async () => {
+      if (detailExpand.classList.contains('open')) {
+        detailExpand.classList.remove('open');
+        toggleBtn.textContent = '展开详情';
+        return;
+      }
+
+      if (!loaded) {
+        body.innerHTML = '<div class="loading-state" style="padding:20px;">加载中...</div>';
+        try {
+          const detail = await getDiagnosisDetail(item.id);
+          loaded = true;
+          body.innerHTML = '';
+          body.appendChild(renderDiagnosisSummary(detail));
+          detailExpand.innerHTML = '';
+          detailExpand.appendChild(renderDiagnosisFull(detail));
+        } catch (error) {
+          body.innerHTML = `<div class="error-state" style="padding:20px;">加载失败: ${error.message}</div>`;
+        }
+      }
+
+      detailExpand.classList.add('open');
+      toggleBtn.textContent = '收起详情';
+    });
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function renderDiagnosisSummary(d) {
+    const frag = document.createDocumentFragment();
+
+    const riskSection = document.createElement('div');
+    riskSection.className = 'section';
+    riskSection.innerHTML = `
+      <div class="section-title">风险评估</div>
+      <div class="metric-grid">
+        <div class="metric-item">
+          <div class="label">情绪风险等级</div>
+          <div class="value ${RISK_CLASS_MAP[d.emotionRiskLevel] || ''}">${RISK_LEVEL_MAP[d.emotionRiskLevel] ?? '-'}</div>
+        </div>
+        <div class="metric-item">
+          <div class="label">自伤风险</div>
+          <div class="value ${d.selfHarmRiskLevel >= 3 ? 'risk-high' : d.selfHarmRiskLevel >= 2 ? 'risk-mid' : ''}">${SELF_HARM_MAP[d.selfHarmRiskLevel] ?? '-'}</div>
+        </div>
+        <div class="metric-item">
+          <div class="label">自杀风险</div>
+          <div class="value ${d.suicideRiskLevel >= 3 ? 'risk-critical' : d.suicideRiskLevel >= 2 ? 'risk-high' : ''}">${SELF_HARM_MAP[d.suicideRiskLevel] ?? '-'}</div>
+        </div>
+        <div class="metric-item">
+          <div class="label">危机预警</div>
+          <div class="value ${d.crisisWarning === 1 ? 'risk-critical' : ''}">${d.crisisWarning === 1 ? '已触发' : '未触发'}</div>
+        </div>
+      </div>
+    `;
+    frag.appendChild(riskSection);
+
+    const emotionSection = document.createElement('div');
+    emotionSection.className = 'section';
+
+    let emotionChipsHtml = '';
+    if (d.coreEmotion && typeof d.coreEmotion === 'object') {
+      for (const [k, v] of Object.entries(d.coreEmotion)) {
+        emotionChipsHtml += `<span class="emotion-chip core">${k}: ${dec(v, 3)}</span>`;
+      }
+    } else if (d.coreEmotionLabel) {
+      emotionChipsHtml += `<span class="emotion-chip core">${d.coreEmotionLabel}</span>`;
+    }
+
+    emotionSection.innerHTML = `
+      <div class="section-title">核心情绪</div>
+      <div class="emotion-map">${emotionChipsHtml}</div>
+      <div class="ratio-bar">
+        <div class="positive-part" style="width:${pct(d.positiveEmotionRatio)}"></div>
+        <div class="neutral-part" style="width:${pct(d.neutralEmotionRatio)}"></div>
+        <div class="negative-part" style="width:${pct(d.negativeEmotionRatio)}"></div>
+      </div>
+      <div class="ratio-labels">
+        <span>正向 ${pct(d.positiveEmotionRatio)}</span>
+        <span>中性 ${pct(d.neutralEmotionRatio)}</span>
+        <span>负向 ${pct(d.negativeEmotionRatio)}</span>
+      </div>
+    `;
+    frag.appendChild(emotionSection);
+
+    if (d.diagnosisContent) {
+      const contentSection = document.createElement('div');
+      contentSection.className = 'section';
+      contentSection.innerHTML = `
+        <div class="section-title">诊断总结</div>
+        <div class="section-content">${d.diagnosisContent}</div>
+      `;
+      frag.appendChild(contentSection);
+    }
+
+    return frag;
+  }
+
+  function renderDiagnosisFull(d) {
+    const frag = document.createDocumentFragment();
+
+    function addSection(title, content) {
+      if (!content && content !== 0) return;
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<div class="section-title">${title}</div><div class="section-content">${content}</div>`;
+      frag.appendChild(sec);
+    }
+
+    function addMetricSection(title, items) {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      let grid = '<div class="metric-grid">';
+      for (const { label, value, cls } of items) {
+        if (value == null) continue;
+        grid += `<div class="metric-item"><div class="label">${label}</div><div class="value ${cls || ''}">${value}</div></div>`;
+      }
+      grid += '</div>';
+      sec.innerHTML = `<div class="section-title">${title}</div>${grid}`;
+      frag.appendChild(sec);
+    }
+
+    addMetricSection('情绪指标', [
+      { label: '核心情绪置信度', value: pct(d.coreEmotionConfAvg) },
+      { label: '核心情绪强度', value: pct(d.coreEmotionIntensityScore) },
+      { label: '情绪趋势', value: TREND_MAP[d.emotionTrend] ?? '-' },
+      { label: '峰值轮次', value: d.emotionPeakRound },
+      { label: '低谷轮次', value: d.emotionValleyRound },
+      { label: '波动幅度', value: dec(d.emotionFluctuationAmplitude, 3) },
+      { label: '平稳轮次数', value: d.emotionStableRounds },
+      { label: '稳定性得分', value: pct(d.emotionStabilityScore) }
+    ]);
+
+    addMetricSection('PAD维度', [
+      { label: '平均愉悦度(P)', value: dec(d.avgP) },
+      { label: '平均唤醒度(A)', value: dec(d.avgA) },
+      { label: '平均支配度(D)', value: dec(d.avgD) },
+      { label: 'P标准差', value: dec(d.stdP, 3) },
+      { label: 'A标准差', value: dec(d.stdA, 3) },
+      { label: 'D标准差', value: dec(d.stdD, 3) }
+    ]);
+
+    if (d.secondaryEmotion && typeof d.secondaryEmotion === 'object') {
+      let html = '<div class="emotion-map">';
+      for (const [k, v] of Object.entries(d.secondaryEmotion)) {
+        html += `<span class="emotion-chip secondary">${k}: ${dec(v, 3)}</span>`;
+      }
+      html += '</div>';
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<div class="section-title">次要情绪</div>${html}`;
+      frag.appendChild(sec);
+    }
+
+    if (d.negativeEmotionDetail && typeof d.negativeEmotionDetail === 'object') {
+      let html = '<div class="emotion-map">';
+      for (const [k, v] of Object.entries(d.negativeEmotionDetail)) {
+        html += `<span class="emotion-chip negative">${k}: ${dec(v, 3)}</span>`;
+      }
+      html += '</div>';
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<div class="section-title">负向情绪细分</div>${html}`;
+      frag.appendChild(sec);
+    }
+
+    if (d.positiveEmotionDetail && typeof d.positiveEmotionDetail === 'object') {
+      let html = '<div class="emotion-map">';
+      for (const [k, v] of Object.entries(d.positiveEmotionDetail)) {
+        html += `<span class="emotion-chip positive">${k}: ${dec(v, 3)}</span>`;
+      }
+      html += '</div>';
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<div class="section-title">正向情绪细分</div>${html}`;
+      frag.appendChild(sec);
+    }
+
+    addSection('触发场景', d.coreTriggerScene);
+    addSection('触发关键词', d.coreTriggerKeywords);
+    if (d.triggerRoundNum != null) {
+      addSection('首次触发轮次', `第 ${d.triggerRoundNum} 轮`);
+    }
+
+    addSection('心理状态评估', d.psychologicalState);
+    addSection('核心症状', d.symptomSummary);
+    if (d.symptomTags) {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<div class="section-title">症状标签</div><div class="tag-list">${d.symptomTags.split(',').map(t => `<span class="tag-item">${t.trim()}</span>`).join('')}</div>`;
+      frag.appendChild(sec);
+    }
+
+    addMetricSection('社会功能', [
+      { label: '受损程度', value: d.socialFunctionImpact },
+      { label: '受影响领域', value: d.impactDomains },
+      { label: '社会支持水平', value: SUPPORT_MAP[d.socialSupportLevel] ?? '-' }
+    ]);
+
+    addSection('日常生活影响', d.dailyLifeInfluence);
+    addSection('症状持续时长', d.symptomDuration);
+    addSection('发作模式', d.onsetPattern);
+    addSection('首次触发描述', d.firstTriggerDesc);
+    addSection('保护性因素', d.protectiveFactors);
+    addSection('应对方式', d.copingStyle);
+
+    addSection('风险细节', d.riskDetail);
+    addSection('情绪调节建议', d.emotionAdjustSuggestion);
+
+    addSection('自助调节建议', d.selfHelpSuggestion);
+    addSection('社会支持建议', d.socialSupportSuggestion);
+    addSection('专业干预建议', d.professionalInterveneSuggestion);
+
+    addMetricSection('建议优先级', [
+      { label: '优先级', value: PRIORITY_MAP[d.suggestionPriority] ?? '-' },
+      { label: '需要人工干预', value: d.needManualIntervene === 1 ? '是' : '否' }
+    ]);
+
+    if (d.diagnosisScore != null || d.feedbackContent || d.agreeRiskJudge != null) {
+      addMetricSection('用户反馈', [
+        { label: '诊断打分', value: d.diagnosisScore != null ? `${d.diagnosisScore} / 5` : '-' },
+        { label: '认同风险评估', value: d.agreeRiskJudge === 1 ? '认同' : d.agreeRiskJudge === 0 ? '不认同' : '未反馈' },
+        { label: '认同自助建议', value: d.agreeSuggestionSelf === 1 ? '认同' : d.agreeSuggestionSelf === 0 ? '不认同' : '未反馈' },
+        { label: '认同社会支持建议', value: d.agreeSuggestionSocial === 1 ? '认同' : d.agreeSuggestionSocial === 0 ? '不认同' : '未反馈' },
+        { label: '认同专业干预建议', value: d.agreeSuggestionProfessional === 1 ? '认同' : d.agreeSuggestionProfessional === 0 ? '不认同' : '未反馈' },
+        { label: '采纳建议', value: d.useSuggestion === 2 ? '全部尝试' : d.useSuggestion === 1 ? '尝试部分' : d.useSuggestion === 0 ? '没有' : '未反馈' }
+      ]);
+      addSection('反馈内容', d.feedbackContent);
+    }
+
+    return frag;
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if (pageNum > 1) { pageNum--; loadList(); }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (pageNum < totalPages) { pageNum++; loadList(); }
+  });
+
+  loadList();
+</script>
+
+</body>
+</html>

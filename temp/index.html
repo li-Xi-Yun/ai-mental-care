@@ -11,145 +11,73 @@
 <body>
 
 <div class="header">
-  <span>AI文本对话测试</span>
-  <span class="status" id="wsStatus">未连接</span>
+  <div style="display:flex;align-items:center;">
+    <button class="panel-toggle-btn" id="panelToggleBtn">会话列表</button>
+    <span>AI文本对话测试</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="auto-dialog-btn" id="autoDialogBtn">自动对话</button>
+    <button class="emotion-toggle-btn" id="emotionToggleBtn" disabled>情绪分析</button>
+    <span class="status" id="wsStatus">未连接</span>
+  </div>
 </div>
 
-<div class="chat-container" id="chatContainer"></div>
+<div class="main-layout">
+  <div class="left-panel" id="leftPanel">
+    <div class="left-panel-header">
+      <div class="left-panel-title-row">
+        <span class="left-panel-title">会话列表</span>
+        <button class="new-conversation-btn" id="newConversationBtn">新建会话</button>
+      </div>
+      <input type="text" class="conversation-search" id="conversationSearch" placeholder="搜索会话...">
+    </div>
+    <div class="left-panel-list" id="conversationList">
+      <div class="sidebar-empty">加载中...</div>
+    </div>
+    <div class="left-panel-pagination" id="convPagination" style="display:none;">
+      <button id="convPrevBtn">上一页</button>
+      <span id="convPageInfo">1 / 1</span>
+      <button id="convNextBtn">下一页</button>
+    </div>
+  </div>
 
-<div class="input-area">
-  <textarea id="messageInput" rows="2" placeholder="输入消息..."></textarea>
-  <button id="sendBtn" disabled>发送</button>
+  <div class="chat-area">
+    <div class="chat-container" id="chatContainer"></div>
+    <div class="input-area">
+      <textarea id="messageInput" rows="2" placeholder="输入消息..."></textarea>
+      <button id="sendBtn" disabled>发送</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="emotion-sidebar" id="emotionSidebar">
+  <div class="sidebar-header">
+    <h3>情绪分析数据</h3>
+    <button class="sidebar-close-btn" id="sidebarCloseBtn">&times;</button>
+  </div>
+  <button class="sidebar-diagnosis-btn" id="diagnosisPageBtn" disabled>查看评估诊断结果</button>
+  <div class="sidebar-content" id="sidebarContent">
+    <div class="sidebar-empty">暂无会话，请先开始对话</div>
+  </div>
+  <div class="sidebar-pagination" id="sidebarPagination" style="display:none;">
+    <button id="sidebarPrevBtn">上一页</button>
+    <span id="sidebarPageInfo">1 / 1</span>
+    <button id="sidebarNextBtn">下一页</button>
+  </div>
 </div>
 
 <script src="bigint.js"></script>
 <script src="config.js"></script>
 <script src="api.js"></script>
 <script src="websocket.js"></script>
-<script>
-  const chatContainer = document.getElementById('chatContainer');
-  const messageInput = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const wsStatus = document.getElementById('wsStatus');
-
-  let conversationId = null;
-  let currentRound = 0;
-  let currentAiMessageEl = null;
-  let currentAiText = '';
-  let isSending = false;
-
-  const ws = new ChatWebSocket();
-
-  ws.onConnected = () => {
-    wsStatus.textContent = '已连接';
-    wsStatus.classList.add('connected');
-    sendBtn.disabled = false;
-  };
-
-  ws.onDisconnected = () => {
-    wsStatus.textContent = '已断开';
-    wsStatus.classList.remove('connected');
-    sendBtn.disabled = true;
-  };
-
-  ws.onError = (error) => {
-    wsStatus.textContent = '连接错误';
-    wsStatus.classList.remove('connected');
-    sendBtn.disabled = true;
-  };
-
-  function addMessage(text, type) {
-    const el = document.createElement('div');
-    el.className = `message ${type}`;
-    el.textContent = text;
-    chatContainer.appendChild(el);
-    scrollToBottom();
-    return el;
-  }
-
-  function addSystemMessage(text) {
-    const el = document.createElement('div');
-    el.className = 'message system';
-    el.textContent = text;
-    chatContainer.appendChild(el);
-    scrollToBottom();
-  }
-
-  function scrollToBottom() {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-  }
-
-  async function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text || isSending) return;
-
-    isSending = true;
-    sendBtn.disabled = true;
-    messageInput.value = '';
-
-    addMessage(text, 'user');
-
-    try {
-      const data = await ChatAPI.sendMessage(text, conversationId);
-
-      if (!conversationId) {
-        conversationId = data.conversationId;
-        currentRound = data.currentRound;
-        addSystemMessage(`新会话已创建，ID: ${conversationId}，轮次: ${currentRound}`);
-
-        ws.subscribeTextReply(conversationId, onTextReply);
-        ws.subscribeConversationName(conversationId, onConversationName);
-      } else {
-        currentRound = data.currentRound;
-        addSystemMessage(`轮次: ${currentRound}`);
-      }
-
-      currentAiText = '';
-      currentAiMessageEl = document.createElement('div');
-      currentAiMessageEl.className = 'message ai';
-      currentAiMessageEl.innerHTML = '<span class="typing-indicator">AI正在思考</span>';
-      chatContainer.appendChild(currentAiMessageEl);
-      scrollToBottom();
-
-    } catch (error) {
-      addSystemMessage(`发送失败: ${error.message}`);
-    } finally {
-      isSending = false;
-      sendBtn.disabled = false;
-    }
-  }
-
-  function onTextReply(chunk) {
-    if (!currentAiMessageEl) return;
-
-    currentAiText += chunk;
-    currentAiMessageEl.textContent = currentAiText;
-    scrollToBottom();
-  }
-
-  function onConversationName(name) {
-    addSystemMessage(`会话名称: ${name}`);
-  }
-
-  sendBtn.addEventListener('click', sendMessage);
-
-  messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  (async function init() {
-    addSystemMessage('正在连接WebSocket...');
-    try {
-      await ws.connect();
-      addSystemMessage('WebSocket连接成功，可以开始对话');
-    } catch (error) {
-      addSystemMessage(`WebSocket连接失败: ${error.message}`);
-    }
-  })();
-</script>
+<script src="utils.js"></script>
+<script src="app-state.js"></script>
+<script src="chat.js"></script>
+<script src="auto-dialog.js"></script>
+<script src="conversation-list.js"></script>
+<script src="emotion-sidebar.js"></script>
+<script src="app-init.js"></script>
 
 </body>
 </html>

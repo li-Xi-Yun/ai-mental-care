@@ -2,8 +2,9 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -16,6 +17,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.server.ai.node.diagnosis.process.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.ProcessStateSerializer;
+import org.lixiyun.server.ai.saver.CheckpointCleaner;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -46,6 +48,9 @@ public class ProcessGraph {
     private final InterventionSuggestionNode interventionSuggestionNode;
     private final DiagnosisSummaryNode diagnosisSummaryNode;
 
+    private final SaverConfig saverConfig;
+    private final CheckpointCleaner checkpointCleaner;
+
     @Getter
     private static CompiledGraph processGraph;
 
@@ -73,6 +78,7 @@ public class ProcessGraph {
         }
 
         RunnableConfig runnableConfig = RunnableConfig.builder()
+                .threadId(metadata.getConversationId() + "_process_" + System.currentTimeMillis())
                 .addParallelNodeExecutor(ComprehensiveDiagnosisNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(DiseaseCourseAttributionNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(PsychologicalStateNode.NODE_NAME, ForkJoinPool.commonPool())
@@ -88,10 +94,21 @@ public class ProcessGraph {
                 DiagnosisData.NAME, new DiagnosisData()
         );
 
-        OverAllState result = processGraph.invoke(stateMap, runnableConfig).orElse(null);
-        if (result == null) {
-            log.error("ProcessGraph-执行失败，result为空");
-            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        OverAllState result = null;
+        try {
+            result = processGraph.invoke(stateMap, runnableConfig).orElse(null);
+            if (result == null) {
+                log.error("ProcessGraph-执行失败，result为空");
+                throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+            }
+        } catch (BusinessException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                checkpointCleaner.release(runnableConfig);
+            } catch (Exception e) {
+                log.error("ProcessGraph-Checkpoint删除失败", e);
+            }
         }
 
         Optional<DiagnosisData> diagnosisDataOpt = result.value(DiagnosisData.NAME);
@@ -163,7 +180,11 @@ public class ProcessGraph {
             workflow.addEdge(InterventionSuggestionNode.NODE_NAME, DiagnosisSummaryNode.NODE_NAME);
             workflow.addEdge(DiagnosisSummaryNode.NODE_NAME, StateGraph.END);
 
-            compiledGraph = workflow.compile();
+            compiledGraph = workflow.compile(
+                    CompileConfig.builder()
+                            .saverConfig(saverConfig)
+                            .build()
+            );
             log.info("处理侧图构建完成");
         } catch (GraphStateException e) {
             log.error("处理侧图构建失败：{}", e.getMessage());

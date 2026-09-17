@@ -2,6 +2,7 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -17,6 +18,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.server.ai.node.diagnosis.input.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.InputStateSerializer;
+import org.lixiyun.server.ai.saver.CheckpointCleaner;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -41,6 +43,9 @@ public class InputGraph {
     private final EmotionStatisticsNode emotionStatisticsNode;
     private final SymptomNormalizeNode symptomNormalizeNode;
     private final HistoryDiagnosisSummaryNode historyDiagnosisSummaryNode;
+
+    private final SaverConfig saverConfig;
+    private final CheckpointCleaner checkpointCleaner;
 
     @Getter
     private static CompiledGraph inputGraph;
@@ -69,6 +74,7 @@ public class InputGraph {
         }
 
         RunnableConfig runnableConfig = RunnableConfig.builder()
+                .threadId(contextBO.getConversation().getId() + "_input_" + System.currentTimeMillis())
                 .addParallelNodeExecutor(MessageStructuredProcessNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(EmotionStatisticsNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(HistoryDiagnosisSummaryNode.NODE_NAME, ForkJoinPool.commonPool())
@@ -81,10 +87,21 @@ public class InputGraph {
                 InputResult.NAME, new InputResult()
         );
 
-        OverAllState result = inputGraph.invoke(stateMap, runnableConfig).orElse(null);
-        if (result == null) {
-            log.error("InputGraph-执行失败，result为空");
-            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        OverAllState result = null;
+        try {
+            result = inputGraph.invoke(stateMap, runnableConfig).orElse(null);
+            if (result == null) {
+                log.error("InputGraph-执行失败，result为空");
+                throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+            }
+        } catch (BusinessException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                checkpointCleaner.release(runnableConfig);
+            } catch (Exception e) {
+                log.error("InputGraph-Checkpoint删除失败", e);
+            }
         }
 
         // 替换原来直接强转代码
@@ -152,7 +169,11 @@ public class InputGraph {
             workflow.addEdge(HistoryDiagnosisSummaryNode.NODE_NAME, SymptomNormalizeNode.NODE_NAME);
             workflow.addEdge(SymptomNormalizeNode.NODE_NAME, StateGraph.END);
 
-            compiledGraph = workflow.compile();
+            compiledGraph = workflow.compile(
+                    CompileConfig.builder()
+                            .saverConfig(saverConfig)
+                            .build()
+            );
             log.info("输入侧图构建完成");
         } catch (GraphStateException e) {
             log.error("输入侧图构建失败：{}", e.getMessage());

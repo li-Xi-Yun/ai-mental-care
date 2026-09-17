@@ -42,7 +42,7 @@ public class FlowExecutionContextManager {
         ctx.put(FlowExecutionConstant.FIELD_NODE_SEQUENCE, "0");
         RedisUtils.setCacheMap(key, ctx);
         RedisUtils.expire(key, FlowExecutionConstant.CTX_TTL_MINUTES, TimeUnit.MINUTES);
-        log.debug("初始化流程上下文，conversationId={}，traceId={}", conversationId, traceId);
+        log.debug("[会话流程日志管理器] 初始化流程上下文，conversationId={}，traceId={}", conversationId, traceId);
     }
 
     /**

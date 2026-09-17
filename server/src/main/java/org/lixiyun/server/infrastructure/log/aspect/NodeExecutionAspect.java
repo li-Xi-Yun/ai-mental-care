@@ -13,7 +13,9 @@ import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.log.AiNodeExecution;
+import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
+import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.server.infrastructure.log.FlowExecutionContextManager;
 import org.lixiyun.server.mapper.AiNodeExecutionMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -57,6 +59,10 @@ public class NodeExecutionAspect {
      * AI节点执行记录 Mapper，用于 INSERT / UPDATE ai_node_execution 表
      */
     private final AiNodeExecutionMapper aiNodeExecutionMapper;
+    /**
+     * AI节点配置缓存管理器，用于根据 nodeKey 获取 nodeConfigId
+     */
+    private final AiNodeConfigManager aiNodeConfigManager;
 
     // ==================== Diagnosis 节点切点 ====================
 
@@ -98,12 +104,16 @@ public class NodeExecutionAspect {
         Long traceId = flowExecutionContextManager.getTraceId(conversationId);
         long nodeSequence = flowExecutionContextManager.incrementNodeSequence(conversationId);
         LocalDateTime startedAt = LocalDateTime.now();
+        log.debug("[节点执行日志拦截器-图节点] conversationId={}, nodeName={}, traceId={}, nodeSequence={}", conversationId, nodeName, traceId, nodeSequence);
 
         NodeExecutionSummary summaryNode = (NodeExecutionSummary) pjp.getTarget();
         Map<String, Object> inputSummary = toSummaryMap(summaryNode.inputSummary(state));
 
+        Long nodeConfigId = resolveNodeConfigId(nodeName);
         AiNodeExecution nodeExecution = AiNodeExecution.builder()
                 .traceId(traceId)
+                .nodeConfigId(nodeConfigId)
+                .nodeKey(nodeName)
                 .nodeName(nodeName)
                 .nodeSequence((int) nodeSequence)
                 .status(AiNodeExecution.STATUS_RUNNING)
@@ -111,7 +121,7 @@ public class NodeExecutionAspect {
                 .inputSummary(inputSummary)
                 .build();
         aiNodeExecutionMapper.insert(nodeExecution);
-        log.debug("INSERT ai_node_execution, traceId={}, nodeName={}, nodeSequence={}", traceId, nodeName, nodeSequence);
+        log.debug("[节点执行日志拦截器-图节点] INSERT traceId={}, nodeName={}, nodeSequence={}", traceId, nodeName, nodeSequence);
 
         Throwable caughtException = null;
         Object result = null;
@@ -125,7 +135,7 @@ public class NodeExecutionAspect {
                 Map<String, Object> outputSummary = toSummaryMap(summaryNode.outputSummary(state));
                 updateNodeExecutionOnFinish(nodeExecution.getId(), startedAt, outputSummary, caughtException);
             } catch (Exception e) {
-                log.error("UPDATE ai_node_execution 失败, traceId={}, nodeName={}", traceId, nodeName, e);
+                log.error("[节点执行日志拦截器-图节点] UPDATE traceId={}, nodeName={}", traceId, nodeName, e);
             }
         }
 
@@ -171,11 +181,15 @@ public class NodeExecutionAspect {
         Long traceId = flowExecutionContextManager.getTraceId(conversationId);
         long nodeSequence = flowExecutionContextManager.incrementNodeSequence(conversationId);
         LocalDateTime startedAt = LocalDateTime.now();
+        log.debug("[节点执行日志拦截器-会话节点] conversationId={}, nodeName={}, traceId={}, nodeSequence={}", conversationId, nodeName, traceId, nodeSequence);
 
         Map<String, Object> inputSummary = extractConversationInputSummary(pjp.getArgs()[0]);
 
+        Long nodeConfigId = resolveNodeConfigId(nodeName);
         AiNodeExecution nodeExecution = AiNodeExecution.builder()
                 .traceId(traceId)
+                .nodeConfigId(nodeConfigId)
+                .nodeKey(nodeName)
                 .nodeName(nodeName)
                 .nodeSequence((int) nodeSequence)
                 .status(AiNodeExecution.STATUS_RUNNING)
@@ -183,7 +197,7 @@ public class NodeExecutionAspect {
                 .inputSummary(inputSummary)
                 .build();
         aiNodeExecutionMapper.insert(nodeExecution);
-        log.debug("INSERT ai_node_execution, traceId={}, nodeName={}, nodeSequence={}", traceId, nodeName, nodeSequence);
+        log.debug("[节点执行日志拦截器-会话节点] INSERT traceId={}, nodeName={}, nodeSequence={}", traceId, nodeName, nodeSequence);
 
         Throwable caughtException = null;
         Object result = null;
@@ -197,7 +211,7 @@ public class NodeExecutionAspect {
                 Map<String, Object> outputSummary = extractConversationOutputSummary(result);
                 updateNodeExecutionOnFinish(nodeExecution.getId(), startedAt, outputSummary, caughtException);
             } catch (Exception e) {
-                log.error("UPDATE ai_node_execution 失败, traceId={}, nodeName={}", traceId, nodeName, e);
+                log.error("[节点执行日志拦截器-会话节点] UPDATE traceId={}, nodeName={}", traceId, nodeName, e);
             }
         }
 
@@ -246,6 +260,21 @@ public class NodeExecutionAspect {
         } catch (Exception e) {
             return pjp.getSignature().getDeclaringType().getSimpleName();
         }
+    }
+
+    /**
+     * 根据节点名称（nodeKey）解析节点模型配置ID
+     *
+     * @param nodeKey 节点唯一标识
+     * @return 节点配置ID，若配置不存在则返回 null
+     */
+    private Long resolveNodeConfigId(String nodeKey) {
+        AiNodeConfig config = aiNodeConfigManager.getConfig(nodeKey);
+        if (config == null) {
+            log.warn("节点配置未找到，nodeConfigId 将为 NULL，nodeKey：{}", nodeKey);
+            return null;
+        }
+        return config.getId();
     }
 
     /**

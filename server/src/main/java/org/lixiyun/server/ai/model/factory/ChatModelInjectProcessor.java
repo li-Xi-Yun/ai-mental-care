@@ -15,6 +15,7 @@ import java.lang.reflect.Method;
  */
 @Component
 @RequiredArgsConstructor
+@Deprecated
 public class ChatModelInjectProcessor implements InstantiationAwareBeanPostProcessor {
 
     private final ChatModelFactory chatModelFactory;

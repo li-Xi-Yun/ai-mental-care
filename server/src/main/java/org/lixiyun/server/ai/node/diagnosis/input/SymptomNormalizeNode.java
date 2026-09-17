@@ -726,9 +726,11 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<InputResult> irOpt = state.value(InputResult.NAME);
-        return irOpt.map(ir -> Map.of(
-                "symptomNormalizeResult", (Object) ir.getSymptomNormalizeResult(),
-                "interrupted", ir.isInterrupted()
-        )).orElse(null);
+        return irOpt.map(ir -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("symptomNormalizeResult", ir.getSymptomNormalizeResult());
+            map.put("interrupted", ir.isInterrupted());
+            return map;
+        }).orElse(null);
     }
 }

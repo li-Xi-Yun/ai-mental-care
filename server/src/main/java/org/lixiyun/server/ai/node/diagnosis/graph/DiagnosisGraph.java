@@ -3,6 +3,7 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -24,6 +25,7 @@ import org.lixiyun.server.ai.node.diagnosis.InputNode;
 import org.lixiyun.server.ai.node.diagnosis.KnowledgeNode;
 import org.lixiyun.server.ai.node.diagnosis.ProcessNode;
 import org.lixiyun.server.ai.node.diagnosis.serializer.DiagnosisStateSerializer;
+import org.lixiyun.server.ai.saver.CheckpointCleaner;
 import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +52,9 @@ public class DiagnosisGraph {
     private final ProcessNode processNode;
     private final DiagnosisPersistNode diagnosisPersistNode;
     private final ObservationRegistry observationRegistry;
+
+    private final SaverConfig saverConfig;
+    private final CheckpointCleaner checkpointCleaner;
 
     @Getter
     private static CompiledGraph diagnosisGraph;
@@ -90,13 +95,25 @@ public class DiagnosisGraph {
         );
 
         RunnableConfig runnableConfig = RunnableConfig.builder()
+                .threadId(contextBO.getConversation().getId() + "_diagnosis_" + System.currentTimeMillis())
                 .addMetadata(ConversationMetadata.NAME, metadata)
                 .build();
 
-        OverAllState result = diagnosisGraph.invoke(stateMap, runnableConfig).orElse(null);
-        if (result == null) {
-            log.error("DiagnosisGraph-执行失败，result为空");
-            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        OverAllState result = null;
+        try {
+            result = diagnosisGraph.invoke(stateMap, runnableConfig).orElse(null);
+            if (result == null) {
+                log.error("DiagnosisGraph-执行失败，result为空");
+                throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+            }
+        } catch (BusinessException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                checkpointCleaner.release(runnableConfig);
+            } catch (Exception e) {
+                log.error("DiagnosisGraph-Checkpoint删除失败", e);
+            }
         }
 
         Optional<DiagnosisData> diagnosisDataOpt = result.value(DiagnosisData.NAME);
@@ -156,6 +173,7 @@ public class DiagnosisGraph {
 
             compiledGraph = workflow.compile(
                     CompileConfig.builder()
+                            .saverConfig(saverConfig)
                             .withLifecycleListener(new GraphObservationLifecycleListener(observationRegistry))
                             .build()
             );

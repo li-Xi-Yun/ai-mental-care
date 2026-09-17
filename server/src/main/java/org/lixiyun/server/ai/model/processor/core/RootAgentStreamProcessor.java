@@ -68,7 +68,11 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
                 if (reasoning != null && !reasoning.toString().isBlank()) {
                     return new AgentStreamEvent.ModelThinkChunk(reasoning.toString());
                 }
-                return new AgentStreamEvent.ModelContentChunk(assistantMessage.getText());
+                String text = assistantMessage.getText();
+                if (text != null && !text.isBlank()) {
+                    return new AgentStreamEvent.ModelContentChunk(text);
+                }
+                return null;
             }
             return null;
         }

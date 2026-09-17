@@ -50,7 +50,7 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
         List<ConversationMemory> temporaryMessages = processContext.getTemporaryMessages();
 
         String prompt = buildPrompt(temporaryMessages);
-        log.debug("会话名称生成节点-构建提示词完成，提示词：{}", prompt);
+        log.debug("[会话名称生成节点] 构建提示词完成，提示词：{}", prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -63,11 +63,12 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
                     .userId(conversation.getUserId())
                     .currentRound(conversation.getCurrentRound())
                     .build();
+            log.debug("[会话名称生成节点] 构建会话元数据完成，会话元数据：{}", metadata);
             RunnableConfig runnableConfig = RunnableConfig.builder()
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();
             call = conversationNameGenerationModel.call(chatModel, prompt, aiNodeConfig, runnableConfig);
-            log.debug("会话名称生成节点-模型返回结果：{}", call.getText());
+            log.debug("[会话名称生成节点] 模型调用完成，模型返回结果：{}", call.getText());
         } catch (GraphRunnerException e) {
             throw new RuntimeException(e);
         }

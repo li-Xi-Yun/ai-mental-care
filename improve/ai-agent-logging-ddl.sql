@@ -65,6 +65,8 @@ CREATE TABLE ai_flow_execution (
 CREATE TABLE ai_node_execution (
                                    id                      BIGINT          PRIMARY KEY AUTO_INCREMENT,
                                    trace_id                BIGINT          NOT NULL COMMENT '流程唯一标识（雪花算法），关联ai_flow_execution.trace_id',
+                                   node_config_id          BIGINT          NULL     COMMENT '节点模型配置id，无配置的内置节点为NULL',
+                                   node_key                VARCHAR(50)     NOT NULL COMMENT '节点唯一标识，如psychologicalState/riskAssessment',
                                    node_name               VARCHAR(64)     NOT NULL COMMENT '节点名称',
                                    node_sequence           INT             NOT NULL COMMENT '全局执行顺序，从1递增',
                                    status                  TINYINT         NOT NULL COMMENT '节点状态（1=运行中 2=完成 3=失败）',
@@ -80,6 +82,8 @@ CREATE TABLE ai_node_execution (
 
                                    INDEX idx_trace_id              (trace_id),
                                    INDEX idx_trace_sequence        (trace_id, node_sequence),
+                                   INDEX idx_node_config_id        (node_config_id),
+                                   INDEX idx_node_key              (node_key),
                                    INDEX idx_node_name             (node_name),
                                    INDEX idx_status                (status),
                                    INDEX idx_started_at            (started_at)
@@ -102,6 +106,8 @@ CREATE TABLE ai_model_call (
                                id                      BIGINT          PRIMARY KEY AUTO_INCREMENT,
                                trace_id                BIGINT          NOT NULL COMMENT '流程唯一标识，关联ai_flow_execution.trace_id',
                                node_id                 BIGINT          NULL     COMMENT '关联的节点执行记录ID，关联ai_node_execution.id',
+                               node_key                VARCHAR(50)     NOT NULL COMMENT '节点唯一标识，如psychologicalState/riskAssessment',
+                               node_name               VARCHAR(100)    NOT NULL COMMENT '节点中文名称，如心理状态与症状评估',
                                conversation_id         BIGINT          NULL     COMMENT '会话ID',
                                user_id                 BIGINT          NULL     COMMENT '用户ID',
                                round_num               INT             NULL     COMMENT '当前轮次',

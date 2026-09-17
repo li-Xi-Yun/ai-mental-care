@@ -107,6 +107,7 @@ public class TextMessageProcessor implements MessageProcessor {
                     .userId(userId)
                     .currentRound(currentRound)
                     .build();
+            log.debug("[AI对话文本处理器] 构建模型调用配置完成，元数据：{}", metadata);
             RunnableConfig runnableConfig = RunnableConfig.builder()
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();

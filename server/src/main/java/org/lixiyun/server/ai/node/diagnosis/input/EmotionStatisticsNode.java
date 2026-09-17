@@ -669,9 +669,11 @@ public class EmotionStatisticsNode implements NodeActionWithConfig, NodeExecutio
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<InputResult> irOpt = state.value(InputResult.NAME);
-        return irOpt.map(ir -> Map.of(
-                "emotionStatisticsResult", (Object) ir.getEmotionStatisticsResult(),
-                "interrupted", ir.isInterrupted()
-        )).orElse(null);
+        return irOpt.map(ir -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("emotionStatisticsResult", ir.getEmotionStatisticsResult());
+            map.put("interrupted", ir.isInterrupted());
+            return map;
+        }).orElse(null);
     }
 }

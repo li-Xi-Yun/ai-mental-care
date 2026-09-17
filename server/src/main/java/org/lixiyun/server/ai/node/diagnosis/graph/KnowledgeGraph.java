@@ -3,6 +3,7 @@ package org.lixiyun.server.ai.node.diagnosis.graph;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -17,6 +18,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchReques
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.server.ai.node.diagnosis.knowledge.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.KnowledgeStateSerializer;
+import org.lixiyun.server.ai.saver.CheckpointCleaner;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -52,6 +54,9 @@ public class KnowledgeGraph {
     private final SymptomKnowledgeRepositoryNode symptomKnowledgeRepositoryNode;
     private final RerankLayerNode rerankLayerNode;
 
+    private final SaverConfig saverConfig;
+    private final CheckpointCleaner checkpointCleaner;
+
     @Getter
     private static CompiledGraph knowledgeGraph;
 
@@ -80,6 +85,7 @@ public class KnowledgeGraph {
         }
 
         RunnableConfig runnableConfig = RunnableConfig.builder()
+                .threadId(metadata.getConversationId() + "_knowledge_" + System.currentTimeMillis())
                 .addParallelNodeExecutor(SymptomKnowledgeRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(DiagnosisStandardRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
                 .addParallelNodeExecutor(InterventionPlanRepositoryNode.NODE_NAME, ForkJoinPool.commonPool())
@@ -92,10 +98,21 @@ public class KnowledgeGraph {
                 KnowledgeRetrieveResult.NAME, new KnowledgeRetrieveResult()
         );
 
-        OverAllState stateResult = knowledgeGraph.invoke(stateMap, runnableConfig).orElse(null);
-        if (stateResult == null) {
-            log.error("KnowledgeGraph-执行失败，result为空");
-            throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+        OverAllState stateResult = null;
+        try {
+            stateResult = knowledgeGraph.invoke(stateMap, runnableConfig).orElse(null);
+            if (stateResult == null) {
+                log.error("KnowledgeGraph-执行失败，result为空");
+                throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+            }
+        } catch (BusinessException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                checkpointCleaner.release(runnableConfig);
+            } catch (Exception e) {
+                log.error("KnowledgeGraph-Checkpoint删除失败", e);
+            }
         }
 
         Optional<KnowledgeRetrieveResult> resultOpt = stateResult.value(KnowledgeRetrieveResult.NAME);
@@ -165,7 +182,11 @@ public class KnowledgeGraph {
                     )
             );
 
-            compiledGraph = workflow.compile();
+            compiledGraph = workflow.compile(
+                    CompileConfig.builder()
+                            .saverConfig(saverConfig)
+                            .build()
+            );
             log.info("知识侧图构建完成");
         } catch (GraphStateException e) {
             log.error("知识侧图构建失败：{}", e.getMessage());

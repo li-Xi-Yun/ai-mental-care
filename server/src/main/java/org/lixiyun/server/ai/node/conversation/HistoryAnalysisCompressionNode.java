@@ -49,7 +49,7 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
         List<EmotionAnalysis> emotionAnalyses = historyCompressionBO.getEmotionAnalyses();
 
         String prompt = buildPrompt(conversation, emotionAnalyses);
-        log.debug("历史情绪分析压缩节点-构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
+        log.debug("[历史情绪分析压缩节点] 构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
         AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
@@ -61,11 +61,12 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
                     .userId(conversation.getUserId())
                     .currentRound(conversation.getCurrentRound())
                     .build();
+            log.debug("[历史情绪分析压缩节点] 构建模型调用配置完成，元数据：{}", metadata);
             RunnableConfig runnableConfig = RunnableConfig.builder()
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();
             call = historyAnalysisCompressionModel.call(chatModel, prompt, aiNodeConfig, runnableConfig);
-            log.debug("历史情绪分析压缩节点-模型返回结果：{}", call.getText());
+            log.debug("[历史情绪分析压缩节点] 模型调用完成，模型返回结果：{}", call);
         } catch (GraphRunnerException e) {
             throw new BusinessException(AIChatExceptionEnum.LLM_CALL_FAILED);
         }
