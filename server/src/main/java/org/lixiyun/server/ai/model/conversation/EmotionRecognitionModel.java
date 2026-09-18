@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -291,10 +292,13 @@ public class EmotionRecognitionModel extends BaseModel {
 
         private String emotionTrend;
 
+        @JsonProperty("pScore")
         private Double pScore;
 
+        @JsonProperty("aScore")
         private Double aScore;
 
+        @JsonProperty("dScore")
         private Double dScore;
 
         private Double negativeEmotionRatio;

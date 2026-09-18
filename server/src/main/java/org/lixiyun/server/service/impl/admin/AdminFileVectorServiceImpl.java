@@ -14,7 +14,7 @@ import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
-import org.lixiyun.server.ai.rag.MilvusUtil;
+import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.RagInterruptManager;
 import org.lixiyun.server.ai.rag.RagStore;
 import org.lixiyun.server.mapper.InfraFileMapper;

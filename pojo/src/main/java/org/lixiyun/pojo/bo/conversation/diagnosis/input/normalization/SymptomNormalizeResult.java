@@ -32,11 +32,11 @@ public class SymptomNormalizeResult implements Serializable {
 
     /**
      * 术语-原文映射表
-     * key：标准术语ID（对应SymptomDict.termId）
+     * key：标准术语ID（对应SymptomDict.termId），使用String类型避免Jackson序列化Map数值型Key时的类型推断异常
      * value：该术语匹配到的所有用户原始表述列表
      * 用于溯源验证，保证归一化结果可回溯
      */
-    private Map<Long, List<SymptomOriginalItem>> termOriginalMapping;
+    private Map<String, List<SymptomOriginalItem>> termOriginalMapping;
 
     public static String getPrompt() {
         return "termList：" + SymptomTerm.getPrompt() + "，" +

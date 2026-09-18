@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
@@ -31,7 +32,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -116,14 +116,28 @@ public class DiagnosisGraph {
             }
         }
 
-        Optional<DiagnosisData> diagnosisDataOpt = result.value(DiagnosisData.NAME);
-        if (diagnosisDataOpt.isEmpty()) {
-            log.error("DiagnosisGraph-执行失败，diagnosisData为空");
+        // result.value() 在通过 MysqlSaver 反序列化 checkpoint 时，
+        // 由于 MysqlSaver 内部使用默认 Jackson 序列化器（未注册自定义类型），
+        // 嵌套 POJO 可能被擦除为 LinkedHashMap，需要做兼容转换
+        Object rawObj = result.value(DiagnosisData.NAME)
+                .orElseThrow(() -> {
+                    log.error("ProcessGraph-执行失败，diagnosisData为空");
+                    return new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
+                });
+
+        DiagnosisData diagnosisData;
+        if (rawObj instanceof DiagnosisData dd) {
+            diagnosisData = dd;
+        } else if (rawObj instanceof Map<?, ?> mapData) {
+            log.warn("DiagnosisGraph-DiagnosisData类型被擦除为LinkedHashMap，执行JSON转换");
+            diagnosisData = JsonUtils.convertMapToObj(mapData, DiagnosisData.class);
+        } else {
+            log.error("DiagnosisGraph-DiagnosisData类型不支持: {}", rawObj.getClass().getName());
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
         }
 
         log.info("DiagnosisGraph-执行成功");
-        return diagnosisDataOpt.get();
+        return diagnosisData;
     }
 
     /**

@@ -98,7 +98,7 @@ public class TextMessageProcessor implements MessageProcessor {
                     .build();
             log.debug("[AI对话文本处理器] AgentStreamProcessor构建完成，会话ID：{}", conversationId);
 
-            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             log.debug("[AI对话文本处理器] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
 
@@ -111,6 +111,7 @@ public class TextMessageProcessor implements MessageProcessor {
             RunnableConfig runnableConfig = RunnableConfig.builder()
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();
+            log.debug("[AI对话文本处理器] 用户提示词：{}", prompt);
             processor.process(textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig, runnableConfig))
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe(
@@ -139,7 +140,7 @@ public class TextMessageProcessor implements MessageProcessor {
 
             @Override
             public void onModelComplete(org.springframework.ai.chat.messages.AssistantMessage message) {
-                log.info("[AI对话文本处理器] -流式完成，会话ID：{}", conversationId);
+                log.info("[AI对话文本处理器] 流式完成，会话ID：{}", conversationId);
                 log.debug("[AI对话文本处理器] 模型输出完成，内容长度：{}，会话ID：{}", message.getText() != null ? message.getText().length() : 0, conversationId);
 
                 ConversationMemory finalMemory = ConversationMemory.builder()

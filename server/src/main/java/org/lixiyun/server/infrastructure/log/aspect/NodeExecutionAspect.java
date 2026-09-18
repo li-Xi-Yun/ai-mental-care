@@ -269,7 +269,7 @@ public class NodeExecutionAspect {
      * @return 节点配置ID，若配置不存在则返回 null
      */
     private Long resolveNodeConfigId(String nodeKey) {
-        AiNodeConfig config = aiNodeConfigManager.getConfig(nodeKey);
+        AiNodeConfig config = aiNodeConfigManager.getConfigWithNoLoad(nodeKey);
         if (config == null) {
             log.warn("节点配置未找到，nodeConfigId 将为 NULL，nodeKey：{}", nodeKey);
             return null;

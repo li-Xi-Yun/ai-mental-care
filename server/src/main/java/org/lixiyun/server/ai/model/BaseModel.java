@@ -12,6 +12,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.infrastructure.log.RecordingModelInterceptor;
+import org.lixiyun.server.infrastructure.log.RecordingToolInterceptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -54,6 +55,9 @@ public abstract class BaseModel implements Model {
 
     @Autowired(required = false)
     private RecordingModelInterceptor recordingModelInterceptor;
+
+    @Autowired(required = false)
+    private RecordingToolInterceptor recordingToolInterceptor;
 
     // ==================== 抽象钩子方法 ====================
 
@@ -158,10 +162,15 @@ public abstract class BaseModel implements Model {
     protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
         if (runnableConfig != null) {
-            RunnableConfig build = RunnableConfig.builder(runnableConfig)
-                    .addMetadata(AiNodeConfig.NAME, config)
-                    .build();
-            return agent.call(userPrompt, build);
+            // 注意：不能直接 RunnableConfig.builder(runnableConfig) 复制 threadId
+            // 否则 React Agent 内部子图检测到 threadId 会尝试恢复检查点，但 Agent 没有 SaverConfig → 报错
+            // 因此：只复制 metadata（给拦截器提供会话上下文），不复制 threadId
+            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
+            if (runnableConfig.metadata().isPresent()) {
+                runnableConfig.metadata().get().forEach(builder::addMetadata);
+            }
+            builder.addMetadata(AiNodeConfig.NAME, config);
+            return agent.call(userPrompt, builder.build());
         }
         return agent.call(userPrompt);
     }
@@ -186,10 +195,15 @@ public abstract class BaseModel implements Model {
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
         if (runnableConfig != null) {
-            RunnableConfig build = RunnableConfig.builder(runnableConfig)
-                    .addMetadata(AiNodeConfig.NAME, config)
-                    .build();
-            return agent.stream(userPrompt, build);
+            // 注意：不能直接 RunnableConfig.builder(runnableConfig) 复制 threadId
+            // 否则 React Agent 内部子图检测到 threadId 会尝试恢复检查点，但 Agent 没有 SaverConfig → 报错
+            // 因此：只复制 metadata（给拦截器提供会话上下文），不复制 threadId
+            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
+            if (runnableConfig.metadata().isPresent()) {
+                runnableConfig.metadata().get().forEach(builder::addMetadata);
+            }
+            builder.addMetadata(AiNodeConfig.NAME, config);
+            return agent.stream(userPrompt, builder.build());
         }
         return agent.stream(userPrompt);
     }
@@ -298,6 +312,10 @@ public abstract class BaseModel implements Model {
 
         if (recordingModelInterceptor != null) {
             builder.interceptors(recordingModelInterceptor);
+        }
+
+        if (recordingToolInterceptor != null) {
+            builder.interceptors(recordingToolInterceptor);
         }
 
         return builder;

@@ -59,7 +59,7 @@ public class RiskAssessmentNode implements NodeActionWithConfig, NodeExecutionSu
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.debug("诊断处理侧-风险评估-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         RiskAssessmentProcessModel.RiskAssessmentResult result = riskAssessmentProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-风险评估-模型返回结果：{}", result);
@@ -168,14 +168,14 @@ public class RiskAssessmentNode implements NodeActionWithConfig, NodeExecutionSu
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "emotionRiskLevel", data.getEmotionRiskLevel(),
-                "emotionAdjustSuggestion", data.getEmotionAdjustSuggestion(),
-                "needManualIntervene", data.getNeedManualIntervene(),
-                "selfHarmRiskLevel", data.getSelfHarmRiskLevel(),
-                "suicideRiskLevel", data.getSuicideRiskLevel(),
-                "riskDetail", data.getRiskDetail(),
-                "crisisWarning", (Object) data.getCrisisWarning()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("emotionRiskLevel", data.getEmotionRiskLevel()),
+                Map.entry("emotionAdjustSuggestion", data.getEmotionAdjustSuggestion()),
+                Map.entry("needManualIntervene", data.getNeedManualIntervene()),
+                Map.entry("selfHarmRiskLevel", data.getSelfHarmRiskLevel()),
+                Map.entry("suicideRiskLevel", data.getSuicideRiskLevel()),
+                Map.entry("riskDetail", data.getRiskDetail()),
+                Map.entry("crisisWarning", data.getCrisisWarning())
         )).orElse(null);
     }
 }

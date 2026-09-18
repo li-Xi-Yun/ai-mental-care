@@ -66,7 +66,7 @@ public class InterventionSuggestionNode implements NodeActionWithConfig, NodeExe
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult, diagnosisData);
         log.debug("诊断处理侧-干预建议生成-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         InterventionSuggestionProcessModel.InterventionSuggestionResult result = interventionSuggestionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-干预建议生成-模型返回结果：{}", result);
@@ -203,11 +203,11 @@ public class InterventionSuggestionNode implements NodeActionWithConfig, NodeExe
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "selfHelpSuggestion", (Object) data.getSelfHelpSuggestion(),
-                "socialSupportSuggestion", (Object) data.getSocialSupportSuggestion(),
-                "professionalInterveneSuggestion", (Object) data.getProfessionalInterveneSuggestion(),
-                "suggestionPriority", (Object) data.getSuggestionPriority()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("selfHelpSuggestion", data.getSelfHelpSuggestion()),
+                Map.entry("socialSupportSuggestion", data.getSocialSupportSuggestion()),
+                Map.entry("professionalInterveneSuggestion", data.getProfessionalInterveneSuggestion()),
+                Map.entry("suggestionPriority", data.getSuggestionPriority())
         )).orElse(null);
     }
 }

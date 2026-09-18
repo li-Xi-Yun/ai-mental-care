@@ -9,7 +9,6 @@
         <version>${revision}</version>
     </parent>
 
-    <groupId>org.lixiyun.pojo</groupId>
     <artifactId>pojo</artifactId>
 
     <properties>

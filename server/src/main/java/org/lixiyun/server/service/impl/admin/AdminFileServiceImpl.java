@@ -18,7 +18,7 @@ import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.file.InfraFileCategory;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
-import org.lixiyun.server.ai.rag.MilvusUtil;
+import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.RagStore;
 import org.lixiyun.server.mapper.InfraFileCategoryMapper;
 import org.lixiyun.server.mapper.InfraFileMapper;

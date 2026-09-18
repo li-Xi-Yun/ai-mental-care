@@ -391,7 +391,7 @@ public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSumma
                 symptomSliceIdMap, diagnosisSliceIdMap, interventionSliceIdMap);
         log.debug("知识侧-重排层节点-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         RerankLayerModel.RerankLayerResult rerankResult = rerankLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("知识侧-重排层节点-模型返回结果：{}", rerankResult);
@@ -806,25 +806,27 @@ public class RerankLayerNode implements NodeActionWithConfig, NodeExecutionSumma
     public Object outputSummary(OverAllState state) {
         Map<String, Object> output = new LinkedHashMap<>();
         Optional<KnowledgeRetrieveResult> resultOpt = state.value(KnowledgeRetrieveResult.NAME);
-        resultOpt.ifPresent(result -> output.put("knowledgeRetrieveResult", Map.of(
-                "symptomSliceList", result.getSymptomSliceList(),
-                "diagnosisSliceList", result.getDiagnosisSliceList(),
-                "interventionSliceList", result.getInterventionSliceList(),
-                "symptomReferencePrompt", result.getSymptomReferencePrompt(),
-                "diagnosisReferencePrompt", result.getDiagnosisReferencePrompt(),
-                "interventionReferencePrompt", result.getInterventionReferencePrompt()
-        )));
+        resultOpt.ifPresent(result -> {
+            Map<String, Object> summary = new LinkedHashMap<>();
+            summary.put("symptomSliceList", result.getSymptomSliceList());
+            summary.put("diagnosisSliceList", result.getDiagnosisSliceList());
+            summary.put("interventionSliceList", result.getInterventionSliceList());
+            summary.put("symptomReferencePrompt", result.getSymptomReferencePrompt());
+            summary.put("diagnosisReferencePrompt", result.getDiagnosisReferencePrompt());
+            summary.put("interventionReferencePrompt", result.getInterventionReferencePrompt());
+            output.put("knowledgeRetrieveResult", summary);
+        });
         Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
-        reqOpt.ifPresent(req -> output.put("knowledgeMatchRequest", Map.of(
-                "symptomNeedTransform", req.isSymptomNeedTransform(),
-                "diagnosisNeedTransform", req.isDiagnosisNeedTransform(),
-                "interventionNeedTransform", req.isInterventionNeedTransform(),
-                "symptomRetryCount", req.getSymptomRetryCount(),
-                "diagnosisRetryCount", req.getDiagnosisRetryCount(),
-                "interventionRetryCount", req.getInterventionRetryCount(),
-                "symptomQueryLevel", req.getSymptomQueryLevel(),
-                "diagnosisQueryLevel", req.getDiagnosisQueryLevel(),
-                "interventionQueryLevel", req.getInterventionQueryLevel()
+        reqOpt.ifPresent(req -> output.put("knowledgeMatchRequest", Map.ofEntries(
+                Map.entry("symptomNeedTransform", req.isSymptomNeedTransform()),
+                Map.entry("diagnosisNeedTransform", req.isDiagnosisNeedTransform()),
+                Map.entry("interventionNeedTransform", req.isInterventionNeedTransform()),
+                Map.entry("symptomRetryCount", req.getSymptomRetryCount()),
+                Map.entry("diagnosisRetryCount", req.getDiagnosisRetryCount()),
+                Map.entry("interventionRetryCount", req.getInterventionRetryCount()),
+                Map.entry("symptomQueryLevel", req.getSymptomQueryLevel()),
+                Map.entry("diagnosisQueryLevel", req.getDiagnosisQueryLevel()),
+                Map.entry("interventionQueryLevel", req.getInterventionQueryLevel())
         )));
         return output.isEmpty() ? null : output;
     }

@@ -52,7 +52,7 @@ public class ConversationNameGenerationNode implements NodeActionWithConfig {
         String prompt = buildPrompt(temporaryMessages);
         log.debug("[会话名称生成节点] 构建提示词完成，提示词：{}", prompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
 
         AssistantMessage call;

@@ -58,7 +58,7 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig, NodeExecu
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.debug("诊断处理侧-社会功能影响评估-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         SocialFunctionImpactProcessModel.SocialFunctionImpactResult result = socialFunctionImpactProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-社会功能影响评估-模型返回结果：{}", result);
@@ -146,10 +146,10 @@ public class SocialFunctionImpactNode implements NodeActionWithConfig, NodeExecu
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "socialFunctionImpact", (Object) data.getSocialFunctionImpact(),
-                "impactDomains", (Object) data.getImpactDomains(),
-                "dailyLifeInfluence", (Object) data.getDailyLifeInfluence()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("socialFunctionImpact", data.getSocialFunctionImpact()),
+                Map.entry("impactDomains", data.getImpactDomains()),
+                Map.entry("dailyLifeInfluence", data.getDailyLifeInfluence())
         )).orElse(null);
     }
 }

@@ -65,7 +65,7 @@ public class DiagnosisSummaryNode implements NodeActionWithConfig, NodeExecution
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult, existingDiagnosisData);
         log.debug("诊断处理侧-诊断书生成-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         DiagnosisSummaryProcessModel.DiagnosisSummaryResult result =
                 diagnosisSummaryProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
@@ -293,11 +293,11 @@ public class DiagnosisSummaryNode implements NodeActionWithConfig, NodeExecution
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "diagnosisContent", (Object) data.getDiagnosisContent(),
-                "coreEmotionLabel", (Object) data.getCoreEmotionLabel(),
-                "coreEmotionConfAvg", (Object) data.getCoreEmotionConfAvg(),
-                "coreEmotionIntensityScore", (Object) data.getCoreEmotionIntensityScore()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("diagnosisContent", data.getDiagnosisContent()),
+                Map.entry("coreEmotionLabel", data.getCoreEmotionLabel()),
+                Map.entry("coreEmotionConfAvg", data.getCoreEmotionConfAvg()),
+                Map.entry("coreEmotionIntensityScore", data.getCoreEmotionIntensityScore())
         )).orElse(null);
     }
 }

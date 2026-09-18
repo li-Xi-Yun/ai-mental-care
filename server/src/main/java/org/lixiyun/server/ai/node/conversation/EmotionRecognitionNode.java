@@ -64,7 +64,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         String prompt = buildPrompt(conversation, conversationHistory, temporaryMessages, emotionAnalyses);
         log.debug("[情感识别节点] 构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
 
         EmotionRecognitionModel.EmotionRecognitionResult result;

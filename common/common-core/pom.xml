@@ -24,7 +24,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.lixiyun.pojo</groupId>
+            <groupId>org.lixiyun</groupId>
             <artifactId>pojo</artifactId>
         </dependency>
 

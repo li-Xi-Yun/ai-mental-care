@@ -477,7 +477,7 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
         String userPrompt = buildModelUserPrompt(unmatchedTexts, dictList);
         log.debug("输入侧-语义归一化处理-模型归一化-构建用户提示词完成，提示词：{}", userPrompt);
         try {
-            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             SymptomNormalizeModel.SymptomNormalizeModelResult modelOutput = symptomNormalizeModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
             log.debug("输入侧-语义归一化处理-模型返回结果：{}", modelOutput);
@@ -579,8 +579,8 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
             Map<String, ModelMatchEntry> modelMatchedMap,
             List<String> stillUnmatchedTexts) {
 
-        Map<Long, List<SymptomOriginalItem>> termOriginalMapping = new LinkedHashMap<>();
-        Map<Long, SymptomTermAggregator> aggregators = new LinkedHashMap<>();
+        Map<String, List<SymptomOriginalItem>> termOriginalMapping = new LinkedHashMap<>();
+        Map<String, SymptomTermAggregator> aggregators = new LinkedHashMap<>();
 
         for (Map.Entry<String, List<SymptomRawItem>> entry : groupedByCleanedText.entrySet()) {
             String cleanedText = entry.getKey();
@@ -614,7 +614,7 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
                             .build())
                     .toList();
 
-            Long termKey = matchedDict != null ? matchedDict.getId() : -1L * cleanedText.hashCode();
+            String termKey = matchedDict != null ? String.valueOf(matchedDict.getId()) : String.valueOf(-1L * cleanedText.hashCode());
 
             termOriginalMapping.computeIfAbsent(termKey, k -> new ArrayList<>()).addAll(originalItems);
 

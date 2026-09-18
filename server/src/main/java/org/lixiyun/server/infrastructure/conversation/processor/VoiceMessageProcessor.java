@@ -99,7 +99,7 @@ public class VoiceMessageProcessor implements MessageProcessor {
                     .build();
             log.debug("[语音处理] AgentStreamProcessor构建完成，会话ID：{}", conversationId);
 
-            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             log.debug("[语音处理] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
 

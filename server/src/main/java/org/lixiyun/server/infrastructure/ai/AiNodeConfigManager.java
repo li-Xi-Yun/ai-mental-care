@@ -33,9 +33,9 @@ public class AiNodeConfigManager {
      */
     @PostConstruct
     public void init() {
-        log.info("AI节点配置缓存预热开始");
+        log.info("[节点配置缓存管理器] 预热开始");
         refreshAll();
-        log.info("AI节点配置缓存预热完成，加载节点数：{}", configCache.size());
+        log.info("[节点配置缓存管理器] 预热完成，加载节点数：{}, 完整配置节点信息：{}", configCache.size(), configCache.keySet());
     }
 
     /**
@@ -45,16 +45,37 @@ public class AiNodeConfigManager {
      * @param nodeKey 节点唯一标识，如psychologicalState/riskAssessment
      * @return 节点配置，不存在时返回{@code null}
      */
-    public AiNodeConfig getConfig(String nodeKey) {
+    public AiNodeConfig getConfigWithLoad(String nodeKey) {
         AiNodeConfig config = configCache.get(nodeKey);
         if (config != null) {
+            log.debug("[节点配置缓存管理器] 节点配置命中缓存，nodeKey：{}", nodeKey);
             return config;
         }
 
-        log.warn("AI节点配置未命中缓存，nodeKey：{}，回源加载", nodeKey);
+        log.warn("[节点配置缓存管理器] 节点配置未命中缓存，nodeKey：{}，回源加载", nodeKey);
         config = loadFromDb(nodeKey);
         if (config != null) {
             configCache.put(nodeKey, config);
+            log.debug("[节点配置缓存管理器] 加载成功，node模型配置信息：{}", config);
+        } else {
+            log.warn("[节点配置缓存管理器] 加载失败，数据库中无数据，nodeKey：{}", nodeKey);
+        }
+        return config;
+    }
+
+    /**
+     * 根据节点唯一标识获取配置（仅从缓存读取，不触发数据库加载）
+     * <p>适用于高频调用场景，缓存未命中时直接返回{@code null}，避免回源查库</p>
+     *
+     * @param nodeKey 节点唯一标识，如psychologicalState/riskAssessment
+     * @return 节点配置，缓存未命中或不存在时返回{@code null}
+     */
+    public AiNodeConfig getConfigWithNoLoad(String nodeKey) {
+        AiNodeConfig config = configCache.get(nodeKey);
+        if (config != null) {
+            log.debug("[节点配置缓存管理器] 节点配置命中缓存，nodeKey：{}", nodeKey);
+        } else {
+            log.debug("[节点配置缓存管理器] 节点配置未命中缓存，nodeKey：{}", nodeKey);
         }
         return config;
     }

@@ -23,34 +23,9 @@ public abstract class BaseToolInterceptor extends ToolInterceptor {
     @Override
     public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
         // 这里的两个参数信息中都不能获取到OverAllState参数，只能读取到RunnableConfig参数
-        String toolName = request.getToolName();
-        String agentName = (String) request.getContext().get("_AGENT_");
-        long startTime = System.currentTimeMillis();
+        ToolCallResponse response = this.interceptBaseToolCall(request, handler);
+        return response;
 
-        log.debug("执行工具: {}", toolName);
-
-        try {
-            ToolCallResponse response = this.interceptBaseToolCall(request, handler);
-
-            long duration = System.currentTimeMillis() - startTime;
-
-            log.debug("Agent {} 执行工具 {} 成功 (耗时: {}ms)", agentName, toolName, duration);
-
-            if(duration > 5000){
-                log.warn("Agent {} 执行工具 {} 耗时过长 (耗时: {}ms)", agentName, toolName, duration);
-            }
-
-            return response;
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.error("Agent {} 执行工具 {} 失败 (耗时: {}ms): {}", agentName, toolName, duration, e.getMessage());
-
-            return ToolCallResponse.of(
-                    request.getToolCallId(),
-                    request.getToolName(),
-                    "工具执行失败: " + e.getMessage()
-            );
-        }
     }
 
     public abstract ToolCallResponse interceptBaseToolCall(ToolCallRequest request, ToolCallHandler handler);

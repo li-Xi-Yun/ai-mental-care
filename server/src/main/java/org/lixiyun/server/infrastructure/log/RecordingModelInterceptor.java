@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.log.AiModelCall;
@@ -112,17 +113,23 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         record.setStartedAt(LocalDateTime.now());
         record.setCallType(AiModelCall.CALL_TYPE_SYNC);
 
+        Boolean streamFlag = (Boolean) request.getContext().get("_stream_");
+        if (Boolean.TRUE.equals(streamFlag)) {
+            log.debug("[模型同步调用日志拦截器-流式调用]: {}", request);
+        }
+
+
         extractPrompts(request, record);
 
         ConversationMetadata conversationMetadata = (ConversationMetadata) request.getContext().get(ConversationMetadata.NAME);
-        log.debug("[模型调用日志拦截器-模型上下文]: {}", conversationMetadata);
+        log.debug("[模型同步调用日志拦截器-模型上下文]: {}", conversationMetadata);
 
         record.setModelName(
                 request.getOptions() != null ? request.getOptions().getModel() : "unknown"
         );
 
         AiNodeConfig aiNodeConfig = (AiNodeConfig) request.getContext().get(AiNodeConfig.NAME);
-        log.debug("[模型调用日志拦截器-节点配置]: {}", aiNodeConfig);
+        log.debug("[模型同步调用日志拦截器-节点配置]: {}", aiNodeConfig);
 
         if (aiNodeConfig != null) {
             record.setNodeKey(aiNodeConfig.getNodeKey());
@@ -160,7 +167,7 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         if (conversationMetadata != null) {
             traceId = flowExecutionContextManager.getTraceId(conversationMetadata.getConversationId());
             record.setTraceId(traceId);
-            log.debug("[模型调用日志拦截器-traceId]: {}", traceId);
+            log.debug("[模型同步调用日志拦截器-traceId]: {}", traceId);
         }
 
         long start = System.currentTimeMillis();
@@ -168,6 +175,7 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         Throwable caughtException = null;
         try {
             response = handler.call(request);
+            log.debug("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型调用响应: {}", aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
         } catch (Throwable t) {
             caughtException = t;
             throw t;
@@ -176,25 +184,31 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
             record.setDurationMs(durationMs);
             record.setFinishedAt(LocalDateTime.now());
 
-            if (caughtException == null && response != null) {
+            if (caughtException == null) {
                 extractOutput(response, record);
                 record.setStatus(AiModelCall.STATUS_COMPLETED);
                 extractUsage(response, record);
             } else {
                 record.setStatus(AiModelCall.STATUS_FAILED);
-                if (caughtException != null) {
-                    record.setErrorCode(caughtException.getClass().getSimpleName());
-                    String msg = caughtException.getMessage();
-                    record.setErrorMessage(msg != null && msg.length() > 2000
-                            ? msg.substring(0, 2000) : msg);
-                }
+                record.setErrorCode(caughtException.getClass().getSimpleName());
+                String msg = caughtException.getMessage();
+                record.setErrorMessage(msg != null && msg.length() > 2000 ? msg.substring(0, 2000) : msg);
             }
 
             try {
                 mapper.insert(record);
             } catch (Exception e) {
-                log.error("模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}", conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
+                log.error("[模型同步调用日志拦截器] 模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}", conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
             }
+        }
+
+        if (!(response.getMessage() instanceof AssistantMessage)) {
+            log.debug("[模型同步调用日志拦截器] 模型流式返回，结束同步日志拦截");
+            return response;
+        }
+
+        if (response.getChatResponse().hasToolCalls()) {
+            log.debug("[模型同步调用日志拦截器] 模型调用响应工具调用: {}", response.getChatResponse().getResult().getOutput().getToolCalls());
         }
 
         return response;

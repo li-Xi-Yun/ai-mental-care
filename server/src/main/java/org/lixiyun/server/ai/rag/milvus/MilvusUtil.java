@@ -1,26 +1,26 @@
-package org.lixiyun.server.ai.rag;
+package org.lixiyun.server.ai.rag.milvus;
 
 import com.google.gson.JsonObject;
 import io.milvus.v2.client.MilvusClientV2;
-import io.milvus.v2.service.vector.request.DeleteReq;
-import io.milvus.v2.service.vector.request.InsertReq;
-import io.milvus.v2.service.vector.request.QueryReq;
-import io.milvus.v2.service.vector.request.UpsertReq;
-import io.milvus.v2.service.vector.response.DeleteResp;
-import io.milvus.v2.service.vector.response.InsertResp;
-import io.milvus.v2.service.vector.response.QueryResp;
-import io.milvus.v2.service.vector.response.UpsertResp;
+import io.milvus.v2.service.vector.request.*;
+import io.milvus.v2.service.vector.request.data.FloatVec;
+import io.milvus.v2.service.vector.response.*;
+import lombok.Builder;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.server.config.properties.MilvusProperties;
+import org.lixiyun.server.ai.rag.milvus.properties.MilvusProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Milvus向量数据库通用工具类
@@ -86,12 +86,14 @@ public class MilvusUtil {
     // 更新操作时，每批写入数量
     private static final int BATCH_SIZE = 500;
 
+    // ==================== 配置信息 ====================
+
     /**
      * 获取配置的集合名称
      *
      * @return 集合名称
      */
-    public String getCollectionName() {
+    private String getCollectionName() {
         return milvusProperties.getCollectionName();
     }
 
@@ -100,9 +102,11 @@ public class MilvusUtil {
      *
      * @return 数据库名称
      */
-    public String getDatabaseName() {
+    private String getDatabaseName() {
         return milvusProperties.getDatabaseName();
     }
+
+    // ==================== 查询操作 ====================
 
     /**
      * 构建查询请求
@@ -113,7 +117,7 @@ public class MilvusUtil {
      * @param outputFields 输出字段列表
      * @return QueryReq对象
      */
-    public QueryReq buildQueryReq(String filterExpression, List<String> outputFields) {
+    private QueryReq buildQueryReq(String filterExpression, List<String> outputFields) {
         return QueryReq.builder()
                 .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
@@ -128,7 +132,7 @@ public class MilvusUtil {
      * @param filterExpression 过滤表达式
      * @return QueryReq对象
      */
-    public QueryReq buildQueryIdReq(String filterExpression) {
+    private QueryReq buildQueryIdReq(String filterExpression) {
         return buildQueryReq(filterExpression, Collections.singletonList("id"));
     }
 
@@ -186,10 +190,128 @@ public class MilvusUtil {
      * @param req 查询请求对象 {@link QueryReq}
      * @return 查询结果 {@link QueryResp}
      */
-    public QueryResp executeQuery(QueryReq req) {
+    private QueryResp executeQuery(QueryReq req) {
         log.debug("执行Milvus查询操作，过滤条件：{}", req.getFilter());
         return milvusClient.query(req);
     }
+
+    // ==================== 向量相似度搜索 ====================
+
+    /**
+     * 向量搜索返回的单个结果包装
+     */
+    @Data
+    @Builder
+    public static class SearchResult {
+        /** 文档ID（即 Milvus 主键） */
+        private Long id;
+        /** 相似度分数 */
+        private Double score;
+        /** 实体数据（输出字段） */
+        private Map<String, Object> entity;
+    }
+
+    /**
+     * 执行向量相似度搜索
+     * <p>
+     * 使用给定的查询向量进行 ANN（近似最近邻）搜索，支持过滤表达式和 Top-K。
+     * 调用方需要先使用 {@code EmbeddingModel} 将文本转为向量后再传入。
+     *
+     * @param queryVector      查询向量（已由 EmbeddingModel 生成的 float[]）
+     * @param filterExpression 过滤表达式（如 "knowledge_type == 1 && deleted == 1"）
+     * @param topK             返回的最相似结果数量
+     * @param outputFields     需要返回的字段列表（如 ["id", "file_id", "knowledge_type"]）
+     * @return 搜索结果列表，按相似度降序排列，不会为 null
+     */
+    public List<SearchResult> search(float[] queryVector, String filterExpression, int topK, List<String> outputFields) {
+        return search(queryVector, filterExpression, topK, outputFields, null);
+    }
+
+    /**
+     * 执行向量相似度搜索（带搜索参数）
+     * <p>
+     * 支持通过 searchParams 传递 Milvus 搜索参数，例如：
+     * <pre>
+     * Map.of("radius", 0.3)
+     * </pre>
+     * radius 用于实现相似度阈值过滤（对于 COSINE 度量，radius = 1 - similarityThreshold）。
+     *
+     * @param queryVector      查询向量（已由 EmbeddingModel 生成的 float[]）
+     * @param filterExpression 过滤表达式（如 "knowledge_type == 1 && deleted == 1"）
+     * @param topK             返回的最相似结果数量
+     * @param outputFields     需要返回的字段列表（如 ["id", "file_id", "knowledge_type"]）
+     * @param searchParams     搜索参数字典（如 radius/range 等），可为 null
+     * @return 搜索结果列表，按相似度降序排列，不会为 null
+     */
+    public List<SearchResult> search(float[] queryVector, String filterExpression, int topK,
+                                      List<String> outputFields, Map<String, Object> searchParams) {
+        SearchReq req = buildSearchReq(queryVector, filterExpression, topK, outputFields, searchParams);
+        SearchResp resp = executeSearch(req);
+        return parseSearchResults(resp, outputFields);
+    }
+
+    /**
+     * 构建搜索请求
+     */
+    private SearchReq buildSearchReq(float[] queryVector, String filterExpression, int limit,
+                                      List<String> outputFields, Map<String, Object> searchParams) {
+        SearchReq.SearchReqBuilder builder = SearchReq.builder()
+                .databaseName(getDatabaseName())
+                .collectionName(getCollectionName())
+                .data(Collections.singletonList(new FloatVec(IntStream.range(0, queryVector.length)
+                        .mapToObj(i -> queryVector[i])
+                        .collect(Collectors.toList()))))
+                .annsField("vector")
+                .filter(filterExpression)
+                .outputFields(outputFields != null ? outputFields : Collections.singletonList("id"))
+                .limit(limit);
+        if (searchParams != null && !searchParams.isEmpty()) {
+            builder.searchParams(searchParams);
+        }
+        return builder.build();
+    }
+
+    /**
+     * 执行搜索请求
+     */
+    private SearchResp executeSearch(SearchReq req) {
+        log.debug("执行Milvus向量搜索，collection：{}，limit：{}", getCollectionName(), req.getLimit());
+        return milvusClient.search(req);
+    }
+
+    /**
+     * 解析搜索结果
+     */
+    private List<SearchResult> parseSearchResults(SearchResp resp, List<String> outputFields) {
+        List<List<SearchResp.SearchResult>> rawResults = resp.getSearchResults();
+        if (rawResults == null || rawResults.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 只有一个查询向量，取第一个（也是唯一一个）结果列表
+        List<SearchResp.SearchResult> hits = rawResults.get(0);
+        if (hits == null || hits.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<SearchResult> results = new ArrayList<>(hits.size());
+        for (SearchResp.SearchResult hit : hits) {
+            SearchResult.SearchResultBuilder builder = SearchResult.builder()
+                    .id((Long) hit.getId())
+                    .score(Double.valueOf(hit.getScore()));
+
+            if (outputFields != null && !outputFields.isEmpty()) {
+                builder.entity(hit.getEntity());
+            }
+
+            results.add(builder.build());
+        }
+
+        log.debug("向量搜索完成，返回 {} 条结果", results.size());
+        return results;
+    }
+
+    // ==================== 插入操作 ====================
 
     /**
      * 构建插入请求
@@ -199,7 +321,7 @@ public class MilvusUtil {
      * @param data 要插入的数据列表
      * @return InsertReq对象
      */
-    public InsertReq buildInsertReq(List<JsonObject> data) {
+    private InsertReq buildInsertReq(List<JsonObject> data) {
         return InsertReq.builder()
                 .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
@@ -226,10 +348,12 @@ public class MilvusUtil {
      * @param req 插入请求对象 {@link InsertReq}
      * @return 插入结果 {@link InsertResp}
      */
-    public InsertResp executeInsert(InsertReq req) {
+    private InsertResp executeInsert(InsertReq req) {
         log.debug("执行Milvus插入操作，数据量：{}", req.getData() != null ? req.getData().size() : 0);
         return milvusClient.insert(req);
     }
+
+    // ==================== 更新操作（Upsert） ====================
 
     /**
      * 构建Upsert请求
@@ -240,7 +364,7 @@ public class MilvusUtil {
      * @param partialUpdate 是否为部分更新（true-仅更新指定字段，false-覆盖全部字段）
      * @return UpsertReq对象
      */
-    public UpsertReq buildUpsertReq(List<JsonObject> data, boolean partialUpdate) {
+    private UpsertReq buildUpsertReq(List<JsonObject> data, boolean partialUpdate) {
         return UpsertReq.builder()
                 .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
@@ -270,10 +394,12 @@ public class MilvusUtil {
      * @param req Upsert请求对象 {@link UpsertReq}
      * @return Upsert结果 {@link UpsertResp}
      */
-    public UpsertResp executeUpsert(UpsertReq req) {
+    private UpsertResp executeUpsert(UpsertReq req) {
         log.debug("执行Milvus Upsert操作，数据量：{}", req.getData() != null ? req.getData().size() : 0);
         return milvusClient.upsert(req);
     }
+
+    // ==================== 删除操作 ====================
 
     /**
      * 构建删除请求
@@ -283,7 +409,7 @@ public class MilvusUtil {
      * @param filterExpression 过滤表达式
      * @return DeleteReq对象
      */
-    public DeleteReq buildDeleteReq(String filterExpression) {
+    private DeleteReq buildDeleteReq(String filterExpression) {
         return DeleteReq.builder()
                 .databaseName(getDatabaseName())
                 .collectionName(getCollectionName())
@@ -305,39 +431,31 @@ public class MilvusUtil {
     }
 
     /**
-     * 执行删除请求
+     * 根据过滤表达式删除向量数据（支持元数据过滤）
+     * <p>
+     * 使用Milvus原生SDK根据过滤表达式删除向量数据。
+     * 过滤表达式支持Milvus的所有查询语法。
      *
-     * @param req 删除请求对象 {@link DeleteReq}
+     * @param filterExpression 过滤表达式，用于指定要删除的文档条件，不能为空 {@link String}
      * @return 删除结果 {@link DeleteResp}
      */
-    public DeleteResp executeDelete(DeleteReq req) {
-        log.debug("执行Milvus删除操作，过滤条件：{}", req.getFilter());
-        return milvusClient.delete(req);
-    }
+    public DeleteResp deleteByFilter(String filterExpression) {
+        if (filterExpression == null || filterExpression.trim().isEmpty()) {
+            log.warn("删除操作：过滤表达式为空，跳过删除");
+            return null;
+        }
 
-    /**
-     * 查询并统计数量
-     * <p>
-     * 根据过滤条件查询数据并返回匹配的记录数量。
-     *
-     * @param filterExpression 过滤表达式
-     * @return 匹配的记录数量
-     */
-    public long count(String filterExpression) {
-        QueryResp resp = queryIds(filterExpression);
-        return resp.getQueryResults() != null ? resp.getQueryResults().size() : 0;
-    }
-
-    /**
-     * 检查数据是否存在
-     * <p>
-     * 根据过滤条件检查是否存在匹配的向量数据。
-     *
-     * @param filterExpression 过滤表达式
-     * @return true-存在匹配数据，false-不存在
-     */
-    public boolean exists(String filterExpression) {
-        return count(filterExpression) > 0;
+        log.info("开始根据过滤表达式删除文档: {}", filterExpression);
+        
+        DeleteReq req = DeleteReq.builder()
+                .databaseName(getDatabaseName())
+                .collectionName(getCollectionName())
+                .filter(filterExpression)
+                .build();
+        
+        DeleteResp resp = milvusClient.delete(req);
+        log.info("成功根据过滤表达式删除文档");
+        return resp;
     }
 
     /**
@@ -374,34 +492,6 @@ public class MilvusUtil {
     }
 
     /**
-     * 根据过滤表达式删除向量数据（支持元数据过滤）
-     * <p>
-     * 使用Milvus原生SDK根据过滤表达式删除向量数据。
-     * 过滤表达式支持Milvus的所有查询语法。
-     *
-     * @param filterExpression 过滤表达式，用于指定要删除的文档条件，不能为空 {@link String}
-     * @return 删除结果 {@link DeleteResp}
-     */
-    public DeleteResp deleteByFilter(String filterExpression) {
-        if (filterExpression == null || filterExpression.trim().isEmpty()) {
-            log.warn("删除操作：过滤表达式为空，跳过删除");
-            return null;
-        }
-
-        log.info("开始根据过滤表达式删除文档: {}", filterExpression);
-        
-        DeleteReq req = DeleteReq.builder()
-                .databaseName(getDatabaseName())
-                .collectionName(getCollectionName())
-                .filter(filterExpression)
-                .build();
-        
-        DeleteResp resp = milvusClient.delete(req);
-        log.info("成功根据过滤表达式删除文档");
-        return resp;
-    }
-
-    /**
      * 根据元数据键值对删除向量数据
      * <p>
      * 此方法构建一个简单的相等条件过滤器来删除具有指定元数据的文档。
@@ -429,6 +519,46 @@ public class MilvusUtil {
         log.info("成功根据元数据删除文档: {} = {}", metadataKey, metadataValue);
         return resp;
     }
+
+    /**
+     * 执行删除请求
+     *
+     * @param req 删除请求对象 {@link DeleteReq}
+     * @return 删除结果 {@link DeleteResp}
+     */
+    private DeleteResp executeDelete(DeleteReq req) {
+        log.debug("执行Milvus删除操作，过滤条件：{}", req.getFilter());
+        return milvusClient.delete(req);
+    }
+
+    // ==================== 统计与存在性检查 ====================
+
+    /**
+     * 查询并统计数量
+     * <p>
+     * 根据过滤条件查询数据并返回匹配的记录数量。
+     *
+     * @param filterExpression 过滤表达式
+     * @return 匹配的记录数量
+     */
+    public long count(String filterExpression) {
+        QueryResp resp = queryIds(filterExpression);
+        return resp.getQueryResults() != null ? resp.getQueryResults().size() : 0;
+    }
+
+    /**
+     * 检查数据是否存在
+     * <p>
+     * 根据过滤条件检查是否存在匹配的向量数据。
+     *
+     * @param filterExpression 过滤表达式
+     * @return true-存在匹配数据，false-不存在
+     */
+    public boolean exists(String filterExpression) {
+        return count(filterExpression) > 0;
+    }
+
+    // ==================== 批量业务操作 ====================
 
     /**
      * 通用：批量更新向量的knowledge_type字段

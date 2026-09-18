@@ -58,7 +58,7 @@ public class PsychologicalStateNode implements NodeActionWithConfig, NodeExecuti
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.debug("诊断处理侧-心理状态与症状评估-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         PsychologicalStateProcessModel.PsychologicalStateResult result = psychologicalStateProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-心理状态与症状评估-模型返回结果：{}", result);
@@ -164,10 +164,10 @@ public class PsychologicalStateNode implements NodeActionWithConfig, NodeExecuti
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "psychologicalState", (Object) data.getPsychologicalState(),
-                "symptomSummary", (Object) data.getSymptomSummary(),
-                "symptomTags", (Object) data.getSymptomTags()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("psychologicalState", data.getPsychologicalState()),
+                Map.entry("symptomSummary", data.getSymptomSummary()),
+                Map.entry("symptomTags", data.getSymptomTags())
         )).orElse(null);
     }
 }

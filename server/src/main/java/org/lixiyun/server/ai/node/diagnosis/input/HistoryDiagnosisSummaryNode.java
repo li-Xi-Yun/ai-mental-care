@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
 @Component
 public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeExecutionSummary {
 
-    public static final String NODE_NAME = "history-diagnosis-summary-node";
+    public static final String NODE_NAME = "historyDiagnosisSummaryNode";
 
     @Autowired
     private EmotionDiagnosisMapper emotionDiagnosisMapper;

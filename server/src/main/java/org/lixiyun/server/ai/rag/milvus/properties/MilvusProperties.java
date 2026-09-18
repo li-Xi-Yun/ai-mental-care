@@ -1,4 +1,4 @@
-package org.lixiyun.server.config.properties;
+package org.lixiyun.server.ai.rag.milvus.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

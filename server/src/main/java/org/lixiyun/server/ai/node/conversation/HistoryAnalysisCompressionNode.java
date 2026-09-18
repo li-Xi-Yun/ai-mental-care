@@ -51,7 +51,7 @@ public class HistoryAnalysisCompressionNode implements NodeActionWithConfig {
         String prompt = buildPrompt(conversation, emotionAnalyses);
         log.debug("[历史情绪分析压缩节点] 构建提示词完成，会话ID：{}，提示词：{}", conversation.getId(), prompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
 
         AssistantMessage call;

@@ -31,33 +31,33 @@ public class LoggingDecorator extends AgentStreamDecorator {
     public Flux<AgentStreamEvent> process(Flux<NodeOutput> rawOutputFlux) {
         return delegate.process(rawOutputFlux)
                 .doOnNext(this::logEvent)
-                .doOnComplete(() -> log.info("流式处理流程结束，会话ID：{}", conversationId));
+                .doOnComplete(() -> log.info("[模型流式输出-日志装饰器] 流式处理流程结束，会话ID：{}", conversationId));
     }
 
     private void logEvent(AgentStreamEvent event) {
         if (event instanceof AgentStreamEvent.ModelContentChunk chunk) {
             String text = chunk.text();
             if (text != null) {
-                log.debug("文本对话-[模型流式输出] 会话ID：{}，长度：{}", conversationId, text.length());
+                log.debug("[模型流式输出-日志装饰器] 会话ID：{}，长度：{}", conversationId, text.length());
             }
         } else if (event instanceof AgentStreamEvent.ModelThinkChunk chunk) {
             String reasoning = chunk.reasoning();
             if (reasoning != null) {
-                log.debug("文本对话-[模型思考输出] 会话ID：{}，长度：{}", conversationId, reasoning.length());
+                log.debug("[模型流式输出-日志装饰器] 会话ID：{}, 模型思考内容：{}", conversationId, reasoning);
             }
         } else if (event instanceof AgentStreamEvent.ModelComplete complete) {
-            log.info("文本对话-模型流式输出完成，会话ID：{}，内容长度：{}",
-                    conversationId, complete.message().getText().length());
+            log.info("[模型流式输出-日志装饰器] 流式完成，会话ID：{}，模型思考内容：{}",
+                    conversationId, complete.message().getText());
         } else if (event instanceof AgentStreamEvent.ModelToolCall toolCall) {
             toolCall.message().getToolCalls().forEach(tc ->
-                    log.debug("文本对话-[Tool Call] {} : {}", tc.name(), tc.arguments()));
+                    log.debug("[模型流式输出-日志装饰器] 调用工具： {}，参数：{}", tc.name(), tc.arguments()));
         } else if (event instanceof AgentStreamEvent.ToolResponseReceived resp) {
             resp.message().getResponses().forEach(r ->
-                    log.debug("文本对话-[Tool Response] {} : {}", r.name(), r.responseData()));
+                    log.debug("[模型流式输出-日志装饰器] 工具响应： {}，响应数据：{}", r.name(), r.responseData()));
         } else if (event instanceof AgentStreamEvent.StreamError err) {
-            log.error("文本对话-流式处理错误，会话ID：{}，错误：{}", conversationId, err.throwable().getMessage(), err.throwable());
+            log.error("[模型流式输出-日志装饰器] 流式处理错误，会话ID：{}，错误：{}", conversationId, err.throwable().getMessage(), err.throwable());
         } else if (event instanceof AgentStreamEvent.FullThinkCompleted completed) {
-            log.debug("文本对话-思考内容聚合完成，会话ID：{}，长度：{}", conversationId, completed.fullText().length());
+            log.debug("[模型思考输出-日志装饰器] 思考内容聚合完成，会话ID：{}，长度：{}", conversationId, completed.fullText().length());
         }
     }
 }

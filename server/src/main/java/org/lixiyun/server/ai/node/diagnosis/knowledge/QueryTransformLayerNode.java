@@ -123,7 +123,7 @@ public class QueryTransformLayerNode implements NodeActionWithConfig, NodeExecut
         String userPrompt = buildUserPrompt(knowledgeMatchRequest, isFirstRun, symptomNeed, diagnosisNeed, interventionNeed);
         log.debug("知识侧-查询变换层-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         QueryTransformLayerModel.QueryTransformLayerResult result = queryTransformLayerModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("知识侧-查询变换层-模型返回结果：{}", result);
@@ -264,10 +264,10 @@ public class QueryTransformLayerNode implements NodeActionWithConfig, NodeExecut
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
-        return reqOpt.map(req -> Map.of(
-                "symptomPrompt", req.getSymptomPrompt(),
-                "diagnosisPrompt", req.getDiagnosisPrompt(),
-                "interventionPrompt", req.getInterventionPrompt()
+        return reqOpt.map(req -> Map.ofEntries(
+                Map.entry("symptomPrompt", req.getSymptomPrompt()),
+                Map.entry("diagnosisPrompt", req.getDiagnosisPrompt()),
+                Map.entry("interventionPrompt", req.getInterventionPrompt())
         )).orElse(null);
     }
 }

@@ -7,6 +7,7 @@ import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.reader.FileReader;
 import org.lixiyun.server.ai.rag.transformer.FileTransformer;
 import org.lixiyun.server.ai.rag.writer.FileWriter;

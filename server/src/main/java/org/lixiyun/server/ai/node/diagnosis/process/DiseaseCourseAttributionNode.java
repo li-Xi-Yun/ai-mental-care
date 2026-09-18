@@ -60,7 +60,7 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig, NodeE
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.debug("诊断处理侧-病程归因组-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         DiseaseCourseAttributionProcessModel.DiseaseCourseAttributionResult result = diseaseCourseAttributionProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-病程归因组-模型返回结果：{}", result);
@@ -165,13 +165,13 @@ public class DiseaseCourseAttributionNode implements NodeActionWithConfig, NodeE
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "coreTriggerScene", (Object) data.getCoreTriggerScene(),
-                "coreTriggerKeywords", (Object) data.getCoreTriggerKeywords(),
-                "triggerRoundNum", (Object) data.getTriggerRoundNum(),
-                "symptomDuration", (Object) data.getSymptomDuration(),
-                "onsetPattern", (Object) data.getOnsetPattern(),
-                "firstTriggerDesc", (Object) data.getFirstTriggerDesc()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("coreTriggerScene", data.getCoreTriggerScene()),
+                Map.entry("coreTriggerKeywords", data.getCoreTriggerKeywords()),
+                Map.entry("triggerRoundNum", data.getTriggerRoundNum()),
+                Map.entry("symptomDuration", data.getSymptomDuration()),
+                Map.entry("onsetPattern", data.getOnsetPattern()),
+                Map.entry("firstTriggerDesc", data.getFirstTriggerDesc())
         )).orElse(null);
     }
 }

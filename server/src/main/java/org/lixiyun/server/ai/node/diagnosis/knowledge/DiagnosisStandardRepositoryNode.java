@@ -9,11 +9,11 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +34,10 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, No
     private static final int TOP_K = 5;
     private static final double SIMILARITY_THRESHOLD = 0.7;
 
-    private final VectorStore vectorStore;
+    private static final String FILTER_EXPRESSION = "knowledge_type == 2 && deleted == 1";
+
+    private final EmbeddingModel embeddingModel;
+    private final MilvusUtil milvusUtil;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -60,18 +63,23 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, No
             return Map.of();
         }
 
-        SearchRequest searchRequest = SearchRequest.builder()
-                .query(diagnosisPrompt)
-                .topK(TOP_K)
-                .similarityThreshold(SIMILARITY_THRESHOLD)
-                .filterExpression("knowledge_type == 2 && deleted == 1")
-                .build();
+        // 1. 文本向量化
+        float[] queryVector = embeddingModel.embed(diagnosisPrompt);
+        // 2. 构建搜索参数（radius = 1 - similarityThreshold，适用于 COSINE 度量）
+        //     radius 单独使用时，返回 distance <= radius 的结果（即相似度 >= threshold）
+        Map<String, Object> searchParams = Map.of(
+                "radius", 1.0 - SIMILARITY_THRESHOLD
+        );
+        // 3. 执行向量搜索
+        List<MilvusUtil.SearchResult> results = milvusUtil.search(
+                queryVector, FILTER_EXPRESSION, TOP_K, null, searchParams
+        );
 
-        List<Document> documents = vectorStore.similaritySearch(searchRequest);
-
-        Map<Long, Double> diagnosisSliceIds = documents.stream()
-                .map(doc -> Map.entry(Long.parseLong(doc.getId()), doc.getScore()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Long, Double> diagnosisSliceIds = results.stream()
+                .collect(Collectors.toMap(
+                        MilvusUtil.SearchResult::getId,
+                        MilvusUtil.SearchResult::getScore
+                ));
 
         knowledgeMatchRequest.setDiagnosisSliceIds(diagnosisSliceIds);
 
@@ -87,7 +95,7 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, No
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<KnowledgeMatchRequest> reqOpt = state.value(KnowledgeMatchRequest.NAME);
-        return reqOpt.map(req -> Map.of(
+        return reqOpt.map(req -> Collections.singletonMap(
                 "diagnosisSliceIds", (Object) req.getDiagnosisSliceIds()
         )).orElse(null);
     }

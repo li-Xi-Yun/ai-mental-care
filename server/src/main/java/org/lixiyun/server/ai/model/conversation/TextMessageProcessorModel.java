@@ -48,7 +48,7 @@ import java.util.List;
 public class TextMessageProcessorModel extends BaseModel {
 
     private final String defaultDeepseekModelName = "deepseek-chat";
-    private final String defaultOllamaModelName = "qwen3:7b-chat-thinking";
+    private final String defaultOllamaModelName = "qwen2.5:7b";
     private final String defaultDashscopeModelName = "qwen-max";
 
     private final String defaultSystemPrompt = """

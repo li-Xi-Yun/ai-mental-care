@@ -6,10 +6,13 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.core.handlers.PostInitTableInfoHandler;
 import com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator;
 import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.lixiyun.common.core.factory.YmlPropertySourceFactory;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.sql.aspect.DataPermissionAspect;
@@ -17,6 +20,7 @@ import org.lixiyun.common.sql.handler.InjectionMetaObjectHandler;
 import org.lixiyun.common.sql.handler.MybatisExceptionHandler;
 import org.lixiyun.common.sql.handler.PlusPostInitTableInfoHandler;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -31,6 +35,19 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement(proxyTargetClass = true)
 @PropertySource(value = "classpath:common-mybatis.yml", factory = YmlPropertySourceFactory.class)
 public class MybatisPlusConfig {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    /**
+     * 配置 JacksonTypeHandler 使用 Spring 容器中的 ObjectMapper
+     * <p>Spring 的 ObjectMapper 已通过 common-json 模块配置了 JavaTimeModule 等序列化支持，
+     * 确保 MyBatis-Plus 处理 JSON 类型字段（如 inputSummary）时能正确序列化 LocalDateTime 等类型。</p>
+     */
+    @PostConstruct
+    public void initJacksonTypeHandler() {
+        JacksonTypeHandler.setObjectMapper(objectMapper);
+    }
 
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {

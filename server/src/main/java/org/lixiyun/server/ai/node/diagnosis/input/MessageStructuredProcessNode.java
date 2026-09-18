@@ -107,7 +107,7 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig, NodeE
             log.info("输入侧-消息结构化处理-分支B-有效轮次({})达到阈值({})，调用大模型提取核心信息", validRoundCount, ROUND_THRESHOLD);
             String userPrompt = buildUserPrompt(validRounds);
             log.debug("输入侧-消息结构化处理-构建用户提示词完成，提示词：{}", userPrompt);
-            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+            AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             CoreInfoExtractResult coreInfoExtractResult = messageStructuredProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
             log.debug("输入侧-消息结构化处理-模型返回结果：{}", coreInfoExtractResult);

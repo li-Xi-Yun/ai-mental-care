@@ -58,7 +58,7 @@ public class ProtectiveFactorNode implements NodeActionWithConfig, NodeExecution
         String userPrompt = buildUserPrompt(inputResult, knowledgeRetrieveResult);
         log.debug("诊断处理侧-保护性因素分析-构建用户提示词完成，提示词：{}", userPrompt);
 
-        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfig(NODE_NAME);
+        AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
         ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
         ProtectiveFactorProcessModel.ProtectiveFactorResult result = protectiveFactorProcessModel.callForResult(chatModel, userPrompt, aiNodeConfig, config);
         log.debug("诊断处理侧-保护性因素分析-模型返回结果：{}", result);
@@ -142,10 +142,10 @@ public class ProtectiveFactorNode implements NodeActionWithConfig, NodeExecution
     @Override
     public Object outputSummary(OverAllState state) {
         Optional<DiagnosisData> dataOpt = state.value(DiagnosisData.NAME);
-        return dataOpt.map(data -> Map.of(
-                "socialSupportLevel", (Object) data.getSocialSupportLevel(),
-                "protectiveFactors", (Object) data.getProtectiveFactors(),
-                "copingStyle", (Object) data.getCopingStyle()
+        return dataOpt.map(data -> Map.ofEntries(
+                Map.entry("socialSupportLevel", data.getSocialSupportLevel()),
+                Map.entry("protectiveFactors", data.getProtectiveFactors()),
+                Map.entry("copingStyle", data.getCopingStyle())
         )).orElse(null);
     }
 }

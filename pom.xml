@@ -23,79 +23,80 @@
     </modules>
 
     <properties>
+        <!-- ==================== 项目构建配置 ==================== -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
-
         <revision>1.0.0</revision>
         <spring-boot.version>3.5.0</spring-boot.version>
 
-        <!-- MySQL相关配置-->
+        <!-- ==================== 数据库相关 ==================== -->
         <mybatis.version>3.0.4</mybatis.version>
         <mysql.version>8.0.33</mysql.version>
         <druid.version>1.2.20</druid.version>
         <pagehelper.version>2.1.0</pagehelper.version>
         <mybatis-plus.version>3.5.15</mybatis-plus.version>
+        <dynamic-ds.version>4.3.1</dynamic-ds.version>
+        <p6spy.version>3.9.1</p6spy.version>
 
-        <!-- Redis相关配置-->
+        <!-- ==================== Redis/缓存相关 ==================== -->
         <redis.version>3.3.1</redis.version>
         <common.pool.version>2.12.1</common.pool.version>
+        <redisson.version>3.20.1</redisson.version>
+        <lock4j.version>2.2.4</lock4j.version>
 
-        <lombok.version>1.18.36</lombok.version>
-        <jjwt.version>0.12.6</jjwt.version>
-        <hutool.version>5.8.35</hutool.version>
-        <captcha.version>2.2.5</captcha.version>
-        <httpclient.version>5.5</httpclient.version>
-        <validator>8.0.1.Final</validator>
+        <!-- ==================== AI/大模型与向量库 ==================== -->
+        <milvus.version>3.0.9</milvus.version>
+        <dashscope-sdk-java>2.22.12</dashscope-sdk-java>
 
+        <!-- ==================== 语音服务(ASR/TTS) ==================== -->
+        <alibaba.asr.version>2.2.19</alibaba.asr.version>
+        <alibaba.tts.version>2.2.19</alibaba.tts.version>
+
+        <!-- ==================== API文档 ==================== -->
         <swagger.gateway>4.5.0</swagger.gateway>
-        <aspectj.version>1.9.24</aspectj.version>
         <knife4j-openapi3-jakarta>4.5.0</knife4j-openapi3-jakarta>
-        <springdoc.version>2.6.0</springdoc.version> <!-- 降级到与Spring Boot 3.3.6兼容的版本 2.8.14 -->
-<!--        <springdoc-ui.version>2.6.0</springdoc-ui.version> &lt;!&ndash; 降级到与Spring Boot 3.3.6兼容的版本 3.0.0 &ndash;&gt;-->
-        <springdoc-ui.version>2.8.9</springdoc-ui.version> <!-- 降级到与Spring Boot 3.3.6兼容的版本 3.0.0 -->
-
+        <springdoc.version>2.6.0</springdoc.version>
+        <springdoc-ui.version>2.8.9</springdoc-ui.version>
         <therapi-javadoc.version>0.15.0</therapi-javadoc.version>
 
+        <!-- ==================== 文件处理 ==================== -->
         <poi.version>5.2.3</poi.version>
         <easyexcel.version>3.2.1</easyexcel.version>
         <velocity.version>2.3</velocity.version>
 
-        <milvus.version>2.6.18</milvus.version>
+        <!-- ==================== 安全与认证 ==================== -->
+        <jjwt.version>0.12.6</jjwt.version>
+        <captcha.version>2.2.5</captcha.version>
+        <validator>8.0.1.Final</validator>
+        <bouncycastle.version>1.72</bouncycastle.version>
 
-        <dashscope-sdk-java>2.22.12</dashscope-sdk-java>
-
-        <p6spy.version>3.9.1</p6spy.version>
-        <okhttp.version>4.10.0</okhttp.version>
-        <dynamic-ds.version>4.3.1</dynamic-ds.version>
-        <spring-boot-admin.version>3.0.3</spring-boot-admin.version>
-        <redisson.version>3.20.1</redisson.version>
-        <lock4j.version>2.2.4</lock4j.version>
-        <alibaba-ttl.version>2.14.2</alibaba-ttl.version>
-        <xxl-job.version>2.4.0</xxl-job.version>
+        <!-- ==================== 工具类 ==================== -->
+        <lombok.version>1.18.36</lombok.version>
+        <hutool.version>5.8.35</hutool.version>
         <mapstruct-plus.version>1.2.1</mapstruct-plus.version>
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
-        <lombok.version>1.18.36</lombok.version>
-        <bouncycastle.version>1.72</bouncycastle.version>
-        <!-- Apache Commons Compress 版本 -->
         <commons-compress.version>1.26.2</commons-compress.version>
-        <!-- 离线IP地址定位库 -->
+        <alibaba-ttl.version>2.14.2</alibaba-ttl.version>
+        <okhttp.version>4.10.0</okhttp.version>
+        <httpclient.version>5.5</httpclient.version>
+        <netty.version>4.1.121.Final</netty.version>
+        <aspectj.version>1.9.24</aspectj.version>
         <ip2region.version>2.7.0</ip2region.version>
-        <!-- OSS 配置 -->
+
+        <!-- ==================== 云服务(OSS/SMS) ==================== -->
         <aws-java-sdk-s3.version>1.12.400</aws-java-sdk-s3.version>
-        <!-- SMS 配置 -->
         <aliyun.sms.version>2.0.23</aliyun.sms.version>
         <tencent.sms.version>3.1.687</tencent.sms.version>
-        <netty.version>4.1.121.Final</netty.version>
-        <!-- 语音转写 ASR -->
-        <alibaba.asr.version>2.2.19</alibaba.asr.version>
-        <!-- 语音合成 TTS -->
-        <alibaba.tts.version>2.2.19</alibaba.tts.version>
 
-        <!-- 插件版本 -->
+        <!-- ==================== 其他 ==================== -->
+        <spring-boot-admin.version>3.0.3</spring-boot-admin.version>
+        <xxl-job.version>2.4.0</xxl-job.version>
+
+        <!-- ==================== Maven插件版本 ==================== -->
         <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.2.2</maven-war-plugin.version>
-        <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
     </properties>
@@ -337,7 +338,7 @@
             </dependency>
 
             <dependency>
-                <groupId>org.lixiyun.pojo</groupId>
+                <groupId>org.lixiyun</groupId>
                 <artifactId>pojo</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -496,7 +497,7 @@
                 <!-- 这三个是指：插件的坐标，是引用其他人的东西，引用谁的，就写谁的名称 -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.verison}</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <!-- 指定编写代码时使用的 JDK 语法版本 -->
                     <source>${java.version}</source>

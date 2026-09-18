@@ -162,7 +162,7 @@ public class ConversationHistoryMessagesStorage {
                         .content(message.getText());
             } else if (message instanceof AssistantMessage assistantMessage) {
 
-                if (assistantMessage.getText() == null || assistantMessage.getText().isEmpty()) {
+                if (assistantMessage.hasToolCalls() && !assistantMessage.getToolCalls().isEmpty()) {
                     String toolCallInfo = assistantMessage.getToolCalls().stream()
                             .map(toolCall -> "工具：" + toolCall.name() + ", 参数：" + toolCall.arguments())
                             .collect(Collectors.joining(";"));
