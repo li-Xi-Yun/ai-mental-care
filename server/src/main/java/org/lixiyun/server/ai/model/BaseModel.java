@@ -19,9 +19,16 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * AI模型基类 - 模板方法模式
@@ -29,22 +36,22 @@ import java.util.List;
  * 定义AI模型调用的算法骨架，子类通过实现抽象钩子方法来定制具体行为。
  * </p>
  *
- * <h3>设计要点 - 重试机制接入：</h3>
+ * <h3>设计要点 - null/空结果自动抛异常：</h3>
  * <p>
- * {@code call()} 和 {@code stream()} 保持抽象，由子类标注 {@code @Retryable} 后委托调用
- * {@code doCall()} / {@code doStream()}，确保 Spring AOP 代理能正确拦截重试。
+ * {@link #doCall} / {@link #doCallForResult} / {@link #doStream} 在模型返回null或响应内容为空时
+ * 直接抛出 {@link GraphRunnerException}，不再容忍静默失败。
+ * 子类通过调用 {@link #executeWithRetry} 实现指数退避重试，重试参数从数据库 {@link AiNodeConfig} 中读取，
+ * 未配置时回退到默认值（maxAttempts=3, delay=1000ms, multiplier=2）。
  * </p>
- *
- * <h3>固定JSON体结果（结构化输出）：</h3>
  * <ul>
- *     <li>子类实现 {@code call()} + {@code @Retryable} → 委托 {@code doCall()} 返回 AssistantMessage</li>
- *     <li>子类实现 {@code callForResult()} + {@code @Retryable} → 委托 {@code doCallForResult()} 返回反序列化结果类</li>
+ *     <li>{@link BusinessException} 不触发重试，直接抛出</li>
  * </ul>
  *
- * <h3>非固定JSON体结果（自由文本输出）：</h3>
+ * <h3>使用方式：</h3>
  * <ul>
- *     <li>子类实现 {@code call()} + {@code @Retryable} → 委托 {@code doCall()} 同步返回</li>
- *     <li>子类实现 {@code stream()} → 委托 {@code doStream()} 流式返回</li>
+ *     <li>同步调用 → 子类实现 {@code call()} → 调用 {@link #executeWithRetry} → 委托 {@link #doCall}</li>
+ *     <li>结构化输出 → 子类实现 {@code callForResult()} → 调用 {@link #executeWithRetry} → 委托 {@link #doCallForResult}</li>
+ *     <li>流式调用 → 子类实现 {@code stream()} → 调用 {@link #executeWithRetry} → 委托 {@link #doStream}</li>
  * </ul>
  *
  * @author lixiyun
@@ -58,6 +65,9 @@ public abstract class BaseModel implements Model {
 
     @Autowired(required = false)
     private RecordingToolInterceptor recordingToolInterceptor;
+
+    @Autowired(required = false)
+    private org.lixiyun.server.config.RetryLoggingListener retryLoggingListener;
 
     // ==================== 抽象钩子方法 ====================
 
@@ -147,32 +157,21 @@ public abstract class BaseModel implements Model {
     // ==================== protected 模板方法：实际执行逻辑 ====================
 
     /**
-     * 同步调用模型并返回AssistantMessage
+     * 同步调用模型并返回AssistantMessage（带数据库驱动的重试机制）
      * <p>
-     * 构建Agent后执行同步调用，返回模型原始的{@link AssistantMessage}响应。
-     * 子类的{@code call()}方法应标注{@code @Retryable}后委托调用此方法。
+     * 模型返回null或响应内容为空时抛出 {@link GraphRunnerException}，
+     * 由内嵌的 {@code RetryTemplate} 自动捕获并按数据库配置进行指数退避重试。
+     * 重试参数从 {@link AiNodeConfig} 读取，未配置时回退默认值（maxAttempts=3, delay=1000ms, multiplier=2）。
      * </p>
      *
      * @param chatModel  具体的ChatModel实例（Ollama/DashScope/DeepSeek等）
      * @param userPrompt 用户提示词
      * @param config     节点配置，可为null（使用默认值）
      * @return 模型响应的AssistantMessage
-     * @throws GraphRunnerException Agent执行异常
+     * @throws GraphRunnerException 重试耗尽后仍失败
      */
     protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
-        ReactAgent agent = buildAgent(chatModel, config);
-        if (runnableConfig != null) {
-            // 注意：不能直接 RunnableConfig.builder(runnableConfig) 复制 threadId
-            // 否则 React Agent 内部子图检测到 threadId 会尝试恢复检查点，但 Agent 没有 SaverConfig → 报错
-            // 因此：只复制 metadata（给拦截器提供会话上下文），不复制 threadId
-            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
-            if (runnableConfig.metadata().isPresent()) {
-                runnableConfig.metadata().get().forEach(builder::addMetadata);
-            }
-            builder.addMetadata(AiNodeConfig.NAME, config);
-            return agent.call(userPrompt, builder.build());
-        }
-        return agent.call(userPrompt);
+        return executeWithRetry(config, () -> doCallInternal(chatModel, userPrompt, config, runnableConfig));
     }
 
     protected AssistantMessage doCall(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
@@ -180,20 +179,11 @@ public abstract class BaseModel implements Model {
     }
 
     /**
-     * 流式调用模型并返回Flux流
-     * <p>
-     * 构建Agent后执行流式调用，返回{@link Flux}流供调用方逐帧消费。
-     * 子类的{@code stream()}方法应委托调用此方法。
-     * </p>
-     *
-     * @param chatModel  具体的ChatModel实例
-     * @param userPrompt 用户提示词
-     * @param config     节点配置，可为null（使用默认值）
-     * @return 模型响应的NodeOutput流
-     * @throws GraphRunnerException Agent执行异常
+     * doCall的底层实现（不含重试），供 {@link #doCall} 和 {@link #doCallForResult} 复用
      */
-    protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+    private AssistantMessage doCallInternal(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
+        AssistantMessage message;
         if (runnableConfig != null) {
             // 注意：不能直接 RunnableConfig.builder(runnableConfig) 复制 threadId
             // 否则 React Agent 内部子图检测到 threadId 会尝试恢复检查点，但 Agent 没有 SaverConfig → 报错
@@ -203,9 +193,33 @@ public abstract class BaseModel implements Model {
                 runnableConfig.metadata().get().forEach(builder::addMetadata);
             }
             builder.addMetadata(AiNodeConfig.NAME, config);
-            return agent.stream(userPrompt, builder.build());
+            message = agent.call(userPrompt, builder.build());
+        } else {
+            message = agent.call(userPrompt);
         }
-        return agent.stream(userPrompt);
+
+        if (message == null || StrUtil.isBlank(message.getText())) {
+            log.error("[模型抽象类] 模型响应为null或内容为空");
+            throw new GraphRunnerException("[" + getAgentName() + "] 模型返回null或响应内容为空");
+        }
+        return message;
+    }
+
+    /**
+     * 流式调用模型并返回Flux流（带数据库驱动的重试机制）
+     * <p>
+     * 模型返回null时抛出 {@link GraphRunnerException}，
+     * 由内嵌的 {@code RetryTemplate} 自动捕获并按数据库配置进行指数退避重试。
+     * </p>
+     *
+     * @param chatModel  具体的ChatModel实例
+     * @param userPrompt 用户提示词
+     * @param config     节点配置，可为null（使用默认值）
+     * @return 模型响应的NodeOutput流
+     * @throws GraphRunnerException 重试耗尽后仍失败
+     */
+    protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        return executeWithRetry(config, () -> doStreamInternal(chatModel, userPrompt, config, runnableConfig));
     }
 
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
@@ -213,11 +227,34 @@ public abstract class BaseModel implements Model {
     }
 
     /**
-     * 同步调用模型并返回反序列化后的结果对象
+     * doStream的底层实现（不含重试）
+     */
+    private Flux<NodeOutput> doStreamInternal(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
+        ReactAgent agent = buildAgent(chatModel, config);
+        Flux<NodeOutput> flux;
+        if (runnableConfig != null) {
+            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
+            if (runnableConfig.metadata().isPresent()) {
+                runnableConfig.metadata().get().forEach(builder::addMetadata);
+            }
+            builder.addMetadata(AiNodeConfig.NAME, config);
+            flux = agent.stream(userPrompt, builder.build());
+        } else {
+            flux = agent.stream(userPrompt);
+        }
+
+        if (flux == null) {
+            log.error("[模型抽象类] 模型流式返回为null，原始响应：{}", userPrompt);
+            throw new GraphRunnerException("[" + getAgentName() + "] 模型流式返回null");
+        }
+        return flux;
+    }
+
+    /**
+     * 同步调用模型并返回反序列化后的结果对象（带数据库驱动的重试机制）
      * <p>
-     * 先通过{@link #doCall}获取{@link AssistantMessage}，
-     * 再通过{@link #deserializeResult}将响应文本反序列化为{@link #getOutputType}指定的结果类型。
-     * 子类的{@code callForResult()}方法应标注{@code @Retryable}后委托调用此方法。
+     * 覆盖模型调用+反序列化全链路：任一环节失败（模型返回空、JSON解析失败）均触发重试。
+     * 内部通过 {@link #doCallInternal} 执行模型调用以避免与 {@link #doCall} 的重试嵌套。
      * </p>
      *
      * @param chatModel  具体的ChatModel实例
@@ -225,13 +262,20 @@ public abstract class BaseModel implements Model {
      * @param config     节点配置，可为null（使用默认值）
      * @param <T>        结果类型，由子类的{@link #getOutputType}决定
      * @return 反序列化后的结果对象
-     * @throws GraphRunnerException           Agent执行异常
+     * @throws GraphRunnerException           Agent执行异常或反序列化结果为null
      * @throws UnsupportedOperationException 如果{@link #getOutputType}返回null（非固定JSON体输出）
      */
     @SuppressWarnings("unchecked")
     protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
-        AssistantMessage message = doCall(chatModel, userPrompt, config, runnableConfig);
-        return (T) deserializeResult(message);
+        return executeWithRetry(config, () -> {
+            AssistantMessage message = doCallInternal(chatModel, userPrompt, config, runnableConfig);
+            T result = (T) deserializeResult(message);
+            if (result == null) {
+                log.error("[模型抽象类] 模型响应反序列化结果为null，原始响应：{}", message.getText());
+                throw new GraphRunnerException("[" + getAgentName() + "] 模型响应反序列化结果为null，原始响应：" + message.getText());
+            }
+            return result;
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -239,6 +283,63 @@ public abstract class BaseModel implements Model {
         return doCallForResult(chatModel, userPrompt, config, null);
     }
 
+    // ==================== 模板方法：重试执行器 ====================
+
+    /**
+     * 带重试的执行器，重试参数从数据库配置中读取
+     * <p>
+     * 替代子类中硬编码的 {@code @Retryable} 注解，将重试策略统一收敛到 BaseModel 管理。
+     * 重试参数（最大尝试次数、初始延迟、退避乘数）均从 {@link AiNodeConfig} 中读取，
+     * 未配置时回退到默认值（maxAttempts=3, delay=1000ms, multiplier=2）。
+     * </p>
+     * <p>
+     * 重试标签自动从 {@code config.getNodeKey()} 获取，config为null时回退到 {@link #getAgentName()}。
+     * {@link BusinessException} 不触发重试，直接向上抛出。
+     * </p>
+     *
+     * @param config   节点配置，可为null（使用默认值）
+     * @param callable 实际执行逻辑
+     * @param <T>      返回值类型
+     * @return 执行结果
+     * @throws GraphRunnerException 重试耗尽后仍失败
+     */
+    protected <T> T executeWithRetry(AiNodeConfig config, Callable<T> callable) throws GraphRunnerException {
+        String label = (config != null && config.getNodeKey() != null) ? config.getNodeKey() : getAgentName();
+
+        int maxAttempts = (config != null && config.getRetryMaxAttempts() != null) ? config.getRetryMaxAttempts() : 3;
+        long delay = (config != null && config.getRetryDelay() != null) ? config.getRetryDelay() : 1000;
+        double multiplier = (config != null && config.getRetryMultiplier() != null) ? config.getRetryMultiplier() : 2.0;
+
+        Map<Class<? extends Throwable>, Boolean> retryableExceptions = new HashMap<>();
+        retryableExceptions.put(Exception.class, true);
+        retryableExceptions.put(BusinessException.class, false);
+
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(maxAttempts, retryableExceptions);
+
+        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+        backOffPolicy.setInitialInterval(delay);
+        backOffPolicy.setMultiplier(multiplier);
+        backOffPolicy.setMaxInterval(10000);
+
+        RetryTemplate template = new RetryTemplate();
+        template.setRetryPolicy(retryPolicy);
+        template.setBackOffPolicy(backOffPolicy);
+        if (retryLoggingListener != null) {
+            template.registerListener(retryLoggingListener);
+        }
+
+        try {
+            return template.execute(context -> {
+                context.setAttribute(RetryContext.NAME, label);
+                return callable.call();
+            });
+        } catch (Exception e) {
+            if (e instanceof GraphRunnerException) {
+                throw (GraphRunnerException) e;
+            }
+            throw new GraphRunnerException("[" + label + "] 重试" + maxAttempts + "次后仍失败", e);
+        }
+    }
 
     // ==================== 模板方法：构建Agent ====================
 

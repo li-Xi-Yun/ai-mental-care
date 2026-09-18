@@ -193,6 +193,7 @@ public class ConversationRepository {
 
         List<EmotionAnalysis> emotionAnalyses = queryEmotionAnalyses(conversation, conversationId);
         log.debug("查询到情绪分析数量：{}，会话ID：{}", emotionAnalyses.size(), conversationId);
+
         EmotionDiagnosis latestDiagnosis = queryLatestDiagnosis(conversationId);
         log.debug("查询到最新心理诊断，诊断数据：{}，会话ID：{}", latestDiagnosis, conversationId);
 

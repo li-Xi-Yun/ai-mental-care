@@ -18,8 +18,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -230,12 +228,6 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
                 .build();
     }
 
-    @Retryable(
-            label = "social-function-impact-process-model",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     @Override
     public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doCall(chatModel, userPrompt, config, runnableConfig);
@@ -246,12 +238,6 @@ public class SocialFunctionImpactProcessModel extends BaseModel {
         return call(chatModel, userPrompt, config, null);
     }
 
-    @Retryable(
-            label = "social-function-impact-process-model",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     public SocialFunctionImpactResult callForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doCallForResult(chatModel, userPrompt, config, runnableConfig);
     }

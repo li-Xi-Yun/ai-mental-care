@@ -161,28 +161,32 @@ public class ConversationHistoryMessagesStorage {
                 builder.type(MessageType.USER.getName())
                         .content(message.getText());
             } else if (message instanceof AssistantMessage assistantMessage) {
-
                 if (assistantMessage.hasToolCalls() && !assistantMessage.getToolCalls().isEmpty()) {
                     String toolCallInfo = assistantMessage.getToolCalls().stream()
                             .map(toolCall -> "工具：" + toolCall.name() + ", 参数：" + toolCall.arguments())
                             .collect(Collectors.joining(";"));
                     builder.type(MessageType.ASSISTANT_TOOL.getName())
+                            .state(ConversationMemory.STATE_PROCESSED)
                             .content("准备调用工具--" + toolCallInfo);
                 } else {
                     builder.type(MessageType.ASSISTANT.getName())
+                            .state(ConversationMemory.STATE_PROCESSED)
                             .content(assistantMessage.getText());
                 }
             } else if (message instanceof SystemMessage) {
                 builder.type(MessageType.SYSTEM.getName())
+                        .state(ConversationMemory.STATE_PROCESSED)
                         .content(message.getText());
             } else if (message instanceof ToolResponseMessage toolResponseMessage) {
                 String responses = toolResponseMessage.getResponses().stream()
                         .map(response -> "工具名称：" + response.name() + "，返回结果：" + response.responseData())
                         .collect(Collectors.joining(";"));
                 builder.type(MessageType.TOOL.getName())
+                        .state(ConversationMemory.STATE_PROCESSED)
                         .content("工具调用成功--" + responses);
             } else if (message instanceof ThinkMessage) {
                 builder.type(MessageType.THINKING.getName())
+                        .state(ConversationMemory.STATE_PROCESSED)
                         .content(message.getText());
             }
         }

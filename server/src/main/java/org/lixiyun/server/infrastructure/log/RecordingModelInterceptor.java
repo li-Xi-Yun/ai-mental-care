@@ -176,6 +176,10 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         try {
             response = handler.call(request);
             log.debug("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型调用响应: {}", aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
+            if (response.getMessage() instanceof AssistantMessage assistantMessage
+                    && (assistantMessage.getText() == null || assistantMessage.getText().isEmpty())) {
+                log.warn("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型响应内容为空", aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound());
+            }
         } catch (Throwable t) {
             caughtException = t;
             throw t;

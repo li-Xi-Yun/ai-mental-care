@@ -57,24 +57,23 @@ public class MessagePersistDecorator extends AgentStreamDecorator {
     }
 
     private void persistIfNeeded(AgentStreamEvent event) {
-        if (event instanceof AgentStreamEvent.ModelComplete complete) {
-            storage.save(userId, conversationId, round, complete.message());
-            log.info("持久化模型完成消息，会话ID：{}，轮次：{}", conversationId, round);
-        } else if (event instanceof AgentStreamEvent.ModelToolCall toolCall) {
-            storage.save(userId, conversationId, round, toolCall.message());
-            log.debug("持久化工具调用请求，会话ID：{}，轮次：{}", conversationId, round);
-        } else if (event instanceof AgentStreamEvent.ToolResponseReceived toolResp) {
-            storage.save(userId, conversationId, round, toolResp.message());
-            log.debug("持久化工具执行结果，会话ID：{}，轮次：{}", conversationId, round);
-        } else if (event instanceof AgentStreamEvent.FullThinkCompleted thinkCompleted) {
+        if (event instanceof AgentStreamEvent.FullThinkCompleted thinkCompleted) {
             if (thinkCompleted.fullText() == null || thinkCompleted.fullText().isBlank()) {
-                log.warn("持久化思考内容失败，没有思考内容数据，检查是否有配置 ThinkAccumulateDecorator类或 配置顺序是否正确，会话ID：{}，", conversationId);
+                log.warn("[模型流式输出-消息持久化装饰器] 持久化思考内容失败，没有思考内容数据，检查是否有配置 ThinkAccumulateDecorator类或 配置顺序是否正确，会话ID：{}，", conversationId);
             } else {
                 Message thinkMessage = new ThinkMessage(thinkCompleted.fullText());
                 storage.save(userId, conversationId, round, thinkMessage);
-                log.debug("持久化思考内容，会话ID：{}，轮次：{}，长度：{}",
-                        conversationId, round, thinkCompleted.fullText().length());
+                log.debug("[模型流式输出-消息持久化装饰器] 持久化思考完整内容，会话ID：{}，轮次：{}，长度：{}", conversationId, round, thinkCompleted.fullText().length());
             }
+        } else if (event instanceof AgentStreamEvent.ModelComplete complete) {
+            storage.save(userId, conversationId, round, complete.message());
+            log.info("[模型流式输出-消息持久化装饰器] 持久化模型完整消息，会话ID：{}，轮次：{}", conversationId, round);
+        } else if (event instanceof AgentStreamEvent.ModelToolCall toolCall) {
+            storage.save(userId, conversationId, round, toolCall.message());
+            log.debug("[模型流式输出-消息持久化装饰器] 持久化工具调用请求，会话ID：{}，轮次：{}", conversationId, round);
+        } else if (event instanceof AgentStreamEvent.ToolResponseReceived toolResp) {
+            storage.save(userId, conversationId, round, toolResp.message());
+            log.debug("[模型流式输出-消息持久化装饰器] 持久化工具执行结果，会话ID：{}，轮次：{}", conversationId, round);
         }
     }
 }

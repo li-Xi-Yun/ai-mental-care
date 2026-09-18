@@ -73,19 +73,18 @@ public class TextMessageProcessor implements MessageProcessor {
     @Override
     public void processMessage(ConversationProcessContextBO context) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
-            log.error("[AI对话文本处理器]-临时消息为空，跳过处理");
+            log.error("[AI对话文本处理器] 临时消息为空，跳过处理");
             throw new BusinessException(AIChatExceptionEnum.TEMPORARY_MESSAGES_EMPTY);
         }
 
         Long conversationId = context.getConversation().getId();
         int currentRound = context.getConversation().getCurrentRound();
         Long userId = context.getConversation().getUserId();
-        log.info("[AI对话文本处理器]-开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
+        log.info("[AI对话文本处理器] 开始文本消息处理，会话ID：{}，临时消息数：{}", conversationId, context.getTemporaryMessages().size());
         log.debug("[AI对话文本处理器] 会话ID：{}，用户ID：{}，当前轮次：{}，历史消息数：{}，情绪分析数：{}",
                 conversationId, userId, currentRound,
                 context.getConversationHistory() != null ? context.getConversationHistory().size() : 0,
                 context.getEmotionAnalyses() != null ? context.getEmotionAnalyses().size() : 0);
-
         try {
             String prompt = buildPrompt(context);
             log.debug("[AI对话文本处理器] Prompt构建完成，长度：{}，会话ID：{}", prompt.length(), conversationId);
@@ -101,6 +100,10 @@ public class TextMessageProcessor implements MessageProcessor {
             AiNodeConfig aiNodeConfig = aiNodeConfigManager.getConfigWithLoad(NODE_NAME);
             ChatModel chatModel = chatModelFactory.getChatModel(ChatModelType.fromType(aiNodeConfig.getModelType()));
             log.debug("[AI对话文本处理器] ChatModel获取完成，模型类型：{}，会话ID：{}", aiNodeConfig.getModelType(), conversationId);
+
+
+
+
 
             ConversationMetadata metadata = ConversationMetadata.builder()
                     .conversationId(conversationId)
@@ -119,12 +122,12 @@ public class TextMessageProcessor implements MessageProcessor {
                             error -> log.error("[AI对话文本处理器]-流式订阅异常（流外异常，未进入装饰器管道），会话ID：{}，用户ID：{}，错误：{}", conversationId, userId, error.getMessage(), error)
                     );
 
-            log.info("[AI对话文本处理器]-流式订阅已启动，会话ID：{}，用户ID：{}", conversationId, userId);
+            log.info("[AI对话文本处理器] 流式订阅已启动，会话ID：{}，用户ID：{}", conversationId, userId);
         } catch (BusinessException e) {
-            log.error("[AI对话文本处理器]-文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
+            log.error("[AI对话文本处理器] 文本消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("[AI对话文本处理器]-文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+            log.error("[AI对话文本处理器] 文本消息处理失败，会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
             throw new BusinessException(AIChatExceptionEnum.MAIN_THREAD_EXECUTION_FAILED);
         }
     }
@@ -171,6 +174,18 @@ public class TextMessageProcessor implements MessageProcessor {
         log.debug("[AI对话文本处理器] 开始构建Prompt");
         StringBuilder sb = new StringBuilder();
 
+        if (context.getConversation() != null && context.getConversation().getContextSummary() != null && !context.getConversation().getContextSummary().isEmpty()) {
+            sb.append("\n【会话上下文压缩文本】\n");
+            sb.append(context.getConversation().getContextSummary());
+            log.debug("[AI对话文本处理器] 拼接会话上下文压缩文本");
+        }
+
+        if (context.getConversation() != null && context.getConversation().getAnalysisContextSummary() != null && !context.getConversation().getAnalysisContextSummary().isEmpty()) {
+            sb.append("\n【历史情绪分析压缩文本】\n");
+            sb.append(context.getConversation().getAnalysisContextSummary());
+            log.debug("[AI对话文本处理器] 拼接历史情绪分析压缩文本");
+        }
+
         if (context.getConversationHistory() != null && !context.getConversationHistory().isEmpty()) {
             sb.append("\n【会话历史上下文】\n");
             context.getConversationHistory().forEach(msg ->
@@ -182,18 +197,18 @@ public class TextMessageProcessor implements MessageProcessor {
         if (context.getEmotionAnalyses() != null && !context.getEmotionAnalyses().isEmpty()) {
             sb.append("\n【历史情绪分析结果】\n");
             context.getEmotionAnalyses().forEach(analysis ->
-                    sb.append("- ").append(analysis.toString()).append("\n")
+                    sb.append(analysis.toPromptString()).append("\n")
             );
             log.debug("[AI对话文本处理器] 拼接情绪分析，数量：{}", context.getEmotionAnalyses().size());
         }
 
         if (context.getEmotionDiagnosis() != null) {
-            sb.append("\n【历史心理诊断结果】\n");
-            sb.append(context.getEmotionDiagnosis().toString()).append("\n");
-            log.debug("[AI对话文本处理器] 拼接心理诊断结果");
+            sb.append("\n【最近一次心理评估结果】\n");
+            sb.append(context.getEmotionDiagnosis().toPromptString());
+            log.debug("[AI对话文本处理器] 拼接心理评估结果");
         }
 
-        sb.append("本次用户发送的消息为：");
+        sb.append("\n【本次用户发送的消息为】\n");
         context.getTemporaryMessages().forEach(msg ->
                 sb.append(msg.getContent()).append("\n")
         );

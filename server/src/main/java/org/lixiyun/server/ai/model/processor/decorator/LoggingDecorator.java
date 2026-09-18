@@ -35,18 +35,20 @@ public class LoggingDecorator extends AgentStreamDecorator {
     }
 
     private void logEvent(AgentStreamEvent event) {
-        if (event instanceof AgentStreamEvent.ModelContentChunk chunk) {
-            String text = chunk.text();
-            if (text != null) {
-                log.debug("[模型流式输出-日志装饰器] 会话ID：{}，长度：{}", conversationId, text.length());
-            }
-        } else if (event instanceof AgentStreamEvent.ModelThinkChunk chunk) {
+        if (event instanceof AgentStreamEvent.ModelThinkChunk chunk) {
             String reasoning = chunk.reasoning();
             if (reasoning != null) {
-                log.debug("[模型流式输出-日志装饰器] 会话ID：{}, 模型思考内容：{}", conversationId, reasoning);
+                log.debug("[模型流式输出-日志装饰器] 会话ID：{}, 模型思考内容块：{}", conversationId, reasoning);
+            }
+        } else if (event instanceof AgentStreamEvent.FullThinkCompleted completed) {
+            log.debug("[模型流式输出-日志装饰器] 会话ID：{}，思考完整内容：{}", conversationId, completed.fullText());
+        } else if (event instanceof AgentStreamEvent.ModelContentChunk chunk) {
+            String text = chunk.text();
+            if (text != null) {
+                log.debug("[模型流式输出-日志装饰器] 正文响应块 会话ID：{}，长度：{}", conversationId, text.length());
             }
         } else if (event instanceof AgentStreamEvent.ModelComplete complete) {
-            log.info("[模型流式输出-日志装饰器] 流式完成，会话ID：{}，模型思考内容：{}",
+            log.info("[模型流式输出-日志装饰器] 流式完成，会话ID：{}，模型正文完整内容：{}",
                     conversationId, complete.message().getText());
         } else if (event instanceof AgentStreamEvent.ModelToolCall toolCall) {
             toolCall.message().getToolCalls().forEach(tc ->
@@ -56,8 +58,6 @@ public class LoggingDecorator extends AgentStreamDecorator {
                     log.debug("[模型流式输出-日志装饰器] 工具响应： {}，响应数据：{}", r.name(), r.responseData()));
         } else if (event instanceof AgentStreamEvent.StreamError err) {
             log.error("[模型流式输出-日志装饰器] 流式处理错误，会话ID：{}，错误：{}", conversationId, err.throwable().getMessage(), err.throwable());
-        } else if (event instanceof AgentStreamEvent.FullThinkCompleted completed) {
-            log.debug("[模型思考输出-日志装饰器] 思考内容聚合完成，会话ID：{}，长度：{}", conversationId, completed.fullText().length());
         }
     }
 }

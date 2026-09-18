@@ -66,10 +66,12 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
             if (message instanceof AssistantMessage assistantMessage) {
                 Object reasoning = assistantMessage.getMetadata().get(reasoningMetaKey);
                 if (reasoning != null && !reasoning.toString().isBlank()) {
+                    log.debug("[模型流式输出-根处理器] 思考内容='{}'", reasoning);
                     return new AgentStreamEvent.ModelThinkChunk(reasoning.toString());
                 }
                 String text = assistantMessage.getText();
                 if (text != null && !text.isBlank()) {
+                    log.debug("[模型流式输出-根处理器] 正文='{}'", text);
                     return new AgentStreamEvent.ModelContentChunk(text);
                 }
                 return null;
@@ -79,7 +81,11 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
 
         if (type == OutputType.AGENT_MODEL_FINISHED) {
             if (message instanceof AssistantMessage assistantMessage) {
+                log.debug("[模型流式输出-根处理器] 内容='{}', 内容长度={}, 元数据={}, 消息类型={}",
+                        assistantMessage.getText(), assistantMessage.getText() != null ? assistantMessage.getText().length() : -1,
+                        assistantMessage.getMetadata(), assistantMessage.getMessageType());
                 if (assistantMessage.hasToolCalls()) {
+                    log.debug("[模型流式输出-根处理器] 工具调用='{}'", assistantMessage.getToolCalls());
                     return new AgentStreamEvent.ModelToolCall(assistantMessage);
                 }
                 return new AgentStreamEvent.ModelComplete(assistantMessage);
@@ -89,6 +95,7 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
 
         if (type == OutputType.AGENT_TOOL_FINISHED) {
             if (message instanceof ToolResponseMessage toolMsg) {
+                log.debug("[模型流式输出-根处理器] 工具调用完成='{}'", toolMsg);
                 return new AgentStreamEvent.ToolResponseReceived(toolMsg);
             }
             return null;
@@ -96,11 +103,11 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
 
         if (type == OutputType.AGENT_HOOK_FINISHED) {
             // 对于 Hook 节点，通常只关注完成事件（如果Hook没有有效输出可以忽略）
-            log.debug("Hook节点执行完成: {}", output.node());
+            log.debug("[模型流式输出-根处理器] Hook节点执行完成: {}", output.node());
             return null;
         }
 
-        log.debug("未识别OutputType: {}", type);
+        log.debug("[模型流式输出-根处理器] 未识别OutputType: {}", type);
         return null;
     }
 

@@ -449,4 +449,310 @@ public class EmotionDiagnosis implements Serializable {
     @TableLogic
     private Integer deleted;
 
+    /**
+     * 将心理诊断结果格式化为LLM提示词可用的文本，仅提取业务关键字段
+     * <p>排除：id、conversationId、userId、roundNum、createdTime、updatedTime、deleted 等技术字段，
+     * 以及 diagnosisScore、feedbackContent、agree*、useSuggestion、feedbackTime 等用户反馈字段</p>
+     *
+     * @return 格式化后的提示词文本
+     */
+    public String toPromptString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(buildDiagnosisContentPrompt());
+        sb.append(buildCoreEmotionPrompt());
+        sb.append(buildEmotionDistributionPrompt());
+        sb.append(buildEmotionDynamicsPrompt());
+        sb.append(buildTriggerFactorsPrompt());
+        sb.append(buildSymptomAssessmentPrompt());
+        sb.append(buildSocialFunctionPrompt());
+        sb.append(buildPsychologicalResourcesPrompt());
+        sb.append(buildRiskAssessmentPrompt());
+        sb.append(buildInterventionSuggestionsPrompt());
+        return sb.toString();
+    }
+
+    // ======================== 评估结果 ========================
+
+    private String buildDiagnosisContentPrompt() {
+        if (diagnosisContent == null || diagnosisContent.isEmpty()) {
+            return "";
+        }
+        return "- 诊断内容：" + diagnosisContent + "\n";
+    }
+
+    // ======================== 核心情绪结论维度 ========================
+
+    private String buildCoreEmotionPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (coreEmotionLabel != null && !coreEmotionLabel.isEmpty()) {
+            sb.append("- 核心情绪：").append(coreEmotionLabel);
+            if (coreEmotionConfAvg != null) {
+                sb.append("（置信度=").append(coreEmotionConfAvg).append("）");
+            }
+            if (coreEmotionIntensityScore != null) {
+                sb.append("（强度=").append(coreEmotionIntensityScore).append("）");
+            }
+            sb.append("\n");
+        }
+        if (coreEmotion != null && !coreEmotion.isEmpty()) {
+            sb.append("- 核心情绪明细：").append(coreEmotion).append("\n");
+        }
+        if (secondaryEmotion != null && !secondaryEmotion.isEmpty()) {
+            sb.append("- 次要情绪明细：").append(secondaryEmotion).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 情绪分布维度 ========================
+
+    private String buildEmotionDistributionPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (negativeEmotionRatio != null || neutralEmotionRatio != null || positiveEmotionRatio != null) {
+            sb.append("- 情绪占比：负向=").append(negativeEmotionRatio)
+                    .append("，中性=").append(neutralEmotionRatio)
+                    .append("，正向=").append(positiveEmotionRatio).append("\n");
+        }
+        if (negativeEmotionDetail != null && !negativeEmotionDetail.isEmpty()) {
+            sb.append("- 负向情绪细分：").append(negativeEmotionDetail).append("\n");
+        }
+        if (positiveEmotionDetail != null && !positiveEmotionDetail.isEmpty()) {
+            sb.append("- 正向情绪细分：").append(positiveEmotionDetail).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 情绪动态变化维度 ========================
+
+    private String buildEmotionDynamicsPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (emotionTrend != null) {
+            sb.append("- 情绪趋势：").append(getEmotionTrendDesc()).append("\n");
+        }
+        if (emotionPeakRound != null || emotionValleyRound != null) {
+            sb.append("- 情绪峰值轮次=").append(emotionPeakRound)
+                    .append("，低谷轮次=").append(emotionValleyRound).append("\n");
+        }
+        if (emotionFluctuationAmplitude != null) {
+            sb.append("- 情绪波动幅度：").append(emotionFluctuationAmplitude).append("\n");
+        }
+        if (emotionStableRounds != null) {
+            sb.append("- 情绪平稳轮次数：").append(emotionStableRounds).append("\n");
+        }
+        if (emotionStabilityScore != null) {
+            sb.append("- 情绪稳定性得分：").append(emotionStabilityScore).append("\n");
+        }
+        if (avgP != null || avgA != null || avgD != null) {
+            sb.append("- 整体PAD均值：P=").append(avgP)
+                    .append("，A=").append(avgA)
+                    .append("，D=").append(avgD);
+            if (stdP != null || stdA != null || stdD != null) {
+                sb.append("，标准差(P=").append(stdP)
+                        .append(",A=").append(stdA)
+                        .append(",D=").append(stdD).append(")");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 情绪触发因素维度 ========================
+
+    private String buildTriggerFactorsPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (coreTriggerScene != null && !coreTriggerScene.isEmpty()) {
+            sb.append("- 核心触发场景：").append(coreTriggerScene).append("\n");
+        }
+        if (coreTriggerKeywords != null && !coreTriggerKeywords.isEmpty()) {
+            sb.append("- 核心触发关键词：").append(coreTriggerKeywords).append("\n");
+        }
+        if (triggerRoundNum != null) {
+            sb.append("- 首次触发轮次：").append(triggerRoundNum).append("\n");
+        }
+        if (firstTriggerDesc != null && !firstTriggerDesc.isEmpty()) {
+            sb.append("- 首次触发描述：").append(firstTriggerDesc).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 症状与心理状态评估 ========================
+
+    private String buildSymptomAssessmentPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (psychologicalState != null && !psychologicalState.isEmpty()) {
+            sb.append("- 心理状态评估：").append(psychologicalState).append("\n");
+        }
+        if (symptomSummary != null && !symptomSummary.isEmpty()) {
+            sb.append("- 症状总结：").append(symptomSummary).append("\n");
+        }
+        if (symptomTags != null && !symptomTags.isEmpty()) {
+            sb.append("- 症状标签：").append(symptomTags).append("\n");
+        }
+        if (symptomDuration != null && !symptomDuration.isEmpty()) {
+            sb.append("- 症状持续时长：").append(symptomDuration).append("\n");
+        }
+        if (onsetPattern != null && !onsetPattern.isEmpty()) {
+            sb.append("- 发作模式：").append(onsetPattern).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 社会功能与生活影响 ========================
+
+    private String buildSocialFunctionPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (socialFunctionImpact != null && !socialFunctionImpact.isEmpty()) {
+            sb.append("- 社会功能影响：").append(socialFunctionImpact).append("\n");
+        }
+        if (impactDomains != null && !impactDomains.isEmpty()) {
+            sb.append("- 受影响领域：").append(impactDomains).append("\n");
+        }
+        if (dailyLifeInfluence != null && !dailyLifeInfluence.isEmpty()) {
+            sb.append("- 日常生活影响：").append(dailyLifeInfluence).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 心理资源与应对特征 ========================
+
+    private String buildPsychologicalResourcesPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (socialSupportLevel != null) {
+            sb.append("- 社会支持：").append(getSocialSupportDesc()).append("\n");
+        }
+        if (protectiveFactors != null && !protectiveFactors.isEmpty()) {
+            sb.append("- 保护因素：").append(protectiveFactors).append("\n");
+        }
+        if (copingStyle != null && !copingStyle.isEmpty()) {
+            sb.append("- 应对方式：").append(copingStyle).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 风险评估 ========================
+
+    private String buildRiskAssessmentPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (emotionRiskLevel != null) {
+            sb.append("- 情绪风险等级：").append(getRiskLevelDesc()).append("\n");
+        }
+        if (selfHarmRiskLevel != null) {
+            sb.append("- 自伤风险等级：").append(getSelfHarmRiskDesc()).append("\n");
+        }
+        if (suicideRiskLevel != null) {
+            sb.append("- 自杀风险等级：").append(getSuicideRiskDesc()).append("\n");
+        }
+        if (riskDetail != null && !riskDetail.isEmpty()) {
+            sb.append("- 风险细节：").append(riskDetail).append("\n");
+        }
+        if (needManualIntervene != null) {
+            sb.append("- 需人工干预：").append(needManualIntervene == NEED_MANUAL_INTERVENE_YES ? "是" : "否").append("\n");
+        }
+        if (emotionAdjustSuggestion != null && !emotionAdjustSuggestion.isEmpty()) {
+            sb.append("- 情绪调节建议：").append(emotionAdjustSuggestion).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 干预建议 ========================
+
+    private String buildInterventionSuggestionsPrompt() {
+        StringBuilder sb = new StringBuilder();
+        if (crisisWarning != null) {
+            sb.append("- 危机预警：").append(crisisWarning == CRISIS_WARNING_YES ? "已触发" : "未触发").append("\n");
+        }
+        if (suggestionPriority != null) {
+            sb.append("- 建议优先级：").append(getSuggestionPriorityDesc()).append("\n");
+        }
+        if (selfHelpSuggestion != null && !selfHelpSuggestion.isEmpty()) {
+            sb.append("- 自助建议：").append(selfHelpSuggestion).append("\n");
+        }
+        if (socialSupportSuggestion != null && !socialSupportSuggestion.isEmpty()) {
+            sb.append("- 社会支持建议：").append(socialSupportSuggestion).append("\n");
+        }
+        if (professionalInterveneSuggestion != null && !professionalInterveneSuggestion.isEmpty()) {
+            sb.append("- 专业干预建议：").append(professionalInterveneSuggestion).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // ======================== 编码转描述辅助方法 ========================
+
+    private String getEmotionTrendDesc() {
+        if (emotionTrend == null) {
+            return "未知";
+        }
+        switch (emotionTrend) {
+            case EMOTION_TREND_UP: return "上升";
+            case EMOTION_TREND_DOWN: return "下降";
+            case EMOTION_TREND_STABLE: return "平稳";
+            default: return "无法判断";
+        }
+    }
+
+    private String getRiskLevelDesc() {
+        if (emotionRiskLevel == null) {
+            return "未知";
+        }
+        switch (emotionRiskLevel) {
+            case EMOTION_RISK_LOW: return "低";
+            case EMOTION_RISK_MEDIUM: return "中";
+            case EMOTION_RISK_HIGH: return "高";
+            case EMOTION_RISK_CRITICAL: return "危急";
+            default: return "无法判断";
+        }
+    }
+
+    private String getSelfHarmRiskDesc() {
+        if (selfHarmRiskLevel == null) {
+            return "未知";
+        }
+        switch (selfHarmRiskLevel) {
+            case SELF_HARM_RISK_NONE: return "无";
+            case SELF_HARM_RISK_LOW: return "低";
+            case SELF_HARM_RISK_MEDIUM: return "中";
+            case SELF_HARM_RISK_HIGH: return "高";
+            case SELF_HARM_RISK_VERY_HIGH: return "极高";
+            default: return "无法判断";
+        }
+    }
+
+    private String getSuicideRiskDesc() {
+        if (suicideRiskLevel == null) {
+            return "未知";
+        }
+        switch (suicideRiskLevel) {
+            case SUICIDE_RISK_NONE: return "无";
+            case SUICIDE_RISK_LOW: return "低";
+            case SUICIDE_RISK_MEDIUM: return "中";
+            case SUICIDE_RISK_HIGH: return "高";
+            case SUICIDE_RISK_VERY_HIGH: return "极高";
+            default: return "无法判断";
+        }
+    }
+
+    private String getSocialSupportDesc() {
+        if (socialSupportLevel == null) {
+            return "未知";
+        }
+        switch (socialSupportLevel) {
+            case SOCIAL_SUPPORT_GOOD: return "良好";
+            case SOCIAL_SUPPORT_FAIR: return "一般";
+            case SOCIAL_SUPPORT_POOR: return "较差";
+            case SOCIAL_SUPPORT_SCARCE: return "匮乏";
+            default: return "无法判断";
+        }
+    }
+
+    private String getSuggestionPriorityDesc() {
+        if (suggestionPriority == null) {
+            return "未知";
+        }
+        switch (suggestionPriority) {
+            case SUGGESTION_PRIORITY_SELF_HELP: return "自助为主";
+            case SUGGESTION_PRIORITY_SEEK_SUPPORT: return "建议寻求支持";
+            case SUGGESTION_PRIORITY_PROFESSIONAL: return "强烈建议专业干预";
+            default: return "无法判断";
+        }
+    }
+
 }

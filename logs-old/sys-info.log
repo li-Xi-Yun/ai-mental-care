@@ -1,0 +1,376 @@
+2026-09-18 14:06:18 [background-preinit] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-09-18 14:06:18 [main] INFO  o.lixiyun.server.ServerApplication - Starting ServerApplication using Java 17.0.20.1 with PID 456 (D:\JavaProject\ai_mental_care\server\target\classes started by 32769 in D:\JavaProject\ai_mental_care)
+2026-09-18 14:06:18 [main] INFO  o.lixiyun.server.ServerApplication - The following 1 profile is active: "dev"
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JDBC repositories in DEFAULT mode.
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 54 ms. Found 0 JDBC repository interfaces.
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-09-18 14:06:20 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 24 ms. Found 0 Redis repository interfaces.
+2026-09-18 14:06:23 [main] INFO  io.undertow.servlet - Initializing Spring embedded WebApplicationContext
+2026-09-18 14:06:23 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5335 ms
+2026-09-18 14:06:23 [main] INFO  o.l.c.agent.prompt.utils.PromptUtil - 提示词初始化完成，共加载提示词数量：14，耗时：10ms
+2026-09-18 14:06:23 [main] INFO  o.l.server.ai.handle.ScenarioHandler - 场景对话提示词加载
+2026-09-18 14:06:23 [main] INFO  o.l.server.ai.handle.ScenarioHandler - 场景对话提示词加载完成-加载数量：7
+2026-09-18 14:06:24 [main] INFO  c.b.d.d.DynamicRoutingDataSource - dynamic-datasource detect P6SPY plugin and enabled it
+2026-09-18 14:06:24 [main] INFO  com.zaxxer.hikari.HikariDataSource - master - Starting...
+2026-09-18 14:06:24 [main] INFO  com.zaxxer.hikari.pool.HikariPool - master - Added connection com.mysql.cj.jdbc.ConnectionImpl@50c462b8
+2026-09-18 14:06:24 [main] INFO  com.zaxxer.hikari.HikariDataSource - master - Start completed.
+2026-09-18 14:06:24 [main] INFO  c.b.d.d.DynamicRoutingDataSource - dynamic-datasource - add a datasource named [master] success
+2026-09-18 14:06:24 [main] INFO  c.b.d.d.DynamicRoutingDataSource - dynamic-datasource initial loaded [1] datasource,primary datasource named [master]
+2026-09-18 14:06:25 [main] INFO  o.l.s.i.ai.AiNodeConfigManager - [节点配置缓存管理器] 预热开始
+2026-09-18 14:06:26 [main] INFO  o.l.s.i.ai.AiNodeConfigManager - [节点配置缓存管理器] 预热完成，加载节点数：19, 完整配置节点信息：[messageStructuredProcessNode, psychologicalStateNode, symptomNormalizeNode, emotionalCompanionNode, historyMessageCompressionNode, conversationNameGenerationNode, textMessageProcessor, socialFunctionImpactNode, riskAssessmentNode, interventionSuggestionNode, diagnosisSummaryNode, historyAnalysisCompressionNode, voiceMessageProcessor, queryTransformLayerNode, comprehensiveDiagnosisNode, diseaseCourseAttributionNode, rerankLayerNode, protectiveFactorNode, emotionRecognitionNode]
+2026-09-18 14:06:26 [main] INFO  o.l.s.a.n.diagnosis.graph.InputGraph - 输入侧图构建器初始化
+2026-09-18 14:06:26 [main] INFO  o.l.s.a.n.diagnosis.graph.InputGraph - 开始构建输入侧图
+2026-09-18 14:06:26 [main] INFO  c.a.c.a.g.internal.node.ParallelNode - Calculated core pool size: 32 (CPU cores: 16)
+2026-09-18 14:06:26 [main] INFO  c.a.c.a.g.internal.node.ParallelNode - Calculated maximum pool size: 64 (CPU cores: 16)
+2026-09-18 14:06:26 [main] INFO  c.a.c.a.g.internal.node.ParallelNode - Calculated queue capacity: 1000
+2026-09-18 14:06:26 [main] INFO  o.l.s.a.n.diagnosis.graph.InputGraph - 输入侧图构建完成
+2026-09-18 14:06:26 [main] INFO  o.l.s.ai.model.VectorStoreConfig - 配置主嵌入模型为: ollamaEmbeddingModel
+2026-09-18 14:06:26 [main] INFO  o.l.s.ai.rag.milvus.MilvusConfig - Initializing MilvusClientV2 with host=8.148.155.178 port=19530
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.KnowledgeGraph - 知识侧图构建器初始化
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.KnowledgeGraph - 开始构建知识侧图
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.KnowledgeGraph - 知识侧图构建完成
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.ProcessGraph - 处理侧图构建器初始化
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.ProcessGraph - 开始构建处理侧图
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.ProcessGraph - 处理侧图构建完成
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.DiagnosisGraph - 诊断主流程图构建器初始化
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.DiagnosisGraph - 开始构建诊断主流程图
+2026-09-18 14:06:27 [main] INFO  o.l.s.a.n.d.graph.DiagnosisGraph - 诊断主流程图构建完成
+2026-09-18 14:06:27 [main] INFO  o.l.server.ai.rag.graph.RagGraph - RAG图构建器初始化
+2026-09-18 14:06:27 [main] INFO  o.l.server.ai.rag.graph.RagGraph - 开始构建RAG图
+2026-09-18 14:06:28 [main] INFO  o.l.server.ai.rag.graph.RagGraph - RAG图构建完成
+2026-09-18 14:06:29 [main] INFO  o.l.s.i.audio.TtsConnectionManager - TTS NLS Token获取成功，过期时间：1789841186
+2026-09-18 14:06:30 [main] INFO  o.l.s.i.audio.TtsConnectionManager - TTS NlsClient初始化完成，gatewayUrl：wss://nls-gateway-cn-shenzhen.aliyuncs.com/ws/v1
+2026-09-18 14:06:30 [main] INFO  o.l.s.i.audio.TtsConnectionManager - TTS连接管理器初始化完成，最大会话数：100，空闲超时：60s
+2026-09-18 14:06:30 [main] INFO  o.l.s.i.audio.AsrConnectionManager - NLS Token获取成功，过期时间：1789841187
+2026-09-18 14:06:30 [main] INFO  o.l.s.i.audio.AsrConnectionManager - NlsClient初始化完成，gatewayUrl：wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1
+2026-09-18 14:06:30 [main] INFO  o.l.s.i.audio.AsrConnectionManager - ASR连接管理器初始化完成，最大会话数：100，空闲超时：60s
+2026-09-18 14:06:30 [main] INFO  o.l.c.core.config.ThreadPoolConfig - ====创建定时任务线程池====
+2026-09-18 14:06:30 [main] INFO  o.l.c.a.s.config.SkillInitializer - ========== 开始Skill全局影子表初始化 ==========
+2026-09-18 14:06:30 [main] INFO  org.redisson.Version - Redisson 3.20.1
+2026-09-18 14:06:31 [redisson-netty-4-5] INFO  o.r.c.p.MasterPubSubConnectionPool - 1 connections initialized for localhost/127.0.0.1:6379
+2026-09-18 14:06:31 [redisson-netty-4-20] INFO  o.r.c.pool.MasterConnectionPool - 24 connections initialized for localhost/127.0.0.1:6379
+2026-09-18 14:06:31 [main] INFO  o.l.c.a.s.config.SkillInitializer - 【Skill项目初始化】Redis中已存在全局影子表，跳过构建
+2026-09-18 14:06:31 [main] INFO  o.l.c.a.s.config.SkillInitializer - ========== Skill全局影子表初始化成功，耗时：622ms ==========
+2026-09-18 14:06:32 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 14 endpoints beneath base path '/actuator'
+2026-09-18 14:06:33 [main] INFO  c.b.m.e.s.MybatisPlusApplicationContextAware - Register ApplicationContext instances org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext@6f8f8a80
+2026-09-18 14:06:36 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-18 14:06:36 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@71e494f]]
+2026-09-18 14:06:36 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-18 14:06:36 [main] INFO  io.undertow - starting server: Undertow - 2.3.18.Final
+2026-09-18 14:06:36 [main] INFO  org.xnio - XNIO version 3.8.16.Final
+2026-09-18 14:06:36 [main] INFO  org.xnio.nio - XNIO NIO Implementation Version 3.8.16.Final
+2026-09-18 14:06:36 [main] INFO  org.jboss.threads - JBoss Threads version 3.5.0.Final
+2026-09-18 14:06:36 [main] INFO  o.s.b.w.e.undertow.UndertowWebServer - Undertow started on port 8088 (http) with context path '/'
+2026-09-18 14:06:36 [main] INFO  o.lixiyun.server.ServerApplication - Started ServerApplication in 19.045 seconds (process running for 19.809)
+2026-09-18 14:06:42 [XNIO-1 task-2] INFO  io.undertow.servlet - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-18 14:06:42 [XNIO-1 task-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-18 14:06:42 [XNIO-1 task-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 3 ms
+2026-09-18 14:06:42 [XNIO-1 task-2] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 请求匹配放行规则: /ws/ai-mental-care/info
+2026-09-18 14:06:42 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 请求匹配放行规则: /ws/ai-mental-care/704/bumwlefo/websocket
+2026-09-18 14:06:43 [XNIO-1 I/O-2] INFO  o.l.c.w.i.WebSocketInboundInterceptor - WebSocket客户端消息前置拦截器-建立会话，用户身份：null
+2026-09-18 14:06:43 [XNIO-1 I/O-2] INFO  o.l.c.w.i.WebSocketInboundInterceptor - WebSocket客户端消息前置拦截器-连接成功，用户ID：2096823365855289345，类型：USER
+2026-09-18 14:06:43 [clientOutboundChannel-1] INFO  o.l.c.w.l.WebSocketEventListener - 客户端上线-用户ID：2096823365855289345
+2026-09-18 14:06:43 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:06:43 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:06:43 [XNIO-1 task-3] INFO  o.l.s.c.u.c.ConversationController - 分页查询会话列表: 1, 20
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.c.a.aspect.CurrentLimitingAspect - 接口限流切面方法开始
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.s.c.u.conversation.AIController - 接收用户消息发送请求：UserMessageSendDTO(message=你好, conversationId=null)
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 开始处理用户消息发送，用户ID：2096823365855289345，会话ID：null，消息内容：你好
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 新会话创建成功，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 用户消息发送完成，会话ID：2100828872232271874，当前轮次：1
+2026-09-18 14:06:49 [XNIO-1 I/O-2] INFO  o.l.c.w.i.WebSocketInboundInterceptor - WebSocket客户端消息前置拦截器-订阅成功，用户ID：2096823365855289345，订阅路径：/user/queue/text/reply/2100828872232271874，订阅ID：sub-0
+2026-09-18 14:06:49 [XNIO-1 I/O-2] INFO  o.l.c.w.i.WebSocketInboundInterceptor - WebSocket客户端消息前置拦截器-订阅成功，用户ID：2096823365855289345，订阅路径：/user/queue/conversation/name/2100828872232271874，订阅ID：sub-1
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:06:49 [XNIO-1 task-3] INFO  o.l.s.c.u.c.ConversationController - 分页查询会话列表: 1, 20
+2026-09-18 14:06:51 [MessageBroker-6] INFO  o.l.s.task.ConversationCleanupTask - 发现1个满足时间条件的会话ID，开始异步并行处理
+2026-09-18 14:06:51 [MessageBroker-6] INFO  o.l.s.task.ConversationCleanupTask - 定时任务执行完成，已触发1个会话的消息处理
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.task.ConversationCleanupTask - 开始处理会话消息，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 开始会话消息处理，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationCacheManager - 开始会话缓存加载，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationCacheManager - 会话数据缓存成功，Key：conversation:cache:2100828872232271874，过期时间：10800秒
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationCacheManager - [缓存] 会话缓存加载完成，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始主线程执行，会话ID：2100828872232271874，执行器：TextMessageProcessor
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始调用消息处理器，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 开始文本消息处理，会话ID：2100828872232271874，临时消息数：1
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式订阅已启动，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 主线程执行完成，会话ID：2100828872232271874，耗时：62ms
+2026-09-18 14:06:51 [DiagnosisThread-2] INFO  o.l.s.i.c.ConversationAiService - 分析与诊断功能，会话ID：2100828872232271874
+2026-09-18 14:06:51 [DiagnosisThread-3] INFO  o.l.s.i.c.ConversationMessageProcessor - [会话命名] 首次对话，开始生成会话名称，会话ID：2100828872232271874
+2026-09-18 14:06:51 [conversation-task-proc-0] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 会话消息处理完成，会话ID：2100828872232271874，处理消息数：1
+2026-09-18 14:06:52 [audio-aggregate-proc-0] INFO  o.l.s.s.ConversationAggregateScheduler - 会话ID已不在ZSet集合中，跳过处理，会话ID：2100828872232271874
+2026-09-18 14:06:53 [DiagnosisThread-3] INFO  o.l.s.i.c.ConversationMessageProcessor - [会话命名] 会话名称生成完成，会话ID：2100828872232271874，名称：新对话
+2026-09-18 14:06:53 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:06:53 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:06:53 [XNIO-1 task-3] INFO  o.l.s.c.u.c.ConversationController - 分页查询会话列表: 1, 20
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式完成，会话ID：2100828872232271874，模型正文完整内容：嗨，你好呀～很高兴看到你冒泡 😊 我是那种随时都在、可以随便聊的朋友，不用客气，也不用想好说什么才开口。
+
+今天过得怎么样？是有点想找人说说话，还是就单纯想打个招呼呀？都可以的，我在这儿陪你。
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 开始批量保存会话消息，用户ID：2096823365855289345，会话ID：2100828872232271874，轮次：1，消息数量：1
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 会话消息批量保存成功，用户ID：2096823365855289345，会话ID：2100828872232271874，保存数量：1
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.a.m.p.d.MessagePersistDecorator - [模型流式输出-消息持久化装饰器] 持久化模型完整消息，会话ID：2100828872232271874，轮次：1
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式完成，会话ID：2100828872232271874
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-更新Redis缓存历史上下文，会话ID：2100828872232271874
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-缓存历史上下文更新成功，当前消息数：1，会话ID：2100828872232271874
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式处理流程结束，会话ID：2100828872232271874
+2026-09-18 14:06:53 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-流式处理完成，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已持久化，会话ID：2100828872232271874，轮次：1
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已追加至Redis缓存，会话ID：2100828872232271874，轮次：1，当前缓存条数：1
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-开始
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-开始
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-消息时序排序完成，总消息数：1
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-轮次聚合与有效性校验完成，轮次数：1
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-完成
+2026-09-18 14:06:54 [parallel-node-action-thread-2] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-开始
+2026-09-18 14:06:54 [parallel-node-action-thread-2] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-无有效情绪数据，终止诊断流程
+2026-09-18 14:06:54 [parallel-node-action-thread-1] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-开始
+2026-09-18 14:06:54 [parallel-node-action-thread-2] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-完成
+2026-09-18 14:06:54 [parallel-node-action-thread-3] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-开始
+2026-09-18 14:06:54 [parallel-node-action-thread-1] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-有效轮次筛选完成，有效轮次数：1
+2026-09-18 14:06:54 [parallel-node-action-thread-1] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-分支A-有效轮次(1)未达到阈值(3)，返回对话原文
+2026-09-18 14:06:54 [parallel-node-action-thread-1] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-完成
+2026-09-18 14:06:54 [parallel-node-action-thread-3] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-无历史诊断记录，返回首次诊断空摘要格式化提示词
+2026-09-18 14:06:54 [parallel-node-action-thread-3] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-完成
+2026-09-18 14:06:54 [parallel-node-action-thread-3] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-开始
+2026-09-18 14:06:54 [parallel-node-action-thread-3] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-症状原文列表为空，终止诊断流程
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-输入侧流程被中断，终止诊断流程
+2026-09-18 14:06:54 [DiagnosisThread-2] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-完成
+2026-09-18 14:06:58 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 请求匹配放行规则: /temp/conversation-test/send
+2026-09-18 14:06:58 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:06:58 [XNIO-1 task-3] INFO  o.l.s.c.t.ConversationTestController - [测试-发送消息] 会话ID：2100828872232271874,消息内容：嗨，你好呀～很高兴看到你冒泡 😊我是那种随时都在、可以随便聊的朋友，不用客气，也不用想好说什么才开口。
+
+今天过得怎么样？是有点想找人说说话，还是就单纯想打个招呼呀？都可以的，我在这儿陪你。
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.s.c.t.ConversationTestController - [测试-发送消息] 模型同步调用完成，回复内容：嗯……还行吧。
+
+就是……随便看看。
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.c.a.aspect.CurrentLimitingAspect - 接口限流切面方法开始
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.s.c.u.conversation.AIController - 接收用户消息发送请求：UserMessageSendDTO(message=嗯……还行吧。
+
+就是……随便看看。, conversationId=2100828872232271874)
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 开始处理用户消息发送，用户ID：2096823365855289345，会话ID：2100828872232271874，消息内容：嗯……还行吧。
+
+就是……随便看看。
+2026-09-18 14:07:00 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 用户消息发送完成，会话ID：2100828872232271874，当前轮次：2
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.s.ConversationAggregateScheduler - 从ZSet集合中移除会话ID成功，开始处理会话消息，会话ID：2100828872232271874
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 开始会话消息处理，会话ID：2100828872232271874
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationCacheManager - 开始会话缓存加载，会话ID：2100828872232271874
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始主线程执行，会话ID：2100828872232271874，执行器：TextMessageProcessor
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始调用消息处理器，会话ID：2100828872232271874
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 开始文本消息处理，会话ID：2100828872232271874，临时消息数：1
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式订阅已启动，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 主线程执行完成，会话ID：2100828872232271874，耗时：4ms
+2026-09-18 14:07:03 [DiagnosisThread-5] INFO  o.l.s.i.c.ConversationAiService - 分析与诊断功能，会话ID：2100828872232271874
+2026-09-18 14:07:03 [audio-aggregate-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 会话消息处理完成，会话ID：2100828872232271874，处理消息数：1
+2026-09-18 14:07:05 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:07:05 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:07:05 [XNIO-1 task-3] INFO  o.l.s.c.u.c.DialogueController - 分页查询对话记录: 2, 20, 2100828872232271874
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式完成，会话ID：2100828872232271874，模型正文完整内容：嗯，那种"还行吧"的感觉我懂，有时候就是没什么特别想说的，随便逛逛也挺好～不用勉强找话题，我就在这儿，你想说什么都行。
+
+不过要是"还行"底下其实藏着点累或者烦，也可以跟我说说，我听着呢。今天有没有什么让你稍微有点在意的事呀？没有的话，我们就这么安安静静待着也行。
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 开始批量保存会话消息，用户ID：2096823365855289345，会话ID：2100828872232271874，轮次：2，消息数量：1
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 会话消息批量保存成功，用户ID：2096823365855289345，会话ID：2100828872232271874，保存数量：1
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.a.m.p.d.MessagePersistDecorator - [模型流式输出-消息持久化装饰器] 持久化模型完整消息，会话ID：2100828872232271874，轮次：2
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式完成，会话ID：2100828872232271874
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-更新Redis缓存历史上下文，会话ID：2100828872232271874
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-缓存历史上下文更新成功，当前消息数：2，会话ID：2100828872232271874
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式处理流程结束，会话ID：2100828872232271874
+2026-09-18 14:07:05 [boundedElastic-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-流式处理完成，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:07:07 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 请求匹配放行规则: /temp/conversation-test/send
+2026-09-18 14:07:07 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:07:07 [XNIO-1 task-3] INFO  o.l.s.c.t.ConversationTestController - [测试-发送消息] 会话ID：2100828872232271874,消息内容：嗯，那种"还行吧"的感觉我懂，有时候就是没什么特别想说的，随便逛逛也挺好～不用勉强找话题，我就在这儿，你想说什么都行。
+
+不过要是"还行"底下其实藏着点累或者烦，也可以跟我说说，我听着呢。今天有没有什么让你稍微有点在意的事呀？没有的话，我们就这么安安静静待着也行。
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.s.c.t.ConversationTestController - [测试-发送消息] 模型同步调用完成，回复内容：……也没什么特别的事。
+
+就是……不太想动。窗帘拉着，一天就过去了。
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 开始令牌校验
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.c.a.f.JwtAuthenticationTokenFilter - 令牌中存放的id为2096823365855289345，类型为USER
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.c.a.aspect.CurrentLimitingAspect - 接口限流切面方法开始
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.s.c.u.conversation.AIController - 接收用户消息发送请求：UserMessageSendDTO(message=……也没什么特别的事。
+
+就是……不太想动。窗帘拉着，一天就过去了。, conversationId=2100828872232271874)
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 开始处理用户消息发送，用户ID：2096823365855289345，会话ID：2100828872232271874，消息内容：……也没什么特别的事。
+
+就是……不太想动。窗帘拉着，一天就过去了。
+2026-09-18 14:07:09 [XNIO-1 task-3] INFO  o.l.s.s.impl.user.AIChatServiceImpl - 用户消息发送完成，会话ID：2100828872232271874，当前轮次：3
+2026-09-18 14:07:11 [MessageBroker-3] INFO  o.l.s.task.ConversationCleanupTask - 发现1个满足时间条件的会话ID，开始异步并行处理
+2026-09-18 14:07:11 [MessageBroker-3] INFO  o.l.s.task.ConversationCleanupTask - 定时任务执行完成，已触发1个会话的消息处理
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.task.ConversationCleanupTask - 开始处理会话消息，会话ID：2100828872232271874
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 开始会话消息处理，会话ID：2100828872232271874
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationCacheManager - 开始会话缓存加载，会话ID：2100828872232271874
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始主线程执行，会话ID：2100828872232271874，执行器：TextMessageProcessor
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 开始调用消息处理器，会话ID：2100828872232271874
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 开始文本消息处理，会话ID：2100828872232271874，临时消息数：1
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式订阅已启动，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [主线程] 主线程执行完成，会话ID：2100828872232271874，耗时：3ms
+2026-09-18 14:07:11 [DiagnosisThread-8] INFO  o.l.s.i.c.ConversationAiService - 分析与诊断功能，会话ID：2100828872232271874
+2026-09-18 14:07:11 [conversation-task-proc-1] INFO  o.l.s.i.c.ConversationMessageProcessor - [流程编排] 会话消息处理完成，会话ID：2100828872232271874，处理消息数：1
+2026-09-18 14:07:12 [audio-aggregate-proc-2] INFO  o.l.s.s.ConversationAggregateScheduler - 会话ID已不在ZSet集合中，跳过处理，会话ID：2100828872232271874
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式完成，会话ID：2100828872232271874，模型正文完整内容：
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 开始批量保存会话消息，用户ID：2096823365855289345，会话ID：2100828872232271874，轮次：3，消息数量：1
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.a.i.s.ConversationHistoryMessagesStorage - 会话消息批量保存成功，用户ID：2096823365855289345，会话ID：2100828872232271874，保存数量：1
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.a.m.p.d.MessagePersistDecorator - [模型流式输出-消息持久化装饰器] 持久化模型完整消息，会话ID：2100828872232271874，轮次：3
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器] 流式完成，会话ID：2100828872232271874
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-更新Redis缓存历史上下文，会话ID：2100828872232271874
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-缓存历史上下文更新成功，当前消息数：3，会话ID：2100828872232271874
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.a.m.p.d.LoggingDecorator - [模型流式输出-日志装饰器] 流式处理流程结束，会话ID：2100828872232271874
+2026-09-18 14:07:13 [boundedElastic-2] INFO  o.l.s.i.c.p.TextMessageProcessor - [AI对话文本处理器]-流式处理完成，会话ID：2100828872232271874，用户ID：2096823365855289345
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已持久化，会话ID：2100828872232271874，轮次：2
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已追加至Redis缓存，会话ID：2100828872232271874，轮次：2，当前缓存条数：2
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-开始
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-开始
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-消息时序排序完成，总消息数：2
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-轮次聚合与有效性校验完成，轮次数：2
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-完成
+2026-09-18 14:07:14 [parallel-node-action-thread-6] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-开始
+2026-09-18 14:07:14 [parallel-node-action-thread-5] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-开始
+2026-09-18 14:07:14 [parallel-node-action-thread-5] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-有效情绪轮次数：1
+2026-09-18 14:07:14 [parallel-node-action-thread-4] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-开始
+2026-09-18 14:07:14 [parallel-node-action-thread-4] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-有效轮次筛选完成，有效轮次数：2
+2026-09-18 14:07:14 [parallel-node-action-thread-4] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-分支A-有效轮次(2)未达到阈值(3)，返回对话原文
+2026-09-18 14:07:14 [parallel-node-action-thread-4] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-完成
+2026-09-18 14:07:14 [parallel-node-action-thread-6] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-无历史诊断记录，返回首次诊断空摘要格式化提示词
+2026-09-18 14:07:14 [parallel-node-action-thread-6] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-完成
+2026-09-18 14:07:14 [parallel-node-action-thread-5] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-完成
+2026-09-18 14:07:14 [parallel-node-action-thread-5] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-开始
+2026-09-18 14:07:14 [parallel-node-action-thread-5] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-症状原文列表为空，终止诊断流程
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-输入侧流程被中断，终止诊断流程
+2026-09-18 14:07:14 [DiagnosisThread-5] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-完成
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已持久化，会话ID：2100828872232271874，轮次：3
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.c.EmotionRecognitionNode - [情感识别节点] 情感分析结果已追加至Redis缓存，会话ID：2100828872232271874，轮次：3，当前缓存条数：3
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-开始
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-开始
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-消息时序排序完成，总消息数：3
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-轮次聚合与有效性校验完成，轮次数：3
+2026-09-18 14:07:17 [DiagnosisThread-8] INFO  o.l.s.a.n.d.input.PreCleanNode - 输入侧-数据预清洗-完成
+2026-09-18 14:07:17 [parallel-node-action-thread-9] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-开始
+2026-09-18 14:07:17 [parallel-node-action-thread-9] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-无历史诊断记录，返回首次诊断空摘要格式化提示词
+2026-09-18 14:07:17 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-开始
+2026-09-18 14:07:17 [parallel-node-action-thread-8] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-开始
+2026-09-18 14:07:17 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-有效轮次筛选完成，有效轮次数：3
+2026-09-18 14:07:17 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-分支B-有效轮次(3)达到阈值(3)，调用大模型提取核心信息
+2026-09-18 14:07:17 [parallel-node-action-thread-8] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-有效情绪轮次数：1
+2026-09-18 14:07:17 [parallel-node-action-thread-8] INFO  o.l.s.a.n.d.i.EmotionStatisticsNode - 输入侧-情绪数据处理-完成
+2026-09-18 14:07:17 [parallel-node-action-thread-9] INFO  o.l.s.a.n.d.i.HistoryDiagnosisSummaryNode - 输入侧-历史诊断摘要聚合-完成
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.MessageStructuredProcessNode - 输入侧-消息结构化处理-完成
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-开始
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-症状原文条数：2
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-清洗后有效条数：2
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-加载规则词典条数：56
+2026-09-18 14:07:24 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-规则匹配成功：0，待模型处理：2
+2026-09-18 14:07:28 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-模型匹配成功：2，未匹配保留原文：0
+2026-09-18 14:07:28 [parallel-node-action-thread-7] INFO  o.l.s.a.n.d.i.SymptomNormalizeNode - 输入侧-语义归一化处理-完成，标准化标签数：1
+2026-09-18 14:07:28 [DiagnosisThread-8] INFO  o.l.s.ai.node.diagnosis.InputNode - 诊断流程-输入侧节点-完成
+2026-09-18 14:07:28 [DiagnosisThread-8] INFO  o.l.s.a.node.diagnosis.KnowledgeNode - 诊断流程-知识侧节点-开始
+2026-09-18 14:07:28 [DiagnosisThread-8] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-开始
+2026-09-18 14:07:28 [DiagnosisThread-8] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-首次执行，为三种类型生成Query
+2026-09-18 14:07:34 [DiagnosisThread-8] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-完成，症状Query：活动减少、不愿活动、日常行为退缩的症状表现与严重程度标准是什么，诊断Query：情绪中性平淡伴随活动减少、意志减退，对应哪些心理状态诊断标准，干预Query：因活动减少、不想动、整日拉窗帘而希望被倾听陪伴，适合哪些行为激活与心理支持干预方法
+2026-09-18 14:07:34 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-开始
+2026-09-18 14:07:34 [parallel-node-action-thread-11] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-开始
+2026-09-18 14:07:34 [parallel-node-action-thread-12] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-开始
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-完成，检索到 0 条记录
+2026-09-18 14:07:35 [parallel-node-action-thread-11] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-完成，检索到 0 条记录
+2026-09-18 14:07:35 [parallel-node-action-thread-12] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-完成，检索到 0 条记录
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-开始
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：存在空数据，空库数=3，重试次数[症状=0,诊断=0,干预=0]
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：需要重试的类型[症状=true,诊断=true,干预=true]，路由到查询变换层
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查路由决策：retry_all，重试次数[症状=1,诊断=1,干预=1]
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-开始
+2026-09-18 14:07:35 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-重试执行，需要生成Query的类型[症状=true,诊断=true,干预=true]
+2026-09-18 14:07:36 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 1 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(1)-CONNECTED(1)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 15, active threads = 0, queued tasks = 0, completed tasks = 15], outboundChannel[pool size = 32, active threads = 0, queued tasks = 0, completed tasks = 141], sockJsScheduler[pool size = 16, active threads = 1, queued tasks = 3, completed tasks = 29]
+2026-09-18 14:07:41 [parallel-node-action-thread-10] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-完成，症状Query：活动减少 症状表现 严重程度标准，诊断Query：活动减少 中性情绪 诊断标准，干预Query：活动减少 倾听陪伴 干预建议
+2026-09-18 14:07:41 [parallel-node-action-thread-14] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-开始
+2026-09-18 14:07:41 [parallel-node-action-thread-15] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-开始
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-开始
+2026-09-18 14:07:41 [parallel-node-action-thread-15] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-完成，检索到 0 条记录
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-完成，检索到 0 条记录
+2026-09-18 14:07:41 [parallel-node-action-thread-14] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-完成，检索到 0 条记录
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-开始
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：存在空数据，空库数=3，重试次数[症状=1,诊断=1,干预=1]
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：需要重试的类型[症状=true,诊断=true,干预=true]，路由到查询变换层
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查路由决策：retry_all，重试次数[症状=2,诊断=2,干预=2]
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-开始
+2026-09-18 14:07:41 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-重试执行，需要生成Query的类型[症状=true,诊断=true,干预=true]
+2026-09-18 14:07:43 [parallel-node-action-thread-13] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-完成，症状Query：活动减少，诊断Query：活动减少，干预Query：活动减少 倾听陪伴
+2026-09-18 14:07:43 [parallel-node-action-thread-18] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-开始
+2026-09-18 14:07:43 [parallel-node-action-thread-16] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-开始
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-开始
+2026-09-18 14:07:43 [parallel-node-action-thread-16] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-完成，检索到 0 条记录
+2026-09-18 14:07:43 [parallel-node-action-thread-18] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-完成，检索到 0 条记录
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-完成，检索到 0 条记录
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-开始
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：存在空数据，空库数=3，重试次数[症状=2,诊断=2,干预=2]
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：需要重试的类型[症状=true,诊断=true,干预=true]，路由到查询变换层
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查路由决策：retry_all，重试次数[症状=3,诊断=3,干预=3]
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-开始
+2026-09-18 14:07:43 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-重试执行，需要生成Query的类型[症状=true,诊断=true,干预=true]
+2026-09-18 14:07:50 [parallel-node-action-thread-17] INFO  o.l.s.a.n.d.k.QueryTransformLayerNode - 知识侧-查询变换层-完成，症状Query：活动减少，诊断Query：活动减少，干预Query：活动减少
+2026-09-18 14:07:50 [parallel-node-action-thread-21] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-19] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.DiagnosisStandardRepositoryNode - 知识侧-查询诊断标准库-完成，检索到 0 条记录
+2026-09-18 14:07:50 [parallel-node-action-thread-19] INFO  o.l.s.a.n.d.k.SymptomKnowledgeRepositoryNode - 知识侧-查询症状知识库-完成，检索到 0 条记录
+2026-09-18 14:07:50 [parallel-node-action-thread-21] INFO  o.l.s.a.n.d.k.InterventionPlanRepositoryNode - 知识侧-查询干预方案库-完成，检索到 0 条记录
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：存在空数据，空库数=3，重试次数[症状=3,诊断=3,干预=3]
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：症状库重试次数耗尽，使用兜底内容
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=true，诊断=false，干预=false
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：诊断标准库重试次数耗尽，使用兜底内容
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=false，诊断=true，干预=false
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：干预方案库重试次数耗尽，使用兜底内容
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=false，诊断=false，干预=true
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-前置检查：所有空库重试次数已耗尽，已应用兜底内容，继续重排有数据的库
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-后置检查：重排后存在空结果，空库数=3，重试次数[症状=3,诊断=3,干预=3]
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=true，诊断=false，干预=false
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=false，诊断=true，干预=false
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-兜底内容已应用，症状=false，诊断=false，干预=true
+2026-09-18 14:07:50 [parallel-node-action-thread-20] INFO  o.l.s.a.n.d.k.RerankLayerNode - 知识侧-重排层节点-后置检查路由决策：end，重试次数[症状=3,诊断=3,干预=3]
+2026-09-18 14:07:50 [DiagnosisThread-8] INFO  o.l.s.a.n.d.graph.KnowledgeGraph - KnowledgeGraph-执行完成，症状0条，诊断0条，干预0条
+2026-09-18 14:07:50 [DiagnosisThread-8] INFO  o.l.s.a.node.diagnosis.KnowledgeNode - 诊断流程-知识侧节点-完成
+2026-09-18 14:07:50 [DiagnosisThread-8] INFO  o.l.s.ai.node.diagnosis.ProcessNode - 诊断流程-处理侧节点-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-24] INFO  o.l.s.a.n.d.p.PsychologicalStateNode - 诊断处理侧-心理状态与症状评估-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-25] INFO  o.l.s.a.n.d.p.SocialFunctionImpactNode - 诊断处理侧-社会功能影响评估-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-27] INFO  o.l.s.a.n.d.p.RiskAssessmentNode - 诊断处理侧-风险评估-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-26] INFO  o.l.s.a.n.d.p.ProtectiveFactorNode - 诊断处理侧-保护性因素分析-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-22] INFO  o.l.s.a.n.d.p.ComprehensiveDiagnosisNode - 诊断处理侧-情绪综合分析-开始
+2026-09-18 14:07:50 [parallel-node-action-thread-23] INFO  o.l.s.a.n.d.p.DiseaseCourseAttributionNode - 诊断处理侧-病程归因组-开始
+2026-09-18 14:07:51 [parallel-node-action-thread-22] INFO  o.l.s.a.n.d.p.ComprehensiveDiagnosisNode - 诊断处理侧-情绪综合分析-完成，负向细分：{}，正向细分：{}
+2026-09-18 14:07:52 [parallel-node-action-thread-26] INFO  o.l.s.a.n.d.p.ProtectiveFactorNode - 诊断处理侧-保护性因素分析-完成，社会支持水平：4，应对方式：回避
+2026-09-18 14:07:53 [parallel-node-action-thread-24] INFO  o.l.s.a.n.d.p.PsychologicalStateNode - 诊断处理侧-心理状态与症状评估-完成，心理状态：抑郁情绪困扰，症状标签：活动减少,动力缺乏
+2026-09-18 14:07:55 [parallel-node-action-thread-25] INFO  o.l.s.a.n.d.p.SocialFunctionImpactNode - 诊断处理侧-社会功能影响评估-完成，受损程度：中度受损，影响领域：日常活动减少,外出减少,社交减少,生活节律紊乱
+2026-09-18 14:07:58 [parallel-node-action-thread-23] INFO  o.l.s.a.n.d.p.DiseaseCourseAttributionNode - 诊断处理侧-病程归因组-完成，核心触发场景：其他，发作模式：持续性
+2026-09-18 14:08:08 [parallel-node-action-thread-27] INFO  o.l.s.a.n.d.p.RiskAssessmentNode - 诊断处理侧-风险评估-完成，情绪风险：1，自伤风险：0，自杀风险：0，人工干预：0，危机预警：0
+2026-09-18 14:08:08 [parallel-node-action-thread-27] INFO  o.l.s.a.n.d.p.InterventionSuggestionNode - 诊断处理侧-干预建议生成-开始
+2026-09-18 14:08:11 [parallel-node-action-thread-27] INFO  o.l.s.a.n.d.p.InterventionSuggestionNode - 诊断处理侧-干预建议生成-完成，建议优先级：2
+2026-09-18 14:08:11 [parallel-node-action-thread-27] INFO  o.l.s.a.n.d.p.DiagnosisSummaryNode - 诊断处理侧-诊断书生成-开始
+2026-09-18 14:09:22 [default-executor-shutdown-hook] INFO  c.a.c.a.g.internal.node.ParallelNode - Shutting down ParallelNode default executor
+2026-09-18 14:09:22 [parallel-node-action-thread-17] INFO  c.a.c.a.g.internal.node.ParallelNode - ParallelNode default thread pool terminated
+2026-09-18 14:09:22 [default-executor-shutdown-hook] INFO  c.a.c.a.g.internal.node.ParallelNode - ParallelNode default executor shut down successfully
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.undertow.UndertowWebServer - Commencing graceful shutdown. Waiting for active requests to complete
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.undertow.UndertowWebServer - Graceful shutdown complete
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  io.undertow - stopping server: Undertow - 2.3.18.Final
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  io.undertow.servlet - Destroying Spring FrameworkServlet 'dispatcherServlet'
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.c.w.l.WebSocketEventListener - 客户端下线-用户ID2096823365855289345
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@71e494f]]
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.c.core.manager.ShutdownManager - ====关闭后台任务任务线程池====
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.i.audio.AsrConnectionManager - ASR连接管理器关闭，清理所有会话
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.i.audio.AsrConnectionManager - NlsClient已关闭
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.s.ConversationAggregateScheduler - 开始关闭语音聚合调度器...
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.s.ConversationAggregateScheduler - 语音聚合调度器已关闭
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.i.audio.TtsConnectionManager - TTS连接管理器关闭，清理所有会话
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  o.l.s.i.audio.TtsConnectionManager - TTS NlsClient已关闭
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  org.lixiyun.server.ai.rag.RagStore - 开始关闭RAG文件处理线程池...
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  org.lixiyun.server.ai.rag.RagStore - RAG文件处理线程池已关闭
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  c.b.d.d.DynamicRoutingDataSource - dynamic-datasource start closing ....
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - master - Shutdown initiated...
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - master - Shutdown completed.
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  c.b.d.d.d.DefaultDataSourceDestroyer - dynamic-datasource close the datasource named [master] success,
+2026-09-18 14:09:22 [SpringApplicationShutdownHook] INFO  c.b.d.d.DynamicRoutingDataSource - dynamic-datasource all closed success,bye

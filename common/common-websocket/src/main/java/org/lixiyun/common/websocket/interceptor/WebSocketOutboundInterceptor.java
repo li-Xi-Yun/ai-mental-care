@@ -51,7 +51,7 @@ public class WebSocketOutboundInterceptor implements ExecutorChannelInterceptor 
                 content = String.valueOf(payload);
             }
 
-            log.info("WebSocket服务端消息前置拦截器-主动推送，用户ID：{}，消息内容：{}，目标路径：{}，原始路径：{}，会话ID：{}",
+            log.debug("WebSocket服务端消息前置拦截器-主动推送，用户ID：{}，消息内容：{}，目标路径：{}，原始路径：{}，会话ID：{}",
                     userId, content, destination, origDestination, sessionId);
         }
 

@@ -117,4 +117,35 @@ public class EmotionAnalysis implements Serializable {
     @TableLogic
     private Integer deleted;
 
+    /**
+     * 将情绪分析结果格式化为LLM提示词可用的文本，仅提取业务关键字段
+     *
+     * @return 格式化后的提示词文本
+     */
+    public String toPromptString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("- 第").append(roundNum).append("轮：");
+        sb.append("情绪=").append(emotionLabel);
+        if (emotionSubLabel != null && !emotionSubLabel.isEmpty()) {
+            sb.append("（").append(emotionSubLabel).append("）");
+        }
+        sb.append("，置信度=").append(emotionConfidence);
+        sb.append("，强度=").append(emotionIntensity);
+        if (emotionTrend != null && !emotionTrend.isEmpty()) {
+            sb.append("，趋势=").append(emotionTrend);
+        }
+        if (pScore != null || aScore != null || dScore != null) {
+            sb.append("，PAD(P=").append(pScore)
+                    .append(",A=").append(aScore)
+                    .append(",D=").append(dScore).append(")");
+        }
+        sb.append("，占比(负向=").append(negativeEmotionRatio)
+                .append(",中性=").append(neutralEmotionRatio)
+                .append(",正向=").append(positiveEmotionRatio).append(")");
+        if (analysisContent != null && !analysisContent.isEmpty()) {
+            sb.append("，分析=").append(analysisContent);
+        }
+        return sb.toString();
+    }
+
 }

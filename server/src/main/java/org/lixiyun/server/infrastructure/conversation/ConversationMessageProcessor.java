@@ -7,6 +7,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.node.conversation.ConversationNameGenerationNode;
+import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.processor.MessageProcessor;
 import org.lixiyun.server.infrastructure.conversation.processor.ProcessorHolder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -151,19 +153,20 @@ public class ConversationMessageProcessor {
             conversationRepository.updateConversationState(conversationId, unprocessedMessages);
             log.debug("[流程编排] 数据库状态更新完成，会话ID：{}", conversationId);
 
+            appendUserMessagesToHistoryCache(conversationId, processContext, unprocessedMessages);
+            log.debug("[流程编排] 用户消息已追加到缓存历史，新增：{}，总数：{}，会话ID：{}", unprocessedMessages.size(), processContext.getConversationHistory().size(), conversationId);
+
             log.debug("[流程编排] 步骤9/9：刷新缓存元数据并释放处理令牌，会话ID：{}", conversationId);
             conversationCacheManager.refreshMetadata(conversationId);
             log.debug("[流程编排] 缓存元数据刷新完成，会话ID：{}", conversationId);
 
-            conversationProcessTokenManager.clearProcessingFlag(conversationId);
-            log.debug("[流程编排] 处理令牌已释放，会话ID：{}", conversationId);
-
             log.info("[流程编排] 会话消息处理完成，会话ID：{}，处理消息数：{}", conversationId, unprocessedMessages.size());
         } catch (Exception e) {
             log.error("[[流程编排 - 异常] 会话消息处理异常，会话ID：{}", conversationId, e);
-            log.debug("[流程编排] 异常后清理处理标识，会话ID：{}", conversationId);
-            conversationProcessTokenManager.clearProcessingFlag(conversationId);
             throw new RuntimeException("会话消息处理失败", e);
+        } finally {
+            conversationProcessTokenManager.clearProcessingFlag(conversationId);
+            log.debug("[流程编排] 处理令牌已释放，会话ID：{}", conversationId);
         }
     }
 
@@ -265,5 +268,24 @@ public class ConversationMessageProcessor {
         } else {
             log.debug("[会话命名] 非首次对话，跳过会话名称生成，会话ID：{}，当前轮次：{}", conversationId, currentRound);
         }
+    }
+
+    /**
+     * 将本轮处理完成的用户消息追加到缓存历史
+     * <p>复制一份消息列表，修正状态为已处理后追加到会话历史中并写回Redis缓存。</p>
+     *
+     * @param conversationId     会话ID
+     * @param processContext     会话处理上下文
+     * @param unprocessedMessages 本轮处理的消息列表
+     */
+    private void appendUserMessagesToHistoryCache(Long conversationId, ConversationProcessContextBO processContext, List<ConversationMemory> unprocessedMessages) {
+        ArrayList<ConversationMemory> conversationMemories = new ArrayList<>(unprocessedMessages);
+        conversationMemories.forEach(msg -> msg.setState(ConversationMemory.STATE_PROCESSED));
+        if (processContext.getConversationHistory() != null) {
+            processContext.getConversationHistory().addAll(conversationMemories);
+        } else {
+            processContext.setConversationHistory(conversationMemories);
+        }
+        conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_HISTORY_MESSAGES, processContext.getConversationHistory());
     }
 }
