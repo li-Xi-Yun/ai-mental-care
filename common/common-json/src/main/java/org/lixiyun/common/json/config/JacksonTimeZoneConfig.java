@@ -48,7 +48,7 @@ public class JacksonTimeZoneConfig {
                 }
             });
 
-            // 反序列化：UTC毫秒数字 → 项目配置本地时区LocalDateTime
+            // 反序列化：UTC毫秒数字/Jackson默认数组 → 项目配置本地时区LocalDateTime
             customTimeModule.addDeserializer(LocalDateTime.class, new StdDeserializer<>(LocalDateTime.class) {
                 @Override
                 public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
@@ -67,6 +67,22 @@ public class JacksonTimeZoneConfig {
                         }
                         return (LocalDateTime) ctxt.handleWeirdStringValue(
                                 LocalDateTime.class, text, "时间字段必须传入UTC毫秒数字，不支持日期字符串");
+                    }
+                    // Jackson默认数组格式兼容：[年, 月, 日, 时, 分, 秒, 纳秒]
+                    // 当数据源使用标准JavaTimeModule反序列化时产生此格式（如MysqlSaver的checkpoint）
+                    if (token == JsonToken.START_ARRAY) {
+                        int year = p.nextIntValue(-1);
+                        int month = p.nextIntValue(-1);
+                        int day = p.nextIntValue(-1);
+                        int hour = p.nextIntValue(-1);
+                        int minute = p.nextIntValue(-1);
+                        int second = p.nextIntValue(-1);
+                        int nano = p.nextIntValue(-1);
+                        p.nextToken();
+                        if (nano > 0) {
+                            return LocalDateTime.of(year, month, day, hour, minute, second, nano);
+                        }
+                        return LocalDateTime.of(year, month, day, hour, minute, second);
                     }
                     // 非法类型统一抛Jackson标准异常
                     return (LocalDateTime) ctxt.handleUnexpectedToken(LocalDateTime.class, p);

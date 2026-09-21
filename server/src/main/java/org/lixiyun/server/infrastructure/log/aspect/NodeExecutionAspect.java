@@ -125,14 +125,15 @@ public class NodeExecutionAspect {
 
         Throwable caughtException = null;
         Object result = null;
+        Map<String, Object> outputSummary = null;
         try {
             result = pjp.proceed();
+            outputSummary = toSummaryMap(summaryNode.outputSummary(state));
         } catch (Throwable t) {
             caughtException = t;
             throw t;
         } finally {
             try {
-                Map<String, Object> outputSummary = toSummaryMap(summaryNode.outputSummary(state));
                 updateNodeExecutionOnFinish(nodeExecution.getId(), startedAt, outputSummary, caughtException);
             } catch (Exception e) {
                 log.error("[节点执行日志拦截器-图节点] UPDATE traceId={}, nodeName={}", traceId, nodeName, e);
@@ -201,14 +202,15 @@ public class NodeExecutionAspect {
 
         Throwable caughtException = null;
         Object result = null;
+        Map<String, Object> outputSummary = null;
         try {
             result = pjp.proceed();
+            outputSummary = extractConversationOutputSummary(result);
         } catch (Throwable t) {
             caughtException = t;
             throw t;
         } finally {
             try {
-                Map<String, Object> outputSummary = extractConversationOutputSummary(result);
                 updateNodeExecutionOnFinish(nodeExecution.getId(), startedAt, outputSummary, caughtException);
             } catch (Exception e) {
                 log.error("[节点执行日志拦截器-会话节点] UPDATE traceId={}, nodeName={}", traceId, nodeName, e);

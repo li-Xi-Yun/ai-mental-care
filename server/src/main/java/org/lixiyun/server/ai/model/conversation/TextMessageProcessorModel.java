@@ -14,8 +14,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -249,12 +247,6 @@ public class TextMessageProcessorModel extends BaseModel {
         return call(chatModel, userPrompt, config, null);
     }
 
-    @Retryable(
-            label = "text-message-stream",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     @Override
     public Flux<NodeOutput> stream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doStream(chatModel, userPrompt, config, runnableConfig);

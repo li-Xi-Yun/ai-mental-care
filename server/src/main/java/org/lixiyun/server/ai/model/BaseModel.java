@@ -6,6 +6,8 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -24,7 +26,9 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +42,15 @@ import java.util.concurrent.Callable;
  *
  * <h3>设计要点 - null/空结果自动抛异常：</h3>
  * <p>
- * {@link #doCall} / {@link #doCallForResult} / {@link #doStream} 在模型返回null或响应内容为空时
+ * {@link #doCall} / {@link #doCallForResult} 在模型返回null或响应内容为空时
  * 直接抛出 {@link GraphRunnerException}，不再容忍静默失败。
- * 子类通过调用 {@link #executeWithRetry} 实现指数退避重试，重试参数从数据库 {@link AiNodeConfig} 中读取，
+ * 同步调用通过 {@link #executeWithRetry} 实现指数退避重试，重试参数从数据库 {@link AiNodeConfig} 中读取，
  * 未配置时回退到默认值（maxAttempts=3, delay=1000ms, multiplier=2）。
+ * </p>
+ * <p>
+ * {@link #doStream} 流式调用使用 Reactor {@code Flux.defer() + .retryWhen()} 实现响应式重试，
+ * 在 Flux 管道中实时检测 {@code AGENT_MODEL_FINISHED} 事件的 AssistantMessage 内容是否为空，
+ * 若为空则触发 Flux error signal，由 {@code retryWhen} 拦截后重新订阅并重新执行模型调用。
  * </p>
  * <ul>
  *     <li>{@link BusinessException} 不触发重试，直接抛出</li>
@@ -51,7 +60,7 @@ import java.util.concurrent.Callable;
  * <ul>
  *     <li>同步调用 → 子类实现 {@code call()} → 调用 {@link #executeWithRetry} → 委托 {@link #doCall}</li>
  *     <li>结构化输出 → 子类实现 {@code callForResult()} → 调用 {@link #executeWithRetry} → 委托 {@link #doCallForResult}</li>
- *     <li>流式调用 → 子类实现 {@code stream()} → 调用 {@link #executeWithRetry} → 委托 {@link #doStream}</li>
+ *     <li>流式调用 → 子类实现 {@code stream()} → 调用 {@link #doStream}（内置 {@code Flux.defer() + retryWhen} 重试）</li>
  * </ul>
  *
  * @author lixiyun
@@ -219,7 +228,24 @@ public abstract class BaseModel implements Model {
      * @throws GraphRunnerException 重试耗尽后仍失败
      */
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
-        return executeWithRetry(config, () -> doStreamInternal(chatModel, userPrompt, config, runnableConfig));
+        int maxAttempts = (config != null && config.getRetryMaxAttempts() != null) ? config.getRetryMaxAttempts() : 3;
+        long delay = (config != null && config.getRetryDelay() != null) ? config.getRetryDelay() : 1000;
+
+        return Flux.defer(() -> {
+                    try {
+                        return doStreamInternal(chatModel, userPrompt, config, runnableConfig);
+                    } catch (GraphRunnerException e) {
+                        return Flux.error(e);
+                    }
+                })
+                .retryWhen(
+                        Retry.backoff(maxAttempts, Duration.ofMillis(delay))
+                                .maxBackoff(Duration.ofSeconds(10))
+                                .filter(e -> e instanceof GraphRunnerException
+                                        || (e instanceof RuntimeException && e.getCause() instanceof GraphRunnerException))
+                                .doBeforeRetry(rs -> log.warn("[模型抽象类-流式重试] 节点：{}，第{}次重试，异常：{}",
+                                        getAgentName(), rs.totalRetries() + 1, rs.failure().getMessage()))
+                );
     }
 
     protected Flux<NodeOutput> doStream(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
@@ -227,7 +253,7 @@ public abstract class BaseModel implements Model {
     }
 
     /**
-     * doStream的底层实现（不含重试）
+     * doStream的底层实现（不含重试），在 Flux 管道中检测最终 AssistantMessage 是否为空
      */
     private Flux<NodeOutput> doStreamInternal(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         ReactAgent agent = buildAgent(chatModel, config);
@@ -247,7 +273,17 @@ public abstract class BaseModel implements Model {
             log.error("[模型抽象类] 模型流式返回为null，原始响应：{}", userPrompt);
             throw new GraphRunnerException("[" + getAgentName() + "] 模型流式返回null");
         }
-        return flux;
+
+        return flux.doOnNext(output -> {
+            if (output instanceof StreamingOutput so
+                    && so.getOutputType() == OutputType.AGENT_MODEL_FINISHED
+                    && so.message() instanceof AssistantMessage msg
+                    && StrUtil.isBlank(msg.getText())) {
+                log.warn("[模型抽象类] 检测到流式完成但AssistantMessage内容为空，节点：{}，将触发重试", getAgentName());
+                throw new RuntimeException(
+                        new GraphRunnerException("[" + getAgentName() + "] 模型流式完成但响应内容为空"));
+            }
+        });
     }
 
     /**

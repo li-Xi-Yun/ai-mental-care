@@ -14,8 +14,10 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionBas
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionDimensionTrend;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPADStat;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
+import org.lixiyun.pojo.entity.conversation.AssessmentFeedback;
 import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
+import org.lixiyun.server.mapper.AssessmentFeedbackMapper;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -68,6 +70,9 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
     private EmotionDiagnosisMapper emotionDiagnosisMapper;
 
     @Autowired
+    private AssessmentFeedbackMapper assessmentFeedbackMapper;
+
+    @Autowired
     @Qualifier("diagnosisThreadPoolTaskExecutor")
     private ThreadPoolTaskExecutor diagnosisExecutor;
 
@@ -116,7 +121,21 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
         );
         log.debug("输入侧-历史诊断摘要聚合-查询到最近{}条诊断记录", emotionDiagnosisList.size());
 
-        HistoryDiagnosisSummaryResult result = checkAndBuildSummary(emotionDiagnosisList);
+        // 查询历史诊断对应的反馈数据，构建 diagnosisId -> AssessmentFeedback 映射
+        Map<Long, AssessmentFeedback> feedbackMap = Collections.emptyMap();
+        if (!emotionDiagnosisList.isEmpty()) {
+            List<Long> diagnosisIds = emotionDiagnosisList.stream()
+                    .map(EmotionDiagnosis::getId)
+                    .collect(Collectors.toList());
+            List<AssessmentFeedback> feedbackList = assessmentFeedbackMapper.selectList(
+                    new LambdaQueryWrapper<AssessmentFeedback>()
+                            .in(AssessmentFeedback::getDiagnosisId, diagnosisIds)
+            );
+            feedbackMap = feedbackList.stream()
+                    .collect(Collectors.toMap(AssessmentFeedback::getDiagnosisId, Function.identity()));
+        }
+
+        HistoryDiagnosisSummaryResult result = checkAndBuildSummary(emotionDiagnosisList, feedbackMap);
 
         long count = emotionDiagnosisMapper.selectCount(
                 new LambdaQueryWrapper<EmotionDiagnosis>()
@@ -139,7 +158,8 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
      * @param emotionDiagnosisList 历史诊断结果集合（按创建时间降序）
      * @return 历史诊断摘要聚合结果
      */
-    private HistoryDiagnosisSummaryResult checkAndBuildSummary(List<EmotionDiagnosis> emotionDiagnosisList) {
+    private HistoryDiagnosisSummaryResult checkAndBuildSummary(List<EmotionDiagnosis> emotionDiagnosisList,
+                                                                  Map<Long, AssessmentFeedback> feedbackMap) {
         if (emotionDiagnosisList.isEmpty()) {
             log.info("输入侧-历史诊断摘要聚合-无历史诊断记录，返回首次诊断空摘要格式化提示词");
             return HistoryDiagnosisSummaryResult.builder()
@@ -147,7 +167,7 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
                     .firstDiagnosisPrompt(firstDiagnosisPrompt)
                     .build();
         }
-        return parallelAnalysis(emotionDiagnosisList);
+        return parallelAnalysis(emotionDiagnosisList, feedbackMap);
     }
 
     /**
@@ -167,11 +187,12 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
      * @param emotionDiagnosisList 历史诊断结果集合（按创建时间降序）
      * @return 五维度分析结果的聚合记录 {@link HistoryDiagnosisSummaryResult}
      */
-    private HistoryDiagnosisSummaryResult parallelAnalysis(List<EmotionDiagnosis> emotionDiagnosisList) {
+    private HistoryDiagnosisSummaryResult parallelAnalysis(List<EmotionDiagnosis> emotionDiagnosisList,
+                                                           Map<Long, AssessmentFeedback> feedbackMap) {
         CompletableFuture<SymptomEvolution> symptomEvolutionFuture = CompletableFuture.supplyAsync(() -> buildSymptomEvolution(emotionDiagnosisList), diagnosisExecutor);
         CompletableFuture<EmotionTrend> emotionTrendFuture = CompletableFuture.supplyAsync(() -> buildEmotionTrend(emotionDiagnosisList), diagnosisExecutor);
         CompletableFuture<DiagnosisSummary> diagnosisSummaryFuture = CompletableFuture.supplyAsync(() -> buildDiagnosisSummary(emotionDiagnosisList), diagnosisExecutor);
-        CompletableFuture<InterventionHistory> interventionHistoryFuture = CompletableFuture.supplyAsync(() -> buildInterventionHistory(emotionDiagnosisList), diagnosisExecutor);
+        CompletableFuture<InterventionHistory> interventionHistoryFuture = CompletableFuture.supplyAsync(() -> buildInterventionHistory(emotionDiagnosisList, feedbackMap), diagnosisExecutor);
         CompletableFuture<List<RiskPoints>> riskPointsListFuture = CompletableFuture.supplyAsync(() -> buildRiskPointsList(emotionDiagnosisList), diagnosisExecutor);
 
         CompletableFuture.allOf(symptomEvolutionFuture, emotionTrendFuture, diagnosisSummaryFuture, interventionHistoryFuture, riskPointsListFuture).join();
@@ -653,19 +674,23 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
      * @return 干预方案维度分析结果
      * @see InterventionHistory
      */
-    private InterventionHistory buildInterventionHistory(List<EmotionDiagnosis> emotionDiagnosisList) {
+    private InterventionHistory buildInterventionHistory(List<EmotionDiagnosis> emotionDiagnosisList,
+                                                          Map<Long, AssessmentFeedback> feedbackMap) {
         List<InterventionHistory.InterventionRecord> selfHelpList = new ArrayList<>();
         List<InterventionHistory.InterventionRecord> socialSupportList = new ArrayList<>();
         List<InterventionHistory.InterventionRecord> professionalList = new ArrayList<>();
 
         int highestPriority = -1;
         for (EmotionDiagnosis diagnosis : emotionDiagnosisList) {
+            AssessmentFeedback feedback = feedbackMap.get(diagnosis.getId());
+            Integer useSuggestion = feedback != null ? feedback.getUseSuggestion() : null;
+
             mergeInterventionRecord(selfHelpList, diagnosis.getSelfHelpSuggestion(),
-                    diagnosis.getAgreeSuggestionSelf(), diagnosis.getUseSuggestion(), diagnosis.getCreatedTime());
+                    feedback != null ? feedback.getAgreeSuggestionSelf() : null, useSuggestion, diagnosis.getCreatedTime());
             mergeInterventionRecord(socialSupportList, diagnosis.getSocialSupportSuggestion(),
-                    diagnosis.getAgreeSuggestionSocial(), diagnosis.getUseSuggestion(), diagnosis.getCreatedTime());
+                    feedback != null ? feedback.getAgreeSuggestionSocial() : null, useSuggestion, diagnosis.getCreatedTime());
             mergeInterventionRecord(professionalList, diagnosis.getProfessionalInterveneSuggestion(),
-                    diagnosis.getAgreeSuggestionProfessional(), diagnosis.getUseSuggestion(), diagnosis.getCreatedTime());
+                    feedback != null ? feedback.getAgreeSuggestionProfessional() : null, useSuggestion, diagnosis.getCreatedTime());
 
             Integer priority = diagnosis.getSuggestionPriority();
             if (priority != null && priority > highestPriority) {
@@ -822,7 +847,7 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
      * <p>
      * 建议文本为 null 或空白时跳过；否则构建新的干预记录追加到目标清单末尾，
      * 不做文本去重与反馈合并。认同反馈 agree 转换规则：
-     * agree == {@link EmotionDiagnosis#AGREE_YES} 时为 true，agree 非 null 时为 false，agree 为 null 时为 null。
+     * agree == {@link AssessmentFeedback#AGREE_YES} 时为 true，agree 非 null 时为 false，agree 为 null 时为 null。
      *
      * @param target         目标建议清单
      * @param suggestionText 建议原始文本（整条存入，不做拆分）
@@ -838,7 +863,7 @@ public class HistoryDiagnosisSummaryNode implements NodeActionWithConfig, NodeEx
         }
         Boolean agreed = null;
         if (agree != null) {
-            agreed = agree == EmotionDiagnosis.AGREE_YES;
+            agreed = agree == AssessmentFeedback.AGREE_YES;
         }
         target.add(InterventionHistory.InterventionRecord.builder()
                 .suggestionText(suggestionText)

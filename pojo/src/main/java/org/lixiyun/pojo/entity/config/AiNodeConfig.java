@@ -87,7 +87,7 @@ public class AiNodeConfig implements Serializable {
     /** 存在惩罚，增加新词出现概率 */
     private BigDecimal presencePenalty;
 
-    /** 重试最大次数 */
+    /** 重试最大次数，包含第一次执行 */
     private Integer retryMaxAttempts;
 
     /** 重试初始间隔（毫秒） */

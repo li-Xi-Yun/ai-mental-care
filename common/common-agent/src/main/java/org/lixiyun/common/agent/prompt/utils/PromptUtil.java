@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.properties.FileUrlProperties;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-04-17 19:30
  */
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class PromptUtil {
 
