@@ -52,12 +52,6 @@ public class InputResult implements Serializable {
      */
     private HistoryDiagnosisSummaryResult historyDiagnosisSummaryResult;
 
-    /**
-     * 诊断流程是否被中断
-     * <p>当输入侧节点判定数据不足以继续诊断时设为true，整个诊断流程将提前结束</p>
-     */
-    private boolean interrupted;
-
     public static String getPrompt() {
         return "sessionCleanResult：" + SessionCleanResult.getPrompt() + "，" +
                 "coreInfoExtractResult：" + CoreInfoExtractResult.getPrompt() + "，" +

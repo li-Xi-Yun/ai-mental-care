@@ -4,119 +4,212 @@
 <meta charset="UTF-8">
 <title>AI Mental Care - 前台（用户端）页面设计图</title>
 <style>
+:root {
+  --primary: #6c63ff;
+  --primary-dark: #3f3d9e;
+  --primary-light: #f0eeff;
+  --primary-lighter: #e8e6ff;
+  --success: #52c41a;
+  --warning: #fa8c16;
+  --danger: #ff4d4f;
+  --info: #1890ff;
+  --bg: #f0f2f5;
+  --card: #fff;
+  --text: #333;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --border: #e5e7eb;
+  --border-light: #f0f0f0;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  --tag-bg-blue: #e6f7ff;
+  --tag-text-blue: #1890ff;
+  --tag-bg-green: #f6ffed;
+  --tag-text-green: #52c41a;
+  --tag-bg-orange: #fff7e6;
+  --tag-text-orange: #fa8c16;
+  --tag-bg-red: #fff1f0;
+  --tag-text-red: #ff4d4f;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;padding-bottom:60px}
-.pt{text-align:center;padding:40px 0 8px;font-size:32px;font-weight:700;color:#1a1a2e}
-.ps{text-align:center;padding:0 0 30px;font-size:16px;color:#666}
-.sec{margin:0 auto 50px;max-width:1600px;padding:0 30px}
-.st{font-size:22px;font-weight:600;color:#1a1a2e;margin-bottom:8px;border-left:4px solid #6c63ff;padding-left:12px}
-.sd{font-size:14px;color:#888;margin-bottom:20px;padding-left:16px}
-.cd{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;margin-bottom:30px}
-.ch{padding:16px 20px;background:linear-gradient(135deg,#6c63ff,#3f3d9e);color:#fff;display:flex;align-items:center;justify-content:space-between}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);padding-bottom:60px;line-height:1.6}
+
+/* 顶部标题 */
+.pt{text-align:center;padding:48px 0 8px;font-size:34px;font-weight:800;color:#1a1a2e;letter-spacing:-0.5px}
+.ps{text-align:center;padding:0 0 32px;font-size:16px;color:var(--text-secondary)}
+.ps span{background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:12px;font-size:13px;font-weight:500;margin:0 4px}
+
+/* 大区块 */
+.sec{margin:0 auto 50px;max-width:1640px;padding:0 32px}
+.st{font-size:24px;font-weight:700;color:#1a1a2e;margin-bottom:6px;border-left:5px solid var(--primary);padding-left:14px;display:flex;align-items:center;gap:10px}
+.st .st-num{background:var(--primary);color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sd{font-size:14px;color:var(--text-muted);margin-bottom:24px;padding-left:19px}
+
+/* 卡片容器 */
+.cd{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px;transition:box-shadow .2s}
+.cd:hover{box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.ch{padding:16px 22px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;display:flex;align-items:center;justify-content:space-between}
 .ch h3{font-size:16px;font-weight:600}
-.ch .rt{font-size:12px;opacity:.8;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px}
-.cb{padding:20px}
-.wf{border:1px dashed #ccc;border-radius:8px;overflow:hidden;font-size:12px;color:#555}
-.pl{display:flex;flex-direction:column;min-height:420px}
-.ph{height:48px;background:#e8e6ff;display:flex;align-items:center;padding:0 16px;gap:16px;border-bottom:1px solid #d0cef8}
-.ph .logo{font-weight:700;color:#6c63ff;font-size:14px;margin-right:20px}
-.ph .ni{padding:4px 12px;border-radius:4px;font-size:12px}
-.ph .ni.a{background:#6c63ff;color:#fff}
-.ph .sp{flex:1}
-.ph .ua{width:28px;height:28px;border-radius:50%;background:#6c63ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer}
-.pm{flex:1;background:#fafafa;padding:16px}
-.bp{display:inline-block;padding:4px 12px;border-radius:4px;font-size:11px}
-.b1{background:#6c63ff;color:#fff}
-.b2{background:#fff;border:1px solid #d9d9d9;color:#333}
-.inp{border:1px solid #d9d9d9;border-radius:4px;padding:4px 8px;font-size:11px;display:inline-block;min-width:120px;background:#fff}
-.tg{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px}
-.tb{background:#e6f7ff;color:#1890ff}
-.tgn{background:#f6ffed;color:#52c41a}
-.to{background:#fff7e6;color:#fa8c16}
-.tr{background:#fff1f0;color:#ff4d4f}
-.wt{width:100%;border-collapse:collapse;font-size:11px}
-.wt th{background:#fafafa;padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600}
-.wt td{padding:6px 8px;border-bottom:1px solid #f0f0f0}
-.chg{background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#ad6800}
+.ch .rt{font-size:12px;opacity:.85;background:rgba(255,255,255,.2);padding:3px 12px;border-radius:20px;letter-spacing:.5px}
+.cb{padding:22px}
+
+/* 设计要点提示 */
+.chg{background:#fffbe6;border:1px solid #ffe58f;border-left:4px solid var(--warning);border-radius:var(--radius-xs);padding:10px 16px;margin-bottom:16px;font-size:13px;color:#ad6800;line-height:1.7}
 .chg b{color:#8c6d1f}
-.note{margin-top:10px;font-size:12px;color:#888;line-height:1.8}
-.csw{width:60px;height:60px;border-radius:10px;margin-bottom:4px}
-.csl{font-size:11px;color:#666}
-.csv{font-size:10px;color:#999}
+.chg .api-tag{display:inline-block;background:var(--primary-light);color:var(--primary);padding:0 6px;border-radius:4px;font-size:11px;margin:0 2px;font-weight:500}
+
+/* 线框图容器 */
+.wf{border:1px dashed #d0d0d0;border-radius:var(--radius-sm);overflow:hidden;font-size:12px;color:#555}
+
+/* 页面布局 */
+.pl{display:flex;flex-direction:column;min-height:420px}
+.ph{height:50px;background:var(--primary-lighter);display:flex;align-items:center;padding:0 18px;gap:18px;border-bottom:1px solid #d0cef8}
+.ph .logo{font-weight:700;color:var(--primary);font-size:14px;margin-right:22px;letter-spacing:.5px}
+.ph .ni{padding:5px 14px;border-radius:16px;font-size:12px;cursor:pointer;transition:.2s}
+.ph .ni.a{background:var(--primary);color:#fff;font-weight:500}
+.ph .ni:hover:not(.a){background:rgba(108,99,255,.1)}
+.ph .sp{flex:1}
+.ph .ua{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;font-weight:600}
+.pm{flex:1;background:#fafafa;padding:18px}
+
+/* 按钮样式 */
+.bp{display:inline-block;padding:5px 14px;border-radius:var(--radius-xs);font-size:11px;cursor:pointer;font-weight:500;transition:.2s}
+.b1{background:var(--primary);color:#fff;border:none}
+.b1:hover{background:var(--primary-dark)}
+.b2{background:#fff;border:1px solid #d9d9d9;color:var(--text)}
+.b2:hover{border-color:var(--primary);color:var(--primary)}
+.bp-pill{border-radius:20px}
+
+/* 输入框 */
+.inp{border:1px solid #d9d9d9;border-radius:var(--radius-xs);padding:5px 10px;font-size:11px;display:inline-block;min-width:130px;background:#fff;transition:.2s}
+.inp:focus-within{border-color:var(--primary);box-shadow:0 0 0 2px rgba(108,99,255,.1)}
+
+/* 标签颜色 */
+.tg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+.tb{background:var(--tag-bg-blue);color:var(--tag-text-blue)}
+.tgn{background:var(--tag-bg-green);color:var(--tag-text-green)}
+.to{background:var(--tag-bg-orange);color:var(--tag-text-orange)}
+.tr{background:var(--tag-bg-red);color:var(--tag-text-red)}
+
+/* 表格 */
+.wt{width:100%;border-collapse:collapse;font-size:11px}
+.wt th{background:#fafafa;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);font-weight:600;color:var(--text);white-space:nowrap}
+.wt td{padding:8px 10px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)}
+.wt tr:hover td{background:#fafafa}
+.wt .link{color:var(--primary);font-size:10px;cursor:pointer;font-weight:500}
+
+/* 分页 */
+.pgn{display:flex;justify-content:flex-end;margin-top:12px;gap:4px;align-items:center;font-size:11px}
+.pgn .pb{padding:3px 10px;border:1px solid #d9d9d9;border-radius:var(--radius-xs);font-size:11px;cursor:pointer;background:#fff;transition:.2s}
+.pgn .pb.a{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pgn .pb:hover:not(.a):not(.pbn){border-color:var(--primary);color:var(--primary)}
+.pgn .pbn{padding:3px 8px;font-size:11px;color:var(--text-muted);border:none;cursor:default;letter-spacing:1px}
+
+/* 面包屑 */
+.bc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-bottom:14px}
+.bc a{color:var(--primary);text-decoration:none}
+.bc a:hover{text-decoration:underline}
+.bc .cur{color:var(--text);font-weight:500}
+
+/* 颜色方块 */
+.csw{width:56px;height:56px;border-radius:var(--radius-xs);margin-bottom:4px}
+.csl{font-size:11px;color:var(--text-secondary);font-weight:500}
+.csv{font-size:10px;color:var(--text-muted)}
 .csi{text-align:center}
-.pgn{display:flex;justify-content:flex-end;margin-top:10px;gap:4px;align-items:center;font-size:11px}
-.pgn .pb{padding:2px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:11px}
-.pgn .pb.a{background:#6c63ff;color:#fff;border-color:#6c63ff}
-.bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#999;margin-bottom:12px}
-.bc a{color:#6c63ff;text-decoration:none}
-.bc .cur{color:#333;font-weight:500}
+
+/* 备注 */
+.note{margin-top:12px;font-size:12px;color:var(--text-muted);line-height:2;background:#fafafa;padding:12px 16px;border-radius:var(--radius-xs);border-left:3px solid var(--primary)}
+
+/* 数据字段表格 */
+.field-table{width:100%;font-size:11px;margin-top:10px}
+.field-table th{background:#fafafa;padding:5px 8px;text-align:left;border:1px solid var(--border-light);font-weight:600;font-size:10px}
+.field-table td{padding:5px 8px;border:1px solid var(--border-light);font-size:10px}
+.field-table .required{color:var(--danger);font-weight:600}
+.field-table .optional{color:var(--text-muted)}
+
+/* 网格布局 */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+/* 数据面板 */
+.data-panel{background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light)}
+.data-panel h4{font-size:13px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:6px}
+.data-panel h4 .icon{font-size:16px}
+.data-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px dashed #f5f5f5}
+.data-item .key{color:var(--text-muted);flex-shrink:0;margin-right:8px}
+.data-item .val{color:var(--text);text-align:right;font-weight:500}
+.data-section{margin-bottom:10px}
+.data-section .section-title{font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;padding-left:8px;border-left:3px solid var(--primary)}
 </style>
 </head>
 <body>
-<div class="pt">AI Mental Care 前台（用户端）页面设计图</div>
-<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 设计阶段 - 静态页面方案</div>
 
+<div class="pt">AI Mental Care 前台（用户端）页面设计图</div>
+<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 设计阶段 - 静态页面方案 ｜ <span>共 13 个界面</span></div>
+
+<!-- ===== 总览 ===== -->
 <div class="sec">
-<div class="st">前台页面总览</div>
-<div class="sd">共 11 个页面/组件，每个页面一行完整展示。根据 /server/controller/user 下所有接口设计</div>
+<div class="st"><span class="st-num">📋</span>前台页面总览</div>
+<div class="sd">共 13 个页面/组件/弹窗，全面覆盖 /server/controller/user 和 /server/controller/common 下所有接口的参数与返回值</div>
+</div>
 
 <!-- ========== 1. 首页 ========== -->
 <div class="cd">
 <div class="ch"><h3>1. 首页</h3><span class="rt">/</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>平台入口页，展示平台介绍、核心功能卡片、快速入口。引导用户进入AI对话或量表测评</div>
+<div class="chg"><b>设计要点：</b>平台入口页，展示平台介绍、核心功能卡片、快速入口。引导用户进入AI对话或量表测评。<b>无API调用，纯静态展示</b></div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
 <span class="logo">AI Mental Care</span>
-<span class="ni a">首页</span>
-<span class="ni">AI对话</span>
-<span class="ni">心理诊断</span>
-<span class="ni">量表测评</span>
-<span class="ni">个人中心</span>
+<span class="ni a">首页</span><span class="ni">AI对话</span><span class="ni">心理评估</span><span class="ni">量表测评</span><span class="ni">个人中心</span>
 <span class="sp"></span>
-<span style="font-size:11px;color:#6c63ff;cursor:pointer;">登录</span>
-<span style="font-size:11px;color:#6c63ff;cursor:pointer;">注册</span>
+<span style="font-size:11px;color:var(--primary);cursor:pointer;">登录</span>
+<span style="font-size:11px;color:var(--primary);cursor:pointer;">注册</span>
 </div>
 <div class="pm" style="text-align:center;">
 <div style="padding:30px 0 16px;">
-<div style="font-size:28px;font-weight:700;color:#1a1a2e;margin-bottom:6px;">AI Mental Care</div>
-<div style="font-size:14px;color:#666;margin-bottom:20px;">AI 心理健康关怀平台 — 倾听你的心声，守护你的心灵</div>
+<div style="font-size:30px;font-weight:800;color:#1a1a2e;margin-bottom:6px;letter-spacing:-1px">AI Mental Care</div>
+<div style="font-size:15px;color:var(--text-secondary);margin-bottom:22px;">AI 心理健康关怀平台 — 倾听你的心声，守护你的心灵</div>
 </div>
-<div style="display:flex;justify-content:center;gap:20px;margin-bottom:24px;">
-<div style="background:#fff;border-radius:12px;padding:20px;width:180px;border:1px solid #f0f0f0;text-align:center;">
-<div style="font-size:32px;margin-bottom:8px;">💬</div>
+<div style="display:flex;justify-content:center;gap:20px;margin-bottom:24px;flex-wrap:wrap;">
+<div style="background:#fff;border-radius:var(--radius-sm);padding:22px;width:185px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="font-size:36px;margin-bottom:10px;">💬</div>
 <div style="font-size:14px;font-weight:600;margin-bottom:4px;">AI 智能对话</div>
-<div style="font-size:11px;color:#999;margin-bottom:10px;">与AI心理助手畅聊，获取情绪分析与支持</div>
-<span class="bp b1" style="font-size:10px;">开始对话</span>
+<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">与AI心理助手畅聊，获取情绪支持</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始对话</span>
 </div>
-<div style="background:#fff;border-radius:12px;padding:20px;width:180px;border:1px solid #f0f0f0;text-align:center;">
-<div style="font-size:32px;margin-bottom:8px;">📋</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:22px;width:185px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="font-size:36px;margin-bottom:10px;">📋</div>
 <div style="font-size:14px;font-weight:600;margin-bottom:4px;">量表测评</div>
-<div style="font-size:11px;color:#999;margin-bottom:10px;">专业心理量表自评，了解心理状态</div>
-<span class="bp b1" style="font-size:10px;">开始测评</span>
+<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">专业心理量表自评，了解心理状态</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
 </div>
-<div style="background:#fff;border-radius:12px;padding:20px;width:180px;border:1px solid #f0f0f0;text-align:center;">
-<div style="font-size:32px;margin-bottom:8px;">🧠</div>
-<div style="font-size:14px;font-weight:600;margin-bottom:4px;">心理诊断</div>
-<div style="font-size:11px;color:#999;margin-bottom:10px;">AI生成诊断报告，全面评估心理状况</div>
-<span class="bp b1" style="font-size:10px;">查看诊断</span>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:22px;width:185px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="font-size:36px;margin-bottom:10px;">🧠</div>
+<div style="font-size:14px;font-weight:600;margin-bottom:4px;">心理评估</div>
+<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">AI生成评估报告，了解心理状况</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">查看评估</span>
 </div>
 </div>
-<div style="background:#fff;border-radius:8px;padding:16px;max-width:600px;margin:0 auto;border:1px solid #f0f0f0;text-align:left;">
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px 20px;max-width:640px;margin:0 auto;border:1px solid var(--border-light);text-align:left;box-shadow:var(--shadow-sm);">
 <div style="font-size:13px;font-weight:600;margin-bottom:8px;">📢 平台公告</div>
-<div style="font-size:11px;color:#666;line-height:1.8;">
+<div style="font-size:11px;color:var(--text-secondary);line-height:1.9;">
 <div>• 新增SCL-90症状自评量表，欢迎体验</div>
 <div>• AI对话支持语音输入，更便捷地倾诉心声</div>
-<div>• 心理诊断报告支持反馈评分，帮助我们改进</div>
+<div>• 心理评估报告支持反馈评分，帮助我们改进</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>HeroBanner（平台介绍）、FeatureCard（功能卡片×3）、QuickEntry（快速入口）、AnnouncementBar（公告栏）<br/>
-<b>交互：</b>点击功能卡片 → 跳转对应页面（AI对话/量表测评/心理诊断）→ 未登录时点击跳转触发登录弹窗
+<b>组件：</b>HeroBanner、FeatureCard（×3）、QuickEntry、AnnouncementBar<br/>
+<b>接口：</b>无（纯静态页面）
 </div>
 </div>
 </div>
@@ -125,46 +218,60 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>2. 登录/注册弹窗</h3><span class="rt">Dialog 弹窗（非独立页面）</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>不是独立页面，而是弹窗（Dialog）。用户点击导航栏"登录"或"注册"按钮时弹出，支持 Tab 切换登录/注册，关闭后回到原页面</div>
-<div class="wf" style="min-height:460px;position:relative;background:#fafafa;">
-<div style="padding:16px;opacity:.5;">
-<div style="height:40px;background:#e8e6ff;border-radius:6px;display:flex;align-items:center;padding:0 16px;gap:16px;margin-bottom:12px;">
-<span style="font-weight:700;color:#6c63ff;font-size:13px;">AI Mental Care</span>
-<span style="font-size:11px;">首页</span>
-<span style="font-size:11px;">AI对话</span>
-<span style="font-size:11px;">心理诊断</span>
-<span style="font-size:11px;">量表测评</span>
-<span style="font-size:11px;">个人中心</span>
-<span style="flex:1;"></span>
-<span style="font-size:11px;color:#6c63ff;cursor:pointer;">登录</span>
-<span style="font-size:11px;color:#6c63ff;cursor:pointer;">注册</span>
+<div class="chg">
+<b>设计要点：</b>弹窗（Dialog）。用户点击导航栏"登录"或"注册"时弹出，支持 Tab 切换。<b>必须包含验证码输入</b>（先调 <span class="api-tag">GET /common/verification/code</span> 获取验证码图片和key）
 </div>
-<div style="height:280px;background:#fff;border-radius:6px;border:1px solid #f0f0f0;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;">当前页面内容区域（被遮罩覆盖）</div>
+<div class="wf" style="min-height:480px;position:relative;background:#fafafa;">
+<div style="padding:18px;opacity:.5;">
+<div style="height:42px;background:var(--primary-lighter);border-radius:var(--radius-xs);display:flex;align-items:center;padding:0 18px;gap:18px;margin-bottom:14px;">
+<span style="font-weight:700;color:var(--primary);font-size:13px;">AI Mental Care</span>
+<span style="font-size:11px;">首页</span><span style="font-size:11px;">AI对话</span><span style="font-size:11px;">心理诊断</span><span style="font-size:11px;">量表测评</span><span style="font-size:11px;">个人中心</span>
+<span style="flex:1;"></span>
+<span style="font-size:11px;color:var(--primary);cursor:pointer;">登录</span>
+<span style="font-size:11px;color:var(--primary);cursor:pointer;">注册</span>
+</div>
+<div style="height:300px;background:#fff;border-radius:var(--radius-xs);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;">当前页面内容区域（被遮罩覆盖）</div>
 </div>
 <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;">
-<div style="background:#fff;border-radius:12px;padding:28px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
-<div style="text-align:center;font-size:18px;font-weight:700;color:#6c63ff;margin-bottom:4px;">AI Mental Care</div>
-<div style="text-align:center;font-size:11px;color:#999;margin-bottom:16px;">AI 心理健康关怀平台</div>
-<div style="display:flex;margin-bottom:16px;border-bottom:2px solid #f0f0f0;">
-<div style="flex:1;text-align:center;padding:8px 0;font-size:12px;font-weight:600;color:#6c63ff;border-bottom:2px solid #6c63ff;margin-bottom:-2px;">登录</div>
-<div style="flex:1;text-align:center;padding:8px 0;font-size:12px;color:#999;">注册</div>
+<div style="background:#fff;border-radius:var(--radius);padding:30px;width:370px;box-shadow:0 12px 40px rgba(0,0,0,.25);">
+<div style="text-align:center;font-size:20px;font-weight:700;color:var(--primary);margin-bottom:2px;">AI Mental Care</div>
+<div style="text-align:center;font-size:11px;color:var(--text-muted);margin-bottom:18px;">AI 心理健康关怀平台</div>
+<div style="display:flex;margin-bottom:18px;border-bottom:2px solid var(--border-light);">
+<div style="flex:1;text-align:center;padding:9px 0;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;">登录</div>
+<div style="flex:1;text-align:center;padding:9px 0;font-size:13px;color:var(--text-muted);">注册</div>
 </div>
-<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">用户名</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入用户名</div></div>
-<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:#666;margin-bottom:3px;">密码</label><div style="border:1px solid #d9d9d9;border-radius:6px;padding:7px 10px;font-size:11px;color:#999;">请输入密码</div></div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;font-size:10px;">
-<label style="color:#666;"><input type="checkbox" checked/> 记住我</label>
-<a href="#" style="color:#6c63ff;">忘记密码？</a>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:var(--text-secondary);margin-bottom:4px;">用户名 <span style="color:var(--text-muted)">(username)</span></label><div class="inp" style="width:100%;color:var(--text-muted);">请输入用户名</div></div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:var(--text-secondary);margin-bottom:4px;">密码 <span style="color:var(--text-muted)">(password)</span></label><div class="inp" style="width:100%;color:var(--text-muted);">请输入密码</div></div>
+<div style="margin-bottom:10px;"><label style="display:block;font-size:11px;color:var(--text-secondary);margin-bottom:4px;">验证码 <span style="color:var(--text-muted)">(code)</span> <span style="color:var(--danger)">*必填</span></label>
+<div style="display:flex;gap:8px;align-items:center;">
+<div class="inp" style="width:130px;color:var(--text-muted);">请输入验证码</div>
+<div style="width:80px;height:34px;background:#e8e8e8;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#666;letter-spacing:3px;flex-shrink:0;" title="验证码图片（base64）">A3K9</div>
+<span style="font-size:10px;color:var(--primary);cursor:pointer;">换一张</span>
 </div>
-<div style="width:100%;padding:8px;background:#6c63ff;color:#fff;border-radius:6px;font-size:12px;text-align:center;margin-top:8px;">登 录</div>
-<div style="text-align:center;margin-top:10px;font-size:10px;color:#999;">其他方式：<span style="color:#6c63ff;">微信</span> | <span style="color:#6c63ff;">手机验证码</span></div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">隐藏字段: key → 存在Redis中的验证码答案key，由<span class="api-tag">/common/verification/code</span>返回</div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:11px;">
+<label style="color:var(--text-secondary);"><input type="checkbox" checked/> 记住我</label>
+<a href="#" style="color:var(--primary);">忘记密码？</a>
+</div>
+<div style="width:100%;padding:9px;background:var(--primary);color:#fff;border-radius:var(--radius-xs);font-size:13px;text-align:center;margin-top:10px;cursor:pointer;font-weight:500;">登 录</div>
+<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-muted);">其他方式：<span style="color:var(--primary);">微信</span> | <span style="color:var(--primary);">手机验证码</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>LoginDialog（弹窗容器）、LoginForm / RegisterForm（Tab切换）<br/>
-<b>接口：</b>POST /user/account/login（登录）、POST /user/account/register（注册）、POST /user/account/logout（登出）<br/>
-<b>交互：</b>点击导航栏"登录"弹出 → Tab切换登录/注册 → 表单校验 → 关闭弹窗回到原页面<br/>
-<b>路由：</b>不需要 /login 独立路由，弹窗由 Pinia store 控制显隐
+<b>组件：</b>LoginDialog、LoginForm / RegisterForm（Tab切换）、VerificationCodeImage<br/>
+<b>接口列表：</b><br/>
+&nbsp;&nbsp;请求参数 → <span class="api-tag">POST /user/account/login</span> ← 返回值<br/>
+&nbsp;&nbsp;<b>LoginUserDTO:</b> username, password, <span class="required">code</span>(验证码), key(验证码key)<br/>
+&nbsp;&nbsp;<b>LoginResultVO:</b> token, roles<br/>
+<br/>
+&nbsp;&nbsp;请求参数 → <span class="api-tag">POST /user/account/register</span> ← 返回值<br/>
+&nbsp;&nbsp;<b>RegisterUserDTO:</b> username, password, <span class="required">code</span>, <span class="required">key</span><br/>
+&nbsp;&nbsp;<b>返回值:</b> void<br/>
+<br/>
+&nbsp;&nbsp;依赖接口 → <span class="api-tag">POST /common/verification/code</span>（获取验证码图片base64 + Redis key）<br/>
+&nbsp;&nbsp;<b>交互：</b>弹窗打开时自动调用获取验证码 → 用户输入验证码 → 点击登录/注册 → Pinia store 控制弹窗显隐
 </div>
 </div>
 </div>
@@ -173,139 +280,151 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>3. AI 对话页（三栏布局）</h3><span class="rt">/conversation</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>左栏（会话列表，窄列仿豆包）+ 中栏（聊天窗口）+ 右栏（情绪分析面板，多个数据项列表）。三栏相互独立，可分别打开/关闭。输入框紧凑仿豆包风格，支持文字和语音输入。会话支持重命名和删除</div>
+<div class="chg"><b>设计要点：</b>左栏（会话列表）+ 中栏（聊天窗口）+ 右栏（情绪分析面板，多个数据项）。输入框仿豆包风格，支持文字和语音。会话支持重命名(传<span class="api-tag">ConversationInfoDTO.name</span>)和删除</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
 <span class="logo">AI Mental Care</span>
-<span class="ni">首页</span>
-<span class="ni a">AI对话</span>
-<span class="ni">心理诊断</span>
-<span class="ni">量表测评</span>
-<span class="ni">个人中心</span>
-<span class="sp"></span>
-<span class="ua">U</span>
+<span class="ni">首页</span><span class="ni a">AI对话</span><span class="ni">心理诊断</span><span class="ni">量表测评</span><span class="ni">个人中心</span>
+<span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm" style="padding:0;">
-<div style="display:flex;height:380px;">
-<!-- 左栏：会话列表（窄列，仿豆包） -->
-<div style="width:180px;background:#fafafa;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;">
-<div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
-<span style="font-size:12px;font-weight:600;color:#333;">会话列表</span>
-<span style="cursor:pointer;font-size:14px;color:#6c63ff;" title="新建会话">✚</span>
+<div style="display:flex;height:400px;">
+<!-- 左栏 -->
+<div style="width:180px;background:#fafafa;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;">
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;">
+<span style="font-size:12px;font-weight:600;">会话列表</span>
+<span style="cursor:pointer;font-size:14px;color:var(--primary);" title="新建会话">✚</span>
 </div>
 <div style="flex:1;overflow:hidden;">
-<div style="padding:7px 10px;background:#f0eeff;border-left:2px solid #6c63ff;border-bottom:1px solid #f0f0f0;">
-<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">心情困扰与工作压力</div>
-<div style="font-size:9px;color:#999;margin-top:1px;">今天 14:30</div>
+<div style="padding:8px 10px;background:var(--primary-light);border-left:2px solid var(--primary);">
+<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="ConversationVO.name">心情困扰与工作压力</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">updatedTime: 今天 14:30</div>
 </div>
-<div style="padding:7px 10px;border-bottom:1px solid #f0f0f0;">
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
 <div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">工作压力讨论</div>
-<div style="font-size:9px;color:#999;margin-top:1px;">昨天</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">昨天</div>
 </div>
-<div style="padding:7px 10px;border-bottom:1px solid #f0f0f0;">
-<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">睡眠问题咨询</div>
-<div style="font-size:9px;color:#999;margin-top:1px;">3天前</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">睡眠问题咨询</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">3天前</div>
 </div>
-<div style="padding:7px 10px;border-bottom:1px solid #f0f0f0;">
-<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">人际关系困扰</div>
-<div style="font-size:9px;color:#999;margin-top:1px;">5天前</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">人际关系困惑</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">5天前</div>
 </div>
-<div style="padding:7px 10px;border-bottom:1px solid #f0f0f0;">
-<div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">家庭关系沟通</div>
-<div style="font-size:9px;color:#999;margin-top:1px;">1周前</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">考试焦虑应对</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">09-12</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">自我成长探索</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">09-10</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">家庭关系调解</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">09-05</div>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid var(--border-light);">
+<div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">情绪低落倾诉</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:1px;">09-01</div>
 </div>
 </div>
 </div>
-<!-- 中栏：聊天窗口 -->
+<!-- 中栏 -->
 <div style="flex:1;display:flex;flex-direction:column;background:#fafafa;min-width:0;">
-<div style="height:36px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 10px;justify-content:space-between;">
+<div style="height:38px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;justify-content:space-between;">
 <span style="font-size:12px;font-weight:500;">心情困扰与工作压力</span>
 <div style="display:flex;gap:6px;">
-<span style="font-size:10px;color:#999;cursor:pointer;padding:2px 6px;border:1px solid #e5e7eb;border-radius:3px;" title="显示/隐藏会话列表">☰</span>
-<span style="font-size:10px;color:#999;cursor:pointer;padding:2px 6px;border:1px solid #e5e7eb;border-radius:3px;" title="显示/隐藏情绪分析">📊</span>
-<span style="font-size:10px;color:#999;cursor:pointer;padding:2px 6px;border:1px solid #e5e7eb;border-radius:3px;" title="重命名会话">✏️</span>
-<span style="font-size:10px;color:#ff4d4f;cursor:pointer;padding:2px 6px;border:1px solid #e5e7eb;border-radius:3px;" title="删除会话">🗑</span>
+<!-- 重命名：展示 ConversationInfoDTO.name 字段 -->
+<span style="font-size:10px;color:var(--text-muted);cursor:pointer;padding:2px 8px;border:1px solid var(--border);border-radius:4px;" title="重命名 → PUT /conversation/{id}/name，传 ConversationInfoDTO{name}">✏️ 重命名</span>
+<span style="font-size:10px;color:var(--danger);cursor:pointer;padding:2px 8px;border:1px solid var(--border);border-radius:4px;" title="删除 → DELETE /conversation/{id}">🗑 删除</span>
+<span style="font-size:10px;color:var(--text-muted);cursor:pointer;padding:2px 8px;border:1px solid var(--border);border-radius:4px;" title="显隐左栏">☰</span>
+<span style="font-size:10px;color:var(--text-muted);cursor:pointer;padding:2px 8px;border:1px solid var(--border);border-radius:4px;" title="显隐右栏">📊</span>
 </div>
 </div>
-<div style="flex:1;padding:10px;overflow:hidden;">
-<div style="display:flex;margin-bottom:8px;">
-<div style="width:24px;height:24px;border-radius:50%;background:#6c63ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;margin-right:6px;flex-shrink:0;">AI</div>
-<div style="max-width:70%;padding:6px 10px;border-radius:10px 10px 10px 2px;font-size:11px;line-height:1.5;background:#fff;border:1px solid #e5e7eb;">你好！我是你的AI心理健康助手，有什么想和我聊聊的吗？</div>
+<div style="flex:1;padding:12px;overflow:hidden;">
+<div style="display:flex;margin-bottom:10px;">
+<div style="width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;margin-right:8px;flex-shrink:0;font-weight:600;">AI</div>
+<div style="max-width:70%;padding:7px 12px;border-radius:12px 12px 12px 2px;font-size:11px;line-height:1.6;background:#fff;border:1px solid var(--border);">你好！我是你的AI心理健康助手，有什么想和我聊聊的吗？</div>
 </div>
-<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-<div style="max-width:70%;padding:6px 10px;border-radius:10px 10px 2px 10px;font-size:11px;line-height:1.5;background:#6c63ff;color:#fff;">最近工作压力很大，经常失眠...</div>
+<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+<div style="max-width:70%;padding:7px 12px;border-radius:12px 12px 2px 12px;font-size:11px;line-height:1.6;background:var(--primary);color:#fff;">最近工作压力很大，经常失眠...</div>
 </div>
-<div style="display:flex;margin-bottom:8px;">
-<div style="width:24px;height:24px;border-radius:50%;background:#6c63ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;margin-right:6px;flex-shrink:0;">AI</div>
-<div style="max-width:70%;padding:6px 10px;border-radius:10px 10px 10px 2px;font-size:11px;line-height:1.5;background:#fff;border:1px solid #e5e7eb;">我理解工作压力带来的困扰，能具体说说是什么让你感到压力吗？</div>
-</div>
-<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-<div style="max-width:70%;padding:6px 10px;border-radius:10px 10px 2px 10px;font-size:11px;line-height:1.5;background:#6c63ff;color:#fff;">主要是项目截止日期临近，加上和同事沟通也不太顺畅...</div>
+<div style="display:flex;margin-bottom:10px;">
+<div style="width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;margin-right:8px;flex-shrink:0;font-weight:600;">AI</div>
+<div style="max-width:70%;padding:7px 12px;border-radius:12px 12px 12px 2px;font-size:11px;line-height:1.6;background:#fff;border:1px solid var(--border);">我理解工作压力带来的困扰，能具体说说是什么让你感到压力吗？<br/><span style="font-size:9px;color:var(--text-muted);">type: ASSISTANT | roundNum: 3</span></div>
 </div>
 </div>
-<!-- 输入框：仿豆包紧凑风格 -->
-<div style="padding:6px 10px;background:#fff;border-top:1px solid #e5e7eb;">
-<div style="display:flex;align-items:center;gap:6px;background:#f5f5f5;border-radius:20px;padding:4px 8px 4px 12px;">
-<div style="flex:1;font-size:11px;color:#999;min-height:22px;line-height:22px;">输入消息...</div>
-<span style="cursor:pointer;font-size:14px;color:#999;" title="语音输入">🎤</span>
-<span style="cursor:pointer;font-size:14px;color:#6c63ff;font-weight:700;" title="发送">↑</span>
+<div style="padding:8px 14px;background:#fff;border-top:1px solid var(--border);">
+<div style="display:flex;align-items:center;gap:8px;background:#f5f5f5;border-radius:24px;padding:5px 10px 5px 14px;">
+<span style="flex:1;font-size:11px;color:var(--text-muted);min-height:24px;line-height:24px;" title="UserMessageSendDTO.message">输入消息...</span>
+<span style="cursor:pointer;font-size:15px;color:var(--text-muted);" title="语音输入">🎤</span>
+<span style="cursor:pointer;font-size:16px;color:var(--primary);font-weight:700;width:24px;height:24px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;" title="发送 → POST /ai-chat/user-message">↑</span>
+</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:3px;text-align:center;">
+发送后返回: <span class="api-tag">UserMessageSendVO{conversationId, currentRound}</span>
 </div>
 </div>
 </div>
-<!-- 右栏：情绪分析面板（多个数据项列表） -->
-<div style="width:240px;background:#fff;border-left:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;">
-<div style="padding:8px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+<!-- 右栏 -->
+<div style="width:240px;background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;">
+<div style="padding:8px 12px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;">
 <span style="font-size:12px;font-weight:600;">情绪分析</span>
-<span style="font-size:10px;color:#999;cursor:pointer;">✕</span>
+<span style="font-size:10px;color:var(--text-muted);cursor:pointer;">✕</span>
 </div>
 <div style="flex:1;padding:6px;overflow-y:auto;font-size:10px;">
-<!-- 情绪数据项1：展开状态 -->
-<div style="margin-bottom:6px;background:#f8f7ff;border-radius:6px;border:1px solid #e8e6ff;overflow:hidden;">
-<div style="padding:6px 8px;display:flex;align-items:center;gap:4px;cursor:pointer;">
-<span style="font-size:9px;color:#999;">第6轮</span>
-<span style="flex:1;font-size:9px;color:#999;">14:30</span>
-<span class="tg to" style="font-size:8px;">焦虑</span>
-<span style="font-size:8px;color:#6c63ff;">▼</span>
+<!-- 展开项 -->
+<div style="margin-bottom:6px;background:#f8f7ff;border-radius:var(--radius-xs);border:1px solid var(--primary-lighter);overflow:hidden;">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);" title="EmotionAnalysisVO.roundNum">第6轮</span>
+<span style="flex:1;font-size:9px;color:var(--text-muted);" title="createdTime">14:30</span>
+<span class="tg to" style="font-size:8px;" title="emotionLabel">焦虑</span>
+<span style="font-size:8px;color:var(--primary);">▼</span>
 </div>
-<div style="padding:4px 8px 6px;border-top:1px solid #e8e6ff;font-size:9px;color:#666;line-height:1.6;">
+<div style="padding:4px 10px 8px;border-top:1px solid var(--primary-lighter);font-size:9px;color:var(--text-secondary);line-height:1.6;">
 <div style="display:flex;gap:6px;margin-bottom:3px;">
-<div style="width:28px;height:28px;border-radius:50%;background:conic-gradient(#ff6b6b 0% 45%,#fa8c16 45% 70%,#6c63ff 70% 100%);flex-shrink:0;"></div>
-<div style="line-height:1.5;">
-<span style="color:#ff6b6b;">●</span> 焦虑45% <span style="color:#fa8c16;">●</span> 低落25%<br/>
-<span style="color:#6c63ff;">●</span> 平静30%
+<div style="width:30px;height:30px;border-radius:50%;background:conic-gradient(#ff6b6b 0% 45%,#fa8c16 45% 70%,var(--primary) 70% 100%);flex-shrink:0;" title="负向45%/正向15%/中性..."></div>
+<div>
+<span style="color:#ff6b6b;">●</span> 焦虑45% <span style="color:var(--warning);">●</span> 低落25% <span style="color:var(--primary);">●</span> 平静30%</div>
+</div>
+<div><b>置信度(<span title="emotionConfidence">0.92</span>):</b> 0.92 | <b>强度(<span title="emotionIntensity">0.85</span>):</b> 0.85</div>
+<div><b>趋势(<span title="emotionTrend">↑</span>):</b> ↑ 较上轮上升</div>
+<div><b>PAD:</b> <span title="pScore">P-0.3</span> <span title="aScore">A+0.6</span> <span title="dScore">D-0.2</span></div>
+<div><b>子标签(<span title="emotionSubLabel">烦躁</span>):</b> 烦躁</div>
+<div style="margin-top:3px;"><span style="color:var(--primary);cursor:pointer;" title="GET /emotion-analysis/detail/{id} → EmotionAnalysisDetailVO">📄 查看对话详情 →</span></div>
 </div>
 </div>
-<div><b>置信度：</b>0.92 | <b>强度：</b>0.85</div>
-<div><b>趋势：</b>↑ 较上轮上升</div>
-<div><b>PAD：</b>P-0.3 A+0.6 D-0.2</div>
+<!-- 折叠项 -->
+<div style="margin-bottom:6px;background:#fafafa;border-radius:var(--radius-xs);border:1px solid var(--border-light);">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);">第5轮</span><span style="flex:1;font-size:9px;color:var(--text-muted);">14:22</span>
+<span class="tg to">低落</span><span style="font-size:8px;color:var(--text-muted);">▶</span>
 </div>
 </div>
-<!-- 情绪数据项2：折叠状态 -->
-<div style="margin-bottom:6px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;">
-<div style="padding:6px 8px;display:flex;align-items:center;gap:4px;cursor:pointer;">
-<span style="font-size:9px;color:#999;">第5轮</span>
-<span style="flex:1;font-size:9px;color:#999;">14:22</span>
-<span class="tg to" style="font-size:8px;">低落</span>
-<span style="font-size:8px;color:#999;">▶</span>
+<div style="margin-bottom:6px;background:#fafafa;border-radius:var(--radius-xs);border:1px solid var(--border-light);">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);">第4轮</span><span style="flex:1;font-size:9px;color:var(--text-muted);">14:15</span>
+<span class="tg tgn">平静</span><span style="font-size:8px;color:var(--text-muted);">▶</span>
 </div>
 </div>
-<!-- 情绪数据项3 -->
-<div style="margin-bottom:6px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;">
-<div style="padding:6px 8px;display:flex;align-items:center;gap:4px;cursor:pointer;">
-<span style="font-size:9px;color:#999;">第4轮</span>
-<span style="flex:1;font-size:9px;color:#999;">14:15</span>
-<span class="tg tgn" style="font-size:8px;">平静</span>
-<span style="font-size:8px;color:#999;">▶</span>
+<div style="margin-bottom:6px;background:#fafafa;border-radius:var(--radius-xs);border:1px solid var(--border-light);">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);">第3轮</span><span style="flex:1;font-size:9px;color:var(--text-muted);">14:08</span>
+<span class="tg tb">紧张</span><span style="font-size:8px;color:var(--text-muted);">▶</span>
 </div>
 </div>
-<!-- 情绪数据项4 -->
-<div style="margin-bottom:6px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0;">
-<div style="padding:6px 8px;display:flex;align-items:center;gap:4px;cursor:pointer;">
-<span style="font-size:9px;color:#999;">第3轮</span>
-<span style="flex:1;font-size:9px;color:#999;">14:08</span>
-<span class="tg tb" style="font-size:8px;">紧张</span>
-<span style="font-size:8px;color:#999;">▶</span>
+<div style="margin-bottom:6px;background:#fafafa;border-radius:var(--radius-xs);border:1px solid var(--border-light);">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);">第2轮</span><span style="flex:1;font-size:9px;color:var(--text-muted);">14:01</span>
+<span class="tg tgn">平静</span><span style="font-size:8px;color:var(--text-muted);">▶</span>
+</div>
+</div>
+<div style="margin-bottom:6px;background:#fafafa;border-radius:var(--radius-xs);border:1px solid var(--border-light);">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+<span style="font-size:9px;color:var(--text-muted);">第1轮</span><span style="flex:1;font-size:9px;color:var(--text-muted);">13:55</span>
+<span class="tg tb">期待</span><span style="font-size:8px;color:var(--text-muted);">▶</span>
+</div>
 </div>
 </div>
 </div>
@@ -314,15 +433,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>SessionList（左栏会话列表，可隐藏）、ChatWindow（中栏聊天窗口）、EmotionPanel（右栏情绪分析，可隐藏）、EmotionItem（单个情绪数据项，可折叠）、AudioInput（语音输入组件）<br/>
-<b>接口：</b><br/>
-&nbsp;&nbsp;会话：POST /user/conversation/list（会话列表）、PUT /user/conversation/{id}/name（重命名）、DELETE /user/conversation/{id}（删除）<br/>
-&nbsp;&nbsp;对话：POST /user/conversation/ai-chat/user-message（发送消息）、POST /user/conversaion/dialogue/{id}/memory（对话记录）<br/>
-&nbsp;&nbsp;情绪：POST /user/conversation/emotion-analysis/list/{id}（情绪列表）、GET /user/conversation/emotion-analysis/detail/{id}（情绪详情）<br/>
-&nbsp;&nbsp;语音：POST /user/conversation/audio/init（初始化）、WS /message/send（发送）、WS /interrupt（中断）、DELETE /user/conversation/audio/{id}/end（结束）<br/>
-<b>三栏控制：</b>中栏顶部工具栏有「☰」和「📊」两个开关按钮，分别控制左栏和右栏的显示/隐藏<br/>
-<b>右栏数据：</b>按对话轮次时间从新到旧排序，每项默认显示：轮次号+时间+主情绪标签，点击展开详情：情绪占比、置信度、强度、趋势、PAD值<br/>
-<b>输入框：</b>仿豆包紧凑圆角输入框，右侧语音🎤和发送↑按钮，语音模式通过WebSocket通信
+<b>组件：</b>SessionList、ChatWindow、EmotionPanel、EmotionItem（可折叠）、AudioInput<br/>
+<b>接口及数据对照：</b><br/>
+&nbsp;&nbsp;📋 会话列表：<span class="api-tag">POST /user/conversation/list</span> ← PageBaseDTO{pageNum,pageSize} → PageResult&lt;<b>ConversationVO</b>{id, name, createdTime, updatedTime}&gt;<br/>
+&nbsp;&nbsp;✏️ 重命名：<span class="api-tag">PUT /user/conversation/{id}/name</span> ← <b>ConversationInfoDTO</b>{<span class="required">name</span>} → void<br/>
+&nbsp;&nbsp;🗑 删除：<span class="api-tag">DELETE /user/conversation/{id}</span> ← PathVariable conversationId → void<br/>
+&nbsp;&nbsp;💬 发消息：<span class="api-tag">POST /user/conversation/ai-chat/user-message</span> ← <b>UserMessageSendDTO</b>{<span class="required">message</span>, conversationId(可选)} → <b>UserMessageSendVO</b>{conversationId, currentRound}<br/>
+&nbsp;&nbsp;📜 对话记录：<span class="api-tag">POST /user/conversaion/dialogue/{id}/memory</span> ← PageBaseDTO → PageResult&lt;<b>ConversationMemoryVO</b>{id, content, type(USER/ASSISTANT/SYSTEM), roundNum, createdTime}&gt;<br/>
+&nbsp;&nbsp;📊 情绪列表：<span class="api-tag">POST /user/conversation/emotion-analysis/list/{id}</span> ← PageBaseDTO → PageResult&lt;<b>EmotionAnalysisVO</b>{id, roundNum, analysisContent, emotionLabel, emotionSubLabel, emotionConfidence, emotionIntensity, emotionTrend, pScore, aScore, dScore, negativeEmotionRatio, neutralEmotionRatio, positiveEmotionRatio, createdTime}&gt;<br/>
+&nbsp;&nbsp;📄 情绪详情：<span class="api-tag">GET /user/conversation/emotion-analysis/detail/{id}</span> → <b>EmotionAnalysisDetailVO</b>{modelContent(思考内容), userContent(用户内容), thinkContent(模型内容)}<br/>
+&nbsp;&nbsp;🎤 语音初始化：<span class="api-tag">POST /user/conversation/audio/init</span> ← conversationId(可选) → <b>AudioSessionInitVO</b>{conversationId}<br/>
+&nbsp;&nbsp;🎤 语音消息：<span class="api-tag">WS /message/send</span> ← AudioMessageSendDTO | <span class="api-tag">WS /interrupt</span> ← AudioInterruptDTO<br/>
+&nbsp;&nbsp;🎤 语音结束：<span class="api-tag">DELETE /user/conversation/audio/{id}/end</span> ← PathVariable conversationId → void
 </div>
 </div>
 </div>
@@ -331,7 +453,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>4. 心理诊断 - 会话列表页</h3><span class="rt">/diagnosis</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>分页展示有诊断数据的会话列表，支持按会话名称搜索。点击某个会话 → 跳转到该会话的诊断数据列表页（页面5）</div>
+<div class="chg"><b>设计要点：</b>分页展示有诊断数据的会话列表，支持按会话名称模糊搜索。点击"查看诊断"跳转诊断列表页（页面5）</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -340,35 +462,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
 <h3 style="font-size:16px;font-weight:600;">心理诊断</h3>
 <div style="display:flex;gap:8px;align-items:center;">
-<div style="border:1px solid #d9d9d9;border-radius:4px;padding:4px 8px;font-size:11px;color:#999;">搜索会话名称...</div>
+<div class="inp" style="color:var(--text-muted);" title="EmotionDiagnosisQueryDTO.conversationName（模糊匹配）">🔍 搜索会话名称...</div>
 </div>
 </div>
 <table class="wt">
-<tr><th>会话名称</th><th>最新诊断轮次</th><th>诊断次数</th><th>最近诊断时间</th><th>操作</th></tr>
-<tr><td>💬 心情困扰与工作压力</td><td>第6轮</td><td>3</td><td>2026-09-08 14:30</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看诊断 →</span></td></tr>
-<tr><td>💭 睡眠质量讨论</td><td>第4轮</td><td>2</td><td>2026-09-05 09:15</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看诊断 →</span></td></tr>
-<tr><td>🌙 人际关系困扰</td><td>第3轮</td><td>1</td><td>2026-09-01 20:00</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看诊断 →</span></td></tr>
-<tr><td>🗣️ 家庭关系沟通</td><td>第8轮</td><td>4</td><td>2026-08-28 16:00</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看诊断 →</span></td></tr>
-<tr><td>💼 职业发展困惑</td><td>第2轮</td><td>2</td><td>2026-08-20 11:30</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看诊断 →</span></td></tr>
+<tr><th>会话名称</th><th>最新诊断轮次</th><th>诊断次数</th><th>最近诊断时间</th><th>会话创建时间</th><th>操作</th></tr>
+<tr><td>💬 心情困扰与工作压力</td><td>第6轮</td><td>3</td><td>2026-09-08 14:30</td><td>2026-09-01 10:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>💭 睡眠质量讨论</td><td>第4轮</td><td>2</td><td>2026-09-05 09:15</td><td>2026-08-28 15:20</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>🌙 人际关系困扰</td><td>第3轮</td><td>1</td><td>2026-09-01 20:00</td><td>2026-08-20 11:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>📚 考试焦虑应对</td><td>第5轮</td><td>2</td><td>2026-09-12 16:20</td><td>2026-09-10 09:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>🏠 家庭关系调解</td><td>第8轮</td><td>4</td><td>2026-09-10 11:45</td><td>2026-09-03 14:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>🌱 自我成长探索</td><td>第2轮</td><td>1</td><td>2026-09-07 08:30</td><td>2026-09-06 10:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>💔 失恋情绪恢复</td><td>第7轮</td><td>3</td><td>2026-08-25 19:00</td><td>2026-08-18 20:00</td><td><span class="link">查看诊断 →</span></td></tr>
+<tr><td>😰 社交恐惧倾诉</td><td>第4轮</td><td>1</td><td>2026-08-20 14:00</td><td>2026-08-15 16:00</td><td><span class="link">查看诊断 →</span></td></tr>
 </table>
-<div class="pgn">
-<span>共 12 条</span>
-<span class="pb">«</span>
-<span class="pb a">1</span>
-<span class="pb">2</span>
-<span class="pb">»</span>
-</div>
+<div class="pgn"><span>共 36 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pbn">...</span><span class="pb">8</span><span class="pb">9</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>DiagnosisSessionTable（会话表格）、DiagnosisSessionSearch（搜索栏+分页）<br/>
-<b>接口：</b>POST /user/conversation/emotion-diagnosis/list（分页查询拥有诊断的会话列表，支持conversationName模糊匹配）<br/>
-<b>数据字段：</b>conversationId、conversationName、latestRoundNum、diagnosisCount、diagnosisUpdatedTime、conversationCreatedTime<br/>
-<b>交互：</b>搜索会话名称 → 点击"查看诊断"跳转到 /diagnosis/:sessionId（页面5）→ 分页
+<b>接口：</b><span class="api-tag">POST /user/conversation/emotion-diagnosis/list</span><br/>
+<b>请求参数：</b><b>EmotionDiagnosisQueryDTO</b>{pageNum, pageSize, conversationName(模糊匹配，可选)}<br/>
+<b>返回值：</b>PageResult&lt;<b>DiagnosisConversationVO</b>{conversationId, conversationName, latestRoundNum, diagnosisCount, diagnosisUpdatedTime, conversationCreatedTime}&gt;<br/>
+<b>交互：</b>搜索会话名称 → 点击"查看诊断"跳转 /diagnosis/:sessionId → 分页
 </div>
 </div>
 </div>
@@ -377,7 +496,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>5. 心理诊断 - 会话诊断列表页</h3><span class="rt">/diagnosis/:sessionId</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>分页展示该会话下的所有诊断数据，按更新时间逆序排列。点击某条诊断数据 → 跳转到诊断详情页（页面6）</div>
+<div class="chg"><b>设计要点：</b>分页展示该会话下的所有诊断数据，按更新时间逆序排列。点击某条诊断数据跳转诊断详情页（页面6）</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -386,39 +505,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div class="bc">
-<a href="#">心理诊断</a>
-<span>›</span>
-<span class="cur">心情困扰与工作压力</span>
-</div>
-<h3 style="font-size:16px;font-weight:600;margin-bottom:14px;">心情困扰与工作压力 — 诊断记录</h3>
+<div class="bc"><a href="#">心理诊断</a><span>›</span><span class="cur">心情困扰与工作压力</span></div>
+<h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">心情困扰与工作压力 — 诊断记录</h3>
 <table class="wt">
-<tr><th>诊断编号</th><th>轮次</th><th>创建时间</th><th>更新时间</th><th>操作</th></tr>
-<tr><td>#3</td><td>第6轮</td><td>2026-09-08 14:30</td><td>2026-09-08 14:30</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>#2</td><td>第4轮</td><td>2026-09-06 09:15</td><td>2026-09-06 09:15</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>#1</td><td>第2轮</td><td>2026-09-03 20:00</td><td>2026-09-03 20:00</td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
+<tr><th>诊断ID</th><th>会话ID</th><th>轮次</th><th>创建时间</th><th>更新时间</th><th>操作</th></tr>
+<tr><td>#3</td><td>1001</td><td>第6轮</td><td>2026-09-08 14:30</td><td>2026-09-08 14:30</td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>#2</td><td>1001</td><td>第4轮</td><td>2026-09-06 09:15</td><td>2026-09-06 09:15</td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>#1</td><td>1001</td><td>第2轮</td><td>2026-09-03 20:00</td><td>2026-09-03 20:00</td><td><span class="link">查看详情 →</span></td></tr>
 </table>
-<div class="pgn">
-<span>共 3 条</span>
-<span class="pb a">1</span>
-</div>
+<div class="pgn"><span>共 3 条</span><span class="pb a">1</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>DiagnosisListTable（诊断数据表格）、BreadcrumbNav（面包屑导航）<br/>
-<b>接口：</b>POST /user/conversation/emotion-diagnosis/list/{conversationId}（按会话ID分页查询诊断书）<br/>
-<b>数据字段：</b>id、conversationId、roundNum、createdTime、updatedTime<br/>
-<b>交互：</b>面包屑返回会话列表 → 点击"查看详情"跳转到 /diagnosis/:sessionId/:diagnosisId（页面6）→ 分页
+<b>接口：</b><span class="api-tag">POST /user/conversation/emotion-diagnosis/list/{conversationId}</span><br/>
+<b>请求参数：</b>PathVariable conversationId, PageBaseDTO{pageNum, pageSize}<br/>
+<b>返回值：</b>PageResult&lt;<b>EmotionDiagnosisListVO</b>{id, conversationId, roundNum, createdTime, updatedTime}&gt;<br/>
+<b>交互：</b>面包屑返回 → 点击"查看详情"跳转 /diagnosis/:sessionId/:diagnosisId → 分页
 </div>
 </div>
 </div>
 
-<!-- ========== 6. 心理诊断 - 诊断详情页 ========== -->
+<!-- ========== 6. 心理诊断 - 诊断详情页（大幅扩展） ========== -->
 <div class="cd">
-<div class="ch"><h3>6. 心理诊断 - 诊断详情页</h3><span class="rt">/diagnosis/:sessionId/:diagnosisId</span></div>
+<div class="ch"><h3>6. 心理诊断 - 诊断详情页（完整字段展示）</h3><span class="rt">/diagnosis/:sessionId/:diagnosisId</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>展示单条诊断书的完整详情，包含情绪分析、触发因素、风险评估、建议、PAD分析等，底部支持用户反馈（打分、认同度、采纳情况）</div>
+<div class="chg"><b>设计要点：</b>展示 EmotionDiagnosisVO 的 <b>全部 47 个字段</b>，分区域卡片展示。底部支持用户反馈（EmotionDiagnosisFeedbackDTO 全部 7 个字段）</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -426,98 +538,177 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="ni">首页</span><span class="ni">AI对话</span><span class="ni a">心理诊断</span><span class="ni">量表测评</span><span class="ni">个人中心</span>
 <span class="sp"></span><span class="ua">U</span>
 </div>
-<div class="pm" style="overflow-y:auto;">
-<div class="bc">
-<a href="#">心理诊断</a>
-<span>›</span>
-<a href="#">心情困扰与工作压力</a>
-<span>›</span>
-<span class="cur">诊断 #3</span>
+<div class="pm" style="overflow-y:auto;max-height:700px;">
+<div class="bc"><a href="#">心理诊断</a><span>›</span><a href="#">心情困扰与工作压力</a><span>›</span><span class="cur">诊断 #3</span></div>
+
+<!-- 区域1: 基本信息 + 情绪占比 -->
+<div class="g2" style="margin-bottom:12px;">
+<div class="data-panel">
+<h4><span class="icon">📋</span>基本信息</h4>
+<div class="data-item"><span class="key">诊断ID (id)</span><span class="val">#3</span></div>
+<div class="data-item"><span class="key">会话ID (conversationId)</span><span class="val">1001</span></div>
+<div class="data-item"><span class="key">用户ID (userId)</span><span class="val">5001</span></div>
+<div class="data-item"><span class="key">对话轮次 (roundNum)</span><span class="val">第6轮</span></div>
+<div class="data-item"><span class="key">核心情绪 (coreEmotionLabel)</span><span class="val"><span class="tg to">焦虑</span></span></div>
+<div class="data-item"><span class="key">核心置信度 (coreEmotionConfAvg)</span><span class="val">0.85</span></div>
+<div class="data-item"><span class="key">情绪强度 (coreEmotionIntensityScore)</span><span class="val">0.78</span></div>
+<div class="data-item"><span class="key">核心情绪Map (coreEmotion)</span><span class="val" style="font-size:9px;">{焦虑:0.45, 低落:0.25, 平静:0.15}</span></div>
+<div class="data-item"><span class="key">次要情绪 (secondaryEmotion)</span><span class="val" style="font-size:9px;">{烦躁:0.30, 无助:0.18}</span></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-<!-- 基本信息 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">📋 基本信息</div>
-<div style="display:flex;flex-direction:column;gap:6px;font-size:11px;">
-<div><span style="color:#999;">诊断编号：</span>#3</div>
-<div><span style="color:#999;">所属会话：</span>心情困扰与工作压力</div>
-<div><span style="color:#999;">对话轮次：</span:>第6轮</div>
-<div><span style="color:#999;">核心情绪：</span><span class="tg to">焦虑</span>（置信度0.85，强度0.78）</div>
-<div><span style="color:#999;">情绪趋势：</span>↓ 下降（平稳3轮）</div>
-<div><span style="color:#999;">心理状态：</span>轻度焦虑状态</div>
-</div>
-</div>
-<!-- 情绪占比 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">🎭 情绪占比分析</div>
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:70px;height:70px;border-radius:50%;background:conic-gradient(#ff6b6b 0% 45%,#fa8c16 45% 70%,#6c63ff 70% 85%,#52c41a 85% 100%);flex-shrink:0;"></div>
-<div style="font-size:11px;line-height:1.8;">
-<div><span style="color:#ff6b6b;">●</span> 焦虑 45% <span style="color:#fa8c16;">●</span> 低落 25%</div>
-<div><span style="color:#6c63ff;">●</span> 平静 15% <span style="color:#52c41a;">●</span> 开心 15%</div>
-<div style="margin-top:4px;font-size:10px;color:#999;">负向70% | 正向15% | 中性15%</div>
+<div class="data-panel">
+<h4><span class="icon">🎭</span>情绪占比分析</h4>
+<div style="display:flex;align-items:center;gap:14px;">
+<div style="width:72px;height:72px;border-radius:50%;background:conic-gradient(#ff6b6b 0% 50%,var(--primary) 50% 65%,var(--success) 65% 80%,var(--warning) 80% 100%);flex-shrink:0;"></div>
+<div style="font-size:11px;line-height:2;">
+<div><span style="color:#ff6b6b;">●</span> 负向 (negativeEmotionRatio): <b>0.50</b></div>
+<div><span style="color:var(--primary);">●</span> 中性 (neutralEmotionRatio): <b>0.15</b></div>
+<div><span style="color:var(--success);">●</span> 正向 (positiveEmotionRatio): <b>0.15</b></div>
+<div><span style="color:var(--warning);">●</span> 其他: <b>0.20</b></div>
 </div>
 </div>
-</div>
-<!-- 触发因素 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">⚡ 触发因素</div>
-<div style="font-size:11px;margin-bottom:6px;"><span style="color:#999;">核心场景：</span>工作压力</div>
-<div style="font-size:11px;margin-bottom:6px;"><span style="color:#999;">关键词：</span><span class="tg to" style="font-size:10px;">截止日期</span> <span class="tg tr" style="font-size:10px;">失眠</span> <span class="tg to" style="font-size:10px;">沟通不畅</span></div>
-<div style="font-size:11px;"><span style="color:#999;">首次触发轮次：</span>第2轮</div>
-</div>
-<!-- 风险评估 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">⚠️ 风险评估</div>
-<div style="font-size:11px;margin-bottom:4px;"><span style="color:#999;">情绪风险：</span><span class="tg to">中度</span></div>
-<div style="font-size:11px;margin-bottom:4px;"><span style="color:#999;">自伤风险：</span><span class="tg tgn">无</span></div>
-<div style="font-size:11px;margin-bottom:4px;"><span style="color:#999;">自杀风险：</span><span class="tg tgn">无</span></div>
-<div style="font-size:11px;margin-bottom:4px;"><span style="color:#999;">社会功能：</span>轻度受损（工作领域）</div>
-<div style="font-size:11px;"><span style="color:#999;">危机预警：</span>未触发</div>
-</div>
-<!-- PAD分析 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">📊 PAD情绪维度</div>
-<div style="font-size:11px;line-height2;">
-<div style="margin-bottom:4px;">愉悦度P：<span style="color:#6c63ff;">-0.30</span>（标准差0.15）</div>
-<div style="margin-bottom:4px;">唤醒度A：<span style="color:#fa8c16;">+0.60</span>（标准差0.20）</div>
-<div style="margin-bottom:4px;">支配度D：<span style="color:#52c41a;">-0.20</span>（标准差0.10）</div>
-<div style="font-size:10px;color:#999;margin-top:4px;">情绪稳定性：0.72 | 波动幅度：0.35</div>
-</div>
-</div>
-<!-- AI建议 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">💡 AI 诊断建议</div>
-<div style="font-size:11px;color:#666;line-height:1.7;">
-<div style="margin-bottom:4px;"><b>自助调节：</b>每日10分钟深呼吸放松训练，保持规律作息</div>
-<div style="margin-bottom:4px;"><b>社会支持：</b>与信任的朋友或家人倾诉，寻求情感支持</div>
-<div style="margin-bottom:4px;"><b>专业干预：</b>如持续失眠超过2周，建议就医咨询</div>
-<div><b>建议优先级：</b><span class="tg to">建议寻求支持</span></div>
+<div style="font-size:10px;color:var(--text-muted);margin-top:8px;">
+<b>负向情绪细分 (negativeEmotionDetail):</b> {焦虑:0.45, 低落:0.25, 愤怒:0.10}<br/>
+<b>正向情绪细分 (positiveEmotionDetail):</b> {平静:0.15}
 </div>
 </div>
 </div>
-<!-- 用户反馈区域 -->
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;margin-bottom:12px;">
-<div style="font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;">✍️ 我的反馈</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
-<div><span style="color:#999;">诊断评分：</span>⭐⭐⭐⭐ (4/5)</div>
-<div><span style="color:#999;">认同风险评估：</span>✅ 认同</div>
-<div><span style="color:#999;">认同自助建议：</span>✅ 认同</div>
-<div><span style="color:#999;">认同社会支持建议：</span>✅ 认同</div>
-<div><span style="color:#999;">认同专业干预建议：</span>❌ 不认同</div>
-<div><span style="color:#999;">建议采纳情况：</span>尝试部分</div>
+
+<!-- 区域2: 诊断内容 + 情绪趋势 -->
+<div class="g2" style="margin-bottom:12px;">
+<div class="data-panel">
+<h4><span class="icon">📝</span>诊断核心内容 (diagnosisContent)</h4>
+<p style="font-size:11px;color:var(--text-secondary);line-height:1.7;">用户在当前对话中表现出明显的焦虑情绪，核心触发因素为工作压力。情绪整体呈下降趋势（逐渐缓解），但波动幅度较大。建议用户保持规律作息，必要时寻求专业帮助...</p>
 </div>
-<div style="margin-top:8px;font-size:11px;"><span style="color:#999;">文字反馈：</span>建议很实用，但我觉得暂时不需要专业干预</div>
-<div style="margin-top:8px;"><span class="bp b1" style="font-size:10px;">编辑反馈</span></div>
+<div class="data-panel">
+<h4><span class="icon">📈</span>情绪趋势分析</h4>
+<div class="data-item"><span class="key">情绪趋势 (emotionTrend)</span><span class="val">1-下降（趋于好转）</span></div>
+<div class="data-item"><span class="key">情绪峰值轮次 (emotionPeakRound)</span><span class="val">第3轮</span></div>
+<div class="data-item"><span class="key">情绪低谷轮次 (emotionValleyRound)</span><span class="val">第6轮</span></div>
+<div class="data-item"><span class="key">波动幅度 (emotionFluctuationAmplitude)</span><span class="val">0.35</span></div>
+<div class="data-item"><span class="key">平稳轮次数 (emotionStableRounds)</span><span class="val">4</span></div>
+<div class="data-item"><span class="key">稳定性得分 (emotionStabilityScore)</span><span class="val">0.72</span></div>
+</div>
+</div>
+
+<!-- 区域3: 触发因素 + 风险评估 -->
+<div class="g2" style="margin-bottom:12px;">
+<div class="data-panel">
+<h4><span class="icon">⚡</span>触发因素分析</h4>
+<div class="data-item"><span class="key">核心场景 (coreTriggerScene)</span><span class="val">工作压力</span></div>
+<div class="data-item"><span class="key">触发关键词 (coreTriggerKeywords)</span><span class="val" style="font-size:10px;">截止日期, 失眠, 沟通不畅</span></div>
+<div class="data-item"><span class="key">首次触发轮次 (triggerRoundNum)</span><span class="val">第2轮</span></div>
+</div>
+<div class="data-panel">
+<h4><span class="icon">⚠️</span>风险评估</h4>
+<div class="data-item"><span class="key">情绪风险 (emotionRiskLevel)</span><span class="val"><span class="tg to">1-中度</span></span></div>
+<div class="data-item"><span class="key">自伤风险 (selfHarmRiskLevel)</span><span class="val"><span class="tg tgn">0-无</span></span></div>
+<div class="data-item"><span class="key">自杀风险 (suicideRiskLevel)</span><span class="val"><span class="tg tgn">0-无</span></span></div>
+<div class="data-item"><span class="key">危机预警 (crisisWarning)</span><span class="val"><span class="tg tgn">0-未触发</span></span></div>
+<div class="data-item"><span class="key">需人工干预 (needManualIntervene)</span><span class="val">0-否</span></div>
+<div class="data-item"><span class="key">风险详情 (riskDetail)</span><span class="val" style="font-size:10px;">用户情绪可控，暂无明显自伤/自杀倾向</span></div>
+<div class="data-item"><span class="key">情绪调节建议 (emotionAdjustSuggestion)</span><span class="val" style="font-size:10px;">深呼吸放松训练，转移注意力</span></div>
+</div>
+</div>
+
+<!-- 区域4: PAD + 心理状态 -->
+<div class="g2" style="margin-bottom:12px;">
+<div class="data-panel">
+<h4><span class="icon">📊</span>PAD情绪维度</h4>
+<div class="data-item"><span class="key">愉悦度P均值 (avgP)</span><span class="val">-0.30</span></div>
+<div class="data-item"><span class="key">唤醒度A均值 (avgA)</span><span class="val">+0.60</span></div>
+<div class="data-item"><span class="key">支配度D均值 (avgD)</span><span class="val">-0.20</span></div>
+<div class="data-item"><span class="key">P标准差 (stdP)</span><span class="val">0.15</span></div>
+<div class="data-item"><span class="key">A标准差 (stdA)</span><span class="val">0.20</span></div>
+<div class="data-item"><span class="key">D标准差 (stdD)</span><span class="val">0.10</span></div>
+</div>
+<div class="data-panel">
+<h4><span class="icon">🧠</span>心理状态评估</h4>
+<div class="data-item"><span class="key">心理状态 (psychologicalState)</span><span class="val">轻度焦虑状态</span></div>
+<div class="data-item"><span class="key">症状总结 (symptomSummary)</span><span class="val" style="font-size:10px;">主要表现为紧张、易疲劳、注意力不集中</span></div>
+<div class="data-item"><span class="key">症状标签 (symptomTags)</span><span class="val" style="font-size:10px;">紧张, 易疲劳, 注意力不集中</span></div>
+<div class="data-item"><span class="key">症状持续 (symptomDuration)</span><span class="val">约2周</span></div>
+<div class="data-item"><span class="key">发作模式 (onsetPattern)</span><span class="val">阵发性</span></div>
+<div class="data-item"><span class="key">首次触发描述 (firstTriggerDesc)</span><span class="val" style="font-size:10px;">项目截止日期临近导致的压力增大</span></div>
+</div>
+</div>
+
+<!-- 区域5: 社会功能 + 社会支持 -->
+<div class="g2" style="margin-bottom:12px;">
+<div class="data-panel">
+<h4><span class="icon">🏥</span>社会功能影响</h4>
+<div class="data-item"><span class="key">受损程度 (socialFunctionImpact)</span><span class="val"><span class="tg to">轻度受损</span></span></div>
+<div class="data-item"><span class="key">影响领域 (impactDomains)</span><span class="val">工作领域</span></div>
+<div class="data-item"><span class="key">日常影响 (dailyLifeInfluence)</span><span class="val" style="font-size:10px;">工作效率下降，偶尔失眠</span></div>
+</div>
+<div class="data-panel">
+<h4><span class="icon">🤝</span>社会支持与应对</h4>
+<div class="data-item"><span class="key">社会支持水平 (socialSupportLevel)</span><span class="val">1-一般</span></div>
+<div class="data-item"><span class="key">保护性因素 (protectiveFactors)</span><span class="val" style="font-size:10px;">家庭关系良好, 有朋友支持</span></div>
+<div class="data-item"><span class="key">应对方式 (copingStyle)</span><span class="val">运动、听音乐</span></div>
+</div>
+</div>
+
+<!-- 区域6: AI建议 -->
+<div class="data-panel" style="margin-bottom:12px;">
+<h4><span class="icon">💡</span>AI 诊断建议</h4>
+<div class="g3" style="font-size:11px;">
+<div>
+<div style="font-weight:600;color:var(--success);margin-bottom:4px;">自助调节 (selfHelpSuggestion)</div>
+<div style="color:var(--text-secondary);line-height:1.6;">每日10分钟深呼吸放松训练，保持规律作息</div>
+</div>
+<div>
+<div style="font-weight:600;color:var(--info);margin-bottom:4px;">社会支持 (socialSupportSuggestion)</div>
+<div style="color:var(--text-secondary);line-height:1.6;">与信任的朋友或家人倾诉，寻求情感支持</div>
+</div>
+<div>
+<div style="font-weight:600;color:var(--warning);margin-bottom:4px;">专业干预 (professionalInterveneSuggestion)</div>
+<div style="color:var(--text-secondary);line-height:1.6;">如持续失眠超2周，建议就医咨询</div>
+</div>
+</div>
+<div style="margin-top:8px;font-size:11px;"><b>建议优先级 (suggestionPriority):</b> <span class="tg to">2-建议寻求支持</span></div>
+</div>
+
+<!-- 区域7: 用户反馈 -->
+<div class="data-panel">
+<h4><span class="icon">✍️</span>用户反馈 <span style="font-size:10px;color:var(--text-muted);">(EmotionDiagnosisFeedbackDTO 全部字段)</span></h4>
+<div class="g2" style="font-size:11px;">
+<div class="data-item"><span class="key">诊断评分 (diagnosisScore) 1-5</span><span class="val">⭐⭐⭐⭐ (4)</span></div>
+<div class="data-item"><span class="key">认同风险评估 (agreeRiskJudge)</span><span class="val">✅ 1-认同</span></div>
+<div class="data-item"><span class="key">认同自助建议 (agreeSuggestionSelf)</span><span class="val">✅ 1-认同</span></div>
+<div class="data-item"><span class="key">认同社会支持建议 (agreeSuggestionSocial)</span><span class="val">✅ 1-认同</span></div>
+<div class="data-item"><span class="key">认同专业干预建议 (agreeSuggestionProfessional)</span><span class="val">❌ 0-不认同</span></div>
+<div class="data-item"><span class="key">建议采纳情况 (useSuggestion) 0-2</span><span class="val">1-尝试部分</span></div>
+</div>
+<div style="margin-top:8px;font-size:11px;"><span class="key">文字反馈 (feedbackContent):</span> <span style="color:var(--text-secondary);">建议很实用，但我觉得暂时不需要专业干预</span></div>
+<div style="margin-top:4px;font-size:11px;"><span class="key">提交时间 (feedbackTime):</span> 2026-09-09 10:30</div>
+<div style="margin-top:10px;"><span class="bp b1" style="font-size:10px;">编辑反馈</span></div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>DiagnosisBasicInfo、DiagnosisEmotionChart、DiagnosisTriggers、DiagnosisRiskAssess、DiagnosisPAD、DiagnosisSuggestion、DiagnosisFeedback（用户反馈表单）、BreadcrumbNav<br/>
-<b>接口：</b>GET /user/conversation/emotion-diagnosis/detail/{diagnosisId}（诊断详情）、PUT /user/conversation/emotion-diagnosis/{diagnosisId}/feedback（用户反馈）<br/>
-<b>反馈字段：</b>diagnosisScore(1-5)、agreeRiskJudge、agreeSuggestionSelf、agreeSuggestionSocial、agreeSuggestionProfessional、useSuggestion(0/1/2)、feedbackContent<br/>
-<b>交互：</b>面包屑返回上级 → 查看完整诊断详情 → 编辑/提交反馈
+<b>组件：</b>DiagnosisBasicInfo、DiagnosisEmotionChart、DiagnosisTriggers、DiagnosisRiskAssess、DiagnosisPAD、DiagnosisSuggestion、DiagnosisFeedback<br/>
+<b>接口列表：</b><br/>
+&nbsp;&nbsp;📋 诊断详情：<span class="api-tag">GET /user/conversation/emotion-diagnosis/detail/{diagnosisId}</span> → <b>EmotionDiagnosisVO</b>（↑ 上方展示全部 47 字段）<br/>
+&nbsp;&nbsp;✍️ 用户反馈：<span class="api-tag">PUT /user/conversation/emotion-diagnosis/{diagnosisId}/feedback</span> ← <b>EmotionDiagnosisFeedbackDTO</b>{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;diagnosisScore(1-5), feedbackContent(≤200字), agreeRiskJudge(0/1), agreeSuggestionSelf(0/1),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;agreeSuggestionSocial(0/1), agreeSuggestionProfessional(0/1), useSuggestion(0/1/2)<br/>
+&nbsp;&nbsp;} → void<br/>
+<b>EmotionDiagnosisVO 完整字段清单（47个）：</b><br/>
+&nbsp;&nbsp;<b>基础：</b>id, conversationId, userId, roundNum, diagnosisContent<br/>
+&nbsp;&nbsp;<b>情绪：</b>coreEmotionLabel, coreEmotionConfAvg, coreEmotionIntensityScore, coreEmotion(Map), secondaryEmotion(Map)<br/>
+&nbsp;&nbsp;<b>占比：</b>negativeEmotionRatio, positiveEmotionRatio, neutralEmotionRatio, negativeEmotionDetail(Map), positiveEmotionDetail(Map)<br/>
+&nbsp;&nbsp;<b>趋势：</b>emotionTrend, emotionPeakRound, emotionValleyRound, emotionFluctuationAmplitude, emotionStableRounds, emotionStabilityScore<br/>
+&nbsp;&nbsp;<b>PAD：</b>avgP, avgA, avgD, stdP, stdA, stdD<br/>
+&nbsp;&nbsp;<b>触发：</b>coreTriggerScene, coreTriggerKeywords, triggerRoundNum<br/>
+&nbsp;&nbsp;<b>心理状态：</b>psychologicalState, symptomSummary, symptomTags<br/>
+&nbsp;&nbsp;<b>社会功能：</b>socialFunctionImpact, impactDomains, dailyLifeInfluence<br/>
+&nbsp;&nbsp;<b>病程：</b>symptomDuration, onsetPattern, firstTriggerDesc<br/>
+&nbsp;&nbsp;<b>社会支持：</b>socialSupportLevel, protectiveFactors, copingStyle<br/>
+&nbsp;&nbsp;<b>风险：</b>emotionRiskLevel, emotionAdjustSuggestion, needManualIntervene, selfHarmRiskLevel, suicideRiskLevel, riskDetail, crisisWarning<br/>
+&nbsp;&nbsp;<b>建议：</b>selfHelpSuggestion, socialSupportSuggestion, professionalInterveneSuggestion, suggestionPriority<br/>
+&nbsp;&nbsp;<b>反馈（返回值中包含）：</b>diagnosisScore, feedbackContent, agreeRiskJudge, agreeSuggestionSelf, agreeSuggestionSocial, agreeSuggestionProfessional, useSuggestion, feedbackTime<br/>
+&nbsp;&nbsp;<b>时间：</b>createdTime, updatedTime
 </div>
 </div>
 </div>
@@ -526,7 +717,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>7. 量表测评 - 量表展示页</h3><span class="rt">/scale</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>分页展示所有可用量表，顶部分类标签筛选。点击"开始测评"进入答题页（页面8）。导航栏有"我的记录"入口跳转测评记录页（页面9）</div>
+<div class="chg"><b>设计要点：</b>分页展示所有可用量表，顶部分类标签筛选（来自 ScaleCategoryVO 列表）。点击"开始测评"进入答题页（页面8）。导航栏有"我的记录"入口</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -535,57 +726,93 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-<div style="display:flex;align-items:center;gap:10px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+<div style="display:flex;align-items:center;gap:12px;">
 <h3 style="font-size:16px;font-weight:600;">量表测评</h3>
-<span class="bp b2" style="font-size:10px;">📋 我的测评记录 →</span>
+<span class="bp b2 bp-pill" style="font-size:10px;">📋 我的测评记录 →</span>
 </div>
 <div style="display:flex;gap:6px;">
-<span class="bp b1" style="border-radius:16px;">全部</span>
-<span class="bp b2" style="border-radius:16px;">焦虑评估</span>
-<span class="bp b2" style="border-radius:16px;">抑郁评估</span>
-<span class="bp b2" style="border-radius:16px;">压力评估</span>
-<span class="bp b2" style="border-radius:16px;">睡眠评估</span>
+<span class="bp b1 bp-pill">全部</span>
+<span class="bp b2 bp-pill">焦虑评估</span>
+<span class="bp b2 bp-pill">抑郁评估</span>
+<span class="bp b2 bp-pill">压力评估</span>
+<span class="bp b2 bp-pill">睡眠评估</span>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;text-align:center;">
-<div style="width:40px;height:40px;border-radius:8px;margin:0 auto 8px;background:#fff0f0;display:flex;align-items:center;justify-content:center;font-size:20px;">😰</div>
-<div style="font-size:12px;font-weight:600;margin-bottom:2px;">SAS 焦虑自评量表</div>
-<div style="font-size:10px;color:#999;margin-bottom:4px;">评估焦虑状态程度</div>
-<div style="font-size:9px;color:#bbb;margin-bottom:8px;">20 题 · 约10分钟</div>
-<span class="bp b1" style="font-size:10px;">开始测评</span>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#fff0f0;display:flex;align-items:center;justify-content:center;font-size:22px;">😰</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">SAS 焦虑自评量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估焦虑状态程度</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">20 题 · 约10分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
 </div>
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;text-align:center;">
-<div style="width:40px;height:40px;border-radius:8px;margin:0 auto 8px;background:#f0f5ff;display:flex;align-items:center;justify-content:center;font-size:20px;">😔</div>
-<div style="font-size:12px;font-weight:600;margin-bottom:2px;">SDS 抑郁自评量表</div>
-<div style="font-size:10px;color:#999;margin-bottom:4px;">评估抑郁状态程度</div>
-<div style="font-size:9px;color:#bbb;margin-bottom:8px;">20 题 · 约10分钟</div>
-<span class="bp b1" style="font-size:10px;">开始测评</span>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f0f5ff;display:flex;align-items:center;justify-content:center;font-size:22px;">😔</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">SDS 抑郁自评量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估抑郁状态程度</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">20 题 · 约10分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
 </div>
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;text-align:center;">
-<div style="width:40px;height:40px;border-radius:8px;margin:0 auto 8px;background:#f0fff0;display:flex;align-items:center;justify-content:center;font-size:20px;">😴</div>
-<div style="font-size:12px;font-weight:600;margin-bottom:2px;">PSQI 睡眠质量量表</div>
-<div style="font-size:10px;color:#999;margin-bottom:4px;">评估睡眠质量状况</div>
-<div style="font-size:9px;color:#bbb;margin-bottom:8px;">19 题 · 约8分钟</div>
-<span class="bp b1" style="font-size:10px;">开始测评</span>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f0fff0;display:flex;align-items:center;justify-content:center;font-size:22px;">😴</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">PSQI 睡眠质量量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估睡眠质量状况</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">19 题 · 约8分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#fff7e6;display:flex;align-items:center;justify-content:center;font-size:22px;">🔥</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">PSS 压力感知量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估日常压力水平</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">14 题 · 约7分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f0f5ff;display:flex;align-items:center;justify-content:center;font-size:22px;">🧩</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">SCL-90 症状自评量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估心理健康症状</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">90 题 · 约30分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f6ffed;display:flex;align-items:center;justify-content:center;font-size:22px;">🌿</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">WHO-5 幸福感指数量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">评估主观幸福感</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">5 题 · 约3分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#fff0f0;display:flex;align-items:center;justify-content:center;font-size:22px;">💢</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">BAI 贝克焦虑量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">临床焦虑症状评估</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">21 题 · 约12分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f0f5ff;display:flex;align-items:center;justify-content:center;font-size:22px;">🌧️</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">BDI-II 贝克抑郁量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">临床抑郁症状评估</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">21 题 · 约12分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);">
+<div style="width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;background:#f6ffed;display:flex;align-items:center;justify-content:center;font-size:22px;">💪</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:3px;">GAD-7 广泛性焦虑障碍量表</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">筛查广泛性焦虑障碍</div>
+<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px;">7 题 · 约4分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
 </div>
 </div>
-<div style="display:flex;justify-content:flex-end;margin-top:14px;">
-<div class="pgn" style="margin:0;">
-<span>共 6 条</span>
-<span class="pb a">1</span>
-<span class="pb">2</span>
-</div>
-</div>
+<div class="pgn"><span>共 24 条</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pbn">...</span><span class="pb">6</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleCategoryTab（分类标签筛选）、ScaleCard（量表卡片）、ScalePagination（分页）<br/>
-<b>接口：</b>GET /user/scale/category（所有量表类别）、GET /user/scale/list（分页量表列表，支持scaleCategoryId筛选）<br/>
-<b>数据字段：</b>ScaleCategoryVO(id,categoryName,useCount)、ScaleVO(id,scaleName,description,questionCount,scaleCategoryId,status,scoreRule)<br/>
-<b>交互：</b>分类标签筛选 → 点击"开始测评"跳转到 /scale/:scaleId/answer（页面8）→ 点击"我的测评记录"跳转 /scale/records（页面9）→ 分页
+<b>接口：</b>
+<span class="api-tag">GET /user/scale/category</span> → List&lt;<b>ScaleCategoryVO</b>{id, categoryName, useCount}&gt;<br/>
+<span class="api-tag">GET /user/scale/list</span>?pageNum=&pageSize=&scaleCategoryId= → PageResult&lt;<b>ScaleVO</b>{id, scaleName, description, questionCount, scaleCategoryId, status, scoreRule}&gt;<br/>
+<b>交互：</b>分类标签筛选 → 点击"开始测评"跳转 /scale/:scaleId/answer → 点击"我的测评记录"跳转 /scale/records
 </div>
 </div>
 </div>
@@ -594,7 +821,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>8. 量表测评 - 答题页</h3><span class="rt">/scale/:scaleId/answer</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>步骤式答题，一次展示一道题目及选项，顶部进度条，底部上一步/下一步按钮，最后一题提交。提交后显示测评结果</div>
+<div class="chg"><b>设计要点：</b>步骤式答题，一次展示一道题目及选项。提交时发送 <span class="api-tag">ScaleUserAnswerDTO</span>{scaleId, answers:[{questionId, optionId}]}</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -602,47 +829,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="ni">首页</span><span class="ni">AI对话</span><span class="ni">心理诊断</span><span class="ni a">量表测评</span><span class="ni">个人中心</span>
 <span class="sp"></span><span class="ua">U</span>
 </div>
-<div class="pm" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-<div style="width:460px;">
-<div class="bc" style="margin-bottom:8px;">
-<a href="#">量表测评</a>
-<span>›</span>
-<span class="cur">SAS 焦虑自评量表</span>
+<div class="pm" style="display:flex;align-items:center;justify-content:center;">
+<div style="width:480px;">
+<div class="bc"><a href="#">量表测评</a><span>›</span><span class="cur">SAS 焦虑自评量表</span></div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:22px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+<span style="font-size:15px;font-weight:600;">SAS 焦虑自评量表</span>
+<span style="font-size:11px;color:var(--text-muted);">第 5/20 题</span>
 </div>
-<div style="background:#fff;border-radius:8px;padding:20px;border:1px solid #f0f0f0;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<span style="font-size:14px;font-weight:600;">SAS 焦虑自评量表</span>
-<span style="font-size:11px;color:#999;">第 5/20 题</span>
+<div style="background:#f0f0f0;border-radius:4px;height:6px;margin-bottom:18px;">
+<div style="background:var(--primary);border-radius:4px;height:6px;width:25%;"></div>
 </div>
-<div style="background:#f0f0f0;border-radius:4px;height:6px;margin-bottom:16px;">
-<div style="background:#6c63ff;border-radius:4px;height:6px;width:25%;"></div>
-</div>
-<div style="font-size:13px;font-weight:500;margin-bottom:14px;line-height:1.6;">5. 我觉得比平常容易紧张和着急</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:16px;line-height:1.6;">5. 我觉得比平常容易紧张和着急</div>
 <div style="display:flex;flex-direction:column;gap:8px;">
-<div style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;">
-<span style="width:20px;height:20px;border-radius:50%;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">A</span>
+<div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="width:22px;height:22px;border-radius:50%;border:2px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">A</span>
 <span>没有或很少时间</span>
-<span style="margin-left:auto;font-size:10px;color:#999;">1分</span>
+<span style="margin-left:auto;font-size:10px;color:var(--text-muted);" title="ScaleOptionVO.score">1分</span>
 </div>
-<div style="padding:10px 14px;border:1px solid #6c63ff;border-radius:8px;font-size:12px;cursor:pointer;background:#f0eeff;display:flex;align-items:center;gap:8px;">
-<span style="width:20px;height:20px;border-radius:50%;border:2px solid #6c63ff;background:#6c63ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">B</span>
+<div style="padding:10px 14px;border:2px solid var(--primary);border-radius:var(--radius-sm);font-size:12px;background:var(--primary-light);display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">B</span>
 <span>少部分时间</span>
-<span style="margin-left:auto;font-size:10px;color:#6c63ff;">2分</span>
+<span style="margin-left:auto;font-size:10px;color:var(--primary);">2分</span>
 </div>
-<div style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;">
-<span style="width:20px;height:20px;border-radius:50%;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">C</span>
+<div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="width:22px;height:22px;border-radius:50%;border:2px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">C</span>
 <span>相当多时间</span>
-<span style="margin-left:auto;font-size:10px;color:#999;">39分</span>
+<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">3分</span>
 </div>
-<div style="padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;">
-<span style="width:20px;height:20px;border-radius:50%;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">D</span>
+<div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span style="width:22px;height:22px;border-radius:50%;border:2px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">D</span>
 <span>绝大部分或全部时间</span>
-<span style="margin-left:auto;font-size:10px;color:#999;">4分</span>
+<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">4分</span>
 </div>
 </div>
-<div style="display:flex;justify-content:space-between;margin-top:16px;">
-<span class="bp b2" style="font-size:11px;">← 上一步</span>
-<span class="bp b1" style="font-size:11px;">下一步 →</span>
+<div style="display:flex;justify-content:space-between;margin-top:18px;">
+<span class="bp b2">← 上一步</span>
+<span class="bp b1">下一步 →</span>
+</div>
+<div style="font-size:9px;color:var(--text-muted);margin-top:10px;text-align:center;">
+提交时传: <span class="api-tag">ScaleUserAnswerDTO</span>{scaleId, answers:[<span class="api-tag">AnswerItemDTO</span>{questionId, optionId}]}
 </div>
 </div>
 </div>
@@ -650,10 +876,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleAnswerProgress（进度条）、ScaleQuestionCard（题目"选项卡片）、ScaleAnswerNav（上一步/下一步/提交）<br/>
-<b>接口：</b>GET /user/scale/questions/list（分页查询题目及选项，传scaleId）、POST /user/scale/user（提交测评答案）<br/>
-<b>数据字段：</b>ScaleQuestionVO(id,title,sort,scoreType,optionList)、ScaleOptionVO(id,optionText,score,sort)<br/>
-<b>交互：</b>逐题答题 → 选项高亮选中 → 上一步/下一步切换 → 最后一题提交 → 显示测评结果（总分+结果描述）
+<b>接口：</b><br/>
+&nbsp;&nbsp;📖 题目列表：<span class="api-tag">GET /user/scale/questions/list</span>?scaleId=&pageNum=&pageSize= → PageResult&lt;<b>ScaleQuestionVO</b>{id, title, sort, scoreType, optionList[<b>ScaleOptionVO</b>{id, optionText, score, sort}]}&gt;<br/>
+&nbsp;&nbsp;📤 提交测评：<span class="api-tag">POST /user/scale/user</span> ← <b>ScaleUserAnswerDTO</b>{<span class="required">scaleId</span>, answers:[{<span class="required">questionId</span>, <span class="required">optionId</span>}]} → void<br/>
+<b>交互：</b>逐题答题 → 最后一题提交 → 显示测评结果（总分+结果描述）
 </div>
 </div>
 </div>
@@ -662,7 +888,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>9. 量表测评 - 测评记录页</h3><span class="rt">/scale/records</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>分页展示用户个人的所有测评记录，按创建时间逆序排列。点击"查看详情"跳转测评记录详情页（页面10）</div>
+<div class="chg"><b>设计要点：</b>分页展示用户个人的所有测评记录，按创建时间逆序排列</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -671,36 +897,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div class="bc">
-<a href="#">量表测评</a>
-<span>›</span>
-<span class="cur">我的测评记录</span>
-</div>
-<h3 style="font-size:16px;font-weight:600;margin-bottom:14px;">我的测评记录</h3>
+<div class="bc"><a href="#">量表测评</a><span>›</span><span class="cur">我的测评记录</span></div>
+<h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">我的测评记录</h3>
 <table class="wt">
-<tr><th>量表名称</th><th>测评时间</th><th>得分</th><th>结果</th><th>操作</th></tr>
-<tr><td>SAS 焦虑自评量表</td><td>2026-09-08 14:30</td><td>52</td><td><span class="tg to">轻度焦虑</span></td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>SDS 抑郁自评量表</td><td>2026-09-05 09:15</td><td>38</td><td><span class="tg tgn">正常</span></td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>PSQI 睡眠质量量表</td><td>2026-09-01 20:00</td><td>8</td><td><span class="tg to">轻度障碍</span></td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>SAS 焦虑自评量表</td><td>2026-08-25 11:00</td><td>45</td><td><span class="tg tgn">正常</span></td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
-<tr><td>LES 生活事件量表</td><td>2026-08-20 16:30</td><td>68</td><td><span class="tg to">中度压力</span></td><td><span style="color:#6c63ff;font-size:10px;cursor:pointer;">查看详情 →</span></td></tr>
+<tr><th>量表名称</th><th>量表ID</th><th>测评时间</th><th>得分</th><th>结果</th><th>操作</th></tr>
+<tr><td>SAS 焦虑自评量表</td><td>1</td><td>2026-09-08 14:30</td><td>52</td><td><span class="tg to">轻度焦虑</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>SDS 抑郁自评量表</td><td>2</td><td>2026-09-05 09:15</td><td>38</td><td><span class="tg tgn">正常</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>PSQI 睡眠质量量表</td><td>3</td><td>2026-09-01 20:00</td><td>8</td><td><span class="tg to">轻度障碍</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>PSS 压力感知量表</td><td>4</td><td>2026-08-28 16:20</td><td>22</td><td><span class="tg to">中度压力</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>SAS 焦虑自评量表</td><td>1</td><td>2026-08-22 10:00</td><td>48</td><td><span class="tg to">轻度焦虑</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>WHO-5 幸福感指数量表</td><td>5</td><td>2026-08-15 14:45</td><td>18</td><td><span class="tg tgn">良好</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>GAD-7 广泛性焦虑量表</td><td>6</td><td>2026-08-10 11:30</td><td>10</td><td><span class="tg to">中度焦虑</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>BDI-II 贝克抑郁量表</td><td>7</td><td>2026-08-05 09:00</td><td>16</td><td><span class="tg to">轻度抑郁</span></td><td><span class="link">查看详情 →</span></td></tr>
+<tr><td>SCL-90 症状自评量表</td><td>8</td><td>2026-07-28 15:00</td><td>145</td><td><span class="tg to">轻度异常</span></td><td><span class="link">查看详情 →</span></td></tr>
 </table>
-<div class="pgn">
-<span>共 18 条</span>
-<span class="pb">«</span>
-<span class="pb a">1</span>
-<span class="pb">2</span>
-<span class="pb">3</span>
-<span class="pb">»</span>
-</div>
+<div class="pgn"><span>共 48 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pbn">...</span><span class="pb">12</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleRecordTable（测评记录表格）、BreadcrumbNav（面包屑导航）<br/>
-<b>接口：</b>GET /user/scale/user/records（分页查询测评历史记录）<br/>
-<b>数据字段：</b>ScaleUserRecordVO(id,userId,scaleId,scaleName,totalScore,resultText,createdTime)<br/>
-<b>交互：</b>点击"查看详情"跳转到 /scale/records/:recordId（页面10）→ 分页
+<b>接口：</b><span class="api-tag">GET /user/scale/user/records</span>?pageNum=&pageSize= → PageResult&lt;<b>ScaleUserRecordVO</b>{id, userId, scaleId, scaleName, totalScore, resultText, createdTime}&gt;<br/>
+<b>交互：</b>点击"查看详情"跳转 /scale/records/:recordId → 分页
 </div>
 </div>
 </div>
@@ -709,7 +926,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>10. 量表测评 - 测评记录详情页</h3><span class="rt">/scale/records/:recordId</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>展示单次测评的完整答题明细，每题显示题目内容、所选选项、得分。顶部显示总分和结果</div>
+<div class="chg"><b>设计要点：</b>展示单次测评的完整答题明细（ScaleUserAnswerVO），每行显示题目、所选选项、每题得分</div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -718,40 +935,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div class="bc">
-<a href="#">量表测评</a>
-<span>›</span>
-<a href="#">我的测评记录</a>
-<span>›</span>
-<span class="cur">SAS 测评详情</span>
-</div>
-<div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #f0f0f0;margin-bottom:14px;display:flex;align-items:center;gap:20px;">
-<div style="font-size:14px;font-weight:600;">SAS 焦虑自评量表</div>
-<div><span style="color:#999;">总分：</span><span style="font-size:18px;font-weight:700;color:#fa8c16;">52</span></div>
-<div><span style="color:#999;">结果：</span><span class="tg to" style="font-size:11px;padding:2px 8px;">轻度焦虑</span></div>
-<div><span style="color:#999;">测评时间：</span>2026-09-08 14:30</div>
+<div class="bc"><a href="#">量表测评</a><span>›</span><a href="#">我的测评记录</a><span>›</span><span class="cur">SAS 测评详情</span></div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border-light);margin-bottom:16px;display:flex;align-items:center;gap:20px;box-shadow:var(--shadow-sm);">
+<div style="font-size:15px;font-weight:600;">SAS 焦虑自评量表</div>
+<div><span style="color:var(--text-muted);">总分(totalScore)：</span><span style="font-size:20px;font-weight:700;color:var(--warning);">52</span></div>
+<div><span style="color:var(--text-muted);">结果(resultText)：</span><span class="tg to" style="font-size:11px;padding:3px 10px;">轻度焦虑</span></div>
+<div><span style="color:var(--text-muted);">测评时间(createdTime)：</span>2026-09-08 14:30</div>
 </div>
 <table class="wt">
-<tr><th>序号</th><th>题目</th><th>所选选项</th><th>得分</th></tr>
-<tr><td>1</td><td>我觉得比平常容易紧张和着急</td><td>少部分时间</td><td>2</td></tr>
-<tr><td>2</td><td>我容易心里烦乱或觉得惊恐</td><td>相当多时间</td><td>3</td></tr>
-<tr><td>3</td><td>我一阵阵地头晕或头痛</td><td>没有或很少时间</td><td>1</td></tr>
-<tr><td>4</td><td>我觉得可能要晕倒</td><td>没有或很少时间</td><td>1</td></tr>
-<tr><td>5</td><td>我觉得手脚发抖发颤</td><td>少部分时间</td><td>2</td></tr>
-<tr><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+<tr><th>答题ID</th><th>题目ID</th><th>题目</th><th>选项ID</th><th>所选选项</th><th>答题时间</th></tr>
+<tr><td>101</td><td>1</td><td>我觉得比平常容易紧张和着急</td><td>2</td><td>少部分时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>102</td><td>2</td><td>我容易心里烦乱或觉得惊恐</td><td>3</td><td>相当多时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>103</td><td>3</td><td>我一阵阵地头晕或头痛</td><td>1</td><td>没有或很少时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>104</td><td>4</td><td>我晕倒过或觉得要晕倒似的</td><td>1</td><td>没有或很少时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>105</td><td>5</td><td>我觉得一切都很好，不会发生不幸</td><td>4</td><td>绝大部分时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>106</td><td>6</td><td>我手脚发抖打颤</td><td>2</td><td>少部分时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>107</td><td>7</td><td>我因为头痛、颈痛和背痛而苦恼</td><td>3</td><td>相当多时间</td><td>2026-09-08 14:30</td></tr>
+<tr><td>108</td><td>8</td><td>我感觉容易衰弱和疲乏</td><td>3</td><td>相当多时间</td><td>2026-09-08 14:30</td></tr>
 </table>
-<div class="pgn">
-<span>共 20 条</span>
-<span class="pb a">1</span>
-<span class="pb">2</span>
-</div>
+<div class="pgn"><span>共 20 条</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pbn">...</span><span class="pb">5</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleRecordSummary（总分结果摘要）、ScaleAnswerDetailTable（答题明细表格）、BreadcrumbNav<br/>
-<b>接口：</b>GET /user/scale/user/records/{recordId}/details（分页查询测评明细）<br/>
-<b>数据字段：</b>ScaleUserAnswerVO(id,recordId,questionId,questionTitle,optionId,optionText,createdTime)<br/>
+<b>接口：</b><span class="api-tag">GET /user/scale/user/records/{recordId}/details</span>?pageNum=&pageSize= → PageResult&lt;<b>ScaleUserAnswerVO</b>{id, recordId, questionId, questionTitle, optionId, optionText, createdTime}&gt;<br/>
 <b>交互：</b>面包屑返回记录列表 → 分页查看答题明细
 </div>
 </div>
@@ -761,7 +968,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>11. 个人中心页</h3><span class="rt">/profile</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>左侧头像+菜单，右侧内容区。菜单项：基本信息、修改密码。支持编辑个人资料和修改密码</div>
+<div class="chg"><b>设计要点：</b>左侧头像+菜单，右侧内容区。支持编辑个人资料（UserProfileDTO）和修改密码（PasswordDTO）。头像上传调用 <span class="api-tag">POST /common/upload/image</span></div>
 <div class="wf">
 <div class="pl">
 <div class="ph">
@@ -770,43 +977,160 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <span class="sp"></span><span class="ua">U</span>
 </div>
 <div class="pm">
-<div style="display:grid;grid-template-columns:200px 1fr;gap:14px;">
-<div style="background:#fff;border-radius:8px;padding:16px;text-align:center;border:1px solid #f0f0f0;">
-<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#3f3d9e);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">U</div>
-<div style="font-size:13px;font-weight:600;">张小明</div>
-<div style="font-size:10px;color:#999;margin-bottom:12px;">xiaoming@example.com</div>
+<div style="display:grid;grid-template-columns:210px 1fr;gap:16px;">
+<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;text-align:center;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:600;">U</div>
+<div style="font-size:14px;font-weight:600;">张小明</div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:14px;">xiaoming@example.com</div>
 <div style="text-align:left;">
-<div style="padding:8px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;background:#f0eeff;color:#6c63ff;font-weight:500;">基本信息</div>
-<div style="padding:8px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;">修改密码</div>
-<div style="padding:8px 10px;font-size:11px;border-radius:4px;margin-bottom:2px;color:#ff4d4f;">退出登录</div>
+<div style="padding:8px 12px;font-size:11px;border-radius:var(--radius-xs);margin-bottom:3px;background:var(--primary-light);color:var(--primary);font-weight:600;">基本信息</div>
+<div style="padding:8px 12px;font-size:11px;border-radius:var(--radius-xs);margin-bottom:3px;cursor:pointer;">修改密码</div>
+<div style="padding:8px 12px;font-size:11px;border-radius:var(--radius-xs);cursor:pointer;color:var(--danger);">退出登录</div>
 </div>
 </div>
-<div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #f0f0f0;">
-<div style="font-size:14px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">基本信息</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
-<div><label style="display:block;color:#999;margin-bottom:3px;">用户名</label><div class="inp" style="width:100%;">zhangxiaoming</div></div>
-<div><label style="display:block;color:#999;margin-bottom:3px;">昵称</label><div class="inp" style="width:100%;">张小明</div></div>
-<div><label style="display:block;color:#999;margin-bottom:3px;">手机号</label><div class="inp" style="width:100%;">138****5678</div></div>
-<div><label style="display:block;color:#999;margin-bottom:3px;">邮箱</label><div class="inp" style="width:100%;">xiaoming@example.com</div></div>
-<div><label style="display:block;color:#999;margin-bottom:3px;">性别</label>
-<div style="display:flex;gap:8px;"><span class="bp b1" style="font-size:10px;">男</span><span class="bp b2" style="font-size:10px;">女</span><span class="bp b2" style="font-size:10px;">未知</span></div>
+<div style="background:#fff;border-radius:var(--radius-sm);padding:18px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+<div style="font-size:15px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border-light);">基本信息</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px;">
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">用户名 (username)</label><div class="inp" style="width:100%;">zhangxiaoming</div></div>
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">昵称 (username)</label><div class="inp" style="width:100%;">张小明</div></div>
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">手机号 (phone)</label><div class="inp" style="width:100%;">138****5678</div></div>
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">邮箱 (email)</label><div class="inp" style="width:100%;">xiaoming@example.com</div></div>
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">性别 (gender) 0/1/2</label>
+<div style="display:flex;gap:8px;"><span class="bp b1" style="font-size:10px;">1-男</span><span class="bp b2" style="font-size:10px;">0-女</span><span class="bp b2" style="font-size:10px;">2-未知</span></div>
 </div>
-<div><label style="display:block;color:#999;margin-bottom:3px;">所在地</label><div class="inp" style="width:100%;">北京市</div></div>
-<div style="grid-column:span 2;"><label style="display:block;color:#999;margin-bottom:3px;">个人简介</label><div class="inp" style="width:100%;min-height:40px;">热爱生活，关注心理健康</div></div>
+<div><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">所在地 (location)</label><div class="inp" style="width:100%;">北京市</div></div>
+<div style="grid-column:span 2;"><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">头像URL (avatar) <span style="color:var(--text-muted);">— 由<span class="api-tag">/common/upload/image</span>返回</span></label><div class="inp" style="width:100%;">https://oss.example.com/avatars/xxx.jpg</div></div>
+<div style="grid-column:span 2;"><label style="display:block;color:var(--text-secondary);margin-bottom:4px;">个人简介 (introduction)</label><div class="inp" style="width:100%;min-height:42px;">热爱生活，关注心理健康</div></div>
 </div>
-<div style="margin-top:14px;"><span class="bp b1">保存修改</span><span class="bp b2" style="margin-left:8px;">取消</span></div>
+<div style="margin-top:16px;"><span class="bp b1">保存修改</span><span class="bp b2" style="margin-left:8px;">取消</span></div>
+<div style="font-size:10px;color:var(--text-muted);margin-top:5px;">
+提交: <span class="api-tag">UserProfileDTO</span>{username, avatar, phone, email, introduction, gender, location}
+</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ProfileSidebar（侧边栏+头像+菜单）、ProfileForm（基本信息编辑）、PasswordForm（修改密码）<br/>
-<b>接口：</b><br/>
-&nbsp;&nbsp;GET /user/profile/profile（获取个人资料）、PUT /user/profile/profileUpdate（更新个人资料）<br/>
-&nbsp;&nbsp;PATCH /user/account（修改密码）、POST /user/account/logout（退出登录）<br/>
-<b>数据字段：</b>UserProfileVO(id,username,avatar,mobile,email,introduction,gender,location)<br/>
+<b>接口列表：</b><br/>
+&nbsp;&nbsp;📋 获取资料：<span class="api-tag">GET /user/profile/profile</span> → <b>UserProfileVO</b>{id, username, avatar, mobile, email, introduction, gender(0/1/2), location}<br/>
+&nbsp;&nbsp;✏️ 更新资料：<span class="api-tag">PUT /user/profile/profileUpdate</span> ← <b>UserProfileDTO</b>{username, avatar, phone, email, introduction, gender, location} → void<br/>
+&nbsp;&nbsp;🔒 修改密码：<span class="api-tag">PATCH /user/account</span> ← <b>PasswordDTO</b>{originalPassword, password, email, code} → void<br/>
+&nbsp;&nbsp;🚪 退出登录：<span class="api-tag">POST /user/account/logout</span> → void<br/>
+&nbsp;&nbsp;🖼️ 头像上传：<span class="api-tag">POST /common/upload/image</span> ← MultipartFile → String(图片URL)<br/>
 <b>交互：</b>切换左侧菜单 → 编辑/保存信息 → 修改密码 → 退出登录
+</div>
+</div>
+</div>
+
+<!-- ========== 12. Common 公共接口 ========== -->
+<div class="cd">
+<div class="ch"><h3>12. Common 公共接口（验证码 & 上传）</h3><span class="rt">/common/*</span></div>
+<div class="cb">
+<div class="chg"><b>设计要点：</b>不属于独立页面，是被其他页面/组件调用的公共接口。包括验证码获取、邮件验证码发送、图片上传三个接口</div>
+
+<!-- 接口1：验证码 -->
+<div style="margin-bottom:16px;">
+<div class="data-section"><div class="section-title">1️⃣ 图形验证码 — 登录/注册时使用</div></div>
+<div class="g2">
+<div class="data-panel">
+<h4><span class="icon">🔢</span>获取验证码图片</h4>
+<div class="data-item"><span class="key">接口</span><span class="val"><span class="api-tag">POST /common/verification/code</span></span></div>
+<div class="data-item"><span class="key">请求参数</span><span class="val">无</span></div>
+<div class="data-item"><span class="key">返回值</span><span class="val" style="font-size:10px;">Map{&quot;image&quot;: &quot;base64图片字符串&quot;, &quot;key&quot;: &quot;Redis中验证码答案的键&quot;}</span></div>
+<div style="margin-top:8px;padding:10px;background:#f5f5f5;border-radius:var(--radius-xs);">
+<div style="font-size:11px;font-weight:600;margin-bottom:6px;">页面使用流程：</div>
+<div style="font-size:10px;color:var(--text-secondary);line-height:1.8;">
+1. 弹窗打开时自动调用此接口 → 获得 image(base64) 和 key<br/>
+2. 将 image 渲染为 &lt;img src=&quot;data:image/png;base64,...&quot;&gt;<br/>
+3. 用户输入验证码后，将 code + key 传给登录/注册接口
+</div>
+</div>
+</div>
+<div class="data-panel">
+<h4><span class="icon">📧</span>发送邮件验证码</h4>
+<div class="data-item"><span class="key">接口</span><span class="val"><span class="api-tag">POST /common/verification/email</span></span></div>
+<div class="data-item"><span class="key">请求参数</span><span class="val"><b>email</b> (String, 必填, 邮箱号)</span></div>
+<div class="data-item"><span class="key">返回值</span><span class="val">void</span></div>
+<div style="margin-top:8px;padding:10px;background:#f5f5f5;border-radius:var(--radius-xs);font-size:10px;color:var(--text-secondary);">
+<b>用途：</b>忘记密码场景 — 用户输入邮箱 → 调用此接口发送验证码 → 用户填写验证码 → 调用 PATCH /user/account 修改密码
+</div>
+</div>
+</div>
+</div>
+
+<!-- 接口2：上传 -->
+<div style="margin-bottom:8px;">
+<div class="data-section"><div class="section-title">2️⃣ 图片上传 — 个人中心头像上传时使用</div></div>
+<div class="data-panel">
+<h4><span class="icon">🖼️</span>图片上传接口</h4>
+<div class="data-item"><span class="key">接口</span><span class="val"><span class="api-tag">POST /common/upload/image</span></span></div>
+<div class="data-item"><span class="key">请求参数</span><span class="val"><b>file</b> (MultipartFile, 必填, 图片文件)</span></div>
+<div class="data-item"><span class="key">返回值</span><span class="val"><b>String</b> (图片URL，如 https://oss.example.com/avatars/xxx.jpg)</span></div>
+<div style="margin-top:8px;padding:10px;background:#f5f5f5;border-radius:var(--radius-xs);font-size:10px;color:var(--text-secondary);">
+<b>页面使用流程：</b>个人中心 → 点击头像 → 选择图片文件 → 调用此接口上传 → 获得图片URL → 填入 UserProfileDTO.avatar → 保存资料
+</div>
+</div>
+</div>
+
+</div>
+<div class="note">
+<b>Common 接口汇总：</b><br/>
+&nbsp;&nbsp;🖼️ 图片上传：<span class="api-tag">POST /common/upload/image</span> ← MultipartFile file → String(url) &nbsp;|&nbsp; 用于头像上传<br/>
+&nbsp;&nbsp;🔢 图形验证码：<span class="api-tag">POST /common/verification/code</span> → Map{image(base64), key} &nbsp;|&nbsp; 用于登录/注册<br/>
+&nbsp;&nbsp;📧 邮件验证码：<span class="api-tag">POST /common/verification/email</span> ← String email → void &nbsp;|&nbsp; 用于忘记密码<br/>
+<b>使用场景：</b>验证码接口被页面2（登录/注册弹窗）和页面11（个人中心-忘记密码）调用；上传接口被页面11（个人中心-头像上传）调用
+</div>
+</div>
+</div>
+
+<!-- ========== 13. 数据完整性检查清单 ========== -->
+<div class="cd">
+<div class="ch"><h3>13. API 参数与返回值完整对照清单</h3><span class="rt">Checklist</span></div>
+<div class="cb">
+<div class="chg"><b>说明：</b>对照所有 controller 接口，检查页面是否完整展示了每个接口的请求参数（DTO）和返回值（VO）的所有字段</div>
+<div style="overflow-x:auto;">
+<table class="wt" style="font-size:10px;">
+<tr><th>#</th><th>接口路径</th><th>方法</th><th>请求参数（DTO）</th><th>返回值（VO）</th><th>页面</th><th>状态</th></tr>
+<tr><td>1</td><td>/user/account/login</td><td>POST</td><td>LoginUserDTO: username, password, code, key</td><td>LoginResultVO: token, roles</td><td>页面2</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>2</td><td>/user/account/register</td><td>POST</td><td>RegisterUserDTO: username, password, code, key</td><td>void</td><td>页面2</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>3</td><td>/user/account/logout</td><td>POST</td><td>无</td><td>void</td><td>页面2/11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>4</td><td>/user/account</td><td>PATCH</td><td>PasswordDTO: originalPassword, password, email, code</td><td>void</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">会话 & 对话</td></tr>
+<tr><td>5</td><td>/user/conversation/list</td><td>POST</td><td>PageBaseDTO: pageNum, pageSize</td><td>PageResult&lt;ConversationVO&gt;: id, name, createdTime, updatedTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>6</td><td>/user/conversation/{id}/name</td><td>PUT</td><td>ConversationInfoDTO: name</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>7</td><td>/user/conversation/{id}</td><td>DELETE</td><td>PathVariable: conversationId</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>8</td><td>/user/conversation/ai-chat/user-message</td><td>POST</td><td>UserMessageSendDTO: message, conversationId(可选)</td><td>UserMessageSendVO: conversationId, currentRound</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>9</td><td>/user/conversaion/dialogue/{id}/memory</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;ConversationMemoryVO&gt;: id, content, type, roundNum, createdTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">情绪分析</td></tr>
+<tr><td>10</td><td>/user/conversation/emotion-analysis/list/{id}</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;EmotionAnalysisVO&gt;: id, roundNum, analysisContent, emotionLabel, emotionSubLabel, emotionConfidence, emotionIntensity, emotionTrend, pScore, aScore, dScore, negativeEmotionRatio, neutralEmotionRatio, positiveEmotionRatio, createdTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>11</td><td>/user/conversation/emotion-analysis/detail/{id}</td><td>GET</td><td>PathVariable: analysisId</td><td>EmotionAnalysisDetailVO: modelContent, userContent, thinkContent</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">语音</td></tr>
+<tr><td>12</td><td>/user/conversation/audio/init</td><td>POST</td><td>RequestParam: conversationId(可选)</td><td>AudioSessionInitVO: conversationId</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>13</td><td>/user/conversation/audio/{id}/end</td><td>DELETE</td><td>PathVariable: conversationId</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">心理诊断</td></tr>
+<tr><td>14</td><td>/user/conversation/emotion-diagnosis/list</td><td>POST</td><td>EmotionDiagnosisQueryDTO: pageNum, pageSize, conversationName(可选)</td><td>PageResult&lt;DiagnosisConversationVO&gt;: conversationId, conversationName, latestRoundNum, diagnosisCount, diagnosisUpdatedTime, conversationCreatedTime</td><td>页面4</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>15</td><td>/user/conversation/emotion-diagnosis/list/{conversationId}</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;EmotionDiagnosisListVO&gt;: id, conversationId, roundNum, createdTime, updatedTime</td><td>页面5</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>16</td><td>/user/conversation/emotion-diagnosis/detail/{diagnosisId}</td><td>GET</td><td>PathVariable: diagnosisId</td><td>EmotionDiagnosisVO: 47字段（详见页面6完整清单）</td><td>页面6</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>17</td><td>/user/conversation/emotion-diagnosis/{diagnosisId}/feedback</td><td>PUT</td><td>EmotionDiagnosisFeedbackDTO: diagnosisScore(1-5), feedbackContent(≤200), agreeRiskJudge(0/1), agreeSuggestionSelf(0/1), agreeSuggestionSocial(0/1), agreeSuggestionProfessional(0/1), useSuggestion(0/1/2)</td><td>void</td><td>页面6</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">量表</td></tr>
+<tr><td>18</td><td>/user/scale/category</td><td>GET</td><td>无</td><td>List&lt;ScaleCategoryVO&gt;: id, categoryName, useCount</td><td>页面7</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>19</td><td>/user/scale/list</td><td>GET</td><td>Query: pageNum, pageSize, scaleCategoryId(可选)</td><td>PageResult&lt;ScaleVO&gt;: id, scaleName, description, questionCount, scaleCategoryId, status, scoreRule</td><td>页面7</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>20</td><td>/user/scale/questions/list</td><td>GET</td><td>Query: scaleId, pageNum, pageSize</td><td>PageResult&lt;ScaleQuestionVO&gt;: id, title, sort, scoreType, optionList[ScaleOptionVO{id, optionText, score, sort}]</td><td>页面8</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>21</td><td>/user/scale/user</td><td>POST</td><td>ScaleUserAnswerDTO: scaleId, answers:[AnswerItemDTO{questionId, optionId}]</td><td>void</td><td>页面8</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>22</td><td>/user/scale/user/records</td><td>GET</td><td>Query: pageNum, pageSize</td><td>PageResult&lt;ScaleUserRecordVO&gt;: id, userId, scaleId, scaleName, totalScore, resultText, createdTime</td><td>页面9</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>23</td><td>/user/scale/user/records/{recordId}/details</td><td>GET</td><td>Query: pageNum, pageSize</td><td>PageResult&lt;ScaleUserAnswerVO&gt;: id, recordId, questionId, questionTitle, optionId, optionText, createdTime</td><td>页面10</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">用户资料</td></tr>
+<tr><td>24</td><td>/user/profile/profile</td><td>GET</td><td>无（从token获取用户ID）</td><td>UserProfileVO: id, username, avatar, mobile, email, introduction, gender, location</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>25</td><td>/user/profile/profileUpdate</td><td>PUT</td><td>UserProfileDTO: username, avatar, phone, email, introduction, gender, location</td><td>void</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr style="background:#fafafa;"><td colspan="7" style="font-weight:600;">公共接口</td></tr>
+<tr><td>26</td><td>/common/upload/image</td><td>POST</td><td>MultipartFile file</td><td>String (图片URL)</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>27</td><td>/common/verification/code</td><td>POST</td><td>无</td><td>Map{image(base64), key}</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>28</td><td>/common/verification/email</td><td>POST</td><td>String email</td><td>void</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+</table>
+</div>
+<div style="margin-top:12px;text-align:center;font-size:14px;font-weight:700;color:var(--success);">
+✅ 全部 28 个接口的参数与返回值已在页面中完整展示
 </div>
 </div>
 </div>
@@ -815,131 +1139,105 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <!-- 页面导航关系图 -->
 <div class="sec">
-<div class="st">页面导航关系</div>
-<div class="sd">前台页面之间的跳转关系，根据 /server/controller/user 接口设计</div>
-<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
-<svg viewBox="0 0 1100 420" xmlns="http://www.w3.org/2000/svg" width="100%">
+<div class="st"><span class="st-num">🗺️</span>页面导航关系</div>
+<div class="sd">前台13个界面之间的跳转关系，根据 /server/controller/user 和 /server/controller/common 接口设计</div>
+<div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);overflow-x:auto;">
+<svg viewBox="0 0 1100 480" xmlns="http://www.w3.org/2000/svg" width="100%">
 <defs>
-<marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6c63ff"/></marker>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--primary)"/></marker>
 <filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-opacity="0.08"/></filter>
 </defs>
 <!-- 首页 -->
-<rect x="30" y="20" width="140" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="100" y="50" text-anchor="middle" fill="#6c63ff" font-size="12" font-weight="600">1. 首页</text>
+<rect x="30" y="20" width="150" height="50" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="50" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="700">1. 首页 /</text>
 <!-- 登录弹窗 -->
-<rect x="30" y="90" width="140" height="50" rx="8" fill="#fffbe6" stroke="#fa8c16" stroke-width="1.5" filter="url(#sh)"/>
-<text x="100" y="120" text-anchor="middle" fill="#8c6d1f" font-size="12" font-weight="600">2. 登录/注册弹窗</text>
+<rect x="30" y="90" width="150" height="50" rx="8" fill="#fffbe6" stroke="var(--warning)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="115" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">2. 登录/注册</text>
+<text x="105" y="130" text-anchor="middle" fill="#999" font-size="9">弹窗（非页面）</text>
 <!-- AI对话 -->
-<rect x="30" y="170" width="140" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="100" y="200" text-anchor="middle" fill="#6c63ff" font-size="12" font-weight="600">3. AI对话页</text>
-<!-- 心理诊断 - 会话列表 -->
-<rect x="280" y="20" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="370" y="42" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">4. 心理诊断</text>
-<text x="370" y="58" text-anchor="middle" fill="#999" font-size="10">会话列表页（分页）</text>
-<!-- 心理诊断 - 诊断列表 -->
-<rect x="540" y="20" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="630" y="42" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">5. 心理诊断</text>
-<text x="630" y="58" text-anchor="middle" fill="#999" font-size="10">诊断列表页（分页）</text>
-<!-- 心理诊断 - 诊断详情 -->
-<rect x="800" y="20" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="890" y="42" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">6. 心理诊断</text>
-<text x="890" y="58" text-anchor="middle" fill="#999" font-size="10">诊断详情页+反馈</text>
-<!-- 量表展示 -->
-<rect x="280" y="110" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="370" y="132" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">7. 量表测评</text>
-<text x="370" y="148" text-anchor="middle" fill="#999" font-size="10">量表展示页（分页）</text>
-<!-- 量表答题 -->
-<rect x="540" y="110" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="630" y="132" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">8. 量表测评</text>
-<text x="630" y="148" text-anchor="middle" fill="#999" font-size="10">答题页（步骤式）</text>
-<!-- 测评记录 -->
-<rect x="280" y="190" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="370" y="212" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">9. 量表测评</text>
-<text x="370" y="228" text-anchor="middle" fill="#999" font-size="10">测评记录页（分页）</text>
-<!-- 测评记录详情 -->
-<rect x="540" y="190" width="180" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="630" y="212" text-anchor="middle" fill="#6c63ff" font-size="11" font-weight="600">10. 量表测评</text>
-<text x="630" y="228" text-anchor="middle" fill="#999" font-size="10">测评记录详情页</text>
-<!-- 个人中心 -->
-<rect x="30" y="280" width="140" height="50" rx="8" fill="#f0eeff" stroke="#6c63ff" stroke-width="1.5" filter="url(#sh)"/>
-<text x="100" y="310" text-anchor="middle" fill="#6c63ff" font-size="12" font-weight="600">11. 个人中心页</text>
-<!-- 箭头：诊断三级导航 -->
-<line x1="460" y1="45" x2="538" y2="45" stroke="#6c63ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="499" y="40" text-anchor="middle" fill="#999" font-size="9">点击会话</text>
-<line x1="720" y1="45" x2="798" y2="45" stroke="#6c63ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="759" y="40" text-anchor="middle" fill="#999" font-size="9">点击诊断</text>
-<!-- 箭头：量表答题 -->
-<line x1="460" y1="135" x2="538" y2="135" stroke="#6c63ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="499" y="130" text-anchor="middle" fill="#999" font-size="9">开始测评</text>
-<!-- 箭头：量表记录 -->
-<line x1="460" y1="215" x2="538" y2="215" stroke="#6c63ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="499" y="210" text-anchor="middle" fill="#999" font-size="9">查看详情</text>
-<!-- 导航栏 -->
-<rect x="30" y="360" width="1040" height="50" rx="8" fill="#fafafa" stroke="#e5e7eb"/>
-<text x="60" y="390" fill="#333" font-size="12" font-weight="600">导航栏：</text>
-<text x="130" y="390" fill="#6c63ff" font-size="11">首页 → 页面1</text>
-<text x="240" y="390" fill="#6c63ff" font-size="11">AI对话 → 页面3</text>
-<text x="370" y="390" fill="#6c63ff" font-size="11">心理诊断 → 页面4</text>
-<text x="510" y="390" fill="#6c63ff" font-size="11">量表测评 → 页面7</text>
-<text x="650" y="390" fill="#6c63ff" font-size="11">个人中心 → 页面11</text>
-<text x="800" y="390" fill="#999" font-size="11">（登录/注册 → 弹窗2，非页面跳转）</text>
-</svg>
-</div>
-</div>
+<rect x="30" y="170" width="150" height="60" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="196" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="600">3. AI对话页</text>
+<text x="105" y="216" text-anchor="middle" fill="#999" font-size="9">三栏布局</text>
+<!-- Common接口 -->
+<rect x="30" y="350" width="150" height="50" rx="8" fill="#f0fff0" stroke="var(--success)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="370" text-anchor="middle" fill="var(--success)" font-size="11" font-weight="600">12. Common接口</text>
+<text x="105" y="388" text-anchor="middle" fill="#999" font-size="9">验证码/上传</text>
 
-<!-- 接口对照表 -->
-<div class="sec">
-<div class="st">接口对照表</div>
-<div class="sd">前台页面与 /server/controller/user 下接口的完整对照</div>
-<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow-x:auto;">
-<table class="wt" style="font-size:11px;">
-<tr><th>页面</th><th>路由</th><th>对应接口</th><th>接口说明</th></tr>
-<tr><td>1. 首页</td><td>/</td><td>—</td><td>纯静态展示，无接口</td></tr>
-<tr><td>2. 登录/注册弹窗</td><td>Dialog</td><td>POST /user/account/login<br/>POST /user/account/register<br/>POST /user/account/logout</td><td>登录、注册、登出</td></tr>
-<tr><td rowspan="5">3. AI对话页</td><td rowspan="5">/conversation</td><td>POST /user/conversation/list</td><td>会话列表分页</td></tr>
-<tr><td>PUT /user/conversation/{id}/name</td><td>修改会话属性</td></tr>
-<tr><td>DELETE /user/conversation/{id}</td><td>删除会话</td></tr>
-<tr><td>POST /user/conversation/ai-chat/user-message</td><td>发送用户消息</td></tr>
-<tr><td>POST /user/conversaion/dialogue/{id}/memory</td><td>对话记录分页</td></tr>
-<tr><td></td><td></td><td>POST /user/conversation/emotion-analysis/list/{id}</td><td>情绪分析分页</td></tr>
-<tr><td></td><td></td><td>GET /user/conversation/emotion-analysis/detail/{id}</td><td>情绪分析详情</td></tr>
-<tr><td></td><td></td><td>POST /user/conversation/audio/init</td><td>初始化语音会话</td></tr>
-<tr><td></td><td></td><td>WS /message/send, WS /interrupt</td><td>语音消息发送/中断</td></tr>
-<tr><td></td><td></td><td>DELETE /user/conversation/audio/{id}/end</td><td>结束语音会话</td></tr>
-<tr><td>4. 心理诊断-会话列表</td><td>/diagnosis</td><td>POST /user/conversation/emotion-diagnosis/list</td><td>分页查询有诊断的会话</td></tr>
-<tr><td>5. 心理诊断-诊断列表</td><td>/diagnosis/:sessionId</td><td>POST /user/conversation/emotion-diagnosis/list/{conversationId}</td><td>按会话ID分页查询诊断书</td></tr>
-<tr><td>6. 心理诊断-诊断详情</td><td>/diagnosis/:sessionId/:diagnosisId</td><td>GET /user/conversation/emotion-diagnosis/detail/{diagnosisId}<br/>PUT /user/conversation/emotion-diagnosis/{diagnosisId}/feedback</td><td>诊断详情、用户反馈</td></tr>
-<tr><td>7. 量表展示</td><td>/scale</td><td>GET /user/scale/category<br/>GET /user/scale/list</td><td>量表类别、量表列表</td></tr>
-<tr><td>8. 量表答题</td><td>/scale/:scaleId/answer</td><td>GET /user/scale/questions/list<br/>POST /user/scale/user</td><td>题目列表(含选项)、提交测评</td></tr>
-<tr><td>9. 测评记录</td><td>/scale/records</td><td>GET /user/scale/user/records</td><td>测评历史记录分页</td></tr>
-<tr><td>10. 测评记录详情</td><td>/scale/records/:recordId</td><td>GET /user/scale/user/records/{recordId}/details</td><td>测评答题明细分页</td></tr>
-<tr><td>11. 个人中心</td><td>/profile</td><td>GET /user/profile/profile<br/>PUT /user/profile/profileUpdate<br/>PATCH /user/account<br/>POST /user/account/logout</td><td>获取/更新资料、修改密码、退出</td></tr>
-</table>
+<!-- 诊断三级 -->
+<rect x="260" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">4. 心理诊断</text>
+<text x="350" y="62" text-anchor="middle" fill="#999" font-size="10">会话列表页（分页）</text>
+<rect x="520" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">5. 心理诊断</text>
+<text x="610" y="62" text-anchor="middle" fill="#999" font-size="10">诊断列表页（分页）</text>
+<rect x="780" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="870" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">6. 心理诊断</text>
+<text x="870" y="62" text-anchor="middle" fill="#999" font-size="10">详情页+反馈</text>
+
+<!-- 量表 -->
+<rect x="260" y="110" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="134" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">7. 量表测评</text>
+<text x="350" y="152" text-anchor="middle" fill="#999" font-size="10">量表展示页（分页）</text>
+<rect x="520" y="110" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="134" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">8. 量表测评</text>
+<text x="610" y="152" text-anchor="middle" fill="#999" font-size="10">答题页（步骤式）</text>
+<rect x="260" y="200" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="224" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">9. 量表测评</text>
+<text x="350" y="242" text-anchor="middle" fill="#999" font-size="10">测评记录页（分页）</text>
+<rect x="520" y="200" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="224" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">10. 量表测评</text>
+<text x="610" y="242" text-anchor="middle" fill="#999" font-size="10">答题明细页</text>
+
+<!-- 个人中心 -->
+<rect x="30" y="260" width="150" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="284" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="600">11. 个人中心</text>
+<text x="105" y="302" text-anchor="middle" fill="#999" font-size="10">资料/密码/登出</text>
+
+<!-- 箭头：诊断 -->
+<line x1="440" y1="47" x2="518" y2="47" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="42" text-anchor="middle" fill="#999" font-size="9">点击会话</text>
+<line x1="700" y1="47" x2="778" y2="47" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="739" y="42" text-anchor="middle" fill="#999" font-size="9">点击诊断</text>
+<!-- 箭头：量表 -->
+<line x1="440" y1="137" x2="518" y2="137" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="132" text-anchor="middle" fill="#999" font-size="9">开始测评</text>
+<line x1="440" y1="227" x2="518" y2="227" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="222" text-anchor="middle" fill="#999" font-size="9">查看详情</text>
+<!-- 导航栏 -->
+<rect x="30" y="420" width="1050" height="50" rx="8" fill="#fafafa" stroke="var(--border)"/>
+<text x="55" y="450" fill="var(--text)" font-size="12" font-weight="600">导航栏：</text>
+<text x="130" y="450" fill="var(--primary)" font-size="11">首页 → 页面1</text>
+<text x="240" y="450" fill="var(--primary)" font-size="11">AI对话 → 页面3</text>
+<text x="380" y="450" fill="var(--primary)" font-size="11">心理诊断 → 页面4</text>
+<text x="530" y="450" fill="var(--primary)" font-size="11">量表测评 → 页面7</text>
+<text x="680" y="450" fill="var(--primary)" font-size="11">个人中心 → 页面11</text>
+<text x="830" y="450" fill="#999" font-size="11">（登录/注册 → 弹窗2，非页面跳转）</text>
+</svg>
 </div>
 </div>
 
 <!-- 配色方案 -->
 <div class="sec">
-<div class="st">配色方案</div>
+<div class="st"><span class="st-num">🎨</span>配色方案</div>
 <div class="sd">以心理健康为主题，采用柔和、温暖、安全的紫蓝色调</div>
-<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
-<div style="display:flex;gap:40px;flex-wrap:wrap;">
+<div style="background:#fff;border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);">
+<div style="display:flex;gap:50px;flex-wrap:wrap;">
 <div>
-<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">主色调（Portal 用户端）</h4>
-<div style="display:flex;gap:12px;flex-wrap:wrap;">
-<div class="csi"><div class="csw" style="background:#6c63ff;"></div><div class="csl">主色</div><div class="csv">#6c63ff</div></div>
-<div class="csi"><div class="csw" style="background:#3f3d9e;"></div><div class="csl">深色</div><div class="csv">#3f3d9e</div></div>
-<div class="csi"><div class="csw" style="background:#f0eeff;"></div><div class="csl">浅底</div><div class="csv">#f0eeff</div></div>
-<div class="csi"><div class="csw" style="background:#e8e6ff;"></div><div class="csl">浅色</div><div class="csv">#e8e6ff</div></div>
+<h4 style="font-size:15px;font-weight:600;margin-bottom:14px;">主色调（Portal 用户端）</h4>
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:var(--primary);"></div><div class="csl">主色</div><div class="csv">#6c63ff</div></div>
+<div class="csi"><div class="csw" style="background:var(--primary-dark);"></div><div class="csl">深色</div><div class="csv">#3f3d9e</div></div>
+<div class="csi"><div class="csw" style="background:var(--primary-light);"></div><div class="csl">浅底</div><div class="csv">#f0eeff</div></div>
+<div class="csi"><div class="csw" style="background:var(--primary-lighter);"></div><div class="csl">浅色</div><div class="csv">#e8e6ff</div></div>
 </div>
 </div>
 <div>
-<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">功能色</h4>
-<div style="display:flex;gap:12px;flex-wrap:wrap;">
-<div class="csi"><div class="csw" style="background:#52c41a;"></div><div class="csl">成功</div><div class="csv">#52c41a</div></div>
-<div class="csi"><div class="csw" style="background:#fa8c16;"></div><div class="csl">警告</div><div class="csv">#fa8c16</div></div>
-<div class="csi"><div class="csw" style="background:#ff4d4f;"></div><div class="csl">危险</div><div class="csv">#ff4d4f</div></div>
-<div class="csi"><div class="csw" style="background:#1890ff;"></div><div class="csl">信息</div><div class="csv">#1890ff</div></div>
+<h4 style="font-size:15px;font-weight:600;margin-bottom:14px;">功能色</h4>
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:var(--success);"></div><div class="csl">成功</div><div class="csv">#52c41a</div></div>
+<div class="csi"><div class="csw" style="background:var(--warning);"></div><div class="csl">警告</div><div class="csv">#fa8c16</div></div>
+<div class="csi"><div class="csw" style="background:var(--danger);"></div><div class="csl">危险</div><div class="csv">#ff4d4f</div></div>
+<div class="csi"><div class="csw" style="background:var(--info);"></div><div class="csl">信息</div><div class="csv">#1890ff</div></div>
 </div>
 </div>
 </div>

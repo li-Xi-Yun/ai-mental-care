@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.properties.FileUrlProperties;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-04-17 19:30
  */
 @Slf4j
-//@Component
+@Component
 @RequiredArgsConstructor
 public class PromptUtil {
 
@@ -34,9 +35,10 @@ public class PromptUtil {
      */
     @PostConstruct
     public void init() {
-        long start = System.currentTimeMillis();
-        loadPrompts();
-        log.info("提示词初始化完成，共加载提示词数量：{}，耗时：{}ms", PROMPT_MAP.size(), System.currentTimeMillis() - start);
+//        long start = System.currentTimeMillis();
+//        loadPrompts();
+//        log.info("提示词初始化完成，共加载提示词数量：{}，耗时：{}ms", PROMPT_MAP.size(), System.currentTimeMillis() - start);
+        log.info("提示词不再使用，后续需要进行删除");
     }
 
     /**

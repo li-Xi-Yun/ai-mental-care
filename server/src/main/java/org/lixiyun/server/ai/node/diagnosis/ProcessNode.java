@@ -12,6 +12,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.ProcessGraph;
 import org.springframework.stereotype.Component;
@@ -63,7 +64,9 @@ public class ProcessNode implements NodeActionWithConfig, NodeExecutionSummary {
                 .knowledgeRetrieveResult(knowledgeRetrieveResult)
                 .build();
 
-        DiagnosisData diagnosisData = processGraph.executeGraph(diagnosisDataRequest, metadata);
+        GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(null);
+
+        DiagnosisData diagnosisData = processGraph.executeGraph(diagnosisDataRequest, metadata, graphState);
 
         log.info("诊断流程-处理侧节点-完成");
         return Map.of(DiagnosisData.NAME, diagnosisData);

@@ -37,6 +37,10 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPAD
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeSliceItem;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
+import org.lixiyun.pojo.bo.conversation.state.KnowledgeGraphState;
+import org.lixiyun.pojo.bo.conversation.state.ProcessGraphState;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
@@ -124,5 +128,10 @@ public class DiagnosisStateSerializer extends SpringAIJacksonStateSerializer {
         tm.register(new TypeMapper.Reference<KnowledgeSliceItem>(KnowledgeSliceItem.class.getName()) {});
 
         tm.register(new TypeMapper.Reference<DiagnosisData>(DiagnosisData.class.getName()) {});
+
+        tm.register(new TypeMapper.Reference<GraphState>(GraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<InputGraphState>(InputGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<KnowledgeGraphState>(KnowledgeGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<ProcessGraphState>(ProcessGraphState.class.getName()) {});
     }
 }

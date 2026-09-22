@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -74,6 +75,7 @@ public class RootAgentStreamProcessor implements AgentStreamProcessor {
                     log.debug("[模型流式输出-根处理器] 正文='{}'", text);
                     return new AgentStreamEvent.ModelContentChunk(text);
                 }
+                log.debug("[模型流式输出-根处理器] 无有效内容{}", JsonUtils.toJsonString(assistantMessage));
                 return null;
             }
             return null;

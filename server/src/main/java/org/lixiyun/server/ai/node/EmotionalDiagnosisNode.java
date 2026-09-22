@@ -48,6 +48,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Builder
+@Deprecated
 public class EmotionalDiagnosisNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "emotionalDiagnosisNode";

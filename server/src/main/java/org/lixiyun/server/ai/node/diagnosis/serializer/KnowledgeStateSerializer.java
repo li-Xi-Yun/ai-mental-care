@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeSliceItem;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
+import org.lixiyun.pojo.bo.conversation.state.KnowledgeGraphState;
+import org.lixiyun.pojo.bo.conversation.state.ProcessGraphState;
 
 /**
  * KnowledgeGraph 专用状态序列化器。
@@ -49,5 +53,10 @@ public class KnowledgeStateSerializer extends SpringAIJacksonStateSerializer {
         tm.register(new TypeMapper.Reference<KnowledgeMatchRequest>(KnowledgeMatchRequest.class.getName()) {});
         tm.register(new TypeMapper.Reference<KnowledgeRetrieveResult>(KnowledgeRetrieveResult.class.getName()) {});
         tm.register(new TypeMapper.Reference<KnowledgeSliceItem>(KnowledgeSliceItem.class.getName()) {});
+
+        tm.register(new TypeMapper.Reference<GraphState>(GraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<InputGraphState>(InputGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<KnowledgeGraphState>(KnowledgeGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<ProcessGraphState>(ProcessGraphState.class.getName()) {});
     }
 }

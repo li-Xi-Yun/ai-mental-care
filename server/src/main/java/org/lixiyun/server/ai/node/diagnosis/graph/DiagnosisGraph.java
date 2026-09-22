@@ -16,18 +16,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
-import org.lixiyun.server.ai.node.diagnosis.DiagnosisPersistNode;
-import org.lixiyun.server.ai.node.diagnosis.InputNode;
-import org.lixiyun.server.ai.node.diagnosis.KnowledgeNode;
-import org.lixiyun.server.ai.node.diagnosis.ProcessNode;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.server.ai.node.diagnosis.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.DiagnosisStateSerializer;
 import org.lixiyun.server.ai.saver.CheckpointCleaner;
-import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -48,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 public class DiagnosisGraph {
 
     private final InputNode inputNode;
+    private final IntentRecognitionNode intentRecognitionNode;
     private final KnowledgeNode knowledgeNode;
     private final ProcessNode processNode;
     private final DiagnosisPersistNode diagnosisPersistNode;
@@ -91,13 +90,21 @@ public class DiagnosisGraph {
 
         Map<String, Object> stateMap = Map.of(
                 ConversationProcessContextBO.NAME, contextBO,
-                ConversationMetadata.NAME, metadata
+                ConversationMetadata.NAME, metadata,
+                GraphState.NAME, new GraphState()
         );
 
         RunnableConfig runnableConfig = RunnableConfig.builder()
                 .threadId(contextBO.getConversation().getId() + "_diagnosis_" + System.currentTimeMillis())
                 .addMetadata(ConversationMetadata.NAME, metadata)
                 .build();
+
+        Long conversationId = contextBO.getConversation().getId();
+        String lockKey = "diagnosis:lock:" + conversationId;
+        if (!RedisUtils.tryAcquireLock(lockKey, 0, 120)) {
+            log.info("DiagnosisGraph-会话{}，轮次{}已有诊断进行中，跳过本次", conversationId, metadata.getCurrentRound());
+            return null;
+        }
 
         OverAllState result = null;
         try {
@@ -109,11 +116,17 @@ public class DiagnosisGraph {
         } catch (BusinessException e) {
             throw new RuntimeException(e);
         } finally {
+            RedisUtils.releaseLock(lockKey);
             try {
                 checkpointCleaner.release(runnableConfig);
             } catch (Exception e) {
                 log.error("DiagnosisGraph-Checkpoint删除失败", e);
             }
+        }
+
+        if (isDiagnosisInterrupted(result)) {
+            log.info("DiagnosisGraph-诊断流程已中断，返回null");
+            return null;
         }
 
         // result.value() 在通过 MysqlSaver 反序列化 checkpoint 时，
@@ -162,6 +175,7 @@ public class DiagnosisGraph {
             keyStrategyMap.put(InputResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(KnowledgeRetrieveResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(DiagnosisData.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(GraphState.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };
 
@@ -169,16 +183,23 @@ public class DiagnosisGraph {
 
         try {
             StateGraph workflow = new StateGraph(keyStrategyFactory, (StateSerializer) new DiagnosisStateSerializer(OverAllState::new))
+                    .addNode(IntentRecognitionNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(intentRecognitionNode))
                     .addNode(InputNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(inputNode))
                     .addNode(KnowledgeNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(knowledgeNode))
                     .addNode(ProcessNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(processNode))
                     .addNode(DiagnosisPersistNode.NODE_NAME, AsyncNodeActionWithConfig.node_async(diagnosisPersistNode));
 
-            workflow.addEdge(StateGraph.START, InputNode.NODE_NAME);
+            workflow.addEdge(StateGraph.START, IntentRecognitionNode.NODE_NAME);
+            workflow.addConditionalEdges(IntentRecognitionNode.NODE_NAME,
+                    createInterruptConditionEdge(),
+                    Map.of(GraphState.END, StateGraph.END,
+                            GraphState.PROCESS, InputNode.NODE_NAME
+                    )
+            );
             workflow.addConditionalEdges(InputNode.NODE_NAME,
                     createInterruptConditionEdge(),
-                    Map.of("end", StateGraph.END,
-                            "process", KnowledgeNode.NODE_NAME
+                    Map.of(GraphState.END, StateGraph.END,
+                            GraphState.PROCESS, KnowledgeNode.NODE_NAME
                     )
             );
             workflow.addEdge(KnowledgeNode.NODE_NAME, ProcessNode.NODE_NAME);
@@ -202,19 +223,48 @@ public class DiagnosisGraph {
 
     /**
      * 创建诊断流程中断条件边
-     * <p>检查InputNode是否设置了中断标志，若中断则结束整个诊断流程，否则继续到知识侧节点</p>
+     * <p>从状态图中读取{@link GraphState}，检查任一阶段是否设置了中断标志，
+     * 若中断则结束整个诊断流程，否则继续到下一节点</p>
      *
      * @return {@link AsyncEdgeActionWithConfig} 条件边动作
      */
     private AsyncEdgeActionWithConfig createInterruptConditionEdge() {
         return (state, config) -> {
-            if (Boolean.TRUE.equals(config.context().get(GraphConstant.DIAGNOSIS_INTERRUPTED))) {
+            GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(null);
+            if (graphState != null && isInterrupted(graphState)) {
                 log.debug("条件跳转：诊断流程已中断，结束流程");
-                return CompletableFuture.completedFuture("end");
+                return CompletableFuture.completedFuture(GraphState.END);
             }
-            log.debug("条件跳转：诊断流程正常，继续到知识侧节点");
-            return CompletableFuture.completedFuture("process");
+            log.debug("条件跳转：诊断流程正常，继续到下一节点");
+            return CompletableFuture.completedFuture(GraphState.PROCESS);
         };
+    }
+
+    /**
+     * 判断GraphState中任一阶段是否处于中断状态
+     *
+     * @param graphState 图中断状态
+     * @return true 表示有阶段中断
+     */
+    private boolean isInterrupted(GraphState graphState) {
+        return (graphState.getInputGraphState() != null && graphState.getInputGraphState().isInterrupted())
+                || (graphState.getKnowledgeGraphState() != null && graphState.getKnowledgeGraphState().isInterrupted())
+                || (graphState.getProcessGraphState() != null && graphState.getProcessGraphState().isInterrupted());
+    }
+
+    /**
+     * 判断诊断流程是否已被中断
+     * <p>从{@link OverAllState}中读取{@link GraphState}，检查是否存在中断标识</p>
+     *
+     * @param result 图执行结果
+     * @return true 表示诊断流程已中断，应提前返回
+     */
+    private boolean isDiagnosisInterrupted(OverAllState result) {
+        if (result == null) {
+            return false;
+        }
+        GraphState graphState = (GraphState) result.value(GraphState.NAME).orElse(null);
+        return graphState != null && isInterrupted(graphState);
     }
 
 }

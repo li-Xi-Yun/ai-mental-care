@@ -7,6 +7,10 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
+import org.lixiyun.pojo.bo.conversation.state.KnowledgeGraphState;
+import org.lixiyun.pojo.bo.conversation.state.ProcessGraphState;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.MessageEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
@@ -115,5 +119,10 @@ public class InputStateSerializer extends SpringAIJacksonStateSerializer {
         tm.register(new TypeMapper.Reference<EmotionDimensionTrend>(EmotionDimensionTrend.class.getName()) {});
         tm.register(new TypeMapper.Reference<EmotionPADStat>(EmotionPADStat.class.getName()) {});
         tm.register(new TypeMapper.Reference<EmotionRatioStat>(EmotionRatioStat.class.getName()) {});
+
+        tm.register(new TypeMapper.Reference<GraphState>(GraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<InputGraphState>(InputGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<KnowledgeGraphState>(KnowledgeGraphState.class.getName()) {});
+        tm.register(new TypeMapper.Reference<ProcessGraphState>(ProcessGraphState.class.getName()) {});
     }
 }

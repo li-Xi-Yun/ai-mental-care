@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomNormalizeResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomOriginalItem;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomTerm;
@@ -21,7 +23,6 @@ import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
-import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -118,9 +119,9 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
         if (coreInfoExtractResult == null || coreInfoExtractResult.getSymptomOriginalList() == null
                 || coreInfoExtractResult.getSymptomOriginalList().isEmpty()) {
             log.info("输入侧-语义归一化处理-症状原文列表为空，终止诊断流程");
-            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
-            inputResult.setInterrupted(true);
-            return Map.of();
+            GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(new GraphState());
+            graphState.setInputGraphState(InputGraphState.builder().interrupted(true).interruptReason("症状原文列表为空").build());
+            return Map.of(GraphState.NAME, graphState);
         }
 
         List<SymptomRawItem> rawItemList = coreInfoExtractResult.getSymptomOriginalList();
@@ -131,9 +132,9 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
 
         if (cleanedList.isEmpty()) {
             log.info("输入侧-语义归一化处理-清洗后数据为空，终止诊断流程");
-            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
-            inputResult.setInterrupted(true);
-            return Map.of();
+            GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(new GraphState());
+            graphState.setInputGraphState(InputGraphState.builder().interrupted(true).interruptReason("清洗后数据为空").build());
+            return Map.of(GraphState.NAME, graphState);
         }
 
         List<SymptomDict> dictList = loadEnabledSymptomDicts();
@@ -729,7 +730,11 @@ public class SymptomNormalizeNode implements NodeActionWithConfig, NodeExecution
         return irOpt.map(ir -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("symptomNormalizeResult", ir.getSymptomNormalizeResult());
-            map.put("interrupted", ir.isInterrupted());
+            state.value(GraphState.NAME).ifPresent(obj -> {
+                if (obj instanceof GraphState gs && gs.getInputGraphState() != null) {
+                    map.put(InputGraphState.NAME, gs.getInputGraphState().toString());
+                }
+            });
             return map;
         }).orElse(null);
     }

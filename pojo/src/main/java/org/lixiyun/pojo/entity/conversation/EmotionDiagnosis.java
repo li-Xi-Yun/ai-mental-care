@@ -120,7 +120,7 @@ public class EmotionDiagnosis implements Serializable {
     private Long userId;
 
     /**
-     * 该诊断数据创建或更新时的轮次
+     * 该诊断数据创建时的轮次
      */
     private Integer roundNum;
     
@@ -628,78 +628,78 @@ public class EmotionDiagnosis implements Serializable {
         if (emotionTrend == null) {
             return "未知";
         }
-        switch (emotionTrend) {
-            case EMOTION_TREND_UP: return "上升";
-            case EMOTION_TREND_DOWN: return "下降";
-            case EMOTION_TREND_STABLE: return "平稳";
-            default: return "无法判断";
-        }
+        return switch (emotionTrend) {
+            case EMOTION_TREND_UP -> "上升";
+            case EMOTION_TREND_DOWN -> "下降";
+            case EMOTION_TREND_STABLE -> "平稳";
+            default -> "无法判断";
+        };
     }
 
-    private String getRiskLevelDesc() {
+    public String getRiskLevelDesc() {
         if (emotionRiskLevel == null) {
             return "未知";
         }
-        switch (emotionRiskLevel) {
-            case EMOTION_RISK_LOW: return "低";
-            case EMOTION_RISK_MEDIUM: return "中";
-            case EMOTION_RISK_HIGH: return "高";
-            case EMOTION_RISK_CRITICAL: return "危急";
-            default: return "无法判断";
-        }
+        return switch (emotionRiskLevel) {
+            case EMOTION_RISK_LOW -> "低";
+            case EMOTION_RISK_MEDIUM -> "中";
+            case EMOTION_RISK_HIGH -> "高";
+            case EMOTION_RISK_CRITICAL -> "危急";
+            default -> "无法判断";
+        };
     }
 
     private String getSelfHarmRiskDesc() {
         if (selfHarmRiskLevel == null) {
             return "未知";
         }
-        switch (selfHarmRiskLevel) {
-            case SELF_HARM_RISK_NONE: return "无";
-            case SELF_HARM_RISK_LOW: return "低";
-            case SELF_HARM_RISK_MEDIUM: return "中";
-            case SELF_HARM_RISK_HIGH: return "高";
-            case SELF_HARM_RISK_VERY_HIGH: return "极高";
-            default: return "无法判断";
-        }
+        return switch (selfHarmRiskLevel) {
+            case SELF_HARM_RISK_NONE -> "无";
+            case SELF_HARM_RISK_LOW -> "低";
+            case SELF_HARM_RISK_MEDIUM -> "中";
+            case SELF_HARM_RISK_HIGH -> "高";
+            case SELF_HARM_RISK_VERY_HIGH -> "极高";
+            default -> "无法判断";
+        };
     }
 
     private String getSuicideRiskDesc() {
         if (suicideRiskLevel == null) {
             return "未知";
         }
-        switch (suicideRiskLevel) {
-            case SUICIDE_RISK_NONE: return "无";
-            case SUICIDE_RISK_LOW: return "低";
-            case SUICIDE_RISK_MEDIUM: return "中";
-            case SUICIDE_RISK_HIGH: return "高";
-            case SUICIDE_RISK_VERY_HIGH: return "极高";
-            default: return "无法判断";
-        }
+        return switch (suicideRiskLevel) {
+            case SUICIDE_RISK_NONE -> "无";
+            case SUICIDE_RISK_LOW -> "低";
+            case SUICIDE_RISK_MEDIUM -> "中";
+            case SUICIDE_RISK_HIGH -> "高";
+            case SUICIDE_RISK_VERY_HIGH -> "极高";
+            default -> "无法判断";
+        };
     }
 
     private String getSocialSupportDesc() {
         if (socialSupportLevel == null) {
             return "未知";
         }
-        switch (socialSupportLevel) {
-            case SOCIAL_SUPPORT_GOOD: return "良好";
-            case SOCIAL_SUPPORT_FAIR: return "一般";
-            case SOCIAL_SUPPORT_POOR: return "较差";
-            case SOCIAL_SUPPORT_SCARCE: return "匮乏";
-            default: return "无法判断";
-        }
+        return switch (socialSupportLevel) {
+            case SOCIAL_SUPPORT_GOOD -> "良好";
+            case SOCIAL_SUPPORT_FAIR -> "一般";
+            case SOCIAL_SUPPORT_POOR -> "较差";
+            case SOCIAL_SUPPORT_SCARCE -> "匮乏";
+            default -> "无法判断";
+        };
     }
 
     private String getSuggestionPriorityDesc() {
         if (suggestionPriority == null) {
             return "未知";
         }
-        switch (suggestionPriority) {
-            case SUGGESTION_PRIORITY_SELF_HELP: return "自助为主";
-            case SUGGESTION_PRIORITY_SEEK_SUPPORT: return "建议寻求支持";
-            case SUGGESTION_PRIORITY_PROFESSIONAL: return "强烈建议专业干预";
-            default: return "无法判断";
-        }
+        return switch (suggestionPriority) {
+            case SUGGESTION_PRIORITY_SELF_HELP -> "自助为主";
+            case SUGGESTION_PRIORITY_SEEK_SUPPORT -> "建议寻求支持";
+            case SUGGESTION_PRIORITY_PROFESSIONAL -> "强烈建议专业干预";
+            default -> "无法判断";
+        };
     }
 
 }

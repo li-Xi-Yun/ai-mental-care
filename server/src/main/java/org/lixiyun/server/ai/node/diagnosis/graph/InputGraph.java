@@ -16,6 +16,7 @@ import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.diagnosis.input.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.InputStateSerializer;
 import org.lixiyun.server.ai.saver.CheckpointCleaner;
@@ -67,7 +68,7 @@ public class InputGraph {
      * @param metadata  会话元数据
      * @return 输入侧流程聚合结果
      */
-    public InputResult executeGraph(ConversationProcessContextBO contextBO, ConversationMetadata metadata) {
+    public InputResult executeGraph(ConversationProcessContextBO contextBO, ConversationMetadata metadata, GraphState graphState) {
         if (contextBO == null) {
             log.error("InputGraph-参数错误:会话上下文为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -84,7 +85,8 @@ public class InputGraph {
         Map<String, Object> stateMap = Map.of(
                 ConversationProcessContextBO.NAME, contextBO,
                 ConversationMetadata.NAME, metadata,
-                InputResult.NAME, new InputResult()
+                InputResult.NAME, new InputResult(),
+                GraphState.NAME, graphState
         );
 
         OverAllState result = null;
@@ -147,6 +149,7 @@ public class InputGraph {
             keyStrategyMap.put(ConversationProcessContextBO.NAME, new ReplaceStrategy());
             keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(InputResult.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(GraphState.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };
 

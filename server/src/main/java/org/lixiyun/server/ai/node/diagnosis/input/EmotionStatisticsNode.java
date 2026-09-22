@@ -7,12 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
-import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -127,8 +128,9 @@ public class EmotionStatisticsNode implements NodeActionWithConfig, NodeExecutio
         EmotionStatisticsResult result = null;
         if (validRounds.isEmpty()) {
             log.info("输入侧-情绪数据处理-无有效情绪数据，终止诊断流程");
-            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
-            inputResult.setInterrupted(true);
+            GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(new GraphState());
+            graphState.setInputGraphState(InputGraphState.builder().interrupted(true).interruptReason("无有效情绪数据").build());
+            return Map.of(GraphState.NAME, graphState);
         } else {
             log.info("输入侧-情绪数据处理-有效情绪轮次数：{}", validRounds.size());
             result = buildStatisticsResult(validRounds);
@@ -672,7 +674,11 @@ public class EmotionStatisticsNode implements NodeActionWithConfig, NodeExecutio
         return irOpt.map(ir -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("emotionStatisticsResult", ir.getEmotionStatisticsResult());
-            map.put("interrupted", ir.isInterrupted());
+            state.value(GraphState.NAME).ifPresent(obj -> {
+                if (obj instanceof GraphState gs && gs.getInputGraphState() != null) {
+                    map.put(InputGraphState.NAME, gs.getInputGraphState().toString());
+                }
+            });
             return map;
         }).orElse(null);
     }

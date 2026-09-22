@@ -4,83 +4,203 @@
 <meta charset="UTF-8">
 <title>AI Mental Care - 后台（管理端）页面设计图</title>
 <style>
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #eef2ff;
+  --primary-subtle: #e0e7ff;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active: rgba(99,102,241,0.15);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  --bg-page: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-content: #f8fafc;
+  --success: #22c55e;
+  --success-bg: #f0fdf4;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --info: #3b82f6;
+  --info-bg: #eff6ff;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.06), 0 4px 10px rgba(0,0,0,.04);
+  --transition: 0.2s ease;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;padding-bottom:60px}
-.pt{text-align:center;padding:40px 0 8px;font-size:32px;font-weight:700;color:#1a1a2e}
-.ps{text-align:center;padding:0 0 30px;font-size:16px;color:#666}
-.sec{margin:0 auto 50px;max-width:1600px;padding:0 30px}
-.st{font-size:22px;font-weight:600;color:#1a1a2e;margin-bottom:8px;border-left:4px solid #ff6b6b;padding-left:12px}
-.sd{font-size:14px;color:#888;margin-bottom:20px;padding-left:16px}
-.cd{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;margin-bottom:30px}
-.ch{padding:16px 20px;background:linear-gradient(135deg,#ff6b6b,#c44569);color:#fff;display:flex;align-items:center;justify-content:space-between}
-.ch h3{font-size:16px;font-weight:600}
-.ch .rt{font-size:12px;opacity:.8;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px}
-.cb{padding:20px}
-.chg{background:#fff7e6;border:1px solid #ffe58f;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#8c6d1f;line-height:1.6}
-.wf{border:1px dashed #ccc;border-radius:8px;overflow:hidden;font-size:12px;color:#555}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-page);color:var(--text-primary);padding-bottom:60px;line-height:1.5}
+.pt{text-align:center;padding:48px 0 8px;font-size:32px;font-weight:700;color:#0f172a;letter-spacing:-0.5px}
+.ps{text-align:center;padding:0 0 32px;font-size:15px;color:var(--text-secondary)}
+.sec{margin:0 auto 56px;max-width:1600px;padding:0 32px}
+.st{font-size:20px;font-weight:600;color:#0f172a;margin-bottom:8px;border-left:4px solid var(--primary);padding-left:14px}
+.sd{font-size:13px;color:var(--text-muted);margin-bottom:22px;padding-left:18px}
+.cd{background:var(--bg-card);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;margin-bottom:32px;border:1px solid var(--border-color)}
+.ch{padding:16px 24px;background:linear-gradient(135deg,#1e293b,#334155);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.ch h3{font-size:15px;font-weight:600;letter-spacing:0.3px}
+.ch .rt{font-size:11px;opacity:.75;background:rgba(255,255,255,.12);padding:3px 10px;border-radius:12px;font-family:'SF Mono','Consolas',monospace}
+.cb{padding:24px}
+.chg{background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.6}
+.wf{border:1px dashed var(--border-color);border-radius:var(--radius-lg);overflow:hidden;font-size:12px;color:var(--text-secondary)}
 .al{display:flex;min-height:420px}
-.as{width:220px;background:linear-gradient(180deg,#1a1a2e 0%,#2d1b69 50%,#1a1a2e 100%);color:#e0e0e0;padding:0;flex-shrink:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
-.as::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 50%,rgba(138,43,226,0.15) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(75,0,130,0.1) 0%,transparent 50%);pointer-events:none}
-.as-header{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.08);position:relative;z-index:1}
-.as-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3)}
-.as .alo{padding:0;font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;letter-spacing:0.5px}
-.as .als{padding:0;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:0;font-weight:400}
-.as-nav{flex:1;padding:12px 8px;overflow-y:auto;position:relative;z-index:1}
-.as .mi{padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:12px;cursor:pointer;border-radius:8px;margin-bottom:4px;transition:all 0.3s ease;color:rgba(255,255,255,0.75);font-weight:500;position:relative}
-.as .mi:hover{background:rgba(255,255,255,0.08);color:#fff;transform:translateX(2px)}
-.as .mi.a{background:linear-gradient(90deg,rgba(255,107,107,0.2) 0%,rgba(255,107,107,0.05) 100%);color:#ff6b6b;border-left:3px solid #ff6b6b}
-.as .mi.a:hover{transform:translateX(0)}
-.as .mic{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.as .mi-arrow{margin-left:auto;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0.6;transition:transform 0.3s ease}
-.as .mi.expanded .as .mi-arrow{transform:rotate(90deg)}
-.as-user{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);position:relative;z-index:1;display:flex;align-items:center;gap:12px}
-.as-user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.as{width:232px;background:var(--sidebar-bg);color:#cbd5e1;padding:0;flex-shrink:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.as::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(99,102,241,0.04) 0%,transparent 50%);pointer-events:none}
+.as-header{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+.as-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.as-logo svg{width:20px;height:20px}
+.as .alo{padding:0;font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:3px;letter-spacing:0.3px}
+.as .als{padding:0;font-size:11px;color:#64748b;margin-bottom:0;font-weight:400}
+.as-nav{flex:1;padding:10px 8px;overflow-y:auto;position:relative;z-index:1}
+.as .mi{padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:var(--radius);margin-bottom:2px;transition:all var(--transition);color:#94a3b8;font-weight:500;position:relative}
+.as .mi svg{width:17px;height:17px;opacity:0.7;flex-shrink:0;transition:opacity var(--transition)}
+.as .mi:hover{background:var(--sidebar-hover);color:#e2e8f0}
+.as .mi:hover svg{opacity:1}
+.as .mi.a{background:var(--sidebar-active);color:#a5b4fc;border-left:3px solid var(--primary)}
+.as .mi.a svg{opacity:1;color:#a5b4fc}
+.as .mi-arrow{margin-left:auto;opacity:0.4;font-size:10px;transition:transform var(--transition)}
+.as-user{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.as-user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:13px;font-weight:600;color:#fff}
 .as-user-info{flex:1;min-width:0}
-.as-user-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.as-user-role{font-size:11px;color:rgba(255,255,255,0.5)}
-.as-logout{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s ease;color:rgba(255,255,255,0.6);flex-shrink:0}
-.as-logout:hover{background:rgba(255,77,79,0.2);color:#ff4d4f}
-.ar{flex:1;display:flex;flex-direction:column}
-.ah{height:48px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 16px;justify-content:space-between}
-.am{flex:1;background:#f5f5f5;padding:16px}
-.bp{display:inline-block;padding:4px 12px;border-radius:4px;font-size:11px}
-.b1{background:#ff6b6b;color:#fff}
-.b2{background:#fff;border:1px solid #d9d9d9;color:#333}
-.inp{border:1px solid #d9d9d9;border-radius:4px;padding:4px 8px;font-size:11px;display:inline-block;min-width:120px;background:#fff}
-.tg{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px}
-.tb{background:#e6f7ff;color:#1890ff}
-.tgn{background:#f6ffed;color:#52c41a}
-.to{background:#fff7e6;color:#fa8c16}
-.tr{background:#fff1f0;color:#ff4d4f}
-.tv{background:#f9f0ff;color:#722ed1}
-.wt{width:100%;border-collapse:collapse;font-size:11px}
-.wt th{background:#fafafa;padding:8px 10px;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600}
-.wt td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
-.sbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
-.pgn{display:flex;justify-content:flex-end;margin-top:10px;gap:4px;align-items:center;font-size:11px}
-.pgn .pb{padding:2px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:11px}
-.pgn .pb.a{background:#ff6b6b;color:#fff;border-color:#ff6b6b}
-.note{margin-top:10px;font-size:12px;color:#888;line-height:1.8}
-.csw{width:60px;height:60px;border-radius:10px;margin-bottom:4px}
-.csl{font-size:11px;color:#666}
-.csv{font-size:10px;color:#999}
+.as-user-name{font-size:12.5px;font-weight:600;color:#e2e8f0;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.as-user-role{font-size:10.5px;color:#64748b}
+.as-logout{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);color:#64748b;flex-shrink:0}
+.as-logout svg{width:15px;height:15px}
+.as-logout:hover{background:rgba(239,68,68,0.15);color:#f87171}
+.ar{flex:1;display:flex;flex-direction:column;min-width:0}
+.ah{height:48px;background:var(--bg-card);border-bottom:1px solid var(--border-color);display:flex;align-items:center;padding:0 20px;justify-content:space-between}
+.ah-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.ah-meta{font-size:11px;color:var(--text-muted)}
+.am{flex:1;background:var(--bg-content);padding:18px}
+.bp{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;text-decoration:none}
+.bp svg{width:13px;height:13px}
+.b1{background:var(--primary);color:#fff;border:none}
+.b1:hover{background:var(--primary-hover);box-shadow:var(--shadow-sm)}
+.b2{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary)}
+.b2:hover{background:#f8fafc;border-color:#cbd5e1}
+.inp{border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 10px;font-size:11.5px;display:inline-flex;align-items:center;min-width:120px;background:var(--bg-card);color:var(--text-muted);transition:border-color var(--transition)}
+.inp:hover{border-color:#cbd5e1}
+.inp:focus-within{border-color:var(--primary);outline:none}
+.tg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:500}
+.tb{background:var(--info-bg);color:var(--info)}
+.tgn{background:var(--success-bg);color:var(--success)}
+.to{background:var(--warning-bg);color:var(--warning)}
+.tr{background:var(--danger-bg);color:var(--danger)}
+.tv{background:var(--purple-bg);color:var(--purple)}
+.wt{width:100%;border-collapse:collapse;font-size:11.5px}
+.wt th{background:#f8fafc;padding:10px 12px;text-align:left;border-bottom:2px solid var(--border-color);font-weight:600;color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
+.wt td{padding:10px 12px;border-bottom:1px solid var(--border-light);color:var(--text-primary)}
+.wt tbody tr{transition:background var(--transition)}
+.wt tbody tr:hover{background:#f8fafc}
+.sbar{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.pgn{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:11px;color:var(--text-muted)}
+.pgn .pgi{display:flex;gap:3px;align-items:center}
+.pgn .pb{padding:4px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:11px;cursor:pointer;transition:all var(--transition);background:var(--bg-card);color:var(--text-primary)}
+.pgn .pb:hover{border-color:var(--primary);color:var(--primary)}
+.pgn .pb.a{background:var(--primary);color:#fff;border-color:var(--primary)}
+.note{margin-top:12px;font-size:11.5px;color:var(--text-muted);line-height:1.9;background:#f8fafc;border-radius:var(--radius);padding:12px 16px;border:1px solid var(--border-light)}
+.note b{color:var(--text-primary)}
+.csw{width:56px;height:56px;border-radius:10px;margin-bottom:6px;border:1px solid var(--border-light);transition:transform var(--transition)}
+.csw:hover{transform:scale(1.05)}
+.csl{font-size:11px;color:var(--text-secondary);font-weight:500}
+.csv{font-size:10px;color:var(--text-muted);font-family:'SF Mono','Consolas',monospace}
 .csi{text-align:center}
-.bc{display:flex;align-items:center;gap:4px;font-size:11px;margin-bottom:12px;color:#999}
-.bc a{color:#1890ff;text-decoration:none}
-.bc .cur{color:#333}
-.ftree{background:#fff;border-radius:6px;padding:8px;font-size:11px;line-height:2}
-.ftree .fi{display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px 4px;border-radius:3px}
-.ftree .fi:hover{background:#f5f5f5}
-.ftree .fi.a{background:#fff0f0;color:#ff6b6b}
+.bc{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:14px;color:var(--text-muted)}
+.bc a{color:var(--primary);text-decoration:none;font-weight:500}
+.bc a:hover{text-decoration:underline}
+.bc .cur{color:var(--text-primary);font-weight:500}
+.bc .sep{color:var(--text-muted)}
+.ftree{background:var(--bg-card);border-radius:var(--radius);padding:6px;font-size:11px;line-height:2;border:1px solid var(--border-light)}
+.ftree .fi{display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 8px;border-radius:var(--radius-sm);transition:all var(--transition);font-size:11px;color:var(--text-secondary)}
+.ftree .fi:hover{background:#f1f5f9}
+.ftree .fi.a{background:var(--primary-light);color:var(--primary);font-weight:500}
 .ftree .indent{padding-left:16px}
-.tab-bar{display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid #f0f0f0}
-.tab-bar .tab{padding:8px 16px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
-.tab-bar .tab.a{color:#ff6b6b;border-bottom-color:#ff6b6b;font-weight:600}
+.ftree .fi svg{width:14px;height:14px;flex-shrink:0;opacity:0.6}
+.ftree .fi.a svg{opacity:1}
+.tab-bar{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border-light)}
+.tab-bar .tab{padding:9px 18px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text-muted);transition:all var(--transition);font-weight:500;display:flex;align-items:center;gap:6px}
+.tab-bar .tab:hover{color:var(--text-primary)}
+.tab-bar .tab.a{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.tab-bar .tab svg{width:14px;height:14px;opacity:0.6}
+.tab-bar .tab.a svg{opacity:1}
+.cache-card{background:var(--bg-card);border-radius:var(--radius);padding:14px 18px;border:1px solid var(--border-color);flex:1;display:flex;align-items:center;gap:12px;transition:box-shadow var(--transition)}
+.cache-card:hover{box-shadow:var(--shadow)}
+.cache-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cache-icon svg{width:20px;height:20px}
+.cache-label{font-size:10.5px;color:var(--text-muted);margin-bottom:2px}
+.cache-value{font-size:20px;font-weight:700}
+.act-link{font-size:10.5px;cursor:pointer;transition:color var(--transition);font-weight:500}
+.act-link:hover{opacity:0.8}
+.tp{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font-size:10px;font-weight:700;cursor:help;color:var(--text-secondary);background:#e2e8f0;transition:all var(--transition);margin-left:4px;vertical-align:middle}
+.tp:hover{background:var(--primary-light);color:var(--primary)}
+.code-block{background:#1e293b;border-radius:var(--radius);padding:14px 18px;font-size:11px;color:#e2e8f0;font-family:'SF Mono','Consolas','Monaco',monospace;line-height:1.7;min-height:180px;overflow-x:auto}
+.code-comment{color:#94a3b8}
+.code-keyword{color:#93c5fd}
+.code-string{color:#a5b4fc}
+.ide-panel{background:#fafafa;border-right:1px solid var(--border-color);padding:10px;flex-shrink:0;overflow-y:auto;width:220px}
+.ide-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11.5px;font-weight:600;color:var(--text-secondary)}
+.ide-btn{font-size:10px;color:var(--primary);cursor:pointer;padding:2px 4px;border-radius:3px;transition:all var(--transition)}
+.ide-btn:hover{background:var(--primary-light)}
+.ide-editor-header{padding:8px 14px;background:var(--bg-card);border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;font-size:11.5px}
+.ide-editor-body{flex:1;background:var(--bg-card);padding:14px;font-size:11px;line-height:1.8;font-family:'SF Mono','Consolas','Monaco',monospace;overflow-y:auto;color:#334155}
+.ide-editor-body .cmt{color:#94a3b8}
+.ide-editor-body .key{color:#2563eb}
+.ide-editor-body .val{color:#059669}
+.ide-editor-body .hdr{color:#7c3aed;font-weight:600}
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:11.5px;color:var(--text-secondary);margin-bottom:5px;font-weight:500}
+.form-input{border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:8px 12px;font-size:11.5px;width:100%;transition:border-color var(--transition);color:var(--text-muted);background:var(--bg-card)}
+.form-input:focus{border-color:var(--primary);outline:none;color:var(--text-primary)}
 </style>
 </head>
 <body>
+
+<!-- SVG Icon Library -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+  <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="icon-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.2.8 2.2 2 2.7V9H9a3 3 0 0 0-3 3v1H4a2 2 0 0 0 0 4h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a3 3 0 0 0 3-3v-1h2v1a3 3 0 0 0 3 3h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a2 2 0 0 0 0-4h-2v-1a3 3 0 0 0-3-3h-2V7.7c1.2-.5 2-1.5 2-2.7a3 3 0 0 0-6 0z"/></symbol>
+  <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+  <symbol id="icon-folder-tree" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></symbol>
+  <symbol id="icon-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A1 1 0 0 1 22 16.59V20a2 2 0 0 1-2 2h-2.59a1 1 0 0 1-.7-.29l-3.3-3.3"/><path d="m3.02 14.79 6.19 6.19a2 2 0 0 0 2.83 0l8.38-8.38a2 2 0 0 0 0-2.83L14.23 3.58a2 2 0 0 0-2.83 0L3.02 11.96a2 2 0 0 0 0 2.83z"/></symbol>
+  <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="icon-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="icon-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="icon-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+</svg>
+
 <div class="pt">AI Mental Care 后台（管理端）页面设计图</div>
-<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 设计阶段 - 静态页面方案</div>
+<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 设计阶段 — 静态页面方案</div>
 
 <div class="sec">
 <div class="st">后台页面总览</div>
@@ -90,33 +210,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>1. 管理员登录页</h3><span class="rt">/admin/login</span></div>
 <div class="cb">
-<div class="wf" style="min-height:420px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff6b6b,#c44569);">
-<div style="background:#fff;border-radius:12px;padding:32px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,.15);">
-<div style="text-align:center;font-size:20px;font-weight:700;color:#ff6b6b;margin-bottom:4px;">管理后台</div>
-<div style="text-align:center;font-size:12px;color:#999;margin-bottom:20px;">AI Mental Care 管理系统</div>
-<div style="margin-bottom:12px;">
-<label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">管理员账号</label>
-<div style="border:1px solid #d9d9d9;border-radius:6px;padding:8px 10px;font-size:12px;color:#999;display:flex;align-items:center;gap:6px;">
-<span style="font-size:14px;">👤</span> 请输入管理员账号
+<div class="wf" style="min-height:420px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e293b,#334155);">
+<div style="background:#fff;border-radius:var(--radius-lg);padding:36px;width:340px;box-shadow:0 16px 48px rgba(0,0,0,.2);">
+<div style="text-align:center;margin-bottom:24px;">
+<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 12px rgba(99,102,241,.3);">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.2.8 2.2 2 2.7V9H9a3 3 0 0 0-3 3v1H4a2 2 0 0 0 0 4h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a3 3 0 0 0 3-3v-1h2v1a3 3 0 0 0 3 3h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a2 2 0 0 0 0-4h-2v-1a3 3 0 0 0-3-3h-2V7.7c1.2-.5 2-1.5 2-2.7a3 3 0 0 0-6 0z"/></svg>
+</div>
+<div style="font-size:18px;font-weight:700;color:var(--text-primary);">管理后台</div>
+<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">AI Mental Care 管理系统</div>
+</div>
+<div class="form-group">
+<label class="form-label">管理员账号</label>
+<div class="form-input" style="display:flex;align-items:center;gap:8px;">
+<svg width="14" height="14"><use href="#icon-user"/></svg>
+请输入管理员账号
 </div>
 </div>
-<div style="margin-bottom:12px;">
-<label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">密码</label>
-<div style="border:1px solid #d9d9d9;border-radius:6px;padding:8px 10px;font-size:12px;color:#999;display:flex;align-items:center;gap:6px;">
-<span style="font-size:14px;">🔒</span> 请输入密码
+<div class="form-group">
+<label class="form-label">密码</label>
+<div class="form-input" style="display:flex;align-items:center;gap:8px;">
+<svg width="14" height="14"><use href="#icon-lock"/></svg>
+请输入密码
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">验证码</label>
+<div style="display:flex;gap:8px;align-items:center;">
+<div class="form-input" style="flex:1;display:flex;align-items:center;gap:8px;">
+<svg width="14" height="14"><use href="#icon-check"/></svg>
+请输入验证码
+</div>
+<div style="width:80px;height:32px;background:#f1f5f9;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--primary);letter-spacing:3px;cursor:pointer;border:1px solid var(--border-color);">AB3X</div>
 </div>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:11px;">
-<label style="color:#666;"><input type="checkbox" checked/> 记住我</label>
+<label style="color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:4px;"><input type="checkbox" checked style="accent-color:var(--primary)"/> 记住我</label>
 </div>
-<div style="width:100%;padding:10px;background:#ff6b6b;color:#fff;border-radius:6px;font-size:13px;text-align:center;margin-top:10px;font-weight:500;">登 录</div>
+<div style="width:100%;padding:11px;background:var(--primary);color:#fff;border-radius:var(--radius);font-size:13px;text-align:center;margin-top:14px;font-weight:600;cursor:pointer;transition:background var(--transition);">登 录</div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>AdminLoginPage（独立页面）<br/>
-<b>接口：</b>POST /admin/account/login<br/>
-<b>交互：</b>输入账号密码 → 登录成功跳转 /admin/user → 登录失败提示错误
+<b>接口映射：</b>POST /admin/account/login (LoginAdminDTO: username/用户名、password/密码、key/验证码Redis键) → LoginResultVO (token/登录JWT令牌、roles/角色列表)；验证码取得：POST /common/verification/code (返回Map: image/Base64图片、key/验证码键)<br/>
+<b>组件拆分：</b>AdminLoginPage（独立页面）、VerificationCodeWidget（图片验证码组件）<br/>
+<b>交互：</b>输入账号密码+验证码 → 登录成功跳转 /admin/user → 登录失败提示错误 → 点击验证码刷新
 </div>
 </div>
 
@@ -128,61 +265,71 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi a"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi a"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">用户管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">用户管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="sbar">
-<span class="inp" style="min-width:180px;color:#999;">搜索用户名/手机号</span>
-<span class="inp" style="min-width:80px;color:#999;">状态</span>
+<span class="inp" style="min-width:180px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>搜索用户名/用户ID</span>
+<span class="inp" style="min-width:90px;">状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 </div>
 <table class="wt">
-<tr><th><input type="checkbox"/></th><th>用户ID</th><th>用户名</th><th>昵称</th><th>手机号</th><th>注册时间</th><th>最后登录</th><th>状态</th><th>操作</th></tr>
-<tr><td><input type="checkbox"/></td><td>1001</td><td>zhangxm</td><td>张小明</td><td>138****5678</td><td>2026-08-15</td><td>2026-09-08</td><td><span class="tg tgn">正常</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">禁用</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>1002</td><td>lisi</td><td>李思</td><td>139****1234</td><td>2026-08-20</td><td>2026-09-07</td><td><span class="tg tgn">正常</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">禁用</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>1003</td><td>wangwu</td><td>王五</td><td>137****9876</td><td>2026-09-01</td><td>2026-09-01</td><td><span class="tg tr">禁用</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#52c41a;font-size:10px;">启用</span></td></tr>
+<thead><tr><th style="width:32px"><input type="checkbox"/></th><th>用户ID</th><th>用户名</th><th>邮箱</th><th>手机号</th><th>性别</th><th>注册时间</th><th>状态</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td><input type="checkbox"/></td><td>1001</td><td>zhangxm</td><td>zhangxm@qq.com</td><td>138****5678</td><td>男</td><td>2026-08-15</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1002</td><td>lisi</td><td>lisi@163.com</td><td>139****1234</td><td>女</td><td>2026-08-20</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox" checked/></td><td>1003</td><td>wangwu</td><td>wangwu@gmail.com</td><td>137****9876</td><td>男</td><td>2026-09-01</td><td><span class="tg tr">封禁</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--success)">启用</span> <span class="tp" title="封禁理由：多次违规发言，封禁至2026-12-31">ⓘ</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1004</td><td>zhaoliu</td><td>zhaoliu@outlook.com</td><td>136****3456</td><td>女</td><td>2026-09-05</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1005</td><td>sunqi</td><td>sunqi@126.com</td><td>135****7890</td><td>男</td><td>2026-09-10</td><td><span class="tg tr">注销</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="tp" title="用户于2026-09-15主动申请注销">ⓘ</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1006</td><td>zhouba</td><td>zhouba@foxmail.com</td><td>133****2468</td><td>未知</td><td>2026-09-12</td><td><span class="tg to">异常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">处理</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1007</td><td>wujiu</td><td>wujiu@yeah.net</td><td>131****1357</td><td>女</td><td>2026-09-14</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1008</td><td>zhengshi</td><td>zhengshi@icloud.com</td><td>130****8642</td><td>男</td><td>2026-09-15</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1009</td><td>liuyi</td><td>liuyi@hotmail.com</td><td>158****3690</td><td>男</td><td>2026-09-16</td><td><span class="tg tr">封禁</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--success)">启用</span> <span class="tp" title="封禁理由：涉嫌发送垃圾信息，永久封禁">ⓘ</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1010</td><td>chenshi</td><td>chenshi@live.com</td><td>157****4812</td><td>女</td><td>2026-09-17</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1011</td><td>huanger</td><td>huanger@proton.me</td><td>155****9753</td><td>男</td><td>2026-09-18</td><td><span class="tg to">异常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">处理</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>1012</td><td>linsan</td><td>linsan@aliyun.com</td><td>153****2086</td><td>未知</td><td>2026-09-19</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
 <span>共 156 条</span>
-<span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">16</span><span class="pb">»</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">16</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>UserTable、UserSearch、UserStatusDialog（禁用/启用弹窗，含封禁理由）<br/>
-<b>接口：</b>POST /admin/user/list、PATCH /admin/user/status<br/>
-<b>交互：</b>搜索/筛选 → 禁用(填封禁理由)/启用 → 分页
+<b>接口映射：</b>POST /admin/user/list (UserQueryDTO: pageNum/页码、pageSize/每页条数、username/用户名模糊匹配、userId/用户ID精确匹配、status/账号状态:0正常1异常2封禁3注销) → PageResult&lt;UserVO&gt;；PATCH /admin/user/status (UserStatusDTO: id/用户ID、status/状态:0正常1异常2封禁、banReason/封禁理由、banEndTime/封禁结束时间)<br/>
+• UserVO: id/用户ID、username/用户名、email/邮箱、mobile/手机号、gender/性别(0女1男2未知)、avatar/头像路径、status/状态(0正常1异常2封禁3注销)、banReason/封禁理由、banTime/封禁开始时间、banEndTime/封禁结束时间、createdTime/注册时间、updatedTime/最后更新时间<br/>
+<b>组件拆分：</b>UserTable、UserSearch、UserStatusDialog（禁用/启用弹窗，含封禁理由+封禁时间）<br/>
+<b>交互：</b>搜索/筛选 → 禁用(填封禁理由+封禁时间)/启用 → 分页
 </div>
 </div>
 
@@ -195,61 +342,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi a"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi a"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">管理员管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">管理员管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="sbar">
-<span class="inp" style="min-width:180px;color:#999;">搜索管理员名</span>
-<span class="inp" style="min-width:80px;color:#999;">状态</span>
+<span class="inp" style="min-width:180px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>搜索管理员名/管理员ID</span>
+<span class="inp" style="min-width:90px;">状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 <span style="flex:1;"></span>
-<span class="bp b1">+ 注册管理员</span>
+<span class="bp b1"><svg><use href="#icon-plus"/></svg>注册管理员</span>
 </div>
 <table class="wt">
-<tr><th>管理员ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>创建时间</th><th>最后登录</th><th>状态</th><th>操作</th></tr>
-<tr><td>A001</td><td>admin</td><td>超级管理员</td><td><span class="tg tv">超级管理员</span></td><td>2026-01-01</td><td>2026-09-08</td><td><span class="tg tgn">正常</span></td><td>—</td></tr>
-<tr><td>A002</td><td>operator1</td><td>运营管理员</td><td><span class="tg tb">普通管理员</span></td><td>2026-06-15</td><td>2026-09-07</td><td><span class="tg tgn">正常</span></td><td><span style="color:#ff4d4f;font-size:10px;">禁用</span></td></tr>
-<tr><td>A003</td><td>operator2</td><td>数据管理员</td><td><span class="tg tb">普通管理员</span></td><td>2026-07-20</td><td>2026-09-01</td><td><span class="tg tr">禁用</span></td><td><span style="color:#52c41a;font-size:10px;">启用</span></td></tr>
+<thead><tr><th>管理员ID</th><th>用户名</th><th>邮箱</th><th>手机号</th><th>注册时间</th><th>最后更新</th><th>状态</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>admin</td><td>admin@example.com</td><td>138****0001</td><td>2026-01-01</td><td>2026-09-08</td><td><span class="tg tgn">正常</span></td><td>—</td></tr>
+<tr><td>2</td><td>operator1</td><td>op1@example.com</td><td>139****1001</td><td>2026-06-15</td><td>2026-09-07</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td>3</td><td>operator2</td><td>op2@example.com</td><td>137****2002</td><td>2026-07-20</td><td>2026-09-02</td><td><span class="tg tr">封禁</span><span class="tp" title="封禁理由：违规操作，封禁至2026-12-31">ⓘ</span></td><td><span class="act-link" style="color:var(--success)">启用</span></td></tr>
+<tr><td>4</td><td>operator3</td><td>op3@example.com</td><td>136****3003</td><td>2026-08-10</td><td>2026-09-06</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td>5</td><td>data_admin</td><td>data@example.com</td><td>135****4004</td><td>2026-09-01</td><td>2026-09-05</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td>6</td><td>content_op</td><td>content@example.com</td><td>134****5005</td><td>2026-09-03</td><td>2026-09-04</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+<tr><td>7</td><td>auditor1</td><td>audit@example.com</td><td>133****6006</td><td>2026-09-10</td><td>2026-09-10</td><td><span class="tg tr">封禁</span><span class="tp" title="封禁理由：审核操作异常，封禁至2026-10-31">ⓘ</span></td><td><span class="act-link" style="color:var(--success)">启用</span></td></tr>
+<tr><td>8</td><td>sys_monitor</td><td>monitor@example.com</td><td>132****7007</td><td>2026-09-12</td><td>2026-09-15</td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--danger)">禁用</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 8 条</span><span class="pb a">1</span>
+<span>共 12 条</span>
+<div class="pgi"><span class="pb a">1</span><span class="pb">2</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
+<b>接口映射：</b>POST /admin/admin/list (AdminQueryDTO: pageNum/页码、pageSize/每页条数、username/管理员名模糊匹配、adminId/管理员ID精确匹配、status/账号状态:0正常1异常2封禁3注销) → PageResult&lt;AdminVO&gt;；PATCH /admin/admin/status (AdminStatusDTO: id/管理员ID、status/状态:0正常1异常2封禁3注销、banEndTime/封禁结束时间、banReason/封禁理由)；POST /admin/account/register<br/>
+• AdminVO: id/管理员ID、username/用户名、email/邮箱、mobile/手机号、status/状态(0正常1异常2封禁3注销)、banReason/封禁理由、banTime/封禁开始时间、banEndTime/封禁结束时间、createdTime/注册时间、updatedTime/最后更新时间<br/>
 <b>组件拆分：</b>AdminTable、AdminSearch、AdminRegisterDialog（注册弹窗）、AdminStatusDialog（状态修改弹窗）<br/>
-<b>接口：</b>POST /admin/user/admin/list、PATCH /admin/user/admin/status、POST /admin/account/register<br/>
 <b>交互：</b>搜索/筛选 → 注册新管理员 → 禁用(填封禁理由+封禁时间)/启用 → 分页
 </div>
 </div>
@@ -263,55 +417,52 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi a"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi a"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">个人资料</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">个人资料</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-<div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #f0f0f0;">
-<div style="font-size:14px;font-weight:600;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">基本信息</div>
-<div style="display:flex;flex-direction:column;gap:10px;font-size:12px;">
-<div><span style="color:#999;display:inline-block;width:70px;">用户名：</span>admin</div>
-<div><span style="color:#999;display:inline-block;width:70px;">昵称：</span><span class="inp" style="min-width:160px;color:#333;">超级管理员</span></div>
-<div><span style="color:#999;display:inline-block;width:70px;">邮箱：</span><span class="inp" style="min-width:160px;color:#999;">admin@example.com</span></div>
-<div><span style="color:#999;display:inline-block;width:70px;">手机号：</span><span class="inp" style="min-width:160px;color:#999;">138****0001</span></div>
-<div style="margin-top:6px;"><span class="bp b1">保存修改</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+<div style="background:var(--bg-card);border-radius:var(--radius);padding:20px;border:1px solid var(--border-color);">
+<div style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:8px;"><svg width="16" height="16" style="color:var(--primary)"><use href="#icon-user"/></svg>基本信息</div>
+<div style="display:flex;flex-direction:column;gap:12px;font-size:12px;">
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:75px;flex-shrink:0;">用户名：</span>admin</div>
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:75px;flex-shrink:0;">邮箱：</span><span class="inp" style="min-width:160px;color:var(--text-muted)">admin@example.com</span></div>
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:75px;flex-shrink:0;">手机号：</span><span class="inp" style="min-width:160px;color:var(--text-muted)">138****0001</span></div>
+<div style="margin-top:4px;"><span class="bp b1"><svg><use href="#icon-save"/></svg>保存修改</span></div>
 </div>
 </div>
-<div style="background:#fff;border-radius:8px;padding:16px;border:1px solid #f0f0f0;">
-<div style="font-size:14px;font-weight:600;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">修改密码</div>
-<div style="display:flex;flex-direction:column;gap:10px;font-size:12px;">
-<div><span style="color:#999;display:inline-block;width:80px;">当前密码：</span><span class="inp" style="min-width:160px;color:#999;">请输入当前密码</span></div>
-<div><span style="color:#999;display:inline-block;width:80px;">新密码：</span><span class="inp" style="min-width:160px;color:#999;">请输入新密码</span></div>
-<div><span style="color:#999;display:inline-block;width:80px;">确认密码：</span><span class="inp" style="min-width:160px;color:#999;">请再次输入新密码</span></div>
-<div style="margin-top:6px;"><span class="bp b1">修改密码</span></div>
+<div style="background:var(--bg-card);border-radius:var(--radius);padding:20px;border:1px solid var(--border-color);">
+<div style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:8px;"><svg width="16" height="16" style="color:var(--warning)"><use href="#icon-lock"/></svg>修改密码</div>
+<div style="display:flex;flex-direction:column;gap:12px;font-size:12px;">
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:80px;flex-shrink:0;">当前密码：</span><span class="inp" style="min-width:160px;color:var(--text-muted)">请输入当前密码</span></div>
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:80px;flex-shrink:0;">新密码：</span><span class="inp" style="min-width:160px;color:var(--text-muted)">请输入新密码</span></div>
+<div style="display:flex;align-items:center;"><span style="color:var(--text-muted);width:80px;flex-shrink:0;">确认密码：</span><span class="inp" style="min-width:160px;color:var(--text-muted)">请再次输入新密码</span></div>
+<div style="margin-top:4px;"><span class="bp b1">修改密码</span></div>
 </div>
 </div>
 </div>
@@ -321,7 +472,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 <div class="note">
 <b>组件拆分：</b>ProfileInfoCard（基本信息卡片）、PasswordCard（密码修改卡片）<br/>
-<b>接口：</b>GET /admin/profile/profile、PUT /admin/profile/profileUpdate、PATCH /admin/account（密码修改）<br/>
+<b>接口映射：</b>GET /admin/profile/profile (AdminProfileVO: id/管理员ID、username/用户名、mobile/手机号、email/邮箱)、PUT /admin/profile/profileUpdate、PATCH /admin/account（密码修改）<br/>
 <b>交互：</b>编辑资料 → 保存 → 修改密码 → 重新登录
 </div>
 </div>
@@ -335,68 +486,80 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi a"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi a"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">文件管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
+<span class="ah-title">文件管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
-</div>
-<div class="am" style="display:flex;gap:12px;">
-<div style="width:180px;background:#fff;border-radius:6px;padding:10px;border:1px solid #f0f0f0;flex-shrink:0;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600;">
-<span>文件分类</span>
-<span style="color:#ff6b6b;cursor:pointer;font-size:10px;">+ 新增</span>
+<div class="am" style="display:flex;gap:14px;">
+<div style="width:180px;background:var(--bg-card);border-radius:var(--radius);padding:12px;border:1px solid var(--border-color);flex-shrink:0;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;font-weight:600;">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" style="color:var(--primary)"><use href="#icon-folder-tree"/></svg>文件分类</span>
+<span class="ide-btn">+ 新增</span>
 </div>
 <div class="ftree">
-<div class="fi a">📂 全部文件</div>
-<div class="fi indent">📂 资料文档</div>
-<div class="fi indent" style="padding-left:32px;">📄 心理健康指南</div>
-<div class="fi indent">📂 图表资源</div>
-<div class="fi indent">📂 音频资源</div>
-<div class="fi indent">📂 默认分类</div>
+<div class="fi a"><svg><use href="#icon-folder-tree"/></svg>全部文件</div>
+<div class="fi indent"><svg><use href="#icon-folder-tree"/></svg>资料文档</div>
+<div class="fi" style="padding-left:32px;"><svg><use href="#icon-file"/></svg>心理健康指南</div>
+<div class="fi indent"><svg><use href="#icon-folder-tree"/></svg>图表资源</div>
+<div class="fi indent"><svg><use href="#icon-folder-tree"/></svg>音频资源</div>
+<div class="fi indent"><svg><use href="#icon-folder-tree"/></svg>默认分类</div>
 </div>
 </div>
 <div style="flex:1;">
 <div class="sbar">
-<span class="inp" style="min-width:160px;color:#999;">搜索文件名</span>
-<span class="inp" style="min-width:80px;color:#999;">文件类型</span>
+<span class="inp" style="min-width:160px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>搜索文件名</span>
+<span class="inp" style="min-width:110px;">知识类型</span>
+<span class="inp" style="min-width:90px;">文件状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 <span style="flex:1;"></span>
-<span class="bp b1">📤 上传文件</span>
+<span class="bp b1"><svg><use href="#icon-upload"/></svg>上传文件</span>
 </div>
 <table class="wt">
-<tr><th><input type="checkbox"/></th><th>文件名</th><th>分类</th><th>类型</th><th>大小</th><th>上传时间</th><th>操作</th></tr>
-<tr><td><input type="checkbox"/></td><td>📄 心理健康指南.pdf</td><td><span class="tg tb">资料文档</span></td><td>PDF</td><td>2.3 MB</td><td>2026-09-01</td><td><span style="color:#1890ff;font-size:10px;">向量</span> <span style="color:#ff6b6b;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>🖼️ 情绪图谱.png</td><td><span class="tg to">图表资源</span></td><td>PNG</td><td>1.1 MB</td><td>2026-08-28</td><td><span style="color:#1890ff;font-size:10px;">向量</span> <span style="color:#ff6b6b;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>📊 量表数据.xlsx</td><td><span class="tg tgn">默认分类</span></td><td>Excel</td><td>0.8 MB</td><td>2026-08-25</td><td><span style="color:#1890ff;font-size:10px;">向量</span> <span style="color:#ff6b6b;font-size:10px;">下载</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<thead><tr><th style="width:32px"><input type="checkbox"/></th><th>文件名</th><th>分类</th><th>类型</th><th>大小</th><th>文件状态</th><th>向量状态</th><th>上传时间</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>心理健康指南.pdf</span></td><td><span class="tg tb">资料文档</span></td><td>PDF</td><td>2.3 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-01</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>情绪图谱.png</span></td><td><span class="tg to">图表资源</span></td><td>PNG</td><td>1.1 MB</td><td><span class="tg tb">解析中</span></td><td><span class="tg tr">未启用</span></td><td>2026-08-28</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox" checked/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>量表数据.xlsx</span></td><td><span class="tg tgn">默认分类</span></td><td>Excel</td><td>0.8 MB</td><td><span class="tg tr">解析失败</span><span class="tp" title="失败原因：文件格式不兼容">ⓘ</span></td><td><span class="tg tr">未启用</span></td><td>2026-08-25</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>焦虑症状图谱.png</span></td><td><span class="tg to">图表资源</span></td><td>PNG</td><td>2.5 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-03</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>放松训练指导.mp3</span></td><td><span class="tg to">音频资源</span></td><td>MP3</td><td>5.2 MB</td><td><span class="tg to">待解析</span></td><td><span class="tg tr">未启用</span></td><td>2026-09-05</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>干预方案模板.docx</span></td><td><span class="tg tb">资料文档</span></td><td>DOCX</td><td>0.5 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-07</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>睡眠质量评估表.pdf</span></td><td><span class="tg tb">资料文档</span></td><td>PDF</td><td>1.8 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-08</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>正念冥想音频.mp3</span></td><td><span class="tg to">音频资源</span></td><td>MP3</td><td>8.6 MB</td><td><span class="tg to">待解析</span></td><td><span class="tg tr">未启用</span></td><td>2026-09-09</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>抑郁评估问卷.docx</span></td><td><span class="tg tb">资料文档</span></td><td>DOCX</td><td>0.3 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-10</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>脑电波图谱.png</span></td><td><span class="tg to">图表资源</span></td><td>PNG</td><td>3.2 MB</td><td><span class="tg tb">解析中</span></td><td><span class="tg tr">未启用</span></td><td>2026-09-11</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>认知行为疗法手册.pdf</span></td><td><span class="tg tb">资料文档</span></td><td>PDF</td><td>4.7 MB</td><td><span class="tg tr">解析失败</span><span class="tp" title="失败原因：文件已损坏">ⓘ</span></td><td><span class="tg tr">未启用</span></td><td>2026-09-12</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><span style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>心率数据.csv</span></td><td><span class="tg tgn">默认分类</span></td><td>CSV</td><td>0.2 MB</td><td><span class="tg tgn">解析完成</span></td><td><span class="tg tgn">已启用</span></td><td>2026-09-14</td><td><span class="act-link" style="color:var(--info)">向量</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 48 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">»</span>
+<span>共 48 条</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">5</span><span class="pb">»</span></div>
+</div>
 </div>
 </div>
 </div>
@@ -405,8 +568,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 <div class="note">
 <b>组件拆分：</b>FileCategoryTree（分类树+增删改）、FileTable、FileUpload、FileSearch<br/>
-<b>接口：</b>文件：POST /admin/file/page、POST /admin/file/upload、DELETE /admin/file/{id}、PUT /admin/file/{id}；分类：GET/POST/PUT/DELETE /admin/file/category/*<br/>
-<b>交互：</b>左侧分类树点击筛选 → 上传/下载/删除 → 点击"向量"跳转 /admin/file/vector/:fileId → 分类增删改
+<b>接口映射：</b><br/>
+• 文件列表：POST /admin/file/page (FileQueryDTO: pageNum/页码、pageSize/每页条数、categoryId/分类ID、knowledgeType/向量库知识类型:0无1症状库2诊断标准库3干预方案库、fileName/文件名模糊匹配、status/文件状态:0待解析1解析中2解析失败3解析完成、startTime/开始时间、endTime/结束时间) → PageResult&lt;FileVO&gt;<br/>
+• FileVO: id/文件ID、personId/所属用户ID、categoryId/分类ID、configId/解析节点配置ID、originalName/原始文件名、fileUrl/文件OSS地址、fileSuffix/文件后缀、fileSize/文件大小、fileMd5/文件MD5、status/状态(0待解析1解析中2解析失败3解析完成)、failReason/解析失败原因、vectorStatus/向量状态(0否1是)、knowledgeType/知识类型(0-3)、source/来源、createdTime/上传时间、updatedTime/最后更新时间<br/>
+• 分类：GET/POST/PUT/DELETE /admin/file/category/*<br/>
+• 向量：点击"向量"跳转 /admin/file/vector/:fileId<br/>
+<b>交互：</b>左侧分类树点击筛选 → 搜索面板含知识类型/文件状态/时间区间 → 上传/下载/删除 → 点击"向量"跳转 → 分类增删改
 </div>
 </div>
 
@@ -419,60 +586,68 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi a"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi a"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">文件向量管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">文件向量管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="bc">
-<a href="#">文件管理</a><span>›</span><span class="cur">心理健康指南.pdf — 向量数据</span>
+<a href="#">文件管理</a><span class="sep">›</span><span class="cur">心理健康指南.pdf — 向量数据</span>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
 <div style="font-size:12px;display:flex;gap:8px;align-items:center;">
-<span style="font-weight:600;">文件：</span>📄 心理健康指南.pdf
+<span style="font-weight:600;display:flex;align-items:center;gap:5px;"><svg width="14" height="14" style="color:var(--text-muted)"><use href="#icon-file"/></svg>文件：</span>心理健康指南.pdf
 <span class="tg tb">已向量化</span>
-<span style="color:#999;">分块数：12</span>
+<span style="color:var(--text-muted);">分块数：12</span>
 </div>
 <div style="display:flex;gap:6px;">
-<span class="bp b1">🔄 重新加载向量</span>
-<span class="bp b2" style="color:#fa8c16;">⏸ 中断解析</span>
-<span class="bp b2" style="color:#ff4d4f;">🗑 删除向量</span>
+<span class="bp b1"><svg><use href="#icon-refresh"/></svg>重新加载向量</span>
+<span class="bp b2" style="color:var(--warning);border-color:#fde68a;">中断解析</span>
+<span class="bp b2" style="color:var(--danger);border-color:#fecaca;"><svg><use href="#icon-trash"/></svg>删除向量</span>
 </div>
 </div>
 <table class="wt">
-<tr><th>分块索引</th><th>分块内容预览</th><th>字符数</th><th>创建时间</th></tr>
-<tr><td>0</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">心理健康是指个体在心理方面的良好状态，包括情绪稳定、认知清晰...</td><td>512</td><td>2026-09-01 10:30</td></tr>
-<tr><td>1</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">焦虑是一种常见的情绪反应，适度的焦虑可以帮助人们提高警觉性...</td><td>498</td><td>2026-09-01 10:30</td></tr>
-<tr><td>2</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">抑郁情绪的识别与干预是心理健康服务的重要内容，早期发现有助于...</td><td>503</td><td>2026-09-01 10:30</td></tr>
+<thead><tr><th>一级索引</th><th>二级索引</th><th>分块内容预览</th><th>字符数</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>0</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">心理健康是指个体在心理方面的良好状态，包括情绪稳定、认知清晰...</td><td>512</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>0</td><td>1</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">焦虑是一种常见的情绪反应，适度的焦虑可以帮助人们提高警觉性...</td><td>498</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>0</td><td>2</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">抑郁情绪的识别与干预是心理健康服务的重要内容，早期发现有助于...</td><td>503</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>0</td><td>3</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">认知行为疗法是目前循证心理治疗中应用最广泛的方法之一，通过改变...</td><td>487</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>1</td><td>0</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">睡眠障碍是指持续存在的睡眠质量或数量不满意的问题，包括入睡困难...</td><td>489</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>1</td><td>1</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">社交焦虑障碍（社交恐惧症）是一种以过度害怕社交场合为特征的...</td><td>521</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>1</td><td>2</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">正念冥想是一种源自东方禅修的心理训练方法，强调对当下的非评判...</td><td>475</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>2</td><td>0</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">创伤后应激障碍（PTSD）是指在经历或目睹严重创伤事件后出现的...</td><td>508</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>2</td><td>1</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">强迫症是一种以反复出现的强迫思维和强迫行为为特征的精神障碍...</td><td>493</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+<tr><td>3</td><td>0</td><td style="max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">情绪调节能力是个体心理健康的重要保护因素，有效的情绪调节策略...</td><td>501</td><td><span class="act-link" style="color:var(--info)">详情</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 12 条</span><span class="pb a">1</span><span class="pb">2</span>
+<span>共 18 条</span>
+<div class="pgi"><span class="pb a">1</span><span class="pb">2</span></div>
 </div>
 </div>
 </div>
@@ -480,82 +655,95 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 <div class="note">
 <b>组件拆分：</b>FileVectorTable、FileVectorActions（操作按钮栏）、BreadcrumbNav<br/>
-<b>接口：</b>GET /admin/file/vector/{fileId}、POST /admin/file/vector/{fileId}/load、DELETE /admin/file/vector/{fileId}、POST /admin/file/vector/{fileId}/interrupt<br/>
+<b>接口映射：</b>GET /admin/file/vector/{fileId} (FileVectorVO: id、fileId/文件ID、content/分块内容、chunkLevel1Idx/一级分块索引、chunkLevel2Idx/二级分块索引，注:字符数为前端根据content.length计算)、POST /admin/file/vector/{fileId}/load、DELETE /admin/file/vector/{fileId}、POST /admin/file/vector/{fileId}/interrupt<br/>
 <b>交互：</b>面包屑返回文件列表 → 加载/删除/中断向量 → 分页查看分块数据
 </div>
+</div>
+
 </div>
 
 <!-- ========== 7. 量表管理页 ========== -->
 <div class="cd">
 <div class="ch"><h3>7. 量表管理页</h3><span class="rt">/admin/scale</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>量表元数据列表管理，支持分类筛选、删除状态筛选、启用状态筛选。点击"详情"跳转量表详情页（页面8）</div>
+<div class="chg"><b>设计要点：</b>量表元数据列表管理，支持分类筛选、删除状态筛选、启用状态筛选。点击"详情"跳转量表详情页</div>
 <div class="wf">
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi a"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi a"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">量表管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">量表管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="sbar">
-<span class="inp" style="min-width:160px;color:#999;">搜索量表名称</span>
-<span class="inp" style="min-width:80px;color:#999;">分类</span>
-<span class="inp" style="min-width:80px;color:#999;">启用状态</span>
-<span class="inp" style="min-width:80px;color:#999;">删除状态</span>
+<span class="inp" style="min-width:160px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>搜索量表名称</span>
+<span class="inp" style="min-width:90px;">启用状态</span>
+<span class="inp" style="min-width:90px;">删除状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 <span style="flex:1;"></span>
-<span class="bp b1">+ 新增量表</span>
+<span class="bp b1"><svg><use href="#icon-plus"/></svg>新增量表</span>
 </div>
 <table class="wt">
-<tr><th>量表ID</th><th>量表名称</th><th>分类</th><th>题目数</th><th>创建时间</th><th>启用</th><th>删除</th><th>操作</th></tr>
-<tr><td>S001</td><td>SAS 焦虑自评量表</td><td><span class="tg tr">焦虑</span></td><td>20</td><td>2026-08-01</td><td><span class="tg tgn">是</span></td><td><span class="tg tgn">否</span></td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td>S002</td><td>SDS 抑郁自评量表</td><td><span class="tg tb">抑郁</span></td><td>20</td><td>2026-08-01</td><td><span class="tg tgn">是</span></td><td><span class="tg tgn">否</span></td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td>S005</td><td>SSRS 社会支持量表</td><td><span class="tg tb">其他</span></td><td>10</td><td>2026-09-01</td><td><span class="tg tr">否</span></td><td><span class="tg tr">是</span></td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#52c41a;font-size:10px;">恢复</span></td></tr>
+<thead><tr><th>量表ID</th><th>量表名称</th><th>分类</th><th>题目数</th><th>描述</th><th>创建时间</th><th>启用状态</th><th>删除状态</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>SAS 焦虑自评量表</td><td><span class="tg tr">焦虑</span></td><td>20</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">用于评估焦虑情绪的主观感受及严重程度</td><td>2026-08-01</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>2</td><td>SDS 抑郁自评量表</td><td><span class="tg tb">抑郁</span></td><td>20</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">评估个体近期抑郁状态及情绪变化趋势</td><td>2026-08-01</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>3</td><td>SSRS 社会支持量表</td><td><span class="tg tb">社会功能</span></td><td>10</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">测量个体所获得的社会支持水平</td><td>2026-09-01</td><td><span class="tg tgn">启用</span></td><td><span class="tg tr">已删除</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--success)">恢复</span></td></tr>
+<tr><td>4</td><td>PSQI 匹兹堡睡眠质量指数</td><td><span class="tg to">睡眠</span></td><td>19</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">评估近一个月睡眠质量和睡眠障碍</td><td>2026-09-05</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>5</td><td>SCL-90 症状自评量表</td><td><span class="tg tb">综合评估</span></td><td>90</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">综合评估心理健康状况，涵盖9个因子维度</td><td>2026-09-08</td><td><span class="tg tr">禁用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>6</td><td>PHQ-9 患者健康问卷</td><td><span class="tg tb">抑郁</span></td><td>9</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">快速筛查抑郁症状，评估严重程度</td><td>2026-09-10</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>7</td><td>GAD-7 广泛性焦虑障碍量表</td><td><span class="tg tr">焦虑</span></td><td>7</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">评估过去两周焦虑症状的严重程度</td><td>2026-09-11</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>8</td><td>ISI 失眠严重程度指数</td><td><span class="tg to">睡眠</span></td><td>7</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">评估失眠的性质、严重程度和影响</td><td>2026-09-12</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>9</td><td>PSS 知觉压力量表</td><td><span class="tg tb">压力</span></td><td>14</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">测量个体对压力的主观感知程度</td><td>2026-09-14</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>10</td><td>IES-R 事件影响量表</td><td><span class="tg tr">创伤</span></td><td>22</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">评估创伤事件对个体的心理影响程度</td><td>2026-09-16</td><td><span class="tg tgn">启用</span></td><td><span class="tg tgn">正常</span></td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 6 条</span><span class="pb a">1</span>
+<span>共 54 条</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">6</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleTable、ScaleForm（新增/编辑弹窗）、ScaleCategoryManage（分类管理弹窗）<br/>
-<b>接口：</b>量表：POST /admin/scale/list、POST /admin/scale、PUT /admin/scale/{id}、DELETE /admin/scale/{id}、PUT /admin/scale/{id}/restore；分类：GET/POST/PUT/DELETE /admin/scale/category/*<br/>
-<b>交互：</b>搜索/筛选 → 新增/编辑/删除/恢复量表 → 点击"详情"跳转 /admin/scale/:scaleId（页面8）→ 分类管理弹窗
+<b>组件拆分：</b>ScaleTable、ScaleSearch、ScaleForm（新增/编辑弹窗，含分类选择）、CategoryDialog<br/>
+<b>接口映射：</b><br/>
+• 量表列表：POST /admin/scale/list (AdminScaleQueryDTO: pageNum/页码、pageSize/每页条数、scaleName/量表名称模糊匹配、status/启用状态:1启用0禁用、isDeleted/删除状态:0未删1已删) → PageResult&lt;ScaleVO&gt;<br/>
+• ScaleVO: id/量表ID、scaleName/量表名称、description/描述、questionCount/题目数、scaleCategoryId/分类ID、status/启用(0否1是)、isDeleted/删除(0否1是)、scoreRule/评分规则JSON、createdTime/创建时间、createdBy/创建人、updatedTime/更新时间、updatedBy/更新人<br/>
+• 分类：GET/POST/PUT/DELETE /admin/scale/category/*<br/>
+• CRUD：POST /admin/scale、PUT /admin/scale/{id}、DELETE /admin/scale/{id}、PUT /admin/scale/{id}/restore<br/>
+<b>交互：</b>搜索/筛选(名称 + 启用状态 + 删除状态) → 新增/编辑/删除/恢复量表 → 点击"详情"跳转量表详情页 → 分类管理弹窗
 </div>
 </div>
 
-<!-- ========== 8. 量表详情页（题目+选项+规则+模板） ========== -->
+<!-- ========== 8. 量表详情页 ========== -->
 <div class="cd">
 <div class="ch"><h3>8. 量表详情页</h3><span class="rt">/admin/scale/:scaleId</span></div>
 <div class="cb">
@@ -564,66 +752,78 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi a"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi a"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">量表详情</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">量表详情</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="bc">
-<a href="#">量表管理</a><span>›</span><span class="cur">SAS 焦虑自评量表</span>
+<a href="#">量表管理</a><span class="sep">›</span><span class="cur">SAS 焦虑自评量表</span>
 </div>
 <div class="tab-bar">
-<div class="tab a">📝 题目管理</div>
-<div class="tab">📋 选项模板</div>
-<div class="tab">📏 结果规则</div>
-<div class="tab">ℹ️ 基本信息</div>
+<div class="tab a"><svg><use href="#icon-edit"/></svg>题目管理</div>
+<div class="tab"><svg><use href="#icon-clipboard"/></svg>选项模板</div>
+<div class="tab"><svg><use href="#icon-ruler"/></svg>结果规则</div>
+<div class="tab"><svg><use href="#icon-info"/></svg>基本信息</div>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
 <span style="font-size:12px;font-weight:600;">题目列表（共20题）</span>
-<span class="bp b1">+ 新增题目</span>
+<span class="bp b1"><svg><use href="#icon-plus"/></svg>新增题目</span>
 </div>
 <table class="wt">
-<tr><th>序号</th><th>题目内容</th><th>题型</th><th>选项数</th><th>操作</th></tr>
-<tr><td>1</td><td>我觉得比平常容易紧张和着急</td><td><span class="tg tb">单选</span></td><td>4</td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td>2</td><td>我无缘无故地感到害怕</td><td><span class="tg tb">单选</span></td><td>4</td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td>3</td><td>我容易心里烦乱或觉得惊恐</td><td><span class="tg tb">单选</span></td><td>4</td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<thead><tr><th>序号</th><th>题目内容</th><th>计分类型</th><th>选项数</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>我觉得比平常容易紧张和着急</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>2</td><td>我无缘无故地感到害怕</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>3</td><td>我容易心里烦乱或觉得惊恐</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>4</td><td>我觉得我可能将要发疯</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>5</td><td>我觉得一切都很好，也不会发生什么不幸</td><td><span class="tg tr">反向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>6</td><td>我手脚发抖打颤</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>7</td><td>我因为头痛、颈痛和背痛而苦恼</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>8</td><td>我感觉容易衰弱和疲乏</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>9</td><td>我觉得心平气和，并且容易安静坐着</td><td><span class="tg tr">反向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td>10</td><td>我觉得心跳得很快</td><td><span class="tg tgn">正向</span></td><td>4</td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 20 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">»</span>
+<span>共 20 条</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
-<b>组件拆分：</b>ScaleQuestionTab（题目管理）、ScaleOptionTemplateTab（选项模板）、ScaleRuleTab（结果规则）、ScaleInfoTab（基本信息）、BreadcrumbNav<br/>
-<b>接口：</b>题目：GET/POST/PUT/DELETE /admin/scale/questions/*；选项：POST/PUT/DELETE /admin/scale/option/*；模板：GET/POST/PUT/DELETE /admin/scale/option/template/*；规则：GET/POST/PUT/DELETE /admin/scale/rule/*<br/>
+<b>接口映射：</b><br/>
+• 题目Tab：GET /admin/scale/questions/list (ScaleQuestionVO: id/题目ID、title/题目内容、sort/序号、scoreType/计分类型:1正向2反向、createdTime/创建时间、createdBy/创建人、updatedTime/更新时间、updatedBy/更新人、optionList/选项列表)<br/>
+• 选项模板Tab：GET /admin/scale/option-template/list (ScaleOptionTemplateVO: optionText/选项文本、score/分值、sort/排序)<br/>
+• 结果规则Tab：GET /admin/scale/rule (ScaleResultRuleVO: minScore/最低分、maxScore/最高分、resultText/结果描述、sort/排序)<br/>
+• 基本信息Tab：GET /admin/scale/{id} (ScaleVO: id/ID、scaleName/名称、description/描述、scoreRule/评分规则JSON、scaleCategoryId/分类ID、status/启用、isDeleted/删除、questionCount/题目数、createdTime/创建时间、updatedTime/更新时间)<br/>
+<b>组件拆分：</b>ScaleQuestionTab、ScaleOptionTemplateTab、ScaleRuleTab、ScaleInfoTab、BreadcrumbNav<br/>
 <b>交互：</b>Tab切换 → 题目增删改（级联选项） → 选项模板管理 → 结果规则管理 → 分页
 </div>
 </div>
@@ -637,55 +837,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi a"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi a"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">症状字典</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">症状字典</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="sbar">
-<span class="inp" style="min-width:160px;color:#999;">搜索症状名称</span>
-<span class="inp" style="min-width:80px;color:#999;">分类</span>
-<span class="inp" style="min-width:80px;color:#999;">状态</span>
+<span class="inp" style="min-width:160px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>搜索症状名称</span>
+<span class="inp" style="min-width:90px;">分类</span>
+<span class="inp" style="min-width:90px;">状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 <span style="flex:1;"></span>
-<span class="bp b1">+ 新增症状</span>
-<span class="bp b2" style="color:#ff4d4f;">批量删除</span>
+<span class="bp b1"><svg><use href="#icon-plus"/></svg>新增症状</span>
+<span class="bp b2" style="color:var(--danger);border-color:#fecaca;">批量删除</span>
 </div>
 <table class="wt">
-<tr><th><input type="checkbox"/></th><th>症状名称</th><th>症状大类</th><th>标准术语</th><th>严重等级</th><th>状态</th><th>操作</th></tr>
-<tr><td><input type="checkbox"/></td><td>入睡困难</td><td><span class="tg to">睡眠障碍</span></td><td>insomnia_onset</td><td>⭐⭐⭐</td><td><span class="tg tgn">启用</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#fa8c16;font-size:10px;">禁用</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>持续焦虑</td><td><span class="tg tr">焦虑症状</span></td><td>persistent_anxiety</td><td>⭐⭐⭐⭐</td><td><span class="tg tgn">启用</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#fa8c16;font-size:10px;">禁用</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>社交回避</td><td><span class="tg tgn">行为症状</span></td><td>social_avoidance</td><td>⭐⭐</td><td><span class="tg tr">禁用</span></td><td><span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#52c41a;font-size:10px;">启用</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<thead><tr><th style="width:32px"><input type="checkbox"/></th><th>症状名称</th><th>症状大类</th><th>严重等级</th><th>同义词</th><th>状态</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td><input type="checkbox"/></td><td>入睡困难</td><td><span class="tg to">睡眠障碍</span></td><td>中度</td><td>难以入睡、辗转难眠、入睡延迟</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>持续焦虑</td><td><span class="tg tr">焦虑症状</span></td><td>重度</td><td>过度担心、持续紧张、无法放松</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox" checked/></td><td>社交回避</td><td><span class="tg tgn">行为症状</span></td><td>轻度</td><td>社交恐惧、回避人群、害怕对视</td><td><span class="tg tr">禁用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--success)">启用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>心悸惊恐</td><td><span class="tg tr">焦虑症状</span></td><td>重度</td><td>心跳加速、濒死感、失控感</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>情绪低落</td><td><span class="tg tb">情绪症状</span></td><td>中度</td><td>心情差、悲伤感、兴趣丧失</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>早醒</td><td><span class="tg to">睡眠障碍</span></td><td>中度</td><td>凌晨醒来、醒后难眠、睡眠缩短</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>兴趣减退</td><td><span class="tg tb">情绪症状</span></td><td>重度</td><td>快感缺失、兴趣丧失、愉悦感下降</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>注意力涣散</td><td><span class="tg tb">认知症状</span></td><td>轻度</td><td>无法集中、思维涣散、效率下降</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>强迫思维</td><td><span class="tg tgn">行为症状</span></td><td>重度</td><td>反复闯入、无法控制、焦虑伴随</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td>食欲显著减退</td><td><span class="tg tb">躯体症状</span></td><td>中度</td><td>食欲不振、体重下降、厌食</td><td><span class="tg tgn">启用</span></td><td><span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--warning)">禁用</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 45 条</span><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">»</span>
+<span>共 45 条</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">5</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
@@ -693,7 +901,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 <div class="note">
 <b>组件拆分：</b>SymptomTable、SymptomForm（新增/编辑弹窗）、SymptomSearch<br/>
-<b>接口：</b>POST /admin/symptom-dict/page、GET /admin/symptom-dict/{id}、POST /admin/symptom-dict、PUT /admin/symptom-dict/{id}、PUT /admin/symptom-dict/{id}/status、DELETE /admin/symptom-dict/batch<br/>
+<b>接口映射：</b><br/>
+• 分页列表：POST /admin/symptom-dict/page (AdminSymptomDictQueryDTO: pageNum/页码、pageSize/每页条数、symptomTerm/症状名称模糊匹配、symptomCategory/症状大类、status/状态:0禁用1启用) → PageResult&lt;SymptomDictVO&gt;<br/>
+• SymptomDictVO: id/ID、symptomTerm/症状名称、symptomCategory/症状大类、synonymWords/同义口语词列表、severityDefault/默认严重等级:1轻度2中度3重度、status/状态(0禁用1启用)、createdTime/创建时间、updatedTime/更新时间<br/>
+• CRUD：GET /admin/symptom-dict/{id}、POST /admin/symptom-dict、PUT /admin/symptom-dict/{id}、PUT /admin/symptom-dict/{id}/status、DELETE /admin/symptom-dict/batch<br/>
 <b>交互：</b>搜索/筛选 → 新增/编辑 → 启用/禁用 → 勾选批量删除 → 分页
 </div>
 </div>
@@ -702,82 +913,104 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="cd">
 <div class="ch"><h3>10. AI节点配置页</h3><span class="rt">/admin/ai-node</span></div>
 <div class="cb">
-<div class="chg"><b>设计要点：</b>AI诊断节点配置管理，顶部显示缓存状态卡片，下方为节点配置分页表格。支持批量启用/禁用、点击"详情"跳转节点详情页（页面11）</div>
+<div class="chg"><b>设计要点：</b>AI诊断节点配置管理，顶部显示缓存状态卡片，下方为节点配置分页表格。支持批量启用/禁用、点击"详情"跳转节点详情页</div>
 <div class="wf">
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi a"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi a"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">AI节点配置</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">AI节点配置</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
-<div style="display:flex;gap:12px;margin-bottom:14px;">
-<div style="background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #f0f0f0;flex:1;display:flex;align-items:center;gap:12px;">
-<div style="width:36px;height:36px;border-radius:8px;background:#e6f7ff;display:flex;align-items:center;justify-content:center;font-size:18px;">🧠</div>
-<div><div style="font-size:10px;color:#999;">缓存节点数</div><div style="font-size:18px;font-weight:700;color:#1890ff;">6</div></div>
+<div style="display:flex;gap:14px;margin-bottom:16px;">
+<div class="cache-card">
+<div class="cache-icon" style="background:var(--info-bg);"><svg style="color:var(--info)"><use href="#icon-cpu"/></svg></div>
+<div><div class="cache-label">缓存节点数</div><div class="cache-value" style="color:var(--info);">6</div></div>
 </div>
-<div style="background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #f0f0f0;flex:1;display:flex;align-items:center;gap:12px;">
-<div style="width:36px;height:36px;border-radius:8px;background:#f6ffed;display:flex;align-items:center;justify-content:center;font-size:18px;">✅</div>
-<div><div style="font-size:10px;color:#999;">缓存状态</div><div style="font-size:14px;font-weight:600;color:#52c41a;">正常</div></div>
+<div class="cache-card">
+<div class="cache-icon" style="background:var(--success-bg);"><svg style="color:var(--success)"><use href="#icon-check"/></svg></div>
+<div><div class="cache-label">缓存状态</div><div class="cache-value" style="font-size:16px;color:var(--success);">正常</div></div>
 </div>
-<div style="background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #f0f0f0;flex:1;display:flex;align-items:center;justify-content:center;">
-<span class="bp b1">🔄 全量刷新缓存</span>
+<div class="cache-card" style="justify-content:center;border:1px dashed var(--border-color);background:var(--bg-content);cursor:pointer;">
+<span class="bp b1"><svg><use href="#icon-refresh"/></svg>全量刷新缓存</span>
 </div>
 </div>
 <div class="sbar">
-<span class="inp" style="min-width:160px;color:#999;">节点标识/名称</span>
-<span class="inp" style="min-width:80px;color:#999;">分组</span>
-<span class="inp" style="min-width:80px;color:#999;">模型类型</span>
-<span class="inp" style="min-width:80px;color:#999;">启用状态</span>
+<span class="inp" style="min-width:160px;"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>节点标识/名称</span>
+<span class="inp" style="min-width:90px;">分组</span>
+<span class="inp" style="min-width:90px;">模型类型</span>
+<span class="inp" style="min-width:90px;">启用状态</span>
 <span class="bp b1">查询</span>
 <span class="bp b2">重置</span>
 <span style="flex:1;"></span>
-<span class="bp b1">+ 新增节点</span>
+<span class="bp b1"><svg><use href="#icon-plus"/></svg>新增节点</span>
 </div>
 <table class="wt">
-<tr><th><input type="checkbox"/></th><th>节点标识</th><th>节点名称</th><th>分组</th><th>模型</th><th>启用</th><th>更新时间</th><th>操作</th></tr>
-<tr><td><input type="checkbox"/></td><td>emotion_analyzer</td><td>情绪分析节点</td><td><span class="tg tb">诊断</span></td><td>GPT-4o</td><td><span class="tg tgn">是</span></td><td>2026-09-08</td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>risk_assessor</td><td>风险评估节点</td><td><span class="tg to">评估</span></td><td>GPT-4o</td><td><span class="tg tgn">是</span></td><td>2026-09-07</td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
-<tr><td><input type="checkbox"/></td><td>symptom_mapper</td><td>症状映射节点</td><td><span class="tg tr">映射</span></td><td>Claude-3</td><td><span class="tg tr">否</span></td><td>2026-09-05</td><td><span style="color:#1890ff;font-size:10px;">详情</span> <span style="color:#ff6b6b;font-size:10px;">编辑</span> <span style="color:#ff4d4f;font-size:10px;">删除</span></td></tr>
+<thead><tr><th style="width:32px"><input type="checkbox"/></th><th>节点标识</th><th>节点名称</th><th>分组</th><th>模型类型</th><th>排序</th><th>版本</th><th>启用</th><th>更新时间</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">psychologicalState</code></td><td>心理状态评估</td><td><span class="tg tb">诊断</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>1</td><td>3</td><td><span class="tg tgn">是</span></td><td>2026-09-08</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">riskAssessment</code></td><td>风险评估</td><td><span class="tg to">评估</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>2</td><td>2</td><td><span class="tg tgn">是</span></td><td>2026-09-07</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">symptomMapping</code></td><td>症状诊断映射</td><td><span class="tg tr">映射</span></td><td><span class="tg tgn">OLLAMA</span></td><td>3</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-09-06</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">interventionAdvice</code></td><td>干预建议生成</td><td><span class="tg tb">干预</span></td><td><span class="tg to">DASH_SCOPE</span></td><td>4</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-09-05</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">crisisDetection</code></td><td>危机检测节点</td><td><span class="tg to">评估</span></td><td><span class="tg tr">DEEP_SEEK</span></td><td>5</td><td>1</td><td><span class="tg tr">否</span></td><td>2026-09-04</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">emotionClassifier</code></td><td>情绪分类识别</td><td><span class="tg tb">诊断</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>6</td><td>2</td><td><span class="tg tgn">是</span></td><td>2026-09-03</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">anxietyLevel</code></td><td>焦虑程度评估</td><td><span class="tg to">评估</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>7</td><td>4</td><td><span class="tg tgn">是</span></td><td>2026-09-02</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">depressionScreen</code></td><td>抑郁筛查</td><td><span class="tg tb">诊断</span></td><td><span class="tg tgn">OLLAMA</span></td><td>8</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-09-01</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">sleepAnalysis</code></td><td>睡眠质量分析</td><td><span class="tg to">分析</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>9</td><td>2</td><td><span class="tg tgn">是</span></td><td>2026-08-30</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">stressEval</code></td><td>压力水平测评</td><td><span class="tg to">评估</span></td><td><span class="tg to">DASH_SCOPE</span></td><td>10</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-08-29</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">socialSupportScore</code></td><td>社会支持评分</td><td><span class="tg tr">映射</span></td><td><span class="tg tgn">OLLAMA</span></td><td>11</td><td>3</td><td><span class="tg tgn">是</span></td><td>2026-08-28</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">cognitiveBiasDetect</code></td><td>认知偏差检测</td><td><span class="tg tb">诊断</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>12</td><td>1</td><td><span class="tg tr">否</span></td><td>2026-08-27</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">personalityInsight</code></td><td>人格特征洞察</td><td><span class="tg to">分析</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>13</td><td>2</td><td><span class="tg tgn">是</span></td><td>2026-08-25</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">relaxGuidance</code></td><td>放松引导方案</td><td><span class="tg tb">干预</span></td><td><span class="tg to">DASH_SCOPE</span></td><td>14</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-08-23</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">traumaResponse</code></td><td>创伤反应评估</td><td><span class="tg to">评估</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>15</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-08-22</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">moodTracker</code></td><td>情绪追踪记录</td><td><span class="tg tb">诊断</span></td><td><span class="tg tgn">OLLAMA</span></td><td>16</td><td>2</td><td><span class="tg tr">否</span></td><td>2026-08-20</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">selfEfficacy</code></td><td>自我效能感评估</td><td><span class="tg to">评估</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>17</td><td>3</td><td><span class="tg tgn">是</span></td><td>2026-08-18</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">copingStrategy</code></td><td>应对策略推荐</td><td><span class="tg tb">干预</span></td><td><span class="tg to">DASH_SCOPE</span></td><td>18</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-08-16</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">thoughtRecord</code></td><td>自动思维记录</td><td><span class="tg tr">映射</span></td><td><span class="tg tv">DEEP_SEEK</span></td><td>19</td><td>1</td><td><span class="tg tgn">是</span></td><td>2026-08-14</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+<tr><td><input type="checkbox"/></td><td><code style="font-size:10.5px;background:#f1f5f9;padding:2px 6px;border-radius:3px;">suicidePrevention</code></td><td>自杀风险预防</td><td><span class="tg to">评估</span></td><td><span class="tg tr">DEEP_SEEK</span></td><td>20</td><td>1</td><td><span class="tg tr">否</span></td><td>2026-08-12</td><td><span class="act-link" style="color:var(--info)">详情</span> <span class="act-link" style="color:var(--primary)">编辑</span> <span class="act-link" style="color:var(--danger)">删除</span></td></tr>
+</tbody>
 </table>
 <div class="pgn">
-<span>共 6 条</span><span class="pb a">1</span>
+<span>共 20 条</span>
+<div class="pgi"><span class="pb">«</span><span class="pb a">1</span><span class="pb">2</span><span class="pb">»</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="note">
+<b>接口映射：</b><br/>
+• 列表：POST /admin/ai-node-config/page (AdminAiNodeConfigQueryDTO: pageNum/页码、pageSize/每页条数、nodeKey/节点标识模糊匹配、nodeName/节点名称模糊匹配、nodeGroup/分组、modelType/模型类型:0-2、enabled/启用:0-1) → PageResult&lt;AiNodeConfigSimpleVO&gt;<br/>
+• AiNodeConfigSimpleVO: id、nodeKey/节点标识、nodeName/节点名称、nodeGroup/分组、modelType/模型类型(0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE)、enabled/启用、sort/排序、version/版本、remark/备注、updatedTime/更新时间<br/>
+• 缓存：GET /admin/ai-node-cache/status (AiNodeCacheVO: cacheSize/缓存节点数、nodeKeys/节点标识列表)、POST /admin/ai-node-cache/refresh<br/>
+• CRUD：POST /admin/ai-node-config、PUT /admin/ai-node-config/{id}、DELETE /admin/ai-node-config/{id}、PUT /admin/ai-node-config/batch-enabled<br/>
 <b>组件拆分：</b>CacheStatusCard（缓存状态卡片）、AiNodeTable、AiNodeForm（新增/编辑弹窗）<br/>
-<b>接口：</b>配置：POST /admin/ai-node-config/page、POST /admin/ai-node-config、PUT /admin/ai-node-config/{id}、DELETE /admin/ai-node-config/{id}、PUT /admin/ai-node-config/batch-enabled；缓存：GET /admin/ai-node-cache/status、POST /admin/ai-node-cache/refresh、POST /admin/ai-node-cache/refresh/{id}<br/>
-<b>交互：</b>缓存状态查看/刷新 → 节点CRUD → 批量启用/禁用 → 点击"详情"跳转 /admin/ai-node/:id（页面11）
+<b>交互：</b>缓存状态查看/刷新 → 节点CRUD → 批量启用/禁用 → 点击"详情"跳转节点详情页
 </div>
 </div>
 
@@ -790,62 +1023,60 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi a"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi a"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">AI节点详情</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">AI节点详情</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am">
 <div class="bc">
-<a href="#">AI节点配置</a><span>›</span><span class="cur">emotion_analyzer — 情绪分析节点</span>
+<a href="#">AI节点配置</a><span class="sep">›</span><span class="cur">psychologicalState — 心理状态评估</span>
 </div>
 <div class="tab-bar">
-<div class="tab a">💬 提示词编辑</div>
-<div class="tab">📜 变更历史</div>
-<div class="tab">ℹ️ 配置详情</div>
+<div class="tab a"><svg><use href="#icon-message"/></svg>提示词编辑</div>
+<div class="tab"><svg><use href="#icon-history"/></svg>变更历史</div>
+<div class="tab"><svg><use href="#icon-info"/></svg>配置详情</div>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
 <span style="font-size:12px;font-weight:600;">系统提示词（System Prompt）</span>
 <div style="display:flex;gap:6px;">
-<span class="bp b1">💾 保存</span>
-<span class="bp b2">🔄 刷新缓存</span>
+<span class="bp b1"><svg><use href="#icon-save"/></svg>保存</span>
+<span class="bp b2"><svg><use href="#icon-refresh"/></svg>刷新缓存</span>
 </div>
 </div>
-<div style="background:#1e1e1e;border-radius:6px;padding:12px;font-size:11px;color:#d4d4d4;font-family:'Consolas','Monaco',monospace;line-height:1.6;min-height:180px;">
-<span style="color:#6a9955;">// 情绪分析节点 - 系统提示词</span><br/>
+<div class="code-block">
+<span class="code-comment">// 心理状态评估节点 - 系统提示词 (v3)</span><br/>
 你是一个专业的心理健康情绪分析AI助手。<br/><br/>
-<span style="color:#569cd6;">## 任务</span><br/>
+<span class="code-keyword">## 任务</span><br/>
 根据用户的对话内容，分析其当前的情绪状态，包括：<br/>
 1. 主要情绪类型及占比<br/>
 2. 情绪触发关键词<br/>
 3. 风险等级评估<br/>
 4. 建议干预措施<br/><br/>
-<span style="color:#569cd6;">## 输出格式</span><br/>
+<span class="code-keyword">## 输出格式</span><br/>
 请以JSON格式返回分析结果...
 </div>
 </div>
@@ -853,9 +1084,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 </div>
 <div class="note">
+<b>接口映射：</b><br/>
+• 提示词Tab：GET /admin/ai-node-prompt/{id}、PUT /admin/ai-node-prompt/{id} (AiNodePromptVO: nodeKey/节点标识、systemPrompt/系统提示词、version/版本号)<br/>
+• 变更历史Tab：POST /admin/ai-node-history/{id}/page (AiNodeConfigHistoryVO: id/记录ID、configId/配置ID、nodeKey/节点标识、oldSystemPrompt/修改前提示词、newSystemPrompt/修改后提示词、oldModelType/oldParams/oldVersion vs newModelType/newParams/newVersion、changeSummary/变更摘要、createdTime/变更时间、createdBy/操作人ID)<br/>
+• 配置详情Tab：GET /admin/ai-node-config/{id} (AiNodeConfigVO全量：nodeKey、nodeName、nodeGroup、systemPrompt、modelType、deepseekModelName、ollamaModelName、dashscopeModelName、maxToken、temperature、topP、topK、frequencyPenalty、presencePenalty、responseFormat、stopSequences、retryMaxAttempts、retryDelay、retryMultiplier、enabled、sort、remark、version、createdTime、updatedTime)<br/>
+• 缓存：GET /admin/ai-node-cache/status (AiNodeCacheVO: cacheSize/缓存节点数、nodeKeys/节点标识列表)<br/>
 <b>组件拆分：</b>PromptEditorTab（提示词编辑器+保存）、HistoryTab（变更历史表格+对比弹窗+回滚）、ConfigDetailTab（配置详情）、BreadcrumbNav<br/>
-<b>接口：</b>提示词：GET /admin/ai-node-prompt/{id}、PUT /admin/ai-node-prompt/{id}；历史：POST /admin/ai-node-history/{id}/page、GET /admin/ai-node-history/detail/{historyId}、POST /admin/ai-node-history/{id}/rollback；缓存：POST /admin/ai-node-cache/refresh/{id}<br/>
-<b>交互：</b>Tab切换 → 编辑提示词并保存(自动记录变更历史) → 查看变更历史 → 对比old/new → 回滚到历史版本 → 刷新缓存
+<b>交互：</b>Tab切换 → 编辑提示词并保存 → 查看变更历史 → 对比old/new → 回滚到历史版本 → 刷新缓存
 </div>
 </div>
 
@@ -868,84 +1103,82 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="al">
 <div class="as">
 <div class="as-header">
-<div class="as-logo">✏️</div>
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
 <div class="alo">AI Mental Care</div>
 <div class="als">心理健康管理平台</div>
 </div>
 <div class="as-nav">
-<div class="mi"><span class="mic">👥</span> 用户管理</div>
-<div class="mi"><span class="mic">🛡️</span> 管理员管理</div>
-<div class="mi"><span class="mic">📁</span> 文件管理</div>
-<div class="mi"><span class="mic">📊</span> 量表管理</div>
-<div class="mi"><span class="mic">🏥</span> 症状字典</div>
-<div class="mi"><span class="mic">🤖</span> AI节点配置</div>
-<div class="mi a"><span class="mic">⚡</span> Skill管理</div>
-<div class="mi"><span class="mic">👤</span> 个人资料</div>
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi a"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
 </div>
 <div class="as-user">
-<div class="as-user-avatar">👤</div>
+<div class="as-user-avatar">A</div>
 <div class="as-user-info">
 <div class="as-user-name">Admin</div>
 <div class="as-user-role">超级管理员</div>
 </div>
-<div class="as-logout">🚪</div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
 </div>
 </div>
 <div class="ar">
 <div class="ah">
-<span style="font-size:14px;font-weight:500;">Skill管理</span>
-<div style="display:flex;align-items:center;gap:10px;">
-<span style="font-size:11px;color:#999;">管理员：admin</span>
-</div>
+<span class="ah-title">Skill管理</span>
+<span class="ah-meta">管理员：admin</span>
 </div>
 <div class="am" style="display:flex;gap:0;padding:0;">
-<div style="width:220px;background:#fafafa;border-right:1px solid #e5e7eb;padding:10px;flex-shrink:0;overflow-y:auto;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600;">
-<span>📁 Skills</span>
+<div class="ide-panel">
+<div class="ide-toolbar">
+<span style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" style="color:var(--primary)"><use href="#icon-folder-tree"/></svg>Skills</span>
 <div style="display:flex;gap:4px;">
-<span style="cursor:pointer;font-size:10px;color:#ff6b6b;" title="新建文件夹">📁+</span>
-<span style="cursor:pointer;font-size:10px;color:#ff6b6b;" title="新建文件">📄+</span>
-<span style="cursor:pointer;font-size:10px;color:#ff6b6b;" title="上传">⬆</span>
+<span class="ide-btn" title="新建文件夹">+ 目录</span>
+<span class="ide-btn" title="新建文件">+ 文件</span>
+<span class="ide-btn" title="上传">上传</span>
 </div>
 </div>
-<div class="ftree" style="background:transparent;padding:0;">
-<div class="fi a">📂 emotion_skill</div>
-<div class="fi" style="padding-left:20px;">📄 SKILL.md</div>
-<div class="fi" style="padding-left:20px;">📄 prompt.txt</div>
-<div class="fi" style="padding-left:20px;">📄 config.json</div>
-<div class="fi">📂 risk_assessment</div>
-<div class="fi" style="padding-left:20px;">📄 SKILL.md</div>
-<div class="fi" style="padding-left:20px;">📂 templates</div>
-<div class="fi" style="padding-left:36px;">📄 report.md</div>
-<div class="fi">📂 relaxation_guide</div>
-<div class="fi" style="padding-left:20px;">📄 SKILL.md</div>
-<div class="fi" style="padding-left:20px;">📄 audio_list.json</div>
+<div class="ftree" style="background:transparent;padding:0;border:none;">
+<div class="fi a"><svg><use href="#icon-folder-tree"/></svg>emotion_skill</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>SKILL.md</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>prompt.txt</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>config.json</div>
+<div class="fi"><svg><use href="#icon-folder-tree"/></svg>risk_assessment</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>SKILL.md</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-folder-tree"/></svg>templates</div>
+<div class="fi" style="padding-left:36px;"><svg><use href="#icon-file"/></svg>report.md</div>
+<div class="fi"><svg><use href="#icon-folder-tree"/></svg>relaxation_guide</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>SKILL.md</div>
+<div class="fi" style="padding-left:20px;"><svg><use href="#icon-file"/></svg>audio_list.json</div>
 </div>
 </div>
 <div style="flex:1;display:flex;flex-direction:column;">
-<div style="padding:8px 12px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;font-size:11px;">
-<div style="display:flex;align-items:center;gap:6px;">
-<span style="color:#999;">emotion_skill / SKILL.md</span>
+<div class="ide-editor-header">
+<div style="display:flex;align-items:center;gap:8px;color:var(--text-secondary);">
+<span>emotion_skill / SKILL.md</span>
 <span class="tg tb">Markdown</span>
 </div>
-<div style="display:flex;gap:6px;">
-<span style="cursor:pointer;color:#999;font-size:10px;" title="重命名">✏️</span>
-<span style="cursor:pointer;color:#ff4d4f;font-size:10px;" title="删除">🗑️</span>
-<span class="bp b1" style="font-size:9px;">保存</span>
+<div style="display:flex;gap:8px;align-items:center;">
+<span class="act-link" style="color:var(--text-muted);" title="重命名"><svg width="12" height="12"><use href="#icon-edit"/></svg></span>
+<span class="act-link" style="color:var(--danger);" title="删除"><svg width="12" height="12"><use href="#icon-trash"/></svg></span>
+<span class="bp b1" style="font-size:10px;padding:3px 10px;"><svg width="10" height="10"><use href="#icon-save"/></svg>保存</span>
 </div>
 </div>
-<div style="flex:1;background:#fff;padding:12px;font-size:11px;line-height:1.7;font-family:'Consolas','Monaco',monospace;overflow-y:auto;">
-<span style="color:#6a9955;">---metadata---</span><br/>
-<span style="color:#569cd6;">name:</span> emotion_skill<br/>
-<span style="color:#569cd6;">description:</span> 情绪识别与分析技能<br/>
-<span style="color:#569cd6;">version:</span> 1.2.0<br/>
-<span style="color:#569cd6;">author:</span> AI Mental Care Team<br/>
-<span style="color:#569cd6;">tags:</span> [emotion, analysis, mental-health]<br/>
-<span style="color:#6a9955;">---content---</span><br/><br/>
-<span style="color:#569cd6;"># 情绪识别技能</span><br/><br/>
+<div class="ide-editor-body">
+<span class="cmt">---metadata---</span><br/>
+<span class="key">name:</span> <span class="val">emotion_skill</span><br/>
+<span class="key">description:</span> <span class="val">情绪识别与分析技能</span><br/>
+<span class="key">version:</span> <span class="val">1.2.0</span><br/>
+<span class="key">author:</span> <span class="val">AI Mental Care Team</span><br/>
+<span class="key">tags:</span> <span class="val">[emotion, analysis, mental-health]</span><br/>
+<span class="cmt">---content---</span><br/><br/>
+<span class="hdr"># 情绪识别技能</span><br/><br/>
 本技能用于分析用户对话中的情绪状态，<br/>
 提供情绪类型识别、严重程度评估和干预建议。<br/><br/>
-<span style="color:#569cd6;">## 使用方式</span><br/>
+<span class="hdr">## 使用方式</span><br/>
 通过AI对话自动调用，分析每轮对话的情绪变化。
 </div>
 </div>
@@ -955,8 +1188,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div>
 <div class="note">
 <b>组件拆分：</b>SkillFileTree（文件树+右键菜单）、SkillFileEditor（文件内容编辑器）、SkillFileViewer（非文本文件预览）、SkillUploadDialog（上传弹窗）<br/>
-<b>接口：</b>GET /skill/folder-contents、GET /skill/file-content、POST /skill/folder、POST /skill/file、DELETE /skill/folder、DELETE /skill/file、PUT /skill/file/rename、PUT /skill/folder/rename、PUT /skill/file/content、POST /skill/file/upload、POST /skill/folder/upload<br/>
-<b>交互：</b>左侧文件树点击展开/选中 → 右侧查看/编辑文件内容 → 新建文件夹/文件 → 上传文件/压缩包 → 重命名 → 删除 → 保存编辑
+<b>接口映射：</b><br/>
+• 文件操作：GET /skill/folder-contents (返回FileNode树)、GET /skill/file-content (返回文件内容文本)、PUT /skill/file/content (保存编辑)<br/>
+• 管理操作：POST /skill/folder (新建目录)、POST /skill/file (新建文件)、DELETE /skill/folder、DELETE /skill/file、PUT /skill/file/rename、PUT /skill/folder/rename<br/>
+• 上传：POST /skill/file/upload、POST /skill/folder/upload (支持压缩包)<br/>
+<b>交互：</b>左侧文件树点击展开/选中 → 右侧查看/编辑文件内容 → 新建文件夹/文件 → 上传 → 重命名 → 删除 → 保存编辑
 </div>
 </div>
 
@@ -966,40 +1202,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="sec">
 <div class="st">页面导航关系图</div>
 <div class="sd">展示后台各页面之间的跳转关系</div>
-<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);font-size:13px;line-height:2.2;">
-<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="background:var(--bg-card);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow);border:1px solid var(--border-color);font-size:13px;line-height:2.4;">
+<div style="display:flex;flex-direction:column;gap:10px;">
 <div style="display:flex;align-items:center;gap:8px;">
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">登录页</span>
-<span style="color:#999;">→ 登录成功</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">用户管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">登录页</span>
+<span style="color:var(--text-muted);">→ 登录成功</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">用户管理</span>
 </div>
 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-<span style="font-weight:600;color:#1a1a2e;">侧边栏导航：</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">用户管理</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">管理员管理</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">文件管理</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">量表管理</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">症状字典</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">AI节点配置</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">Skill管理</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">个人资料</span>
+<span style="font-weight:600;color:var(--text-primary);">侧边栏导航：</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">用户管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">管理员管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">文件管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">量表管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">症状字典</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">AI节点配置</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">Skill管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">个人资料</span>
 </div>
 <div style="display:flex;align-items:center;gap:8px;">
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">文件管理</span>
-<span style="color:#999;">→ 点击"向量"</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">文件向量管理</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">文件管理</span>
+<span style="color:var(--text-muted);">→ 点击"向量"</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">文件向量管理</span>
 </div>
 <div style="display:flex;align-items:center;gap:8px;">
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">量表管理</span>
-<span style="color:#999;">→ 点击"详情"</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">量表详情</span>
-<span style="color:#999;">（题目/选项模板/规则/基本信息 Tab）</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">量表管理</span>
+<span style="color:var(--text-muted);">→ 点击"详情"</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">量表详情</span>
+<span style="color:var(--text-muted);">（题目/选项模板/规则/基本信息 Tab）</span>
 </div>
 <div style="display:flex;align-items:center;gap:8px;">
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">AI节点配置</span>
-<span style="color:#999;">→ 点击"详情"</span>
-<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">AI节点详情</span>
-<span style="color:#999;">（提示词/变更历史/配置详情 Tab）</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">AI节点配置</span>
+<span style="color:var(--text-muted);">→ 点击"详情"</span>
+<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;">AI节点详情</span>
+<span style="color:var(--text-muted);">（提示词/变更历史/配置详情 Tab）</span>
 </div>
 </div>
 </div>
@@ -1008,33 +1244,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <!-- 配色方案 -->
 <div class="sec">
 <div class="st">配色方案</div>
-<div class="sd">管理端采用红粉色系，与用户端紫蓝色系区分，体现管理后台的专业感</div>
-<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);">
-<div style="display:flex;gap:40px;flex-wrap:wrap;">
+<div class="sd">管理端采用 Indigo-Slate 专业色系，体现管理后台的专业与可靠</div>
+<div style="background:var(--bg-card);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow);border:1px solid var(--border-color);">
+<div style="display:flex;gap:44px;flex-wrap:wrap;">
 <div>
-<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">主色调（Admin 管理端）</h4>
-<div style="display:flex;gap:12px;flex-wrap:wrap;">
-<div class="csi"><div class="csw" style="background:#ff6b6b;"></div><div class="csl">主色</div><div class="csv">#ff6b6b</div></div>
-<div class="csi"><div class="csw" style="background:#c44569;"></div><div class="csl">深色</div><div class="csv">#c44569</div></div>
-<div class="csi"><div class="csw" style="background:#fff0f0;"></div><div class="csl">浅底</div><div class="csv">#fff0f0</div></div>
-</div>
-</div>
-<div>
-<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">侧边栏</h4>
-<div style="display:flex;gap:12px;flex-wrap:wrap;">
-<div class="csi"><div class="csw" style="background:#1a1a2e;"></div><div class="csl">背景</div><div class="csv">#1a1a2e</div></div>
-<div class="csi"><div class="csw" style="background:#333;border:1px solid #555;"></div><div class="csl">边框</div><div class="csv">#333</div></div>
-<div class="csi"><div class="csw" style="background:#ccc;border:1px solid #999;"></div><div class="csl">文字</div><div class="csv">#ccc</div></div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">主色调（Admin 管理端）</h4>
+<div style="display:flex;gap:14px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#6366f1;"></div><div class="csl">主色</div><div class="csv">#6366f1</div></div>
+<div class="csi"><div class="csw" style="background:#4f46e5;"></div><div class="csl">深色</div><div class="csv">#4f46e5</div></div>
+<div class="csi"><div class="csw" style="background:#eef2ff;"></div><div class="csl">浅底</div><div class="csv">#eef2ff</div></div>
 </div>
 </div>
 <div>
-<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;">功能色</h4>
-<div style="display:flex;gap:12px;flex-wrap:wrap;">
-<div class="csi"><div class="csw" style="background:#52c41a;"></div><div class="csl">成功</div><div class="csv">#52c41a</div></div>
-<div class="csi"><div class="csw" style="background:#fa8c16;"></div><div class="csl">警告</div><div class="csv">#fa8c16</div></div>
-<div class="csi"><div class="csw" style="background:#ff4d4f;"></div><div class="csl">危险</div><div class="csv">#ff4d4f</div></div>
-<div class="csi"><div class="csw" style="background:#1890ff;"></div><div class="csl">信息</div><div class="csv">#1890ff</div></div>
-<div class="csi"><div class="csw" style="background:#722ed1;"></div><div class="csl">紫色</div><div class="csv">#722ed1</div></div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">侧边栏</h4>
+<div style="display:flex;gap:14px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#0f172a;"></div><div class="csl">背景</div><div class="csv">#0f172a</div></div>
+<div class="csi"><div class="csw" style="background:#1e293b;border:1px solid #334155;"></div><div class="csl">边框</div><div class="csv">#1e293b</div></div>
+<div class="csi"><div class="csw" style="background:#94a3b8;border:1px solid #64748b;"></div><div class="csl">文字</div><div class="csv">#94a3b8</div></div>
+</div>
+</div>
+<div>
+<h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">功能色</h4>
+<div style="display:flex;gap:14px;flex-wrap:wrap;">
+<div class="csi"><div class="csw" style="background:#22c55e;"></div><div class="csl">成功</div><div class="csv">#22c55e</div></div>
+<div class="csi"><div class="csw" style="background:#f59e0b;"></div><div class="csl">警告</div><div class="csv">#f59e0b</div></div>
+<div class="csi"><div class="csw" style="background:#ef4444;"></div><div class="csl">危险</div><div class="csv">#ef4444</div></div>
+<div class="csi"><div class="csw" style="background:#3b82f6;"></div><div class="csl">信息</div><div class="csv">#3b82f6</div></div>
+<div class="csi"><div class="csw" style="background:#8b5cf6;"></div><div class="csl">紫色</div><div class="csv">#8b5cf6</div></div>
 </div>
 </div>
 </div>

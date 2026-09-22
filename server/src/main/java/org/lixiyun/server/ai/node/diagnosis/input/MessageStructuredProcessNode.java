@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
+import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.MessageEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
@@ -18,7 +20,6 @@ import org.lixiyun.server.ai.model.diagnosis.input.MessageStructuredProcessModel
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
-import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -86,9 +87,9 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig, NodeE
 
         if (validRounds.isEmpty()) {
             log.info("输入侧-消息结构化处理-有效消息为空，终止处理流程");
-            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
-            inputResult.setInterrupted(true);
-            return Map.of();
+            GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(new GraphState());
+            graphState.setInputGraphState(InputGraphState.builder().interrupted(true).interruptReason("有效消息为空").build());
+            return Map.of(GraphState.NAME, graphState);
         }
 
         int validRoundCount = validRounds.size();
@@ -165,7 +166,11 @@ public class MessageStructuredProcessNode implements NodeActionWithConfig, NodeE
         return irOpt.map(ir -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("coreInfoExtractResult", ir.getCoreInfoExtractResult());
-            map.put("interrupted", ir.isInterrupted());
+            state.value(GraphState.NAME).ifPresent(obj -> {
+                if (obj instanceof GraphState gs && gs.getInputGraphState() != null) {
+                    map.put(InputGraphState.NAME, gs.getInputGraphState().toString());
+                }
+            });
             return map;
         }).orElse(null);
     }

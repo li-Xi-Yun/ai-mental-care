@@ -520,11 +520,13 @@ public class IntentRecognitionNode implements NodeActionWithConfig, NodeExecutio
 
 ## 十、需要新增/修改的依赖
 
-### 10.1 新增字段
+### 10.1 无需新增字段
 
-| 表/实体 | 字段 | 类型 | 说明 |
-|---------|------|------|------|
-| `EmotionDiagnosis` | `round_num` | `Integer` | 诊断时对应会话轮次 |
+`EmotionDiagnosis` 已原生包含 `roundNum` 字段，**无需新增**。在 `DiagnosisPersistNode` 和 `IntentRecognitionNode` 中直接使用即可。
+
+`ConversationProcessContextBO.getEmotionDiagnosis()` 读取的即为最近一条 `EmotionDiagnosis` 记录，其 `roundNum` 即为上次诊断时对应的会话轮次。
+
+**elevate_risk 注意事项**：更新 `EmotionDiagnosis` 的风险字段（`riskLevel`、`selfHarmRisk`、`suicideRisk`、`crisisWarning`）时，**不修改 `roundNum`**，因为本轮并未执行完整的诊断流程。
 
 ### 10.2 修改诊断图构建
 

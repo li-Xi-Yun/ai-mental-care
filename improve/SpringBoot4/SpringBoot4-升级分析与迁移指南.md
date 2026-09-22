@@ -157,10 +157,10 @@ ai-mental-care (根 POM)
 
 | 文件 | 修改内容 |
 |------|----------|
-| `../pom.xml` (根) | `<java.version>17</java.version>` → `21` |
-| `../common/common-bom/pom.xml` | `maven.compiler.source/target=17` → `21` |
-| `../server/pom.xml` | `<java.version>17</java.version>` → `21` |
-| 所有子模块 `../pom.xml` | `maven.compiler.source/target=17` → `21` |
+| `../../pom.xml` (根) | `<java.version>17</java.version>` → `21` |
+| `../../common/common-bom/pom.xml` | `maven.compiler.source/target=17` → `21` |
+| `../../server/pom.xml` | `<java.version>17</java.version>` → `21` |
+| 所有子模块 `../../pom.xml` | `maven.compiler.source/target=17` → `21` |
 
 同时需确保：
 - CI/CD 环境升级到 JDK 21+

@@ -16,6 +16,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.diagnosis.knowledge.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.KnowledgeStateSerializer;
 import org.lixiyun.server.ai.saver.CheckpointCleaner;
@@ -78,7 +79,7 @@ public class KnowledgeGraph {
      * @param metadata              会话元数据
      * @return 知识检索结果
      */
-    public KnowledgeRetrieveResult executeGraph(KnowledgeMatchRequest knowledgeMatchRequest, ConversationMetadata metadata) {
+    public KnowledgeRetrieveResult executeGraph(KnowledgeMatchRequest knowledgeMatchRequest, ConversationMetadata metadata, GraphState graphState) {
         if (knowledgeMatchRequest == null) {
             log.error("KnowledgeGraph-参数错误:知识匹配请求为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -95,7 +96,8 @@ public class KnowledgeGraph {
         Map<String, Object> stateMap = Map.of(
                 KnowledgeMatchRequest.NAME, knowledgeMatchRequest,
                 ConversationMetadata.NAME, metadata,
-                KnowledgeRetrieveResult.NAME, new KnowledgeRetrieveResult()
+                KnowledgeRetrieveResult.NAME, new KnowledgeRetrieveResult(),
+                GraphState.NAME, graphState
         );
 
         OverAllState stateResult = null;
@@ -152,6 +154,7 @@ public class KnowledgeGraph {
             keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(KnowledgeRetrieveResult.NAME, new ReplaceStrategy());
             keyStrategyMap.put(RerankLayerNode.ROUTING_DECISION_KEY, new ReplaceStrategy());
+            keyStrategyMap.put(GraphState.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };
 

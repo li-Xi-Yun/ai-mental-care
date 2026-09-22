@@ -6,7 +6,6 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
@@ -35,6 +34,7 @@ import java.util.concurrent.ForkJoinPool;
  */
 @Slf4j
 @Component
+@Deprecated
 public class RagGraph {
 
     @Autowired
@@ -51,7 +51,7 @@ public class RagGraph {
 
     private static CompiledGraph ragGraph;
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         try {
             log.info("RAG图构建器初始化");

@@ -10,9 +10,9 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.InputGraph;
-import org.lixiyun.server.constant.GraphConstant;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -48,11 +48,15 @@ public class InputNode implements NodeActionWithConfig, NodeExecutionSummary {
 
         ConversationMetadata metadata = (ConversationMetadata) state.value(ConversationMetadata.NAME).orElse(null);
 
-        InputResult inputResult = inputGraph.executeGraph(contextBO, metadata);
+        GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(null);
 
-        if (inputResult.isInterrupted()) {
+        InputResult inputResult = inputGraph.executeGraph(contextBO, metadata, graphState);
+
+        if (graphState != null
+                && graphState.getInputGraphState() != null
+                && graphState.getInputGraphState().isInterrupted()) {
             log.info("诊断流程-输入侧节点-输入侧流程被中断，终止诊断流程");
-            config.context().put(GraphConstant.DIAGNOSIS_INTERRUPTED, true);
+            return Map.of(InputResult.NAME, inputResult, GraphState.NAME, graphState);
         }
 
         log.info("诊断流程-输入侧节点-完成");

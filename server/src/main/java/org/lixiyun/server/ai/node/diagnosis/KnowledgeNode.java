@@ -15,6 +15,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.EmotionStatis
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.node.diagnosis.graph.KnowledgeGraph;
 import org.springframework.stereotype.Component;
@@ -55,8 +56,9 @@ public class KnowledgeNode implements NodeActionWithConfig, NodeExecutionSummary
         ConversationMetadata metadata = (ConversationMetadata) state.value(ConversationMetadata.NAME).orElse(null);
 
         KnowledgeMatchRequest knowledgeMatchRequest = buildKnowledgeMatchRequest(inputResult);
+        GraphState graphState = (GraphState) state.value(GraphState.NAME).orElse(null);
 
-        KnowledgeRetrieveResult knowledgeRetrieveResult = knowledgeGraph.executeGraph(knowledgeMatchRequest, metadata);
+        KnowledgeRetrieveResult knowledgeRetrieveResult = knowledgeGraph.executeGraph(knowledgeMatchRequest, metadata, graphState);
 
         log.info("诊断流程-知识侧节点-完成");
         return Map.of(KnowledgeRetrieveResult.NAME, knowledgeRetrieveResult);

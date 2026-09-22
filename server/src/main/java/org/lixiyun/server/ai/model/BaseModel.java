@@ -244,7 +244,7 @@ public abstract class BaseModel implements Model {
                                 .filter(e -> e instanceof GraphRunnerException
                                         || (e instanceof RuntimeException && e.getCause() instanceof GraphRunnerException))
                                 .doBeforeRetry(rs -> log.warn("[模型抽象类-流式重试] 节点：{}，第{}次重试，异常：{}",
-                                        getAgentName(), rs.totalRetries() + 1, rs.failure().getMessage()))
+                                        config.getNodeKey(), rs.totalRetries() + 1, rs.failure().getMessage()))
                 );
     }
 
@@ -314,7 +314,6 @@ public abstract class BaseModel implements Model {
         });
     }
 
-    @SuppressWarnings("unchecked")
     protected <T> T doCallForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config) throws GraphRunnerException {
         return doCallForResult(chatModel, userPrompt, config, null);
     }
@@ -339,7 +338,7 @@ public abstract class BaseModel implements Model {
      * @return 执行结果
      * @throws GraphRunnerException 重试耗尽后仍失败
      */
-    protected <T> T executeWithRetry(AiNodeConfig config, Callable<T> callable) throws GraphRunnerException {
+    private <T> T executeWithRetry(AiNodeConfig config, Callable<T> callable) throws GraphRunnerException {
         String label = (config != null && config.getNodeKey() != null) ? config.getNodeKey() : getAgentName();
 
         int maxAttempts = (config != null && config.getRetryMaxAttempts() != null) ? config.getRetryMaxAttempts() : 3;
@@ -390,7 +389,7 @@ public abstract class BaseModel implements Model {
      * @param config    节点配置，可为null（使用默认值）
      * @return 构建完成的ReactAgent实例
      */
-    protected ReactAgent buildAgent(ChatModel chatModel, AiNodeConfig config) {
+    private ReactAgent buildAgent(ChatModel chatModel, AiNodeConfig config) {
         com.alibaba.cloud.ai.graph.agent.Builder builder = reactAgentBuilder(chatModel, config)
                 .systemPrompt(getSystemPrompt(config));
         Class<?> outputType = getOutputType();
@@ -414,7 +413,7 @@ public abstract class BaseModel implements Model {
      * @return 反序列化后的结果对象
      * @throws UnsupportedOperationException 如果{@link #getOutputType}返回null
      */
-    protected Object deserializeResult(AssistantMessage message) {
+    private Object deserializeResult(AssistantMessage message) {
         Class<?> outputType = getOutputType();
         if (outputType == null) {
             throw new UnsupportedOperationException("当前模型不支持固定JSON体输出，请重写getOutputType()返回非null的结果类型");
@@ -436,7 +435,7 @@ public abstract class BaseModel implements Model {
      * @return 已配置模型/名称/描述/ChatOptions的ReactAgent Builder
      * @throws BusinessException 如果chatModel为null，抛出{@link ConversationExceptionEnum#MODEL_NOT_EXIST}
      */
-    public com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel, AiNodeConfig config) {
+    protected com.alibaba.cloud.ai.graph.agent.Builder reactAgentBuilder(ChatModel chatModel, AiNodeConfig config) {
         if (chatModel == null) {
             throw new BusinessException(ConversationExceptionEnum.MODEL_NOT_EXIST);
         }

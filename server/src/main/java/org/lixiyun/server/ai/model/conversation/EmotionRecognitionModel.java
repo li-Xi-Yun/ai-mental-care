@@ -11,8 +11,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.agent.prompt.constant.EmotionConstant;
-import org.lixiyun.common.agent.prompt.utils.PromptUtil;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.BaseModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -42,9 +40,9 @@ public class EmotionRecognitionModel extends BaseModel {
 
     private final int defaultMaxToken = 1024;
 
-    private final String userInputContextPrompt = PromptUtil.getPrompt(EmotionConstant.USER_INPUT_CONTEXT);
-    private final String standardPrompt = PromptUtil.getPrompt(EmotionConstant.STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
-    private final String briefPrompt = PromptUtil.getPrompt(EmotionConstant.BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
+//    private final String userInputContextPrompt = PromptUtil.getPrompt(EmotionConstant.USER_INPUT_CONTEXT);
+//    private final String standardPrompt = PromptUtil.getPrompt(EmotionConstant.STANDARD_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
+//    private final String briefPrompt = PromptUtil.getPrompt(EmotionConstant.BRIEF_ANALYSIS_OF_YOUTH_CONTEXTUAL_EMOTIONS);
 
     private final String defaultSystemPrompt = """
             你是一个情绪识别分析器，负责在多轮心理陪伴对话中，对用户当前轮次的情绪状态进行结构化分析。

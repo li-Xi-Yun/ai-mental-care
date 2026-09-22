@@ -157,6 +157,7 @@ public class FileTransformer {
 
             // 缓存Agent实例，避免重复创建
             if(agent == null){
+                // todo 这里后续要进行替换
                 String systemPrompt = PromptUtil.getPrompt(CommonConstant.SEMANTIC_SEGMENTATION_SYSTEM_PROMPT);
 
                 if (systemPrompt.isEmpty()) {

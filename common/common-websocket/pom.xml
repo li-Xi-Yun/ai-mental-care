@@ -20,6 +20,11 @@
     <dependencies>
         <dependency>
             <groupId>org.lixiyun</groupId>
+            <artifactId>common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lixiyun</groupId>
             <artifactId>common-core</artifactId>
         </dependency>
 

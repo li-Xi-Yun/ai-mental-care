@@ -1,6 +1,5 @@
 package org.lixiyun.server.ai.handle;
 
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.prompt.constant.ScenarioConstant;
 import org.lixiyun.common.agent.prompt.utils.PromptUtil;
@@ -16,13 +15,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 @DependsOn("promptUtil")
+@Deprecated
 public class ScenarioHandler {
 
     // key：scenario(对话场景类型：0-日常闲聊，1-情绪纾解、2-助眠陪伴、3-考前减压、4-职场调适、5-亲密沟通、6-自信赋能)，
     // value：对应场景的模型提示词
     private static final ConcurrentHashMap<Integer, String> SCENARIO_MAP = new ConcurrentHashMap<>();
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         log.info("场景对话提示词加载");
         String professionalEmotionalCompanion = PromptUtil.getPrompt(ScenarioConstant.PROFESSIONAL_EMOTIONAL_COMPANION);

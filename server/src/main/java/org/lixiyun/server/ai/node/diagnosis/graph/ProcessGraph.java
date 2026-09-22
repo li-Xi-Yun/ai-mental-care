@@ -16,6 +16,7 @@ import org.lixiyun.common.json.utils.JsonUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
+import org.lixiyun.pojo.bo.conversation.state.GraphState;
 import org.lixiyun.server.ai.node.diagnosis.process.*;
 import org.lixiyun.server.ai.node.diagnosis.serializer.ProcessStateSerializer;
 import org.lixiyun.server.ai.saver.CheckpointCleaner;
@@ -71,7 +72,7 @@ public class ProcessGraph {
      * @param metadata             会话元数据
      * @return 诊断数据结果
      */
-    public DiagnosisData executeGraph(DiagnosisDataRequest diagnosisDataRequest, ConversationMetadata metadata) {
+    public DiagnosisData executeGraph(DiagnosisDataRequest diagnosisDataRequest, ConversationMetadata metadata, GraphState graphState) {
         if (diagnosisDataRequest == null) {
             log.error("ProcessGraph-参数错误:诊断数据请求为空");
             throw new BusinessException(SystemExceptionEnum.SYSTEM_ERROR);
@@ -91,7 +92,8 @@ public class ProcessGraph {
         Map<String, Object> stateMap = Map.of(
                 DiagnosisDataRequest.NAME, diagnosisDataRequest,
                 ConversationMetadata.NAME, metadata,
-                DiagnosisData.NAME, new DiagnosisData()
+                DiagnosisData.NAME, new DiagnosisData(),
+                GraphState.NAME, graphState
         );
 
         OverAllState result = null;
@@ -163,6 +165,7 @@ public class ProcessGraph {
             keyStrategyMap.put(DiagnosisDataRequest.NAME, new ReplaceStrategy());
             keyStrategyMap.put(ConversationMetadata.NAME, new ReplaceStrategy());
             keyStrategyMap.put(DiagnosisData.NAME, new ReplaceStrategy());
+            keyStrategyMap.put(GraphState.NAME, new ReplaceStrategy());
             return keyStrategyMap;
         };
 

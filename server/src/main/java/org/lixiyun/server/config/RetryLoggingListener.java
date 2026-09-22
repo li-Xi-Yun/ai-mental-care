@@ -27,9 +27,8 @@ public class RetryLoggingListener implements RetryListener {
 
     @Override
     public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-        log.warn("[Retry] 第{}/{}次尝试失败，标签：{}，异常：{}",
+        log.warn("[Retry] 第{}次尝试失败，标签：{}，异常：{}",
                 context.getRetryCount(),
-                context.getRetryCount() + 1,
                 getRetryLabel(context),
                 throwable.getMessage());
     }

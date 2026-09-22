@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class ResourceFileConfig implements WebMvcConfigurer {
 
     @Value("${file-url.upload.images}")
     private String imageUploadPath;
