@@ -18,7 +18,10 @@ const CONFIG = {
     emotionAnalysisDetail: '/user/conversation/emotion-analysis/detail/',
     emotionDiagnosisList: '/user/conversation/emotion-diagnosis/list/',
     emotionDiagnosisDetail: '/user/conversation/emotion-diagnosis/detail/',
-    conversationTestSend: '/temp/conversation-test/send'
+    conversationTestSend: '/temp/conversation-test/send',
+
+    audioInit: '/user/conversation/audio/init',
+    audioEnd: '/user/conversation/audio'
   },
 
   auth: {
@@ -33,6 +36,10 @@ const CONFIG = {
     textReply: '/text/reply',
     conversationName: '/conversation/name',
 
+    audioReply: '/audio/reply',
+    audioBinary: '/audio/binary',
+    asrIntermediate: '/audio/asr/intermediate',
+
     getSubscribePath(subDestination, conversationId) {
       return `${this.userPrefix}${this.privatePrefix}${subDestination}/${conversationId}`;
     },
@@ -43,6 +50,23 @@ const CONFIG = {
 
     getConversationNamePath(conversationId) {
       return this.getSubscribePath(this.conversationName, conversationId);
+    },
+
+    getAudioReplyPath(conversationId) {
+      return this.getSubscribePath(this.audioReply, conversationId);
+    },
+
+    getAudioBinaryPath(conversationId) {
+      return this.getSubscribePath(this.audioBinary, conversationId);
+    },
+
+    getAsrIntermediatePath(conversationId) {
+      return this.getSubscribePath(this.asrIntermediate, conversationId);
+    },
+
+    stompSend: {
+      audioMessage: '/app/message/send',
+      audioInterrupt: '/app/interrupt'
     }
   }
 };

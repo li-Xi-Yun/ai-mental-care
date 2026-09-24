@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>量表测评 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-nav{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-nav .logo{font-weight:700;color:var(--primary);font-size:15px;letter-spacing:.5px;margin-right:24px}
+.app-nav .nav-item{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;color:var(--text-secondary);transition:.2s}
+.app-nav .nav-item:hover{background:rgba(108,99,255,.08);color:var(--primary)}
+.app-nav .nav-item.active{background:var(--primary);color:#fff;font-weight:500}
+.app-nav .spacer{flex:1}
+.app-nav .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;font-weight:600}
+.app-main{flex:1;overflow-y:auto;padding:20px 24px;background:var(--bg)}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-header .title-area{display:flex;align-items:center;gap:12px}
+.page-header .title{font-size:18px;font-weight:700;color:#1a1a2e}
+.filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.scale-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.scale-card{background:var(--card);border-radius:var(--radius-sm);padding:18px;border:1px solid var(--border-light);text-align:center;box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;cursor:pointer}
+.scale-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.scale-card .card-icon{width:44px;height:44px;border-radius:var(--radius-xs);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.scale-card .card-icon.red-bg{background:#fff0f0}
+.scale-card .card-icon.blue-bg{background:#f0f5ff}
+.scale-card .card-icon.green-bg{background:#f0fff0}
+.scale-card .card-icon.orange-bg{background:#fff7e6}
+.scale-card .card-icon.teal-bg{background:#f6ffed}
+.scale-card .name{font-size:14px;font-weight:600;margin-bottom:4px}
+.scale-card .desc{font-size:10px;color:var(--text-muted);margin-bottom:2px;line-height:1.4}
+.scale-card .meta{font-size:9px;color:var(--text-muted);margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-nav">
+<span class="logo">AI Mental Care</span>
+<span class="nav-item">首页</span>
+<span class="nav-item">AI对话</span>
+<span class="nav-item">心理评估</span>
+<span class="nav-item active">量表测评</span>
+<span class="nav-item">个人中心</span>
+<span class="spacer"></span>
+<div class="user-avatar">U</div>
+</div>
+<div class="app-main">
+<div class="page-header">
+<div class="title-area">
+<span class="title">量表测评</span>
+<span class="bp b2 bp-pill" style="font-size:10px;">📋 我的测评记录 →</span>
+</div>
+<div class="filter-bar">
+<span class="bp b1 bp-pill">全部</span>
+<span class="bp b2 bp-pill">焦虑评估</span>
+<span class="bp b2 bp-pill">抑郁评估</span>
+<span class="bp b2 bp-pill">压力评估</span>
+<span class="bp b2 bp-pill">睡眠评估</span>
+</div>
+</div>
+<div class="scale-grid">
+<div class="scale-card">
+<div class="card-icon red-bg">😰</div>
+<div class="name">SAS 焦虑自评量表</div>
+<div class="desc">评估焦虑状态程度</div>
+<div class="meta">20 题 · 约10分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon blue-bg">😔</div>
+<div class="name">SDS 抑郁自评量表</div>
+<div class="desc">评估抑郁状态程度</div>
+<div class="meta">20 题 · 约10分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon green-bg">😴</div>
+<div class="name">PSQI 睡眠质量量表</div>
+<div class="desc">评估睡眠质量状况</div>
+<div class="meta">19 题 · 约8分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon orange-bg">🔥</div>
+<div class="name">PSS 压力感知量表</div>
+<div class="desc">评估日常压力水平</div>
+<div class="meta">14 题 · 约7分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon blue-bg">🧩</div>
+<div class="name">SCL-90 症状自评量表</div>
+<div class="desc">评估心理健康症状</div>
+<div class="meta">90 题 · 约30分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon teal-bg">🌿</div>
+<div class="name">WHO-5 幸福感指数量表</div>
+<div class="desc">评估主观幸福感</div>
+<div class="meta">5 题 · 约3分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon red-bg">💢</div>
+<div class="name">BAI 贝克焦虑量表</div>
+<div class="desc">临床焦虑症状评估</div>
+<div class="meta">21 题 · 约12分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon blue-bg">🌧️</div>
+<div class="name">BDI-II 贝克抑郁量表</div>
+<div class="desc">临床抑郁症状评估</div>
+<div class="meta">21 题 · 约12分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon teal-bg">💪</div>
+<div class="name">GAD-7 广泛性焦虑量表</div>
+<div class="desc">筛查广泛性焦虑障碍</div>
+<div class="meta">7 题 · 约4分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon orange-bg">😤</div>
+<div class="name">PHQ-9 健康问卷</div>
+<div class="desc">抑郁症状快速筛查</div>
+<div class="meta">9 题 · 约5分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon green-bg">🧘</div>
+<div class="name">MBSR 正念量表</div>
+<div class="desc">评估正念觉察水平</div>
+<div class="meta">15 题 · 约8分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon red-bg">🎢</div>
+<div class="name">IES-R 创伤后应激量表</div>
+<div class="desc">评估创伤后应激程度</div>
+<div class="meta">22 题 · 约12分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon blue-bg">🤝</div>
+<div class="name">SSRS 社会支持量表</div>
+<div class="desc">评估社会支持水平</div>
+<div class="meta">10 题 · 约5分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+<div class="scale-card">
+<div class="card-icon teal-bg">🎓</div>
+<div class="name">MAS 考试焦虑量表</div>
+<div class="desc">评估考试焦虑程度</div>
+<div class="meta">37 题 · 约15分钟</div>
+<span class="bp b1 bp-pill" style="font-size:10px;">开始测评</span>
+</div>
+</div>
+<div class="pgn" style="justify-content:space-between;margin-top:16px;">
+<span>共 24 条</span>
+<div style="display:flex;gap:4px;align-items:center;">
+<span class="pb a">1</span>
+<span class="pb">2</span>
+<span class="pb">3</span>
+<span class="pbn">...</span>
+<span class="pb">6</span>
+<span class="pb">»</span>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

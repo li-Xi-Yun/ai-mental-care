@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 对话 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-soft: #6366f1;
+    --primary-light: #eef2ff;
+    --primary-glow: rgba(79, 70, 229, 0.08);
+    --bg-root: #f2f3f7;
+    --bg-chat: #f8f9fc;
+    --surface: #ffffff;
+    --surface-hover: #f5f6fa;
+    --text: #1e1e2e;
+    --text-secondary: #5a5a72;
+    --text-muted: #9a9ab0;
+    --border: #e5e7f0;
+    --border-soft: #f0f1f7;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-float: 0 8px 32px rgba(0,0,0,.08);
+    --shadow-popover: 0 6px 24px rgba(0,0,0,.12);
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --danger: #ef4444;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg-root);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app { display:flex; flex-direction:column; height:100vh; }
+
+  /* ===== Navigation ===== */
+  .app-nav {
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display:flex; align-items:center; padding:0 24px;
+    flex-shrink:0; z-index:10;
+  }
+
+  .app-nav .logo {
+    font-weight:800; font-size:17px; letter-spacing:-0.3px;
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    margin-right:28px;
+  }
+
+  .app-nav .nav-items { display:flex; gap:4px; }
+
+  .app-nav .nav-item {
+    padding:6px 16px; border-radius:20px; font-size:13px; cursor:pointer;
+    color:var(--text-secondary); transition:all var(--transition); font-weight:500;
+  }
+
+  .app-nav .nav-item:hover { background:var(--primary-glow); color:var(--primary); }
+
+  .app-nav .nav-item.active {
+    background:var(--primary); color:#fff; font-weight:600;
+    box-shadow:0 2px 8px rgba(79,70,229,.25);
+  }
+
+  .app-nav .spacer { flex:1; }
+
+  .app-nav .user-avatar {
+    width:34px; height:34px; border-radius:50%;
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:13px; cursor:pointer; font-weight:700;
+    transition:transform var(--transition);
+  }
+
+  .app-nav .user-avatar:hover { transform:scale(1.06); }
+
+  /* ===== Main ===== */
+  .app-main { flex:1; overflow:hidden; display:flex; position:relative; }
+
+  /* ===== Session List ===== */
+  .session-list {
+    width:232px; background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column; flex-shrink:0;
+    transition:width .25s ease, opacity .25s ease;
+  }
+
+  .session-list.collapsed { width:0; opacity:0; overflow:hidden; }
+
+  .session-list .sl-header {
+    padding:16px 16px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .session-list .sl-header span {
+    font-size:14px; font-weight:700; color:var(--text);
+  }
+
+  .session-list .sl-header .new-btn {
+    cursor:pointer; font-size:20px; color:var(--primary);
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    transition:all var(--transition); line-height:1;
+  }
+
+  .session-list .sl-header .new-btn:hover {
+    background:var(--primary-light); transform:rotate(90deg);
+  }
+
+  .session-list .sl-body {
+    flex:1; overflow-y:auto; padding:2px 10px 8px;
+  }
+
+  .session-list .sl-body::-webkit-scrollbar { width:4px; }
+
+  .session-list .sl-body::-webkit-scrollbar-thumb {
+    background:#dddde8; border-radius:4px;
+  }
+
+  .sl-item {
+    padding:9px 10px 9px 14px; border-radius:var(--radius-sm); cursor:pointer;
+    transition:background .15s ease; margin-bottom:1px; position:relative;
+    display:flex; align-items:center; gap:8px;
+  }
+
+  .sl-item:hover { background:var(--surface-hover); }
+
+  .sl-item.active { background:var(--primary-light); }
+
+  .sl-item .sl-icon {
+    width:22px; height:22px; border-radius:6px;
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:#fff; flex-shrink:0;
+  }
+
+  .sl-item .name {
+    font-size:13px; font-weight:500; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; color:var(--text);
+    flex:1; min-width:0;
+  }
+
+  .sl-item.active .name { color:var(--primary); font-weight:600; }
+
+  .sl-item .sl-more {
+    opacity:0; cursor:pointer; font-size:16px; color:var(--text-muted);
+    width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity .15s ease, background .15s ease; flex-shrink:0; user-select:none;
+  }
+
+  .sl-item:hover .sl-more { opacity:1; }
+
+  .sl-item .sl-more:hover { background: #e4e6f0; color:var(--text); }
+
+  .sl-dropdown {
+    position:absolute; right:8px; top:100%; background:var(--surface);
+    border-radius:var(--radius-md); box-shadow:var(--shadow-popover);
+    z-index:30; min-width:128px; padding:6px 0; animation:dropdownIn .18s ease;
+    border:1px solid var(--border);
+  }
+
+  @keyframes dropdownIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+  .sl-dropdown .dd-item {
+    padding:9px 18px; font-size:13px; cursor:pointer; color:var(--text);
+    transition:background .12s ease; white-space:nowrap;
+  }
+
+  .sl-dropdown .dd-item:hover { background:var(--surface-hover); }
+
+  .sl-dropdown .dd-item.danger { color:var(--danger); }
+
+  /* ===== Chat Area ===== */
+  .chat-area {
+    flex:1; display:flex; flex-direction:column; min-width:0;
+    background:var(--bg-chat); position:relative;
+  }
+
+  /* Toggle buttons inside header */
+  .panel-toggle {
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:28px; height:52px; background:transparent; border:none;
+    cursor:pointer; z-index:15; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--text-muted); transition:all var(--transition);
+    border-radius:var(--radius-sm);
+  }
+
+  .panel-toggle:hover { color:var(--primary); background:var(--primary-glow); }
+
+  .panel-toggle.left { left:4px; }
+
+  .panel-toggle.right { right:4px; }
+
+  /* Chat Header */
+  .chat-area .ca-header {
+    height:64px; background:var(--surface);
+    border-bottom:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex-shrink:0; padding:0 60px; position:relative;
+  }
+
+  .ca-header .title {
+    font-size:15px; font-weight:600; color:var(--text); text-align:center;
+    max-width:50%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .ca-header .disclaimer {
+    font-size:11px; color:var(--text-muted); margin-top:2px; text-align:center;
+    letter-spacing:0.2px;
+  }
+
+  /* Chat Body */
+  .ca-body {
+    flex:1; padding:24px 28px; overflow-y:auto; scroll-behavior:smooth;
+  }
+
+  .ca-body::-webkit-scrollbar { width:5px; }
+
+  .ca-body::-webkit-scrollbar-thumb { background:#d8dae6; border-radius:5px; }
+
+  /* Messages */
+  .msg { display:flex; margin-bottom:20px; animation:msgIn .35s ease; }
+
+  @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .msg-avatar {
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700;
+  }
+
+  .msg.ai .msg-avatar {
+    background: linear-gradient(135deg, #818cf8, var(--primary));
+    color:#fff; margin-right:10px; box-shadow:0 2px 8px rgba(79,70,229,.15);
+  }
+
+  .msg.user { justify-content:flex-end; }
+
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, var(--primary), #4338ca);
+    color:#fff; border-radius:18px 18px 6px 18px;
+    box-shadow:0 4px 14px rgba(79,70,229,.2);
+  }
+
+  .msg.ai .msg-bubble {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:18px 18px 18px 6px;
+    box-shadow:var(--shadow-card); color:var(--text);
+  }
+
+  .msg-bubble {
+    display:inline-block; max-width:45%; padding:12px 18px; font-size:14px;
+    line-height:1.72; word-break:break-word; text-align:left;
+    vertical-align:top;
+  }
+
+  .msg-wrap {
+    width:100%; text-align:right;
+  }
+
+  .msg-ai-wrap {
+    width:100%;
+  }
+
+  .msg-time {
+    font-size:11px; color:var(--text-muted); margin-top:5px; padding:0 6px;
+  }
+
+  .msg.user .msg-time { text-align:right; }
+
+  /* Typing */
+  .typing-indicator {
+    display:none; padding:12px 18px; background:var(--surface);
+    border:1px solid var(--border); border-radius:18px 18px 18px 6px;
+    max-width:72px; margin-left:44px; margin-bottom:20px;
+    box-shadow:var(--shadow-card);
+  }
+
+  .typing-indicator.visible { display:block; animation:msgIn .35s ease; }
+
+  .typing-dots { display:flex; gap:5px; align-items:center; justify-content:center; }
+
+  .typing-dots span {
+    width:8px; height:8px; border-radius:50%; background:var(--text-muted);
+    animation:dotBounce 1.4s infinite ease-in-out both;
+  }
+
+  .typing-dots span:nth-child(1) { animation-delay:-0.32s; }
+  .typing-dots span:nth-child(2) { animation-delay:-0.16s; }
+
+  @keyframes dotBounce {
+    0%,80%,100%{transform:scale(.55);opacity:.35}
+    40%{transform:scale(1);opacity:1}
+  }
+
+  /* ===== Input ===== */
+  .ca-input-wrapper { padding:0 28px 20px; flex-shrink:0; }
+
+  .ca-input {
+    background:var(--surface); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-float); border:1px solid var(--border);
+    overflow:hidden; transition:border-color var(--transition), box-shadow var(--transition);
+  }
+
+  .ca-input:focus-within {
+    border-color:var(--primary-soft);
+    box-shadow:0 0 0 3px rgba(99,102,241,.1), var(--shadow-float);
+  }
+
+  .ca-input .input-upper { padding:14px 18px 6px; }
+
+  .ca-input .input-upper textarea {
+    width:100%; border:none; background:transparent; font-size:14px;
+    line-height:1.65; outline:none; resize:none; font-family:inherit;
+    color:var(--text); min-height:26px; max-height:100px; padding:0;
+  }
+
+  .ca-input .input-upper textarea::placeholder { color:var(--text-muted); }
+
+  .ca-input .input-lower { display:flex; align-items:center; padding:6px 14px 12px; gap:8px; }
+
+  .ca-input .input-lower .plus-btn {
+    cursor:pointer; width:34px; height:34px; border-radius:var(--radius-sm);
+    background:var(--bg-root); color:var(--text-secondary);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:300; transition:all var(--transition);
+    border:none; font-family:inherit; flex-shrink:0;
+  }
+
+  .ca-input .input-lower .plus-btn:hover {
+    background:var(--primary-light); color:var(--primary);
+  }
+
+  .ca-input .input-lower .spacer { flex:1; }
+
+  .ca-input .input-lower .divider {
+    width:1px; height:22px; background:var(--border-soft); margin:0 6px; border-radius:1px;
+  }
+
+  .ca-input .input-lower .func-btn {
+    cursor:pointer; width:34px; height:34px; border-radius:var(--radius-sm);
+    background:transparent; color:var(--text-muted);
+    display:flex; align-items:center; justify-content:center;
+    font-size:17px; transition:all var(--transition);
+    border:none; font-family:inherit; flex-shrink:0;
+  }
+
+  .ca-input .input-lower .func-btn:hover {
+    background:var(--bg-root); color:var(--primary);
+  }
+
+  .ca-input .input-lower .func-btn.text-btn {
+    width:auto; height:30px; padding:0 10px;
+    font-size:12px; font-weight:500; border-radius:6px;
+  }
+
+  .ca-input .input-lower .send-btn {
+    cursor:pointer; width:34px; height:34px; border-radius:var(--radius-sm);
+    background:linear-gradient(135deg, var(--primary), #4338ca);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    border:none; font-size:17px; transition:all var(--transition); flex-shrink:0;
+  }
+
+  .ca-input .input-lower .send-btn:hover { transform:scale(1.06); box-shadow:0 4px 14px rgba(79,70,229,.35); }
+
+  .ca-input .input-lower .send-btn:active { transform:scale(.94); }
+
+  .ca-input .input-lower .send-btn:disabled { opacity:.3; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* ===== Emotion Panel ===== */
+  .emo-panel {
+    width:340px; background:var(--surface); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; flex-shrink:0;
+    transition:width .25s ease, opacity .25s ease;
+  }
+
+  .emo-panel.collapsed { width:0; opacity:0; overflow:hidden; }
+
+  .emo-panel .ep-header {
+    padding:16px 16px 12px; border-bottom:1px solid var(--border-soft);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .emo-panel .ep-header span { font-size:14px; font-weight:700; color:var(--text); }
+
+  .emo-panel .ep-header .close {
+    font-size:15px; color:var(--text-muted); cursor:pointer;
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    transition:all var(--transition);
+  }
+
+  .emo-panel .ep-header .close:hover { background:var(--bg-root); color:var(--text); }
+
+  .emo-panel .ep-body { flex:1; padding:10px 12px; overflow-y:auto; }
+
+  .emo-panel .ep-body::-webkit-scrollbar { width:4px; }
+
+  .emo-panel .ep-body::-webkit-scrollbar-thumb { background:#dddde8; border-radius:4px; }
+
+  .emo-item {
+    margin-bottom:10px; background:var(--bg-root); border-radius:var(--radius-sm);
+    border:1px solid transparent; transition:all var(--transition); cursor:pointer;
+  }
+
+  .emo-item:hover { border-color:#d8daf0; background:var(--surface); }
+
+  .emo-item.expanded {
+    background:var(--surface); border-color:var(--primary-soft);
+    box-shadow:0 4px 16px rgba(79,70,229,.08);
+  }
+
+  .emo-item .ei-header {
+    padding:12px 14px; display:flex; align-items:center; gap:10px; user-select:none;
+  }
+
+  .emo-item .ei-header .round { color:var(--text); font-weight:600; font-size:12px; }
+
+  .emo-item .ei-header .time { flex:1; color:var(--text-muted); text-align:right; font-size:11px; }
+
+  .emo-item .ei-header .arrow {
+    font-size:10px; color:var(--text-muted); transition:transform var(--transition);
+  }
+
+  .emo-item.expanded .ei-header .arrow { transform:rotate(180deg); }
+
+  .emo-item .ei-body {
+    padding:10px 14px 14px; border-top:1px solid var(--border-soft); display:none;
+  }
+
+  .emo-item.expanded .ei-body { display:block; }
+
+  .emo-section-title {
+    font-size:10px; font-weight:700; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;
+  }
+
+  /* Sub label tag */
+  .emo-sub-tag {
+    font-size:10px; color:var(--text-muted); background:var(--bg-root);
+    padding:2px 8px; border-radius:10px; flex-shrink:0;
+  }
+
+  /* Stacked ratio bar (负向/中性/正向) */
+  .emo-ratio-wrap { margin-bottom:8px; }
+
+  .emo-ratio-bar {
+    display:flex; height:10px; border-radius:5px; overflow:hidden; gap:2px;
+  }
+
+  .emo-ratio-seg { min-width:4px; transition:flex .3s ease; }
+
+  .emo-ratio-labels {
+    display:flex; justify-content:space-between; margin-top:4px;
+    font-size:10px; font-weight:500;
+  }
+
+  /* PAD 3-axis gauge */
+  .emo-pad-row {
+    display:flex; align-items:center; gap:8px; margin-bottom:5px;
+  }
+
+  .emo-pad-row .pad-label {
+    width:54px; flex-shrink:0; font-size:10px; font-weight:600;
+    color:var(--text-secondary); text-align:right;
+  }
+
+  .emo-pad-row .pad-track {
+    flex:1; height:6px; background:#e5e7f0; border-radius:3px;
+    position:relative; overflow:hidden;
+  }
+
+  .emo-pad-row .pad-center {
+    position:absolute; left:50%; top:0; bottom:0; width:1px;
+    background:#c4c6d4; z-index:1;
+  }
+
+  .emo-pad-row .pad-fill {
+    position:absolute; top:0; height:100%; border-radius:3px;
+    transition:width .4s ease; z-index:2; min-width:2px;
+  }
+
+  .emo-pad-row .pad-val {
+    width:28px; flex-shrink:0; font-size:10px; font-weight:700; text-align:left;
+  }
+
+  /* Core metrics row */
+  .emo-meta {
+    display:flex; gap:16px; font-size:11px; color:var(--text-secondary);
+  }
+
+  .emo-meta span { display:flex; align-items:center; gap:3px; }
+
+  .emo-meta .label { color:var(--text-muted); }
+
+  /* Analysis content */
+  .emo-analysis {
+    font-size:11px; line-height:1.7; color:var(--text-secondary);
+    background:var(--bg-root); border-radius:6px; padding:8px 10px;
+    border-left:3px solid var(--primary-soft);
+  }
+
+  .emo-detail-link {
+    display:inline-block; margin-top:8px; font-size:11px; font-weight:600;
+    color:var(--primary); cursor:pointer; transition:opacity .2s;
+  }
+
+  .emo-detail-link:hover { opacity:.7; }
+
+  /* Emotion Tags */
+  .emotion-tag {
+    display:inline-block; padding:3px 10px; border-radius:12px;
+    font-size:10px; font-weight:600; letter-spacing:.3px;
+  }
+
+  .emotion-tag.anxiety { background:#fef2f2; color:#dc2626; }
+  .emotion-tag.low { background:#fff7ed; color:#ea580c; }
+  .emotion-tag.nervous { background:#fefce8; color:#ca8a04; }
+  .emotion-tag.calm { background:#f0fdf4; color:#16a34a; }
+  .emotion-tag.expect { background:#eff6ff; color:#2563eb; }
+  .emotion-tag.irritated { background:#fff7ed; color:#f97316; }
+
+  .trend-up { color:#dc2626; }
+  .trend-down { color:#16a34a; }
+  .trend-stable { color:var(--text-muted); }
+
+  /* Toast */
+  .toast {
+    position:fixed; top:24px; left:50%; transform:translateX(-50%);
+    padding:10px 24px; border-radius:24px; font-size:13px; font-weight:500;
+    z-index:1000; animation:toastIn .3s ease, toastOut .3s ease 2s forwards;
+    box-shadow:var(--shadow-popover);
+  }
+
+  .toast.success { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+  .toast.info { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+
+  @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-16px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+  @keyframes toastOut { from{opacity:1} to{opacity:0;transform:translateX(-50%) translateY(-8px)} }
+
+  #fileInput { display:none; }
+
+  /* Responsive */
+  @media (max-width:900px) {
+    .session-list {
+      position:absolute; left:0; top:0; bottom:0; z-index:20;
+      box-shadow:var(--shadow-float); width:248px;
+    }
+    .session-list.collapsed { width:0; }
+    .emo-panel {
+      position:absolute; right:0; top:0; bottom:0; z-index:20;
+      box-shadow:var(--shadow-float);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-nav">
+    <span class="logo">AI Mental Care</span>
+    <div class="nav-items">
+      <span class="nav-item" onclick="navigate('home')">首页</span>
+      <span class="nav-item active">AI 对话</span>
+      <span class="nav-item" onclick="navigate('assessment')">心理评估</span>
+      <span class="nav-item" onclick="navigate('scale')">量表测评</span>
+      <span class="nav-item" onclick="navigate('profile')">个人中心</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="user-avatar" title="用户中心">U</div>
+  </div>
+
+  <div class="app-main">
+    <!-- Session List -->
+    <div class="session-list" id="sessionList">
+      <div class="sl-header">
+        <span>会话列表</span>
+        <span class="new-btn" title="新建会话" onclick="createNewSession()">+</span>
+      </div>
+      <div class="sl-body" id="sessionBody"></div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+      <div class="ca-header">
+        <div class="panel-toggle left" onclick="togglePanel('sessionList')" title="收起/展开会话列表">❮</div>
+        <span class="title" id="chatTitle">心情困扰与工作压力</span>
+        <span class="disclaimer">AI 生成内容仅供参考，请勿过度依赖</span>
+        <div class="panel-toggle right" onclick="togglePanel('emoPanel')" title="收起/展开情绪分析">❯</div>
+      </div>
+
+      <div class="ca-body" id="chatBody"></div>
+
+      <!-- Doubao-style floating input -->
+      <div class="ca-input-wrapper">
+        <div class="ca-input">
+          <div class="input-upper">
+            <textarea id="messageInput" placeholder="输入你的想法..." rows="1" onkeydown="handleInputKey(event)"></textarea>
+          </div>
+          <div class="input-lower">
+            <button class="plus-btn" title="上传文件" onclick="triggerFileUpload()">+</button>
+            <input type="file" id="fileInput" onchange="handleFileUpload(event)" multiple accept="image/*,.pdf,.doc,.docx,.txt">
+            <span class="divider"></span>
+            <button class="func-btn text-btn" title="语音对话" onclick="openVoiceChat()">语音对话</button>
+            <button class="func-btn text-btn" title="视频对话" onclick="openVideoChat()">视频对话</button>
+            <span class="spacer"></span>
+            <span class="divider"></span>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送" disabled>↑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emotion Panel -->
+    <div class="emo-panel" id="emoPanel">
+      <div class="ep-header">
+        <span>情绪分析</span>
+        <span class="close" onclick="togglePanel('emoPanel')" title="关闭">✕</span>
+      </div>
+      <div class="ep-body" id="emoBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==================== Data ====================
+  const sessions = [
+    { id: 1, name: '心情困扰与工作压力', time: '14:30', active: true },
+    { id: 2, name: '工作压力讨论', time: '昨天', active: false },
+    { id: 3, name: '睡眠问题咨询', time: '3天前', active: false },
+    { id: 4, name: '人际关系困惑', time: '5天前', active: false },
+    { id: 5, name: '考试焦虑应对', time: '09-12', active: false },
+    { id: 6, name: '自我成长探索', time: '09-10', active: false },
+    { id: 7, name: '家庭关系调解', time: '09-05', active: false },
+    { id: 8, name: '情绪低落倾诉', time: '09-01', active: false },
+    { id: 9, name: '职场沟通困扰', time: '08-28', active: false },
+    { id: 10, name: '社交回避讨论', time: '08-25', active: false },
+    { id: 11, name: '失恋情绪调试', time: '08-22', active: false },
+    { id: 12, name: '亲子关系修复', time: '08-18', active: false },
+  ];
+
+  let currentSessionId = 1;
+  let sessionCounter = 13;
+  let openDropdownId = null;
+
+  const messagesData = {
+    1: [
+      { type: 'ai', text: '你好！我是你的 AI 心理健康助手，有什么想和我聊聊的吗？', time: '14:20' },
+      { type: 'user', text: '最近工作压力很大，经常失眠...', time: '14:22' },
+      { type: 'ai', text: '我理解工作压力带来的困扰，能具体说说是什么让你感到压力吗？', time: '14:23' },
+      { type: 'user', text: '主要是项目 deadline 太紧，每天加班到很晚，感觉快撑不住了', time: '14:25' },
+      { type: 'ai', text: '听起来你正在经历高强度的工作节奏。长期加班和紧迫的 deadline 确实会让人感到身心俱疲。\n\n你有尝试过和领导沟通调整工作量吗？或者有没有什么方式能让你在工作间隙稍微放松一下？', time: '14:26' },
+      { type: 'user', text: '还没有，怕被认为能力不够。而且回到家也停不下来想工作的事', time: '14:28' },
+      { type: 'ai', text: '我注意到你提到了"停不下来想工作的事"，这可能是焦虑的表现。以下是一些可能对你有帮助的小建议：\n\n🫁 睡前深呼吸练习：试着在睡前做 5 分钟腹式呼吸，帮助从工作模式切换到休息模式。\n\n📝 写下担忧：把困扰你的事情写在纸上，告诉大脑"这些事明天再处理"。\n\n⏰ 设定"下班仪式"：每天固定一个时间点，做一些小事来标记工作的结束。', time: '14:30' },
+      { type: 'user', text: '我试试看...有时候还会半夜惊醒，心跳很快', time: '14:32' },
+    ],
+    2: [
+      { type: 'ai', text: '欢迎回来！上次我们聊到了工作压力，今天想继续这个话题吗？', time: '昨天 10:15' },
+      { type: 'user', text: '是的，我尝试了你说的深呼吸方法，有点效果', time: '昨天 10:18' },
+      { type: 'ai', text: '很高兴听到这个反馈！坚持练习效果会更好。还有其他方面的困扰想和我聊聊吗？', time: '昨天 10:19' },
+      { type: 'user', text: '谢谢你的建议，我会尝试的', time: '昨天 10:22' },
+    ],
+  };
+
+  const emotionData = [
+    { round: 12, emotion: 'anxiety', label: '焦虑', sub_label: '担忧', time: '15:10', expanded: false, confidence: 0.88, intensity: 0.82, trend: 'up', p_score: -0.2, a_score: 0.5, d_score: -0.3, negative_ratio: 0.65, neutral_ratio: 0.20, positive_ratio: 0.15, analysis_content: '用户在对话中表现出明显的焦虑倾向，主要触发词为"工作压力"、"失眠"和"心跳很快"。建议关注用户的睡眠质量和压力管理能力。' },
+    { round: 11, emotion: 'low', label: '低落', sub_label: '疲惫', time: '15:05', expanded: false, confidence: 0.85, intensity: 0.78, trend: 'stable', p_score: -0.4, a_score: 0.2, d_score: -0.1, negative_ratio: 0.55, neutral_ratio: 0.30, positive_ratio: 0.15, analysis_content: '用户情绪持续处于低落状态，对自我价值的评价偏低。对话中出现"撑不住"、"能力不够"等消极词汇，需关注抑郁风险。' },
+    { round: 10, emotion: 'nervous', label: '紧张', sub_label: '不安', time: '14:58', expanded: false, confidence: 0.90, intensity: 0.75, trend: 'up', p_score: -0.1, a_score: 0.6, d_score: -0.2, negative_ratio: 0.50, neutral_ratio: 0.30, positive_ratio: 0.20, analysis_content: '用户在表达工作感受时紧张度明显上升，语速加快，出现多次停顿和重复表达。紧张情绪正在累积。' },
+    { round: 9, emotion: 'calm', label: '平静', sub_label: '放松', time: '14:52', expanded: false, confidence: 0.82, intensity: 0.60, trend: 'down', p_score: 0.3, a_score: -0.1, d_score: 0.2, negative_ratio: 0.15, neutral_ratio: 0.25, positive_ratio: 0.60, analysis_content: '用户在接受了呼吸练习建议后情绪明显趋于平稳，正面词汇开始增多。短期干预取得了初步效果。' },
+    { round: 8, emotion: 'irritated', label: '烦躁', sub_label: '易怒', time: '14:45', expanded: false, confidence: 0.91, intensity: 0.88, trend: 'up', p_score: -0.5, a_score: 0.7, d_score: -0.4, negative_ratio: 0.72, neutral_ratio: 0.18, positive_ratio: 0.10, analysis_content: '用户在第8轮表现出强烈的烦躁和易怒特征，PAD模型中愉悦度显著下降，唤醒度急剧升高，需关注情绪管理。' },
+    { round: 7, emotion: 'expect', label: '期待', sub_label: '希望', time: '14:38', expanded: false, confidence: 0.78, intensity: 0.55, trend: 'up', p_score: 0.4, a_score: 0.3, d_score: 0.1, negative_ratio: 0.12, neutral_ratio: 0.28, positive_ratio: 0.60, analysis_content: '用户态度转为积极，对未来的改善表现出期待。正向情绪占比显著提升，对话中出现了"试试"、"希望"等词汇。' },
+    { round: 6, emotion: 'anxiety', label: '焦虑', sub_label: '烦躁', time: '14:30', expanded: true, confidence: 0.92, intensity: 0.85, trend: 'up', p_score: -0.3, a_score: 0.6, d_score: -0.2, negative_ratio: 0.68, neutral_ratio: 0.22, positive_ratio: 0.10, analysis_content: '用户在谈论工作压力和睡眠问题时，焦虑情绪显著升高。PAD模型显示高唤醒度与低支配感并存，呈现典型的焦虑情绪模式。' },
+    { round: 5, emotion: 'low', label: '低落', sub_label: '消沉', time: '14:22', expanded: false, confidence: 0.86, intensity: 0.72, trend: 'up', p_score: -0.3, a_score: 0.4, d_score: -0.1, negative_ratio: 0.58, neutral_ratio: 0.27, positive_ratio: 0.15, analysis_content: '用户情绪继续走低，自我否定倾向增强。虽然尝试了建议但效果有限，疲惫感正在加重。' },
+    { round: 4, emotion: 'calm', label: '平静', sub_label: '平和', time: '14:15', expanded: false, confidence: 0.80, intensity: 0.45, trend: 'stable', p_score: 0.2, a_score: -0.1, d_score: 0.3, negative_ratio: 0.10, neutral_ratio: 0.30, positive_ratio: 0.60, analysis_content: '用户进入相对平静的状态，对话节奏放缓。虽然仍有潜在压力，但整体情绪趋于稳定，支配感回升。' },
+    { round: 3, emotion: 'nervous', label: '紧张', sub_label: '焦虑', time: '14:08', expanded: false, confidence: 0.84, intensity: 0.70, trend: 'up', p_score: -0.2, a_score: 0.5, d_score: -0.2, negative_ratio: 0.52, neutral_ratio: 0.28, positive_ratio: 0.20, analysis_content: '用户在描述项目截止日期时紧张度明显上升，语言中出现大量时间相关的紧迫词汇。' },
+    { round: 2, emotion: 'calm', label: '平静', sub_label: '放松', time: '14:01', expanded: false, confidence: 0.75, intensity: 0.40, trend: 'stable', p_score: 0.3, a_score: -0.2, d_score: 0.2, negative_ratio: 0.08, neutral_ratio: 0.32, positive_ratio: 0.60, analysis_content: '对话初始阶段，用户保持较好的心态，表达流畅，无明显的情绪波动迹象。' },
+    { round: 1, emotion: 'expect', label: '期待', sub_label: '好奇', time: '13:55', expanded: false, confidence: 0.70, intensity: 0.50, trend: 'stable', p_score: 0.1, a_score: 0.2, d_score: 0.2, negative_ratio: 0.05, neutral_ratio: 0.35, positive_ratio: 0.60, analysis_content: '对话开始，用户以开放和好奇的态度参与，对AI心理支持表现出积极期待。' },
+  ];
+
+  const emotionLabelMap = {
+    anxiety: '焦虑', low: '低落', nervous: '紧张', calm: '平静', expect: '期待', irritated: '烦躁',
+  };
+
+  const trendMap = {
+    up: '↑ 较上轮上升', down: '↓ 较上轮下降', stable: '→ 与上轮持平',
+  };
+
+  const trendClassMap = {
+    up: 'trend-up', down: 'trend-down', stable: 'trend-stable',
+  };
+
+  // ==================== Render ====================
+
+  function renderSessions() {
+    const container = document.getElementById('sessionBody');
+    container.innerHTML = sessions.map(s => `
+      <div class="sl-item ${s.active ? 'active' : ''}" onclick="switchSession(${s.id})">
+        <div class="sl-icon">💬</div>
+        <div class="name">${escapeHtml(s.name)}</div>
+        <div class="sl-more" onclick="event.stopPropagation(); toggleSessionMenu(${s.id}, this)" title="更多">⋯</div>
+      </div>
+    `).join('');
+    closeAllDropdowns();
+  }
+
+  function renderMessages() {
+    const container = document.getElementById('chatBody');
+    const msgs = messagesData[currentSessionId] || [];
+    let html = '';
+
+    msgs.forEach((msg) => {
+      if (msg.type === 'ai') {
+        html += `
+          <div class="msg ai">
+            <div class="msg-avatar">AI</div>
+            <div class="msg-ai-wrap">
+              <div class="msg-bubble">${msg.text.replace(/\n/g, '<br>')}</div>
+              <div class="msg-time">${msg.time}</div>
+            </div>
+          </div>`;
+      } else {
+        html += `
+          <div class="msg user">
+            <div class="msg-wrap">
+              <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+              <div class="msg-time">${msg.time}</div>
+            </div>
+          </div>`;
+      }
+    });
+
+    container.innerHTML = html;
+    scrollToBottom();
+  }
+
+  function renderEmotions() {
+    const container = document.getElementById('emoBody');
+    const negColor = '#dc2626', neuColor = '#9ca3af', posColor = '#16a34a';
+    const padColors = { P: '#8b5cf6', A: '#f59e0b', D: '#06b6d4' };
+
+    container.innerHTML = emotionData.map((item) => `
+      <div class="emo-item ${item.expanded ? 'expanded' : ''}" onclick="toggleEmotionItem(this)">
+        <div class="ei-header">
+          <span class="round">第${item.round}轮</span>
+          <span class="emotion-tag ${item.emotion}">${item.label}</span>
+          ${item.sub_label ? `<span class="emo-sub-tag">${item.sub_label}</span>` : ''}
+          <span class="time">${item.time}</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="ei-body">
+          <div class="emo-section-title">情绪倾向分布</div>
+          ${renderRatioBar(item.negative_ratio, item.neutral_ratio, item.positive_ratio, negColor, neuColor, posColor)}
+          <div class="emo-section-title" style="margin-top:10px;">PAD 三维情绪模型</div>
+          ${renderPadBar('愉悦度 P', item.p_score)}
+          ${renderPadBar('唤醒度 A', item.a_score)}
+          ${renderPadBar('支配度 D', item.d_score)}
+          <div class="emo-section-title" style="margin-top:10px;">核心指标</div>
+          <div class="emo-meta">
+            <span><span class="label">置信度</span> ${(item.confidence * 100).toFixed(0)}%</span>
+            <span><span class="label">强度</span> ${(item.intensity * 100).toFixed(0)}%</span>
+            <span class="${trendClassMap[item.trend]}">${trendMap[item.trend]}</span>
+          </div>
+          ${item.analysis_content ? `
+          <div class="emo-section-title" style="margin-top:10px;">分析详情</div>
+          <div class="emo-analysis">${item.analysis_content}</div>
+          ` : ''}
+          <div class="emo-detail-link" onclick="event.stopPropagation(); viewEmotionDetail(${item.round})">查看对话详情 →</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderRatioBar(neg, neu, pos, negC, neuC, posC) {
+    const np = Math.round(neg * 100), nup = Math.round(neu * 100), pp = Math.round(pos * 100);
+    return `
+      <div class="emo-ratio-wrap">
+        <div class="emo-ratio-bar">
+          <div class="emo-ratio-seg" style="flex:${neg};background:${negC};" title="负向 ${np}%"></div>
+          <div class="emo-ratio-seg" style="flex:${neu};background:${neuC};" title="中性 ${nup}%"></div>
+          <div class="emo-ratio-seg" style="flex:${pos};background:${posC};" title="正向 ${pp}%"></div>
+        </div>
+        <div class="emo-ratio-labels">
+          <span style="color:${negC};">负向 ${np}%</span>
+          <span style="color:${neuC};">中性 ${nup}%</span>
+          <span style="color:${posC};">正向 ${pp}%</span>
+        </div>
+      </div>`;
+  }
+
+  function renderPadBar(label, score) {
+    const pct = Math.round(((score + 1) / 2) * 100);
+    const color = score >= 0 ? (score > 0.3 ? '#16a34a' : '#f59e0b') : '#dc2626';
+    return `
+      <div class="emo-pad-row">
+        <span class="pad-label">${label}</span>
+        <div class="pad-track">
+          <div class="pad-center"></div>
+          <div class="pad-fill" style="width:${pct}%;background:${color};left:${score >= 0 ? '50%' : (50-pct)+'%'};"></div>
+        </div>
+        <span class="pad-val" style="color:${score >= 0 ? '#16a34a' : '#dc2626'}">${score >= 0 ? '+' : ''}${score.toFixed(1)}</span>
+      </div>`;
+  }
+
+  // ==================== Actions ====================
+
+  function switchSession(id) {
+    closeAllDropdowns();
+    currentSessionId = id;
+    sessions.forEach(s => s.active = s.id === id);
+    const session = sessions.find(s => s.id === id);
+    document.getElementById('chatTitle').textContent = session ? session.name : 'AI 对话';
+    if (!messagesData[id]) {
+      messagesData[id] = [
+        { type: 'ai', text: '你好！我是你的 AI 心理健康助手，很高兴和你开始新的对话。今天想聊些什么呢？', time: getCurrentTime() },
+      ];
+    }
+    renderSessions();
+    renderMessages();
+  }
+
+  function createNewSession() {
+    closeAllDropdowns();
+    const id = sessionCounter++;
+    const name = `新会话 ${id - 12}`;
+    sessions.unshift({ id, name, time: '刚刚', active: true });
+    sessions.forEach(s => { if (s.id !== id) s.active = false; });
+    messagesData[id] = [
+      { type: 'ai', text: '你好！我是你的 AI 心理健康助手，很高兴和你开始新的对话。今天想聊些什么呢？', time: getCurrentTime() },
+    ];
+    currentSessionId = id;
+    renderSessions();
+    renderMessages();
+    document.getElementById('chatTitle').textContent = name;
+    document.getElementById('sessionBody').scrollTop = 0;
+    showToast('已创建新会话', 'success');
+  }
+
+  function toggleSessionMenu(sessionId, el) {
+    event.stopPropagation();
+    if (openDropdownId === sessionId) {
+      closeAllDropdowns();
+      return;
+    }
+    closeAllDropdowns();
+    openDropdownId = sessionId;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'sl-dropdown';
+    dropdown.id = 'slDropdown';
+    dropdown.innerHTML = `
+      <div class="dd-item" onclick="event.stopPropagation(); renameSessionById(${sessionId})">✏️ 重命名</div>
+      <div class="dd-item danger" onclick="event.stopPropagation(); deleteSessionById(${sessionId})">🗑 删除</div>
+    `;
+
+    const item = el.closest('.sl-item');
+    item.style.position = 'relative';
+    item.appendChild(dropdown);
+
+    // Close when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', closeAllDropdowns, { once: true });
+    }, 0);
+  }
+
+  function closeAllDropdowns() {
+    const existing = document.getElementById('slDropdown');
+    if (existing) existing.remove();
+    openDropdownId = null;
+  }
+
+  function renameSessionById(id) {
+    closeAllDropdowns();
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+    const newName = prompt('请输入新的会话名称：', session.name);
+    if (newName && newName.trim()) {
+      session.name = newName.trim();
+      if (id === currentSessionId) {
+        document.getElementById('chatTitle').textContent = newName.trim();
+      }
+      renderSessions();
+      showToast('会话已重命名', 'success');
+    }
+  }
+
+  function deleteSessionById(id) {
+    closeAllDropdowns();
+    if (!confirm('确定要删除该会话吗？此操作不可恢复。')) return;
+    const idx = sessions.findIndex(s => s.id === id);
+    if (idx >= 0) sessions.splice(idx, 1);
+    delete messagesData[id];
+
+    if (sessions.length === 0) {
+      createNewSession();
+      return;
+    }
+    if (id === currentSessionId) {
+      sessions[0].active = true;
+      currentSessionId = sessions[0].id;
+      document.getElementById('chatTitle').textContent = sessions[0].name;
+    }
+    renderSessions();
+    renderMessages();
+    showToast('会话已删除', 'info');
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!messagesData[currentSessionId]) {
+      messagesData[currentSessionId] = [];
+    }
+
+    messagesData[currentSessionId].push({
+      type: 'user',
+      text: text,
+      time: getCurrentTime(),
+    });
+
+    const session = sessions.find(s => s.id === currentSessionId);
+    if (session) {
+      session.time = '刚刚';
+    }
+
+    input.value = '';
+    autoResize(input);
+    updateSendButton();
+    renderMessages();
+
+    showTyping();
+
+    setTimeout(() => {
+      hideTyping();
+      const aiResponse = generateAiResponse(text);
+      messagesData[currentSessionId].push({
+        type: 'ai',
+        text: aiResponse,
+        time: getCurrentTime(),
+      });
+      renderMessages();
+      addEmotionEntry();
+    }, 1200 + Math.random() * 1500);
+  }
+
+  function generateAiResponse(userText) {
+    const responses = [
+      '我理解你的感受。能再详细说说你的想法吗？这样我能更好地帮助你。',
+      '感谢你的分享。面对这样的情绪是很正常的，你已经在积极寻求帮助了，这是很勇敢的一步。',
+      '听起来这对你来说很重要。我建议我们可以逐步来分析这个问题，先从你最容易控制的部分开始。',
+      '我注意到了你的情绪表达。有时候把感受说出来本身就是一种疗愈。你现在感觉怎么样？',
+      '这是一个值得关注的话题。基于心理学的研究，情绪管理可以通过一些日常练习来改善。你想了解具体的方法吗？',
+      '你愿意和我分享更多细节吗？我在这里倾听你，没有任何评判。',
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  function showTyping() {
+    const body = document.getElementById('chatBody');
+    const indicator = document.createElement('div');
+    indicator.className = 'typing-indicator visible';
+    indicator.id = 'typingIndicator';
+    indicator.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    body.appendChild(indicator);
+    scrollToBottom();
+  }
+
+  function hideTyping() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+  }
+
+  function addEmotionEntry() {
+    const lastRound = emotionData[0] ? emotionData[0].round : 0;
+    const emotions = ['calm', 'expect', 'anxiety', 'low', 'nervous', 'irritated'];
+    const emotion = emotions[Math.floor(Math.random() * emotions.length)];
+    const subLabels = { calm:'放松', expect:'希望', anxiety:'担忧', low:'疲惫', nervous:'不安', irritated:'易怒' };
+    const trends = ['up', 'down', 'stable'];
+    const trend = trends[Math.floor(Math.random() * trends.length)];
+    const neg = Math.round((0.05 + Math.random() * 0.7) * 100) / 100;
+    const neu = Math.round((0.1 + Math.random() * 0.3) * 100) / 100;
+    const pos = Math.round((1 - neg - neu) * 100) / 100;
+    const analyses = [
+      '用户在本轮对话中情绪波动明显，建议持续关注后续变化趋势。',
+      '情绪指标显示用户状态趋于平稳，干预措施起到了一定的缓解作用。',
+      '检测到用户负面情绪占比上升，建议在下一轮对话中引入放松引导。',
+    ];
+
+    emotionData.unshift({
+      round: lastRound + 1,
+      emotion,
+      label: emotionLabelMap[emotion],
+      sub_label: subLabels[emotion],
+      time: getCurrentTime(),
+      expanded: false,
+      confidence: +(0.7 + Math.random() * 0.25).toFixed(2),
+      intensity: +(0.5 + Math.random() * 0.45).toFixed(2),
+      trend,
+      p_score: +(Math.random() * 0.8 - 0.4).toFixed(1),
+      a_score: +(Math.random() * 0.8 - 0.2).toFixed(1),
+      d_score: +(Math.random() * 0.6 - 0.3).toFixed(1),
+      negative_ratio: neg,
+      neutral_ratio: neu,
+      positive_ratio: pos,
+      analysis_content: analyses[Math.floor(Math.random() * analyses.length)],
+    });
+    renderEmotions();
+  }
+
+  function toggleEmotionItem(element) {
+    const wasExpanded = element.classList.contains('expanded');
+    emotionData.forEach(item => item.expanded = false);
+    if (!wasExpanded) {
+      const items = document.querySelectorAll('.emo-item');
+      const index = Array.from(items).indexOf(element);
+      if (index >= 0 && index < emotionData.length) {
+        emotionData[index].expanded = true;
+      }
+    }
+    renderEmotions();
+  }
+
+  function viewEmotionDetail(round) {
+    showToast(`查看第 ${round} 轮对话详情`, 'info');
+  }
+
+  function togglePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    panel.classList.toggle('collapsed');
+    updateToggleArrows();
+  }
+
+  function updateToggleArrows() {
+    const sessionCollapsed = document.getElementById('sessionList').classList.contains('collapsed');
+    const leftToggle = document.querySelector('.panel-toggle.left');
+    if (leftToggle) {
+      leftToggle.textContent = sessionCollapsed ? '❯' : '❮';
+    }
+
+    const emoCollapsed = document.getElementById('emoPanel').classList.contains('collapsed');
+    const rightToggle = document.querySelector('.panel-toggle.right');
+    if (rightToggle) {
+      rightToggle.textContent = emoCollapsed ? '❮' : '❯';
+    }
+  }
+
+  function triggerFileUpload() {
+    document.getElementById('fileInput').click();
+  }
+
+  function handleFileUpload(event) {
+    const files = event.target.files;
+    if (files.length > 0) {
+      const names = Array.from(files).map(f => f.name).join(', ');
+      showToast(`已选择: ${names}`, 'info');
+    }
+    event.target.value = '';
+  }
+
+  function openVoiceChat() {
+    showToast('语音对话功能开发中...', 'info');
+  }
+
+  function openVideoChat() {
+    showToast('视频对话功能开发中...', 'info');
+  }
+
+  function navigate(page) {
+    const pageMap = {
+      home: '1-home.html',
+      assessment: '4-diagnosis-list.html',
+      scale: '7-scale-list.html',
+      profile: '11-profile.html',
+    };
+    if (pageMap[page]) {
+      window.location.href = pageMap[page];
+    }
+  }
+
+  // ==================== Input Handling ====================
+
+  function handleInputKey(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+    updateSendButton();
+  }
+
+  function updateSendButton() {
+    const input = document.getElementById('messageInput');
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = !input.value.trim();
+  }
+
+  function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+  }
+
+  // ==================== Utilities ====================
+
+  function getCurrentTime() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2, '0');
+    const m = now.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function scrollToBottom() {
+    setTimeout(() => {
+      const body = document.getElementById('chatBody');
+      body.scrollTop = body.scrollHeight;
+    }, 50);
+  }
+
+  function showToast(message, type) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentNode) toast.remove();
+    }, 2500);
+  }
+
+  // ==================== Init ====================
+  document.addEventListener('DOMContentLoaded', () => {
+    renderSessions();
+    renderMessages();
+    renderEmotions();
+
+    const input = document.getElementById('messageInput');
+    input.addEventListener('input', () => {
+      autoResize(input);
+      updateSendButton();
+    });
+  });
+</script>
+</body>
+</html>

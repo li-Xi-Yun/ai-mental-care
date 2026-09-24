@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>页面导航关系图 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-nav{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-nav .logo{font-weight:700;color:var(--primary);font-size:15px;letter-spacing:.5px;margin-right:24px}
+.app-nav .spacer{flex:1}
+.app-nav .back{font-size:11px;color:var(--primary);text-decoration:none}
+.app-main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-title{font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.page-desc{font-size:12px;color:var(--text-muted);margin-bottom:20px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-nav">
+<span class="logo">AI Mental Care</span>
+<span class="spacer"></span>
+<a class="back" href="index.html">← 返回总览</a>
+</div>
+<div class="app-main">
+<div class="page-title">🗺️ 页面导航关系</div>
+<div class="page-desc">前台13个界面之间的跳转关系，根据 /server/controller/user 和 /server/controller/common 接口设计</div>
+<div style="background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);overflow-x:auto;">
+<svg viewBox="0 0 1100 480" xmlns="http://www.w3.org/2000/svg" width="100%">
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--primary)"/></marker>
+<filter id="sh"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-opacity="0.08"/></filter>
+</defs>
+<rect x="30" y="20" width="150" height="50" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="50" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="700">1. 首页 /</text>
+<rect x="30" y="90" width="150" height="50" rx="8" fill="#fffbe6" stroke="var(--warning)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="115" text-anchor="middle" fill="#8c6d1f" font-size="11" font-weight="600">2. 登录/注册</text>
+<text x="105" y="130" text-anchor="middle" fill="#999" font-size="9">弹窗（非页面）</text>
+<rect x="30" y="170" width="150" height="60" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="196" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="600">3. AI对话页</text>
+<text x="105" y="216" text-anchor="middle" fill="#999" font-size="9">三栏布局</text>
+<rect x="30" y="350" width="150" height="50" rx="8" fill="#f0fff0" stroke="var(--success)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="370" text-anchor="middle" fill="var(--success)" font-size="11" font-weight="600">12. Common接口</text>
+<text x="105" y="388" text-anchor="middle" fill="#999" font-size="9">验证码/上传</text>
+
+<rect x="260" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">4. 心理评估</text>
+<text x="350" y="62" text-anchor="middle" fill="#999" font-size="10">会话列表页（分页）</text>
+<rect x="520" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">5. 心理评估</text>
+<text x="610" y="62" text-anchor="middle" fill="#999" font-size="10">评估列表页（分页）</text>
+<rect x="780" y="20" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="870" y="44" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">6. 心理评估</text>
+<text x="870" y="62" text-anchor="middle" fill="#999" font-size="10">详情页+反馈</text>
+
+<rect x="260" y="110" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="134" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">7. 量表测评</text>
+<text x="350" y="152" text-anchor="middle" fill="#999" font-size="10">量表展示页（分页）</text>
+<rect x="520" y="110" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="134" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">8. 量表测评</text>
+<text x="610" y="152" text-anchor="middle" fill="#999" font-size="10">答题页（步骤式）</text>
+<rect x="260" y="200" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="350" y="224" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">9. 量表测评</text>
+<text x="350" y="242" text-anchor="middle" fill="#999" font-size="10">测评记录页（分页）</text>
+<rect x="520" y="200" width="180" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="610" y="224" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600">10. 量表测评</text>
+<text x="610" y="242" text-anchor="middle" fill="#999" font-size="10">答题明细页</text>
+
+<rect x="30" y="260" width="150" height="55" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="1.5" filter="url(#sh)"/>
+<text x="105" y="284" text-anchor="middle" fill="var(--primary)" font-size="12" font-weight="600">11. 个人中心</text>
+<text x="105" y="302" text-anchor="middle" fill="#999" font-size="10">资料/密码/登出</text>
+
+<line x1="440" y1="47" x2="518" y2="47" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="42" text-anchor="middle" fill="#999" font-size="9">点击会话</text>
+<line x1="700" y1="47" x2="778" y2="47" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="739" y="42" text-anchor="middle" fill="#999" font-size="9">点击评估</text>
+<line x1="440" y1="137" x2="518" y2="137" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="132" text-anchor="middle" fill="#999" font-size="9">开始测评</text>
+<line x1="440" y1="227" x2="518" y2="227" stroke="var(--primary)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="479" y="222" text-anchor="middle" fill="#999" font-size="9">查看详情</text>
+<rect x="30" y="420" width="1050" height="50" rx="8" fill="#fafafa" stroke="var(--border)"/>
+<text x="55" y="450" fill="var(--text)" font-size="12" font-weight="600">导航栏：</text>
+<text x="130" y="450" fill="var(--primary)" font-size="11">首页 → 页面1</text>
+<text x="240" y="450" fill="var(--primary)" font-size="11">AI对话 → 页面3</text>
+<text x="380" y="450" fill="var(--primary)" font-size="11">心理评估 → 页面4</text>
+<text x="530" y="450" fill="var(--primary)" font-size="11">量表测评 → 页面7</text>
+<text x="680" y="450" fill="var(--primary)" font-size="11">个人中心 → 页面11</text>
+<text x="830" y="450" fill="#999" font-size="11">（登录/注册 → 弹窗2，非页面跳转）</text>
+</svg>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>流程详情 - AI Mental Care</title>
+<style>
+:root{--primary:#6366f1;--primary-hover:#4f46e5;--primary-light:#eef2ff;--sidebar-bg:#0f172a;--sidebar-hover:rgba(255,255,255,0.06);--sidebar-active:rgba(99,102,241,0.15);--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border-color:#e2e8f0;--border-light:#f1f5f9;--bg-page:#f1f5f9;--bg-card:#ffffff;--bg-content:#f8fafc;--success:#22c55e;--success-bg:#f0fdf4;--warning:#f59e0b;--warning-bg:#fffbeb;--danger:#ef4444;--danger-bg:#fef2f2;--info:#3b82f6;--info-bg:#eff6ff;--purple:#8b5cf6;--purple-bg:#f5f3ff;--cyan:#06b6d4;--cyan-bg:#ecfeff;--radius-sm:6px;--radius:8px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);--shadow-md:0 4px 6px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.04);--transition:0.2s ease}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-page);color:var(--text-primary);line-height:1.5;height:100vh;overflow:hidden}
+.al{display:flex;height:100vh}
+.as{width:232px;background:var(--sidebar-bg);color:#cbd5e1;padding:0;flex-shrink:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.as::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(99,102,241,0.04) 0%,transparent 50%);pointer-events:none}
+.as-header{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+.as-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.as-logo svg{width:20px;height:20px}
+.as .alo{padding:0;font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:3px;letter-spacing:0.3px}
+.as .als{padding:0;font-size:11px;color:#64748b;margin-bottom:0;font-weight:400}
+.as-nav{flex:1;padding:10px 8px;overflow-y:auto;position:relative;z-index:1}
+.as .mi{padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:var(--radius);margin-bottom:2px;transition:all var(--transition);color:#94a3b8;font-weight:500;position:relative;text-decoration:none}
+.as .mi svg{width:17px;height:17px;opacity:0.7;flex-shrink:0;transition:opacity var(--transition)}
+.as .mi:hover{background:var(--sidebar-hover);color:#e2e8f0}
+.as .mi.active{background:var(--sidebar-active);color:#a5b4fc;border-left:3px solid var(--primary)}
+.as .mi.active svg{opacity:1;color:#a5b4fc}
+.as-user{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.as-user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+.as-user-info{flex:1;min-width:0}
+.as-user-name{font-size:12.5px;font-weight:600;color:#e2e8f0}
+.as-user-role{font-size:10.5px;color:#64748b}
+.as-logout{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all var(--transition)}
+.as-logout svg{width:15px;height:15px}
+.as-logout:hover{background:rgba(239,68,68,0.15);color:#f87171}
+.ar{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.ah{height:48px;background:var(--bg-card);border-bottom:1px solid var(--border-color);display:flex;align-items:center;padding:0 20px;justify-content:space-between}
+.ah-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.ah-meta{font-size:11px;color:var(--text-muted)}
+.am{flex:1;background:var(--bg-content);padding:16px;overflow-y:auto}
+.bp{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;text-decoration:none}
+.bp svg{width:13px;height:13px}
+.b1{background:var(--primary);color:#fff;border:none}
+.b1:hover{background:var(--primary-hover);box-shadow:var(--shadow-sm)}
+.b2{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary)}
+.b2:hover{background:#f8fafc;border-color:#cbd5e1}
+.tg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:500}
+.tb{background:var(--info-bg);color:var(--info)}
+.tgn{background:var(--success-bg);color:var(--success)}
+.to{background:var(--warning-bg);color:var(--warning)}
+.tr{background:var(--danger-bg);color:var(--danger)}
+.tv{background:var(--purple-bg);color:var(--purple)}
+.tc{background:var(--cyan-bg);color:var(--cyan)}
+.bc{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:14px;color:var(--text-muted)}
+.bc a{color:var(--primary);text-decoration:none;font-weight:500}
+.bc a:hover{text-decoration:underline}
+.bc .cur{color:var(--text-primary);font-weight:500}
+.bc .sep{color:var(--text-muted)}
+.sect{margin-bottom:16px}
+.sect-title{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-left:10px;border-left:3px solid var(--primary);display:flex;align-items:center;gap:8px}
+.sect-title .st-count{font-size:11px;font-weight:400;color:var(--text-muted);margin-left:auto}
+.fcard{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm)}
+.fcard .fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px}
+.fcard .fi{font-size:11px;display:flex;flex-direction:column}
+.fcard .fi .fl{font-size:10px;color:var(--text-muted);margin-bottom:2px;font-weight:500}
+.fcard .fi .fv{color:var(--text-primary);font-weight:600;word-break:break-all}
+.ncard{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm);transition:all var(--transition)}
+.ncard.nc-fail{border-left:3px solid var(--danger)}
+.ncard.nc-warn{border-left:3px solid var(--warning)}
+.nh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.nh .nseq{width:26px;height:26px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.nh .nseq.ns-fail{background:var(--danger-bg);color:var(--danger)}
+.nh .nseq.ns-warn{background:var(--warning-bg);color:var(--warning)}
+.nh .nname{font-weight:600;font-size:12.5px;color:var(--text-primary)}
+.nh .nkey{font-family:'SF Mono','Consolas','Monaco',monospace;font-size:10px;color:var(--text-muted)}
+.nh .ndur{font-size:11px;color:var(--text-secondary);margin-left:auto}
+.nmeta{display:flex;gap:16px;flex-wrap:wrap;font-size:10px;color:var(--text-secondary);margin-bottom:8px}
+.nio{display:flex;gap:12px;flex-wrap:wrap}
+.nio .io-block{flex:1;min-width:200px;background:#f8fafc;border-radius:4px;padding:8px 10px;font-size:10px}
+.nio .io-block .iolabel{font-weight:600;color:var(--text-secondary);font-size:9.5px;margin-bottom:3px}
+.nio .io-block pre{font-family:'SF Mono','Consolas','Monaco',monospace;font-size:10px;color:var(--text-primary);white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto}
+.nerr{margin-top:8px;font-size:10px;color:var(--danger);background:var(--danger-bg);padding:6px 10px;border-radius:4px}
+.nerr code{font-weight:700;background:rgba(239,68,68,0.1);padding:1px 5px;border-radius:3px}
+.msect{margin-left:20px;margin-top:10px;margin-bottom:6px}
+.msect .ms-title{font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;padding-left:8px;border-left:2px solid var(--purple)}
+.mcard{background:#faf9ff;border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;font-size:10.5px}
+.mcard.mc-fail{border-left:2px solid var(--danger)}
+.mhdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.mhdr .micon{width:16px;height:16px;border-radius:3px;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.mhdr .micon.me-err{background:var(--danger-bg);color:var(--danger)}
+.mhdr .mname{font-weight:600;color:var(--text-primary)}
+.mhdr .mprov{font-size:10px;color:var(--text-muted)}
+.mm-row{display:flex;gap:8px 14px;flex-wrap:wrap;color:var(--text-secondary);font-size:10px}
+.mm-row span{white-space:nowrap}
+.mm-row b{color:var(--text-primary);font-weight:600}
+.mp-block{margin-top:4px;font-size:10px}
+.mp-block .mplabel{font-weight:600;color:var(--text-secondary);margin-right:4px}
+.mp-block .mptext{color:var(--text-primary);word-break:break-all;background:#f8f8ff;padding:4px 8px;border-radius:3px;display:block;margin-top:2px;max-height:80px;overflow-y:auto;font-family:'SF Mono','Consolas','Monaco',monospace;font-size:9.5px;white-space:pre-wrap}
+.moutput{margin-top:5px;font-size:10px;color:var(--text-primary);background:#f0fdf4;padding:6px 10px;border-radius:3px;border-left:2px solid var(--success)}
+.moutput .molabel{font-weight:600;color:var(--success);margin-right:4px}
+.merr{margin-top:5px;font-size:10px;color:var(--danger);background:var(--danger-bg);padding:4px 8px;border-radius:3px}
+.mtime{font-size:9.5px;color:var(--text-muted);display:flex;gap:12px;margin-top:5px}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
+.status-dot.completed{background:var(--success)}
+.status-dot.failed{background:var(--danger)}
+.status-dot.timeout{background:var(--warning)}
+.ncard{cursor:pointer}
+.ncard:hover{border-color:var(--primary);box-shadow:var(--shadow-md)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);z-index:999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.modal-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--bg-card);border-radius:10px;width:680px;max-width:94vw;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border-light);flex-shrink:0}
+.modal-h .m-title{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.modal-h .m-close{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:18px;transition:all var(--transition);border:none;background:none;line-height:1}
+.modal-h .m-close:hover{background:#f1f5f9;color:var(--text-primary)}
+.modal-b{flex:1;overflow-y:auto;padding:18px 20px}
+.modal-b .m-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px}
+.modal-b .m-fi{font-size:11px;display:flex;flex-direction:column;padding:8px 10px;background:#f8fafc;border-radius:5px}
+.modal-b .m-fi .m-fl{font-size:10px;color:var(--text-muted);margin-bottom:2px;font-weight:500}
+.modal-b .m-fi .m-fv{color:var(--text-primary);font-weight:600;word-break:break-all}
+.modal-b .m-fi.wide{grid-column:1/-1}
+.modal-b .m-fi.wide .m-fv{background:#f1f5f9;padding:8px 10px;border-radius:4px;font-family:'SF Mono','Consolas','Monaco',monospace;font-size:10px;white-space:pre-wrap;max-height:160px;overflow-y:auto}
+.modal-b .m-err{margin-top:8px;padding:8px 12px;background:var(--danger-bg);border-radius:5px;font-size:10.5px;color:var(--danger);grid-column:1/-1}
+.modal-b .m-err code{font-weight:700;background:rgba(239,68,68,0.1);padding:1px 5px;border-radius:3px}
+.m-section-label{font-size:10.5px;font-weight:700;color:var(--text-secondary);margin:10px 0 6px;padding-left:8px;border-left:2px solid var(--primary);text-transform:uppercase;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+  <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="icon-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.2.8 2.2 2 2.7V9H9a3 3 0 0 0-3 3v1H4a2 2 0 0 0 0 4h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a3 3 0 0 0 3-3v-1h2v1a3 3 0 0 0 3 3h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a2 2 0 0 0 0-4h-2v-1a3 3 0 0 0-3-3h-2V7.7c1.2-.5 2-1.5 2-2.7a3 3 0 0 0-6 0z"/></symbol>
+  <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+</svg>
+
+<div class="al">
+<div class="as">
+  <div class="as-header"><div class="as-logo"><svg><use href="#icon-brain"/></svg></div><div class="alo">AI Mental Care</div><div class="als">心理健康管理平台</div></div>
+  <div class="as-nav">
+    <a class="mi" href="user.html"><svg><use href="#icon-users"/></svg>用户管理</a>
+    <a class="mi" href="admin.html"><svg><use href="#icon-shield"/></svg>管理员管理</a>
+    <a class="mi" href="file.html"><svg><use href="#icon-folder"/></svg>文件管理</a>
+    <a class="mi" href="scale.html"><svg><use href="#icon-chart"/></svg>量表管理</a>
+    <a class="mi" href="symptom.html"><svg><use href="#icon-heart"/></svg>症状字典</a>
+    <a class="mi" href="ai-node.html"><svg><use href="#icon-cpu"/></svg>AI节点配置</a>
+    <a class="mi" href="skill.html"><svg><use href="#icon-zap"/></svg>Skill管理</a>
+    <a class="mi active"><svg><use href="#icon-activity"/></svg>链路观测</a>
+    <a class="mi" href="profile.html"><svg><use href="#icon-user"/></svg>个人资料</a>
+  </div>
+  <div class="as-user"><div class="as-user-avatar">A</div><div class="as-user-info"><div class="as-user-name">Admin</div><div class="as-user-role">超级管理员</div></div><div class="as-logout"><svg><use href="#icon-logout"/></svg></div></div>
+</div>
+<div class="ar">
+<div class="ah">
+  <span class="ah-title">流程详情 #1</span>
+  <span class="ah-meta">管理员：admin ｜ Trace: 7789123456789012345</span>
+</div>
+<div class="am">
+  <div class="bc"><a href="log-flow.html"><svg width="13" height="13" style="vertical-align:-2px;margin-right:2px"><use href="#icon-arrow-left"/></svg>链路观测</a><span class="sep">›</span><span class="cur">流程 #1：会话消息处理</span></div>
+
+  <div class="sect">
+    <div class="sect-title">流程基本信息</div>
+    <div class="fcard">
+      <div class="fgrid">
+        <div class="fi"><span class="fl">id</span><span class="fv">1</span></div>
+        <div class="fi"><span class="fl">trace_id</span><span class="fv" style="color:var(--primary);font-family:monospace">7789123456789012345</span></div>
+        <div class="fi"><span class="fl">conversation_id</span><span class="fv">1001</span></div>
+        <div class="fi"><span class="fl">round_num</span><span class="fv">3</span></div>
+        <div class="fi"><span class="fl">user_id</span><span class="fv">10001</span></div>
+        <div class="fi"><span class="fl">flow_type</span><span class="fv"><span class="tg tb">1-会话消息处理</span></span></div>
+        <div class="fi"><span class="fl">status</span><span class="fv"><span class="tg tgn"><span class="status-dot completed"></span>2-完成</span></span></div>
+        <div class="fi"><span class="fl">started_at</span><span class="fv">2026-09-23 10:00:00</span></div>
+        <div class="fi"><span class="fl">finished_at</span><span class="fv">2026-09-23 10:00:05</span></div>
+        <div class="fi"><span class="fl">duration_ms</span><span class="fv">5,230</span></div>
+        <div class="fi"><span class="fl">node_count</span><span class="fv">5</span></div>
+        <div class="fi"><span class="fl">model_call_count</span><span class="fv">3</span></div>
+        <div class="fi"><span class="fl">total_input_tokens</span><span class="fv">2,050</span></div>
+        <div class="fi"><span class="fl">total_output_tokens</span><span class="fv">1,080</span></div>
+        <div class="fi"><span class="fl">total_token_count</span><span class="fv">3,130</span></div>
+        <div class="fi"><span class="fl">total_cost_cny</span><span class="fv">¥0.015</span></div>
+        <div class="fi"><span class="fl">created_time</span><span class="fv">2026-09-23 10:00:00</span></div>
+        <div class="fi"><span class="fl">updated_time</span><span class="fv">2026-09-23 10:00:05</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-title">节点执行链路 <span class="st-count">共 5 个节点</span></div>
+
+    <div class="ncard" onclick="openNodeModal(0)">
+      <div class="nh"><span class="nseq">1</span><span class="nname">心理状态与症状评估</span><span class="nkey">psychologicalState</span><span class="tg tgn" style="font-size:10px"><span class="status-dot completed"></span>完成</span><span class="ndur">1,200ms</span></div>
+      <div class="nmeta">
+        <span><b>id:</b> 11</span><span><b>node_config_id:</b> 10</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>started_at:</b> 2026-09-23 10:00:00</span><span><b>finished_at:</b> 2026-09-23 10:00:01</span><span><b>duration_ms:</b> 1,200</span><span><b>created_time:</b> 2026-09-23 10:00:00</span>
+      </div>
+      <div class="nio">
+        <div class="io-block"><div class="iolabel">input_summary</div><pre>{"message":"最近睡不着，心情很差..."}</pre></div>
+        <div class="io-block"><div class="iolabel">output_summary</div><pre>{"emotion":"焦虑","riskLevel":"中等","score":6.5,"suggestedScale":"GAD-7"}</pre></div>
+      </div>
+      <div class="msect">
+        <div class="ms-title">模型调用记录（1 次）</div>
+        <div class="mcard">
+          <div class="mhdr"><span class="micon">M</span><span class="mname">deepseek-v3</span><span class="mprov">deepseek</span><span class="tg tb" style="font-size:9px">1-同步调用</span><span class="tg tgn" style="font-size:9px;margin-left:auto">完成</span></div>
+          <div class="mm-row"><span><b>id:</b> 101</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>node_id:</b> 11</span><span><b>node_key:</b> psychologicalState</span><span><b>node_name:</b> 心理状态与症状评估</span></div>
+          <div class="mm-row"><span><b>input_tokens:</b> 500</span><span><b>output_tokens:</b> 200</span><span><b>total_tokens:</b> 700</span><span><b>cost_cny:</b> ¥0.0035</span><span><b>tool_call_count:</b> 2</span><span><b>finish_reason:</b> stop</span></div>
+          <div class="mp-block"><span class="mplabel">system_prompt:</span><span class="mptext">你是一位共情型心理咨询师。请用温暖而专业的语气评估用户的心理状态...</span></div>
+          <div class="mp-block"><span class="mplabel">user_prompt:</span><span class="mptext">用户消息：最近睡不着，心情很差，总是控制不住地想很多事。请分析用户当前的心理状态。</span></div>
+          <div class="mp-block"><span class="mplabel">model_params:</span><span class="mptext">{"temperature":0.7,"topP":0.9,"topK":40,"maxTokens":2048}</span></div>
+          <div class="moutput"><span class="molabel">model_output:</span>好的，根据您的描述...{"emotion":"焦虑","riskLevel":"中等","score":6.5,...}</div>
+          <div class="mtime"><span><b>started_at:</b> 2026-09-23 10:00:00</span><span><b>finished_at:</b> 2026-09-23 10:00:01</span><span><b>duration_ms:</b> 1,100</span><span><b>created_time:</b> 2026-09-23 10:00:00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ncard" onclick="openNodeModal(1)">
+      <div class="nh"><span class="nseq">2</span><span class="nname">风险等级评估</span><span class="nkey">riskAssessment</span><span class="tg tgn" style="font-size:10px"><span class="status-dot completed"></span>完成</span><span class="ndur">890ms</span></div>
+      <div class="nmeta">
+        <span><b>id:</b> 12</span><span><b>node_config_id:</b> 12</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>started_at:</b> 2026-09-23 10:00:01</span><span><b>finished_at:</b> 2026-09-23 10:00:02</span><span><b>duration_ms:</b> 890</span><span><b>created_time:</b> 2026-09-23 10:00:01</span>
+      </div>
+      <div class="nio">
+        <div class="io-block"><div class="iolabel">input_summary</div><pre>{"emotion":"焦虑","score":6.5}</pre></div>
+        <div class="io-block"><div class="iolabel">output_summary</div><pre>{"riskLevel":"中等","safetyConcern":false}</pre></div>
+      </div>
+      <div class="msect">
+        <div class="ms-title">模型调用记录（1 次）</div>
+        <div class="mcard">
+          <div class="mhdr"><span class="micon">M</span><span class="mname">deepseek-v3</span><span class="mprov">deepseek</span><span class="tg tb" style="font-size:9px">1-同步调用</span><span class="tg tgn" style="font-size:9px;margin-left:auto">完成</span></div>
+          <div class="mm-row"><span><b>id:</b> 102</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>node_id:</b> 12</span><span><b>node_key:</b> riskAssessment</span><span><b>node_name:</b> 风险等级评估</span></div>
+          <div class="mm-row"><span><b>input_tokens:</b> 400</span><span><b>output_tokens:</b> 150</span><span><b>total_tokens:</b> 550</span><span><b>cost_cny:</b> ¥0.0028</span><span><b>tool_call_count:</b> 0</span><span><b>finish_reason:</b> stop</span></div>
+          <div class="mp-block"><span class="mplabel">system_prompt:</span><span class="mptext">你是一名专业的心理风险评估师...</span></div>
+          <div class="mp-block"><span class="mplabel">user_prompt:</span><span class="mptext">请根据以下评估结果判断风险等级：{"emotion":"焦虑","score":6.5}</span></div>
+          <div class="mp-block"><span class="mplabel">model_params:</span><span class="mptext">{"temperature":0.3,"topP":0.85,"maxTokens":1024}</span></div>
+          <div class="moutput"><span class="molabel">model_output:</span>经过评估，当前用户的风险等级为中等...</div>
+          <div class="mtime"><span><b>started_at:</b> 2026-09-23 10:00:01</span><span><b>finished_at:</b> 2026-09-23 10:00:02</span><span><b>duration_ms:</b> 820</span><span><b>created_time:</b> 2026-09-23 10:00:01</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ncard" onclick="openNodeModal(2)">
+      <div class="nh"><span class="nseq">3</span><span class="nname">共情支持回应</span><span class="nkey">empathyResponse</span><span class="tg tgn" style="font-size:10px"><span class="status-dot completed"></span>完成</span><span class="ndur">1,500ms</span></div>
+      <div class="nmeta">
+        <span><b>id:</b> 13</span><span><b>node_config_id:</b> 15</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>started_at:</b> 2026-09-23 10:00:02</span><span><b>finished_at:</b> 2026-09-23 10:00:04</span><span><b>duration_ms:</b> 1,500</span><span><b>created_time:</b> 2026-09-23 10:00:02</span>
+      </div>
+      <div class="nio">
+        <div class="io-block"><div class="iolabel">input_summary</div><pre>{"userMessage":"最近工作压力很大...","detectedEmotion":"焦虑"}</pre></div>
+        <div class="io-block"><div class="iolabel">output_summary</div><pre>{"response":"我非常理解您现在的心情..."}</pre></div>
+      </div>
+      <div class="msect">
+        <div class="ms-title">模型调用记录（1 次）</div>
+        <div class="mcard">
+          <div class="mhdr"><span class="micon">M</span><span class="mname">qwen-plus</span><span class="mprov">dashscope</span><span class="tg tb" style="font-size:9px">1-同步调用</span><span class="tg tgn" style="font-size:9px;margin-left:auto">完成</span></div>
+          <div class="mm-row"><span><b>id:</b> 103</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>node_id:</b> 13</span><span><b>node_key:</b> empathyResponse</span><span><b>node_name:</b> 共情支持回应</span></div>
+          <div class="mm-row"><span><b>input_tokens:</b> 600</span><span><b>output_tokens:</b> 450</span><span><b>total_tokens:</b> 1,050</span><span><b>cost_cny:</b> ¥0.0052</span><span><b>tool_call_count:</b> 1</span><span><b>finish_reason:</b> stop</span></div>
+          <div class="mp-block"><span class="mplabel">system_prompt:</span><span class="mptext">你是一位温暖型心理咨询师，擅长共情技巧...</span></div>
+          <div class="mp-block"><span class="mplabel">user_prompt:</span><span class="mptext">用户说：最近工作压力很大，和同事关系也不太好...</span></div>
+          <div class="mp-block"><span class="mplabel">model_params:</span><span class="mptext">{"temperature":0.8,"topP":0.95,"maxTokens":2048}</span></div>
+          <div class="moutput"><span class="molabel">model_output:</span>我非常理解您现在的心情...</div>
+          <div class="mtime"><span><b>started_at:</b> 2026-09-23 10:00:02</span><span><b>finished_at:</b> 2026-09-23 10:00:04</span><span><b>duration_ms:</b> 1,420</span><span><b>created_time:</b> 2026-09-23 10:00:02</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ncard nc-fail" onclick="openNodeModal(3)">
+      <div class="nh"><span class="nseq ns-fail">4</span><span class="nname">量表推荐</span><span class="nkey">scaleRecommend</span><span class="tg tr" style="font-size:10px"><span class="status-dot failed"></span>失败</span><span class="ndur">450ms</span></div>
+      <div class="nmeta">
+        <span><b>id:</b> 14</span><span><b>node_config_id:</b> 18</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>started_at:</b> 2026-09-23 10:00:04</span><span><b>finished_at:</b> 2026-09-23 10:00:04</span><span><b>duration_ms:</b> 450</span><span><b>created_time:</b> 2026-09-23 10:00:04</span>
+      </div>
+      <div class="nerr"><code>error_code:</code> TimeoutException &nbsp;|&nbsp; <code>error_message:</code> 模型调用超时，超过30秒未收到响应</div>
+      <div class="nio">
+        <div class="io-block"><div class="iolabel">input_summary</div><pre>{"riskLevel":"中等","suggestedScale":"GAD-7"}</pre></div>
+      </div>
+      <div class="msect">
+        <div class="ms-title">模型调用记录（1 次）</div>
+        <div class="mcard mc-fail">
+          <div class="mhdr"><span class="micon me-err">!</span><span class="mname">deepseek-v3</span><span class="mprov">deepseek</span><span class="tg tr" style="font-size:9px">失败</span></div>
+          <div class="mm-row"><span><b>id:</b> 104</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>node_id:</b> 14</span><span><b>node_key:</b> scaleRecommend</span><span><b>node_name:</b> 量表推荐</span></div>
+          <div class="mm-row"><span><b>input_tokens:</b> 300</span><span><b>output_tokens:</b> -</span><span><b>cost_cny:</b> ¥0.0009</span><span><b>tool_call_count:</b> 0</span><span><b>finish_reason:</b> timeout</span></div>
+          <div class="merr"><b>error_code:</b> TimeoutException &nbsp;|&nbsp; <b>error_message:</b> 模型调用超时，超过30秒未收到响应</div>
+          <div class="mtime"><span><b>started_at:</b> 2026-09-23 10:00:04</span><span><b>finished_at:</b> -</span><span><b>duration_ms:</b> 420</span><span><b>created_time:</b> 2026-09-23 10:00:04</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ncard" onclick="openNodeModal(4)">
+      <div class="nh"><span class="nseq">5</span><span class="nname">安全审核</span><span class="nkey">safetyAudit</span><span class="tg tgn" style="font-size:10px"><span class="status-dot completed"></span>完成</span><span class="ndur">640ms</span></div>
+      <div class="nmeta">
+        <span><b>id:</b> 15</span><span><b>node_config_id:</b> 20</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>started_at:</b> 2026-09-23 10:00:04</span><span><b>finished_at:</b> 2026-09-23 10:00:05</span><span><b>duration_ms:</b> 640</span><span><b>created_time:</b> 2026-09-23 10:00:04</span>
+      </div>
+      <div class="nio">
+        <div class="io-block"><div class="iolabel">input_summary</div><pre>{"response":"我非常理解您现在的心情...","checkSafety":true}</pre></div>
+        <div class="io-block"><div class="iolabel">output_summary</div><pre>{"approved":true,"riskFlags":[],"safetyScore":0.95}</pre></div>
+      </div>
+      <div class="msect">
+        <div class="ms-title">模型调用记录（1 次）</div>
+        <div class="mcard">
+          <div class="mhdr"><span class="micon">M</span><span class="mname">deepseek-v3</span><span class="mprov">deepseek</span><span class="tg tb" style="font-size:9px">1-同步调用</span><span class="tg tgn" style="font-size:9px;margin-left:auto">完成</span></div>
+          <div class="mm-row"><span><b>id:</b> 105</span><span><b>trace_id:</b> 7789123456789012345</span><span><b>node_id:</b> 15</span><span><b>node_key:</b> safetyAudit</span><span><b>node_name:</b> 安全审核</span></div>
+          <div class="mm-row"><span><b>input_tokens:</b> 250</span><span><b>output_tokens:</b> 80</span><span><b>total_tokens:</b> 330</span><span><b>cost_cny:</b> ¥0.0017</span><span><b>tool_call_count:</b> 0</span><span><b>finish_reason:</b> stop</span></div>
+          <div class="mp-block"><span class="mplabel">system_prompt:</span><span class="mptext">你是内容安全审核员，审查AI生成的回复是否包含不当建议...</span></div>
+          <div class="mp-block"><span class="mplabel">user_prompt:</span><span class="mptext">请审核以下回复内容的安全性：...</span></div>
+          <div class="mp-block"><span class="mplabel">model_params:</span><span class="mptext">{"temperature":0.1,"maxTokens":512}</span></div>
+          <div class="moutput"><span class="molabel">model_output:</span>审核通过，内容安全无违规。</div>
+          <div class="mtime"><span><b>started_at:</b> 2026-09-23 10:00:04</span><span><b>finished_at:</b> 2026-09-23 10:00:05</span><span><b>duration_ms:</b> 600</span><span><b>created_time:</b> 2026-09-23 10:00:04</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a class="bp b2" href="log-flow.html"><svg width="13" height="13"><use href="#icon-arrow-left"/></svg>返回列表</a>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-h">
+      <span class="m-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>节点执行详情</span>
+      <button class="m-close" onclick="closeNodeModal()">&times;</button>
+    </div>
+    <div class="modal-b" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+var nodeData = [
+  {
+    id:"11", trace_id:"7789123456789012345", node_config_id:"10", node_name:"心理状态与症状评估", node_key:"psychologicalState",
+    node_sequence:"1", status:"2-完成", error_code:"", error_message:"",
+    started_at:"2026-09-23 10:00:00", finished_at:"2026-09-23 10:00:01", duration_ms:"1,200",
+    input_summary: '{"message":"最近睡不着，心情很差，总是控制不住地想很多事。请分析用户当前的心理状态。"}',
+    output_summary: '{"emotion":"焦虑","riskLevel":"中等","score":6.5,"suggestedScale":"GAD-7","confidence":0.88}',
+    created_time:"2026-09-23 10:00:00"
+  },
+  {
+    id:"12", trace_id:"7789123456789012345", node_config_id:"12", node_name:"风险等级评估", node_key:"riskAssessment",
+    node_sequence:"2", status:"2-完成", error_code:"", error_message:"",
+    started_at:"2026-09-23 10:00:01", finished_at:"2026-09-23 10:00:02", duration_ms:"890",
+    input_summary: '{"emotion":"焦虑","score":6.5,"previousOutput":{"riskLevel":"中等"}}',
+    output_summary: '{"riskLevel":"中等","safetyConcern":false,"recommendations":["定期随访","GAD-7量表"]}',
+    created_time:"2026-09-23 10:00:01"
+  },
+  {
+    id:"13", trace_id:"7789123456789012345", node_config_id:"15", node_name:"共情支持回应", node_key:"empathyResponse",
+    node_sequence:"3", status:"2-完成", error_code:"", error_message:"",
+    started_at:"2026-09-23 10:00:02", finished_at:"2026-09-23 10:00:04", duration_ms:"1,500",
+    input_summary: '{"userMessage":"最近工作压力很大，和同事关系也不太好，回家也不想说话...","detectedEmotion":"焦虑","riskLevel":"中等"}',
+    output_summary: '{"response":"我非常理解您现在的心情。工作和人际关系的压力交织在一起确实会让人感到疲惫。您愿意多聊聊吗？","tone":"温暖共情","wordCount":42}',
+    created_time:"2026-09-23 10:00:02"
+  },
+  {
+    id:"14", trace_id:"7789123456789012345", node_config_id:"18", node_name:"量表推荐", node_key:"scaleRecommend",
+    node_sequence:"4", status:"3-失败", error_code:"TimeoutException", error_message:"模型调用超时，超过30秒未收到响应",
+    started_at:"2026-09-23 10:00:04", finished_at:"-", duration_ms:"450",
+    input_summary: '{"riskLevel":"中等","suggestedScale":"GAD-7","userProfile":{"age":28,"gender":"男"}}',
+    output_summary: "",
+    created_time:"2026-09-23 10:00:04"
+  },
+  {
+    id:"15", trace_id:"7789123456789012345", node_config_id:"20", node_name:"安全审核", node_key:"safetyAudit",
+    node_sequence:"5", status:"2-完成", error_code:"", error_message:"",
+    started_at:"2026-09-23 10:00:04", finished_at:"2026-09-23 10:00:05", duration_ms:"640",
+    input_summary: '{"response":"我非常理解您现在的心情...","checkSafety":true,"auditLevel":"standard"}',
+    output_summary: '{"approved":true,"riskFlags":[],"safetyScore":0.95,"reviewerNote":"内容健康合规"}',
+    created_time:"2026-09-23 10:00:04"
+  }
+];
+
+function openNodeModal(idx) {
+  var d = nodeData[idx];
+  var statusTag = d.status.indexOf('完成')>=0 ? 'tg tgn' : 'tg tr';
+  var content = '<div class="m-section-label">基本信息</div>';
+  content += '<div class="m-grid">';
+  content += kv('id', d.id) + kv('trace_id', d.trace_id) + kv('node_config_id', d.node_config_id) + kv('node_sequence', d.node_sequence);
+  content += kv('node_name', d.node_name) + kv('node_key', d.node_key);
+  content += kv('created_time', d.created_time);
+  content += '<div class="m-fi"><span class="m-fl">status</span><span class="m-fv"><span class="'+statusTag+'" style="font-size:10.5px">'+d.status+'</span></span></div>';
+  content += '</div>';
+
+  content += '<div class="m-section-label">时间与耗时</div>';
+  content += '<div class="m-grid">';
+  content += kv('started_at', d.started_at) + kv('finished_at', d.finished_at==='-'?'<span style="color:var(--danger)">-</span>':d.finished_at);
+  content += kv('duration_ms', d.duration_ms) + kv('', '');
+  content += '</div>';
+
+  if (d.error_code) {
+    content += '<div class="m-err"><code>error_code:</code> '+d.error_code+' &nbsp;|&nbsp; <code>error_message:</code> '+d.error_message+'</div>';
+  }
+
+  content += '<div class="m-section-label">输入/输出摘要</div>';
+  content += '<div class="m-grid">';
+  content += '<div class="m-fi wide"><span class="m-fl">input_summary</span><span class="m-fv">'+esc(d.input_summary)+'</span></div>';
+  content += '<div class="m-fi wide"><span class="m-fl">output_summary</span><span class="m-fv">'+(d.output_summary?esc(d.output_summary):'<span style="color:var(--text-muted)">无输出（节点失败）</span>')+'</span></div>';
+  content += '</div>';
+
+  document.getElementById('modal-body').innerHTML = content;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function kv(label, value) {
+  return '<div class="m-fi"><span class="m-fl">'+label+'</span><span class="m-fv">'+value+'</span></div>';
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function closeNodeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeNodeModal();
+});
+
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var id=params.get('id')||'1';
+  document.querySelector('.ah-title').textContent='流程详情 #'+id;
+})();
+</script>
+</body>
+</html>

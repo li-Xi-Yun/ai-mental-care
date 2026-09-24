@@ -124,4 +124,27 @@ class ChatAPI {
       throw error;
     }
   }
+
+  static async initAudioSession(conversationId = null) {
+    let url = `${CONFIG.server.baseUrl}${CONFIG.api.audioInit}`;
+    if (conversationId !== null) {
+      url += `?conversationId=${conversationId}`;
+    }
+    try {
+      return await ChatAPI._request(url, { method: 'POST' });
+    } catch (error) {
+      console.error('初始化语音会话失败:', error);
+      throw error;
+    }
+  }
+
+  static async endAudioSession(conversationId) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.audioEnd}/${conversationId}/end`;
+    try {
+      return await ChatAPI._request(url, { method: 'DELETE' });
+    } catch (error) {
+      console.error('结束语音会话失败:', error);
+      throw error;
+    }
+  }
 }

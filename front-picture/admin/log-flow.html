@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>链路观测 - AI Mental Care</title>
+<style>
+:root{--primary:#6366f1;--primary-hover:#4f46e5;--primary-light:#eef2ff;--sidebar-bg:#0f172a;--sidebar-hover:rgba(255,255,255,0.06);--sidebar-active:rgba(99,102,241,0.15);--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border-color:#e2e8f0;--border-light:#f1f5f9;--bg-page:#f1f5f9;--bg-card:#ffffff;--bg-content:#f8fafc;--success:#22c55e;--success-bg:#f0fdf4;--warning:#f59e0b;--warning-bg:#fffbeb;--danger:#ef4444;--danger-bg:#fef2f2;--info:#3b82f6;--info-bg:#eff6ff;--purple:#8b5cf6;--purple-bg:#f5f3ff;--cyan:#06b6d4;--cyan-bg:#ecfeff;--radius-sm:6px;--radius:8px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);--transition:0.2s ease}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-page);color:var(--text-primary);line-height:1.5;height:100vh;overflow:hidden}
+.al{display:flex;height:100vh}
+.as{width:232px;background:var(--sidebar-bg);color:#cbd5e1;padding:0;flex-shrink:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.as::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(99,102,241,0.04) 0%,transparent 50%);pointer-events:none}
+.as-header{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}
+.as-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.as-logo svg{width:20px;height:20px}
+.as .alo{padding:0;font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:3px;letter-spacing:0.3px}
+.as .als{padding:0;font-size:11px;color:#64748b;margin-bottom:0;font-weight:400}
+.as-nav{flex:1;padding:10px 8px;overflow-y:auto;position:relative;z-index:1}
+.as .mi{padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:var(--radius);margin-bottom:2px;transition:all var(--transition);color:#94a3b8;font-weight:500;position:relative;text-decoration:none}
+.as .mi svg{width:17px;height:17px;opacity:0.7;flex-shrink:0;transition:opacity var(--transition)}
+.as .mi:hover{background:var(--sidebar-hover);color:#e2e8f0}
+.as .mi.active{background:var(--sidebar-active);color:#a5b4fc;border-left:3px solid var(--primary)}
+.as .mi.active svg{opacity:1;color:#a5b4fc}
+.as-user{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.as-user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+.as-user-info{flex:1;min-width:0}
+.as-user-name{font-size:12.5px;font-weight:600;color:#e2e8f0}
+.as-user-role{font-size:10.5px;color:#64748b}
+.as-logout{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all var(--transition)}
+.as-logout svg{width:15px;height:15px}
+.as-logout:hover{background:rgba(239,68,68,0.15);color:#f87171}
+.ar{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.ah{height:48px;background:var(--bg-card);border-bottom:1px solid var(--border-color);display:flex;align-items:center;padding:0 20px;justify-content:space-between}
+.ah-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.ah-meta{font-size:11px;color:var(--text-muted)}
+.am{flex:1;background:var(--bg-content);padding:0;overflow:hidden;display:flex;flex-direction:column}
+.content-pad{padding:12px 12px 0 12px;flex-shrink:0}
+.bp{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;text-decoration:none}
+.bp svg{width:13px;height:13px}
+.b1{background:var(--primary);color:#fff;border:none}
+.b1:hover{background:var(--primary-hover);box-shadow:var(--shadow-sm)}
+.b2{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary)}
+.b2:hover{background:#f8fafc;border-color:#cbd5e1}
+.inp{border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:6px 10px;font-size:11.5px;display:inline-flex;align-items:center;min-width:120px;background:var(--bg-card);color:var(--text-muted);transition:border-color var(--transition)}
+.tg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:500}
+.tb{background:var(--info-bg);color:var(--info)}
+.tgn{background:var(--success-bg);color:var(--success)}
+.to{background:var(--warning-bg);color:var(--warning)}
+.tr{background:var(--danger-bg);color:var(--danger)}
+.tv{background:var(--purple-bg);color:var(--purple)}
+.tc{background:var(--cyan-bg);color:var(--cyan)}
+.sbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.twrap{background:var(--bg-card);border:none;overflow:hidden;box-shadow:none;flex:1;overflow-y:auto;min-height:0}
+.wt{width:100%;border-collapse:collapse;font-size:11px;table-layout:auto}
+.wt th{background:#f8fafc;padding:10px 12px;text-align:left;border-bottom:2px solid var(--border-color);font-weight:600;color:var(--text-secondary);font-size:10.5px;white-space:nowrap}
+.wt td{padding:10px 12px;border-bottom:1px solid var(--border-light);color:var(--text-primary);white-space:nowrap}
+.wt tbody tr{transition:background var(--transition);cursor:pointer}
+.wt tbody tr:hover{background:#f8fafc}
+.wt .mono{font-family:'SF Mono','Consolas','Monaco',monospace;font-size:10.5px}
+.pgn{display:flex;justify-content:space-between;align-items:center;padding:12px;font-size:11px;color:var(--text-muted);flex-shrink:0}
+.pgn .pgi{display:flex;gap:3px;align-items:center}
+.pgn .pb{padding:4px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:11px;cursor:pointer;transition:all var(--transition);background:var(--bg-card);color:var(--text-primary)}
+.pgn .pb:hover{border-color:var(--primary);color:var(--primary)}
+.pgn .pb.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.act-link{font-size:10.5px;font-weight:500;text-decoration:none;color:var(--primary);transition:opacity var(--transition)}
+.act-link:hover{opacity:0.7}
+.summary-card{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.sc-item{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow-sm)}
+.sc-item .sc-label{font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+.sc-item .sc-value{font-size:18px;font-weight:700;color:var(--text-primary)}
+.sc-item .sc-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;flex-shrink:0}
+.status-dot.completed{background:var(--success)}
+.status-dot.failed{background:var(--danger)}
+.status-dot.timeout{background:var(--warning)}
+.status-dot.running{background:var(--info);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.err-tip{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;font-size:10px}
+</style>
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+  <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="icon-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.2.8 2.2 2 2.7V9H9a3 3 0 0 0-3 3v1H4a2 2 0 0 0 0 4h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a3 3 0 0 0 3-3v-1h2v1a3 3 0 0 0 3 3h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a2 2 0 0 0 0-4h-2v-1a3 3 0 0 0-3-3h-2V7.7c1.2-.5 2-1.5 2-2.7a3 3 0 0 0-6 0z"/></symbol>
+  <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+</svg>
+
+<div class="al">
+<div class="as">
+  <div class="as-header"><div class="as-logo"><svg><use href="#icon-brain"/></svg></div><div class="alo">AI Mental Care</div><div class="als">心理健康管理平台</div></div>
+  <div class="as-nav">
+    <a class="mi" href="user.html"><svg><use href="#icon-users"/></svg>用户管理</a>
+    <a class="mi" href="admin.html"><svg><use href="#icon-shield"/></svg>管理员管理</a>
+    <a class="mi" href="file.html"><svg><use href="#icon-folder"/></svg>文件管理</a>
+    <a class="mi" href="scale.html"><svg><use href="#icon-chart"/></svg>量表管理</a>
+    <a class="mi" href="symptom.html"><svg><use href="#icon-heart"/></svg>症状字典</a>
+    <a class="mi" href="ai-node.html"><svg><use href="#icon-cpu"/></svg>AI节点配置</a>
+    <a class="mi" href="skill.html"><svg><use href="#icon-zap"/></svg>Skill管理</a>
+    <a class="mi active"><svg><use href="#icon-activity"/></svg>链路观测</a>
+    <a class="mi" href="profile.html"><svg><use href="#icon-user"/></svg>个人资料</a>
+  </div>
+  <div class="as-user"><div class="as-user-avatar">A</div><div class="as-user-info"><div class="as-user-name">Admin</div><div class="as-user-role">超级管理员</div></div><div class="as-logout"><svg><use href="#icon-logout"/></svg></div></div>
+</div>
+<div class="ar">
+<div class="ah"><span class="ah-title">AI全链路观测</span><span class="ah-meta">管理员：admin ｜ 实时追踪AI流程、节点与模型调用</span></div>
+<div class="am">
+  <div class="content-pad">
+  <div class="summary-card">
+    <div class="sc-item"><div class="sc-label">今日流程数</div><div class="sc-value">1,248</div><div class="sc-sub">完成率 97.8%</div></div>
+    <div class="sc-item"><div class="sc-label">平均耗时</div><div class="sc-value">3.2s</div><div class="sc-sub">P99: 12.6s</div></div>
+    <div class="sc-item"><div class="sc-label">今日Token消耗</div><div class="sc-value">2.8M</div><div class="sc-sub">成本约 ¥14.20</div></div>
+    <div class="sc-item"><div class="sc-label">失败流程</div><div class="sc-value" style="color:var(--danger)">28</div><div class="sc-sub">失败率 2.2%</div></div>
+  </div>
+  <div class="sbar">
+    <span class="inp" style="min-width:150px"><svg width="13" height="13" style="margin-right:6px;opacity:0.4"><use href="#icon-search"/></svg>Conversation ID</span>
+    <span class="inp" style="min-width:130px">Trace ID</span>
+    <span class="inp" style="min-width:80px">流程状态</span>
+    <span class="inp" style="min-width:100px">流程类型</span>
+    <span class="bp b1"><svg><use href="#icon-search"/></svg>查询</span>
+    <span class="bp b2">重置</span>
+    <span style="margin-left:auto" class="bp b2"><svg><use href="#icon-refresh"/></svg>刷新</span>
+  </div>
+  </div>
+
+  <div class="twrap">
+  <table class="wt">
+    <thead><tr>
+      <th style="width:140px">Trace ID</th><th style="width:90px">会话ID</th><th style="width:70px">用户ID</th><th style="width:50px">轮次</th>
+      <th style="width:80px">流程类型</th><th style="width:72px">状态</th><th>错误码/信息</th>
+      <th style="width:80px">耗时</th><th style="width:56px">节点数</th><th style="width:64px">模型调用</th>
+      <th style="width:64px">输入Token</th><th style="width:64px">输出Token</th><th style="width:60px">总Token</th>
+      <th style="width:68px">成本(¥)</th>
+      <th style="width:120px">开始时间</th><th style="width:120px">结束时间</th>
+      <th style="width:64px">操作</th>
+    </tr></thead>
+    <tbody>
+
+      <tr onclick="location.href='log-flow-detail.html?id=1'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012345</span></td>
+        <td><span class="mono">1001</span></td><td>10001</td><td>3</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>5,230ms</td><td>5</td><td>3</td>
+        <td>2,050</td><td>1,080</td><td>3,130</td><td>0.015</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 10:00:00</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 10:00:05</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=1">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=2'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012346</span></td>
+        <td><span class="mono">1001</span></td><td>10001</td><td>4</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>3,100ms</td><td>3</td><td>2</td>
+        <td>600</td><td>400</td><td>1,000</td><td>0.008</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:58:30</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:58:33</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=2">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=3'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012347</span></td>
+        <td><span class="mono">1003</span></td><td>10005</td><td>2</td>
+        <td><span class="tg tv">仅诊断</span></td>
+        <td><span class="tg tr"><span class="status-dot failed"></span>失败</span></td>
+        <td><span class="err-tip tg tr" title="error_code: ApiException / error_message: remote service returned 503 Service Unavailable">ApiException: 503</span></td>
+        <td>12,800ms</td><td>2</td><td>1</td>
+        <td>600</td><td>-</td><td>600</td><td>0.004</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:55:12</td>
+        <td class="mono" style="color:var(--danger)">09-23 09:55:25</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=3">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=4'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012348</span></td>
+        <td><span class="mono">1005</span></td><td>10008</td><td>1</td>
+        <td><span class="tg tc">批量分析</span></td>
+        <td><span class="tg to"><span class="status-dot timeout"></span>超时</span></td>
+        <td><span class="err-tip tg to" title="error_code: TimeoutException / error_message: flow execution exceeded 30s limit">TimeoutException</span></td>
+        <td>30,000ms</td><td>4</td><td>3</td>
+        <td>4,200</td><td>1,400</td><td>5,600</td><td>0.035</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:48:00</td>
+        <td class="mono" style="color:var(--warning)">09-23 09:48:30</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=4">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=5'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012349</span></td>
+        <td><span class="mono">1007</span></td><td>10012</td><td>2</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>2,450ms</td><td>4</td><td>2</td>
+        <td>1,200</td><td>680</td><td>1,880</td><td>0.012</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:45:20</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:45:22</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=5">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=6'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012350</span></td>
+        <td><span class="mono">1008</span></td><td>10015</td><td>1</td>
+        <td><span class="tg tv">仅诊断</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>1,800ms</td><td>3</td><td>1</td>
+        <td>450</td><td>320</td><td>770</td><td>0.006</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:42:10</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:42:12</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=6">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=7'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012351</span></td>
+        <td><span class="mono">1010</span></td><td>10020</td><td>5</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>4,120ms</td><td>6</td><td>4</td>
+        <td>3,100</td><td>1,500</td><td>4,600</td><td>0.022</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:38:30</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:38:34</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=7">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=8'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012352</span></td>
+        <td><span class="mono">1010</span></td><td>10020</td><td>6</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>3,350ms</td><td>4</td><td>3</td>
+        <td>1,800</td><td>920</td><td>2,720</td><td>0.018</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:35:10</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:35:13</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=8">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=9'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012353</span></td>
+        <td><span class="mono">1012</span></td><td>10025</td><td>1</td>
+        <td><span class="tg tc">批量分析</span></td>
+        <td><span class="tg tr"><span class="status-dot failed"></span>失败</span></td>
+        <td><span class="err-tip tg tr" title="error_code: RateLimitException / error_message: model rate limit exceeded">RateLimitException</span></td>
+        <td>850ms</td><td>1</td><td>0</td>
+        <td>200</td><td>-</td><td>200</td><td>0.002</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:30:00</td>
+        <td class="mono" style="color:var(--danger)">09-23 09:30:01</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=9">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=10'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012354</span></td>
+        <td><span class="mono">1014</span></td><td>10030</td><td>3</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>2,980ms</td><td>5</td><td>3</td>
+        <td>1,500</td><td>760</td><td>2,260</td><td>0.014</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:25:40</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:25:43</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=10">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=11'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012355</span></td>
+        <td><span class="mono">1015</span></td><td>10032</td><td>2</td>
+        <td><span class="tg tv">仅诊断</span></td>
+        <td><span class="tg to"><span class="status-dot timeout"></span>超时</span></td>
+        <td><span class="err-tip tg to" title="error_code: TimeoutException / error_message: diagnosis flow exceeded 30s limit">TimeoutException</span></td>
+        <td>30,000ms</td><td>2</td><td>2</td>
+        <td>1,000</td><td>300</td><td>1,300</td><td>0.009</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:20:00</td>
+        <td class="mono" style="color:var(--warning)">09-23 09:20:30</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=11">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=12'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012356</span></td>
+        <td><span class="mono">1018</span></td><td>10036</td><td>1</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>1,650ms</td><td>3</td><td>1</td>
+        <td>380</td><td>240</td><td>620</td><td>0.005</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:15:55</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:15:57</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=12">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=13'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012357</span></td>
+        <td><span class="mono">1020</span></td><td>10040</td><td>4</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>5,500ms</td><td>7</td><td>4</td>
+        <td>2,800</td><td>1,600</td><td>4,400</td><td>0.025</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:10:30</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:10:36</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=13">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=14'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012358</span></td>
+        <td><span class="mono">1022</span></td><td>10043</td><td>1</td>
+        <td><span class="tg tc">批量分析</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>8,200ms</td><td>4</td><td>3</td>
+        <td>3,500</td><td>2,100</td><td>5,600</td><td>0.032</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:05:20</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:05:28</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=14">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=15'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012359</span></td>
+        <td><span class="mono">1025</span></td><td>10046</td><td>2</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>2,100ms</td><td>4</td><td>2</td>
+        <td>1,100</td><td>550</td><td>1,650</td><td>0.010</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:00:10</td>
+        <td class="mono" style="color:var(--text-muted)">09-23 09:00:12</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=15">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=16'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012360</span></td>
+        <td><span class="mono">1028</span></td><td>10050</td><td>1</td>
+        <td><span class="tg tv">仅诊断</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>1,950ms</td><td>3</td><td>1</td>
+        <td>520</td><td>380</td><td>900</td><td>0.007</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:55:00</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:55:02</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=16">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=17'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012361</span></td>
+        <td><span class="mono">1030</span></td><td>10056</td><td>3</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>3,700ms</td><td>5</td><td>3</td>
+        <td>2,200</td><td>1,100</td><td>3,300</td><td>0.019</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:48:30</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:48:34</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=17">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=18'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012362</span></td>
+        <td><span class="mono">1032</span></td><td>10060</td><td>2</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tr"><span class="status-dot failed"></span>失败</span></td>
+        <td><span class="err-tip tg tr" title="error_code: TokenLimitException / error_message: input token length 8192 exceeds model limit 4096">TokenLimitException</span></td>
+        <td>350ms</td><td>1</td><td>0</td>
+        <td>8,200</td><td>-</td><td>8,200</td><td>0.008</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:40:00</td>
+        <td class="mono" style="color:var(--danger)">09-22 23:40:00</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=18">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=19'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012363</span></td>
+        <td><span class="mono">1035</span></td><td>10065</td><td>1</td>
+        <td><span class="tg tc">批量分析</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>6,800ms</td><td>4</td><td>3</td>
+        <td>2,900</td><td>1,800</td><td>4,700</td><td>0.028</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:32:00</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:32:07</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=19">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=20'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012364</span></td>
+        <td><span class="mono">1038</span></td><td>10070</td><td>4</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>2,600ms</td><td>4</td><td>2</td>
+        <td>1,400</td><td>700</td><td>2,100</td><td>0.013</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:25:40</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:25:43</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=20">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=21'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012365</span></td>
+        <td><span class="mono">1040</span></td><td>10075</td><td>1</td>
+        <td><span class="tg tv">仅诊断</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>1,430ms</td><td>3</td><td>1</td>
+        <td>350</td><td>280</td><td>630</td><td>0.005</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:20:10</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:20:11</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=21">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=22'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012366</span></td>
+        <td><span class="mono">1042</span></td><td>10080</td><td>2</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg to"><span class="status-dot timeout"></span>超时</span></td>
+        <td><span class="err-tip tg to" title="error_code: TimeoutException / error_message: remote model response timeout after 30s">TimeoutException</span></td>
+        <td>30,000ms</td><td>2</td><td>1</td>
+        <td>800</td><td>-</td><td>800</td><td>0.006</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:15:00</td>
+        <td class="mono" style="color:var(--warning)">09-22 23:15:30</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=22">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=23'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012367</span></td>
+        <td><span class="mono">1045</span></td><td>10085</td><td>5</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>4,800ms</td><td>6</td><td>4</td>
+        <td>2,500</td><td>1,350</td><td>3,850</td><td>0.021</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:08:20</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:08:25</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=23">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=24'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012368</span></td>
+        <td><span class="mono">1048</span></td><td>10090</td><td>1</td>
+        <td><span class="tg tc">批量分析</span></td>
+        <td><span class="tg tr"><span class="status-dot failed"></span>失败</span></td>
+        <td><span class="err-tip tg tr" title="error_code: QuotaExceededException / error_message: daily API call quota exceeded">QuotaExceededException</span></td>
+        <td>120ms</td><td>0</td><td>0</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 23:00:00</td>
+        <td class="mono" style="color:var(--danger)">09-22 23:00:00</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=24">详情 ›</a></td>
+      </tr>
+
+      <tr onclick="location.href='log-flow-detail.html?id=25'">
+        <td><span class="mono" style="color:var(--primary)">7789123456789012369</span></td>
+        <td><span class="mono">1050</span></td><td>10095</td><td>3</td>
+        <td><span class="tg tb">会话消息</span></td>
+        <td><span class="tg tgn"><span class="status-dot completed"></span>完成</span></td>
+        <td><span style="color:var(--text-muted)">-</span></td>
+        <td>3,200ms</td><td>5</td><td>3</td>
+        <td>1,680</td><td>890</td><td>2,570</td><td>0.016</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 22:52:10</td>
+        <td class="mono" style="color:var(--text-muted)">09-22 22:52:13</td>
+        <td><a class="act-link" href="log-flow-detail.html?id=25">详情 ›</a></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="pgn">
+    <div class="pgi"><span class="pb active">1</span><span class="pb">2</span><span class="pb">3</span><span class="pb">...</span><span class="pb">26</span></div>
+    <span>共 1,248 条记录</span>
+  </div>
+</div>
+</div>
+</div>
+</body>
+</html>

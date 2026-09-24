@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>登录 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden;margin:0}
+.login-bg{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea 0%,#6c63ff 50%,#5548d9 100%);position:relative}
+.login-bg:before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.login-card{background:#fff;border-radius:16px;padding:36px 32px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative;z-index:1}
+.login-card .logo-area{text-align:center;margin-bottom:20px}
+.login-card .logo-area .brand{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.login-card .logo-area .sub{font-size:11px;color:var(--text-muted)}
+.tab-bar{display:flex;margin-bottom:20px;border-bottom:2px solid var(--border-light)}
+.tab-bar .tab{flex:1;text-align:center;padding:10px 0;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-muted);transition:.2s}
+.tab-bar .tab.active{color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;color:var(--text-secondary);margin-bottom:5px}
+.form-group .input-field{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;outline:none;transition:border-color .2s;box-sizing:border-box}
+.form-group .input-field:focus{border-color:var(--primary)}
+.captcha-row{display:flex;gap:8px;align-items:center}
+.captcha-row .input-field{flex:1}
+.captcha-img{width:90px;height:36px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#555;letter-spacing:2px;cursor:default;flex-shrink:0}
+.refresh-link{font-size:10px;color:var(--primary);cursor:pointer;white-space:nowrap}
+.extra-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;margin:8px 0 16px}
+.extra-row label{color:var(--text-secondary);cursor:pointer}
+.extra-row a{color:var(--primary);text-decoration:none}
+.submit-btn{width:100%;padding:10px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:background .2s}
+.submit-btn:hover{background:#5b52e0}
+.other-login{text-align:center;margin-top:14px;font-size:11px;color:var(--text-muted)}
+.other-login span{color:var(--primary);cursor:pointer}
+.required{color:var(--danger);}
+</style>
+</head>
+<body>
+<div class="login-bg">
+<div class="login-card">
+<div class="logo-area">
+<div class="brand">AI Mental Care</div>
+<div class="sub">AI 心理健康关怀平台</div>
+</div>
+<div class="tab-bar">
+<div class="tab active">登录</div>
+<div class="tab">注册</div>
+</div>
+<div class="form-group">
+<label>用户名</label>
+<input class="input-field" placeholder="请输入用户名" value="zhangxiaoming"/>
+</div>
+<div class="form-group">
+<label>密码</label>
+<input class="input-field" type="password" placeholder="请输入密码" value="••••••••"/>
+</div>
+<div class="form-group">
+<label>验证码</label>
+<div class="captcha-row">
+<input class="input-field" placeholder="请输入验证码" style="width:130px;"/>
+<div class="captcha-img">A3K9</div>
+<span class="refresh-link">换一张</span>
+</div>
+</div>
+<div class="extra-row">
+<label><input type="checkbox" checked style="margin-right:4px;"/>记住我</label>
+<a href="#">忘记密码？</a>
+</div>
+<button class="submit-btn">登 录</button>
+<div class="other-login">
+其他方式：<span>微信</span> | <span>手机验证码</span>
+</div>
+</div>
+</div>
+</body>
+</html>

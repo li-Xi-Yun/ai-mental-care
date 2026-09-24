@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI语音对话测试</title>
+  <link rel="stylesheet" href="audio-style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a class="back-btn" href="index.html">← 返回</a>
+    <span class="title">AI语音对话测试</span>
+  </div>
+  <div class="header-right">
+    <button class="interrupt-btn" id="interruptBtn">中断对话</button>
+    <span class="status" id="wsStatus">未连接</span>
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="chat-area">
+    <div class="chat-container" id="chatContainer">
+      <div class="message system">正在连接WebSocket...</div>
+    </div>
+
+    <div class="control-area">
+      <div class="record-status-text" id="recordStatus">点击开始录音</div>
+      <div class="volume-meter">
+        <div class="volume-bar" id="volumeBar"></div>
+      </div>
+      <button class="record-btn" id="recordBtn" disabled>
+        <span id="recordBtnText">🎤</span>
+      </button>
+      <div class="record-hint">按空格键快速开始/停止录音</div>
+    </div>
+  </div>
+</div>
+
+<script src="bigint.js"></script>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="websocket.js"></script>
+<script src="utils.js"></script>
+<script src="app-state.js"></script>
+<script src="audio-recorder.js"></script>
+<script src="audio-websocket.js"></script>
+<script src="audio-chat.js"></script>
+<script>
+  (async function init() {
+    try {
+      await AppState.ws.connect();
+    } catch (error) {
+      AppState.fn.addSystemMessage(`WebSocket连接失败: ${error.message}`);
+    }
+  })();
+</script>
+
+</body>
+</html>

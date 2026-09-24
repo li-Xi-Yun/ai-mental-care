@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI节点详情 - AI Mental Care</title>
+<style>:root{--primary:#6366f1;--primary-hover:#4f46e5;--primary-light:#eef2ff;--primary-subtle:#e0e7ff;--sidebar-bg:#0f172a;--sidebar-hover:rgba(255,255,255,0.06);--sidebar-active:rgba(99,102,241,0.15);--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border-color:#e2e8f0;--border-light:#f1f5f9;--bg-page:#f1f5f9;--bg-card:#ffffff;--bg-content:#f8fafc;--success:#22c55e;--success-bg:#f0fdf4;--warning:#f59e0b;--warning-bg:#fffbeb;--danger:#ef4444;--danger-bg:#fef2f2;--info:#3b82f6;--info-bg:#eff6ff;--purple:#8b5cf6;--purple-bg:#f5f3ff;--radius-sm:6px;--radius:8px;--radius-lg:12px;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);--shadow-md:0 4px 6px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.04);--shadow-lg:0 10px 25px rgba(0,0,0,.06),0 4px 10px rgba(0,0,0,.04);--transition:0.2s ease}*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-page);color:var(--text-primary);line-height:1.5;height:100vh;overflow:hidden}.al{display:flex;height:100vh}.as{width:232px;background:var(--sidebar-bg);color:#cbd5e1;padding:0;flex-shrink:0;display:flex;flex-direction:column;position:relative;overflow:hidden}.as::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,0.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(99,102,241,0.04) 0%,transparent 50%);pointer-events:none}.as-header{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:1}.as-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3)}.as-logo svg{width:20px;height:20px}.as .alo{padding:0;font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:3px;letter-spacing:0.3px}.as .als{padding:0;font-size:11px;color:#64748b;margin-bottom:0;font-weight:400}.as-nav{flex:1;padding:10px 8px;overflow-y:auto;position:relative;z-index:1}.as .mi{padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:var(--radius);margin-bottom:2px;transition:all var(--transition);color:#94a3b8;font-weight:500;position:relative}.as .mi svg{width:17px;height:17px;opacity:0.7;flex-shrink:0;transition:opacity var(--transition)}.as .mi:hover{background:var(--sidebar-hover);color:#e2e8f0}.as .mi:hover svg{opacity:1}.as .mi.active{background:var(--sidebar-active);color:#a5b4fc;border-left:3px solid var(--primary)}.as .mi.active svg{opacity:1;color:#a5b4fc}.as-user{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);position:relative;z-index:1;display:flex;align-items:center;gap:12px}.as-user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:13px;font-weight:600;color:#fff}.as-user-info{flex:1;min-width:0}.as-user-name{font-size:12.5px;font-weight:600;color:#e2e8f0;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.as-user-role{font-size:10.5px;color:#64748b}.as-logout{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);color:#64748b;flex-shrink:0}.as-logout svg{width:15px;height:15px}.as-logout:hover{background:rgba(239,68,68,0.15);color:#f87171}.ar{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}.ah{height:48px;background:var(--bg-card);border-bottom:1px solid var(--border-color);display:flex;align-items:center;padding:0 20px;justify-content:space-between}.ah-title{font-size:14px;font-weight:600;color:var(--text-primary)}.ah-meta{font-size:11px;color:var(--text-muted)}.am{flex:1;background:var(--bg-content);padding:18px;overflow-y:auto}.bp{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--transition);white-space:nowrap;text-decoration:none}.bp svg{width:13px;height:13px}.b1{background:var(--primary);color:#fff;border:none}.b1:hover{background:var(--primary-hover);box-shadow:var(--shadow-sm)}.b2{background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-primary)}.b2:hover{background:#f8fafc;border-color:#cbd5e1}.tg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:500}.tb{background:var(--info-bg);color:var(--info)}.tgn{background:var(--success-bg);color:var(--success)}.to{background:var(--warning-bg);color:var(--warning)}.tr{background:var(--danger-bg);color:var(--danger)}.tv{background:var(--purple-bg);color:var(--purple)}.bc{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:14px;color:var(--text-muted)}.bc a{color:var(--primary);text-decoration:none;font-weight:500}.bc a:hover{text-decoration:underline}.bc .cur{color:var(--text-primary);font-weight:500}.bc .sep{color:var(--text-muted)}.tab-bar{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border-light)}.tab-bar .tab{padding:9px 18px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text-muted);transition:all var(--transition);font-weight:500;display:flex;align-items:center;gap:6px}.tab-bar .tab:hover{color:var(--text-primary)}.tab-bar .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}.tab-bar .tab svg{width:14px;height:14px;opacity:0.6}.tab-bar .tab.active svg{opacity:1}.form-group{margin-bottom:14px}.form-group label{font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:5px}.form-group input,.form-group textarea,.form-group select{width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;color:var(--text-primary);background:var(--bg-card);transition:border-color var(--transition);outline:none}.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--primary)}.form-group textarea{resize:vertical;min-height:80px}</style>
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+<symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+<symbol id="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+<symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+<symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+<symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+<symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+<symbol id="icon-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3c0 1.2.8 2.2 2 2.7V9H9a3 3 0 0 0-3 3v1H4a2 2 0 0 0 0 4h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a3 3 0 0 0 3-3v-1h2v1a3 3 0 0 0 3 3h2v1.3c-1.2.5-2 1.5-2 2.7a3 3 0 0 0 6 0c0-1.2-.8-2.2-2-2.7V17h2a2 2 0 0 0 0-4h-2v-1a3 3 0 0 0-3-3h-2V7.7c1.2-.5 2-1.5 2-2.7a3 3 0 0 0-6 0z"/></symbol>
+<symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+<symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+<symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+<symbol id="icon-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+</svg>
+
+<div class="al">
+<div class="as">
+<div class="as-header">
+<div class="as-logo"><svg><use href="#icon-brain"/></svg></div>
+<div class="alo">AI Mental Care</div><div class="als">心理健康管理平台</div>
+</div>
+<div class="as-nav">
+<div class="mi"><svg><use href="#icon-users"/></svg>用户管理</div>
+<div class="mi"><svg><use href="#icon-shield"/></svg>管理员管理</div>
+<div class="mi"><svg><use href="#icon-folder"/></svg>文件管理</div>
+<div class="mi"><svg><use href="#icon-chart"/></svg>量表管理</div>
+<div class="mi"><svg><use href="#icon-heart"/></svg>症状字典</div>
+<div class="mi active"><svg><use href="#icon-cpu"/></svg>AI节点配置</div>
+<div class="mi"><svg><use href="#icon-zap"/></svg>Skill管理</div>
+<div class="mi"><svg><use href="#icon-user"/></svg>个人资料</div>
+</div>
+<div class="as-user">
+<div class="as-user-avatar">A</div><div class="as-user-info"><div class="as-user-name">Admin</div><div class="as-user-role">超级管理员</div></div>
+<div class="as-logout"><svg><use href="#icon-logout"/></svg></div>
+</div>
+</div>
+<div class="ar">
+<div class="ah"><span class="ah-title">节点详情</span><span class="ah-meta">管理员：admin</span></div>
+<div class="am">
+<div class="bc"><a href="#">AI节点配置</a><span class="sep">›</span><span class="cur">节点1 - 观察评估</span></div>
+<div class="tab-bar">
+<div class="tab active"><svg><use href="#icon-edit"/></svg>节点属性</div>
+<div class="tab"><svg><use href="#icon-settings"/></svg>技能与提示词</div>
+<div class="tab"><svg><use href="#icon-message"/></svg>对话配置</div>
+</div>
+<div class="form-group">
+<label>节点名称</label>
+<input type="text" value="观察评估" />
+</div>
+<div class="form-group">
+<label>节点描述</label>
+<textarea>分析用户输入，评估当前情感状态和心理风险等级</textarea>
+</div>
+<div class="form-group">
+<label>关联Skill</label>
+<select>
+<option value="">选择Skill</option>
+<option value="risk_analysis" selected>risk_analysis</option>
+<option value="empathy_response">empathy_response</option>
+<option value="scale_recommend">scale_recommend</option>
+<option value="plan_generation">plan_generation</option>
+<option value="result_feedback">result_feedback</option>
+<option value="dialogue_summary">dialogue_summary</option>
+<option value="crisis_intervention">crisis_intervention</option>
+</select>
+</div>
+<div class="form-group">
+<label>Character（角色设定）</label>
+<textarea>你是一位富有同理心的专业心理咨询师，善于倾听和观察。你需要通过用户的表达来分析其情感状态，识别潜在的心理问题风险等级。在对话中，你保持温和、耐心和专业的语气。</textarea>
+</div>
+<div class="form-group">
+<label>System Prompt（系统提示词）</label>
+<textarea style="min-height:120px;">You are a kind and professional psychological counselor. Your task is to analyze the user's input and evaluate their current emotional state and psychological risk level. Be attentive to keywords related to anxiety, depression, stress, sleep disorders, and social avoidance. Categorize risk into: low (green), medium (yellow), high (red). Respond with warmth and empathy.</textarea>
+</div>
+<div class="form-group">
+<label>Temperature</label>
+<input type="text" value="0.7" />
+</div>
+<div class="form-group">
+<label>Max Tokens</label>
+<input type="text" value="2048" />
+</div>
+<div class="form-group">
+<label>启用状态</label>
+<select>
+<option value="1">启用</option>
+<option value="0">禁用</option>
+</select>
+</div>
+<div style="display:flex;gap:8px;margin-top:16px;">
+<span class="bp b1">保存修改</span>
+<span class="bp b2">取消</span>
+</div>
+</div>
+</div>
+</div>
+
+</body>
+</html>

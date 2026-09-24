@@ -49,6 +49,11 @@
             <scope>provided</scope> <!-- 运行时由主模块提供 -->
         </dependency>
 
+        <!-- HTTP 连接池：为 Spring AI RestClient 底层提供连接池支持 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
 
 
 

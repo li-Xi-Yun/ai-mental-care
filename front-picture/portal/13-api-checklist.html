@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>API 对照清单 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-nav{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-nav .logo{font-weight:700;color:var(--primary);font-size:15px;letter-spacing:.5px;margin-right:24px}
+.app-nav .spacer{flex:1}
+.app-nav .back{font-size:11px;color:var(--primary);text-decoration:none}
+.app-main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-title{font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.page-desc{font-size:12px;color:var(--text-muted);margin-bottom:20px}
+.table-wrapper{background:var(--card);border-radius:var(--radius);border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow-x:auto;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px}
+th{background:#f9f9fb;padding:10px 12px;text-align:left;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);font-size:10px;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border-light);color:var(--text)}
+tr:hover td{background:#fafafa}
+tr.section td{background:#fafafa;font-weight:600;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-nav">
+<span class="logo">AI Mental Care</span>
+<span class="spacer"></span>
+<a class="back" href="index.html">← 返回总览</a>
+</div>
+<div class="app-main">
+<div class="page-title">API 参数与返回值完整对照清单</div>
+<div class="page-desc">对照所有 controller 接口，检查页面是否完整展示了每个接口的请求参数（DTO）和返回值（VO）的所有字段</div>
+<div class="table-wrapper">
+<table>
+<tr><th>#</th><th>接口路径</th><th>方法</th><th>请求参数（DTO）</th><th>返回值（VO）</th><th>页面</th><th>状态</th></tr>
+<tr><td>1</td><td>/user/account/login</td><td>POST</td><td>LoginUserDTO: username, password, code, key</td><td>LoginResultVO: token, roles</td><td>页面2</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>2</td><td>/user/account/register</td><td>POST</td><td>RegisterUserDTO: username, password, code, key</td><td>void</td><td>页面2</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>3</td><td>/user/account/logout</td><td>POST</td><td>无</td><td>void</td><td>页面2/11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>4</td><td>/user/account</td><td>PATCH</td><td>PasswordDTO: originalPassword, password, email, code</td><td>void</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">会话 & 对话</td></tr>
+<tr><td>5</td><td>/user/conversation/list</td><td>POST</td><td>PageBaseDTO: pageNum, pageSize</td><td>PageResult&lt;ConversationVO&gt;: id, name, createdTime, updatedTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>6</td><td>/user/conversation/{id}/name</td><td>PUT</td><td>ConversationInfoDTO: name</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>7</td><td>/user/conversation/{id}</td><td>DELETE</td><td>PathVariable: conversationId</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>8</td><td>/user/conversation/ai-chat/user-message</td><td>POST</td><td>UserMessageSendDTO: message, conversationId(可选)</td><td>UserMessageSendVO: conversationId, currentRound</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>9</td><td>/user/conversaion/dialogue/{id}/memory</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;ConversationMemoryVO&gt;: id, content, type, roundNum, createdTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">情绪分析</td></tr>
+<tr><td>10</td><td>/user/conversation/emotion-analysis/list/{id}</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;EmotionAnalysisVO&gt;: id, roundNum, analysisContent, emotionLabel, emotionSubLabel, emotionConfidence, emotionIntensity, emotionTrend, pScore, aScore, dScore, negativeEmotionRatio, neutralEmotionRatio, positiveEmotionRatio, createdTime</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>11</td><td>/user/conversation/emotion-analysis/detail/{id}</td><td>GET</td><td>PathVariable: analysisId</td><td>EmotionAnalysisDetailVO: modelContent, userContent, thinkContent</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">语音</td></tr>
+<tr><td>12</td><td>/user/conversation/audio/init</td><td>POST</td><td>RequestParam: conversationId(可选)</td><td>AudioSessionInitVO: conversationId</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>13</td><td>/user/conversation/audio/{id}/end</td><td>DELETE</td><td>PathVariable: conversationId</td><td>void</td><td>页面3</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">心理评估</td></tr>
+<tr><td>14</td><td>/user/conversation/emotion-diagnosis/list</td><td>POST</td><td>EmotionDiagnosisQueryDTO: pageNum, pageSize, conversationName(可选)</td><td>PageResult&lt;DiagnosisConversationVO&gt;: conversationId, conversationName, latestRoundNum, diagnosisCount, diagnosisUpdatedTime, conversationCreatedTime</td><td>页面4</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>15</td><td>/user/conversation/emotion-diagnosis/list/{conversationId}</td><td>POST</td><td>PageBaseDTO</td><td>PageResult&lt;EmotionDiagnosisListVO&gt;: id, conversationId, roundNum, createdTime, updatedTime</td><td>页面5</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>16</td><td>/user/conversation/emotion-diagnosis/detail/{diagnosisId}</td><td>GET</td><td>PathVariable: diagnosisId</td><td>EmotionDiagnosisVO: 47字段（详见页面6完整清单）</td><td>页面6</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>17</td><td>/user/conversation/emotion-diagnosis/{diagnosisId}/feedback</td><td>PUT</td><td>EmotionDiagnosisFeedbackDTO: diagnosisScore(1-5), feedbackContent(≤200), agreeRiskJudge(0/1), agreeSuggestionSelf(0/1), agreeSuggestionSocial(0/1), agreeSuggestionProfessional(0/1), useSuggestion(0/1/2)</td><td>void</td><td>页面6</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">量表</td></tr>
+<tr><td>18</td><td>/user/scale/category</td><td>GET</td><td>无</td><td>List&lt;ScaleCategoryVO&gt;: id, categoryName, useCount</td><td>页面7</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>19</td><td>/user/scale/list</td><td>GET</td><td>Query: pageNum, pageSize, scaleCategoryId(可选)</td><td>PageResult&lt;ScaleVO&gt;: id, scaleName, description, questionCount, scaleCategoryId, status, scoreRule</td><td>页面7</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>20</td><td>/user/scale/questions/list</td><td>GET</td><td>Query: scaleId, pageNum, pageSize</td><td>PageResult&lt;ScaleQuestionVO&gt;: id, title, sort, scoreType, optionList[ScaleOptionVO{id, optionText, score, sort}]</td><td>页面8</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>21</td><td>/user/scale/user</td><td>POST</td><td>ScaleUserAnswerDTO: scaleId, answers:[AnswerItemDTO{questionId, optionId}]</td><td>void</td><td>页面8</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>22</td><td>/user/scale/user/records</td><td>GET</td><td>Query: pageNum, pageSize</td><td>PageResult&lt;ScaleUserRecordVO&gt;: id, userId, scaleId, scaleName, totalScore, resultText, createdTime</td><td>页面9</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>23</td><td>/user/scale/user/records/{recordId}/details</td><td>GET</td><td>Query: pageNum, pageSize</td><td>PageResult&lt;ScaleUserAnswerVO&gt;: id, recordId, questionId, questionTitle, optionId, optionText, createdTime</td><td>页面10</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">用户资料</td></tr>
+<tr><td>24</td><td>/user/profile/profile</td><td>GET</td><td>无（从token获取用户ID）</td><td>UserProfileVO: id, username, avatar, mobile, email, introduction, gender, location</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>25</td><td>/user/profile/profileUpdate</td><td>PUT</td><td>UserProfileDTO: username, avatar, phone, email, introduction, gender, location</td><td>void</td><td>页面11</td><td><span class="tg tgn">✓</span></td></tr>
+<tr class="section"><td colspan="7">公共接口</td></tr>
+<tr><td>26</td><td>/common/upload/image</td><td>POST</td><td>MultipartFile file</td><td>String (图片URL)</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>27</td><td>/common/verification/code</td><td>POST</td><td>无</td><td>Map{image(base64), key}</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+<tr><td>28</td><td>/common/verification/email</td><td>POST</td><td>String email</td><td>void</td><td>页面12</td><td><span class="tg tgn">✓</span></td></tr>
+</table>
+</div>
+<div style="text-align:center;font-size:15px;font-weight:700;color:var(--success);margin-top:16px;">
+✅ 全部 28 个接口的参数与返回值已在页面中完整展示
+</div>
+</div>
+</div>
+</body>
+</html>

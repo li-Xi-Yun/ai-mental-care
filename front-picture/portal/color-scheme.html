@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>配色方案 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-nav{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-nav .logo{font-weight:700;color:var(--primary);font-size:15px;letter-spacing:.5px;margin-right:24px}
+.app-nav .spacer{flex:1}
+.app-nav .back{font-size:11px;color:var(--primary);text-decoration:none}
+.app-main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-title{font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.page-desc{font-size:12px;color:var(--text-muted);margin-bottom:24px}
+.color-section{background:var(--card);border-radius:var(--radius);padding:28px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);margin-bottom:20px}
+.color-section h3{font-size:16px;font-weight:600;margin-bottom:16px;color:#1a1a2e}
+.color-row{display:flex;gap:24px;flex-wrap:wrap}
+.color-item{text-align:center;width:100px}
+.color-swatch{width:80px;height:80px;border-radius:var(--radius);margin:0 auto 8px;box-shadow:var(--shadow-sm)}
+.color-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.color-value{font-size:10px;color:var(--text-muted);font-family:monospace}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-nav">
+<span class="logo">AI Mental Care</span>
+<span class="spacer"></span>
+<a class="back" href="index.html">← 返回总览</a>
+</div>
+<div class="app-main">
+<div class="page-title">🎨 配色方案</div>
+<div class="page-desc">以心理健康为主题，采用柔和、温暖、安全的紫蓝色调</div>
+
+<div class="color-section">
+<h3>主色调（Portal 用户端）</h3>
+<div class="color-row">
+<div class="color-item">
+<div class="color-swatch" style="background:var(--primary);"></div>
+<div class="color-label">主色</div>
+<div class="color-value">#6c63ff</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--primary-dark);"></div>
+<div class="color-label">深色</div>
+<div class="color-value">#3f3d9e</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--primary-light);"></div>
+<div class="color-label">浅底</div>
+<div class="color-value">#f0eeff</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--primary-lighter);"></div>
+<div class="color-label">浅色</div>
+<div class="color-value">#e8e6ff</div>
+</div>
+</div>
+</div>
+
+<div class="color-section">
+<h3>功能色</h3>
+<div class="color-row">
+<div class="color-item">
+<div class="color-swatch" style="background:var(--success);"></div>
+<div class="color-label">成功</div>
+<div class="color-value">#52c41a</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--warning);"></div>
+<div class="color-label">警告</div>
+<div class="color-value">#fa8c16</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--danger);"></div>
+<div class="color-label">危险</div>
+<div class="color-value">#ff4d4f</div>
+</div>
+<div class="color-item">
+<div class="color-swatch" style="background:var(--info);"></div>
+<div class="color-label">信息</div>
+<div class="color-value">#1890ff</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

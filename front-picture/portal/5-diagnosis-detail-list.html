@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>诊断详情列表 - AI Mental Care</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-nav{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-nav .logo{font-weight:700;color:var(--primary);font-size:15px;letter-spacing:.5px;margin-right:24px}
+.app-nav .nav-item{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;color:var(--text-secondary);transition:.2s}
+.app-nav .nav-item:hover{background:rgba(108,99,255,.08);color:var(--primary)}
+.app-nav .nav-item.active{background:var(--primary);color:#fff;font-weight:500}
+.app-nav .spacer{flex:1}
+.app-nav .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;font-weight:600}
+.app-main{flex:1;overflow-y:auto;padding:20px 24px;background:var(--bg)}
+.page-header{margin-bottom:16px}
+.page-header .title{font-size:18px;font-weight:700;color:#1a1a2e}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-bottom:8px}
+.breadcrumb a{color:var(--primary);text-decoration:none;cursor:pointer}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb .cur{color:var(--text);font-weight:500}
+.table-wrapper{background:var(--card);border-radius:var(--radius);border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f9f9fb;padding:11px 14px;text-align:left;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);font-size:11px;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--border-light);color:var(--text);vertical-align:middle}
+tr:hover td{background:#fafafa}
+.link{color:var(--primary);font-size:11px;cursor:pointer;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-nav">
+<span class="logo">AI Mental Care</span>
+<span class="nav-item">首页</span>
+<span class="nav-item">AI对话</span>
+<span class="nav-item active">心理评估</span>
+<span class="nav-item">量表测评</span>
+<span class="nav-item">个人中心</span>
+<span class="spacer"></span>
+<div class="user-avatar">U</div>
+</div>
+<div class="app-main">
+<div class="page-header">
+<div class="breadcrumb">
+<a href="4-diagnosis-list.html">心理诊断</a><span>›</span><span class="cur">心情困扰与工作压力</span>
+</div>
+<span class="title">心情困扰与工作压力 — 诊断记录</span>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>诊断ID</th>
+<th>会话ID</th>
+<th>轮次</th>
+<th>创建时间</th>
+<th>更新时间</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#6</td>
+<td>1001</td>
+<td>第6轮</td>
+<td>2026-09-08 14:30</td>
+<td>2026-09-08 14:30</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+<tr>
+<td>#5</td>
+<td>1001</td>
+<td>第5轮</td>
+<td>2026-09-07 11:20</td>
+<td>2026-09-07 11:20</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+<tr>
+<td>#4</td>
+<td>1001</td>
+<td>第4轮</td>
+<td>2026-09-06 09:15</td>
+<td>2026-09-06 09:15</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+<tr>
+<td>#3</td>
+<td>1001</td>
+<td>第3轮</td>
+<td>2026-09-05 16:40</td>
+<td>2026-09-05 16:40</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+<tr>
+<td>#2</td>
+<td>1001</td>
+<td>第2轮</td>
+<td>2026-09-03 20:00</td>
+<td>2026-09-03 20:00</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+<tr>
+<td>#1</td>
+<td>1001</td>
+<td>第1轮</td>
+<td>2026-09-01 14:30</td>
+<td>2026-09-01 14:30</td>
+<td><span class="link">查看详情 →</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pgn" style="justify-content:space-between;margin-top:14px;">
+<span>共 6 条</span>
+<div style="display:flex;gap:4px;align-items:center;"><span class="pb a">1</span></div>
+</div>
+</div>
+</div>
+</body>
+</html>

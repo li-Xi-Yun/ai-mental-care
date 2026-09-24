@@ -72,6 +72,51 @@ class ChatWebSocket {
     return path;
   }
 
+  subscribeAudioReply(conversationId, onMessage) {
+    const path = CONFIG.websocket.getAudioReplyPath(conversationId);
+    console.log('订阅音频文字流:', path);
+
+    if (this.subscriptions[path]) {
+      this.subscriptions[path].unsubscribe();
+    }
+
+    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+      if (onMessage) onMessage(message.body);
+    });
+
+    return path;
+  }
+
+  subscribeAudioBinary(conversationId, onMessage) {
+    const path = CONFIG.websocket.getAudioBinaryPath(conversationId);
+    console.log('订阅音频二进制流:', path);
+
+    if (this.subscriptions[path]) {
+      this.subscriptions[path].unsubscribe();
+    }
+
+    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+      if (onMessage) onMessage(message);
+    });
+
+    return path;
+  }
+
+  subscribeAsrIntermediate(conversationId, onMessage) {
+    const path = CONFIG.websocket.getAsrIntermediatePath(conversationId);
+    console.log('订阅ASR中间结果:', path);
+
+    if (this.subscriptions[path]) {
+      this.subscriptions[path].unsubscribe();
+    }
+
+    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+      if (onMessage) onMessage(message.body);
+    });
+
+    return path;
+  }
+
   unsubscribeAll() {
     Object.values(this.subscriptions).forEach(sub => {
       if (sub) sub.unsubscribe();
@@ -86,5 +131,14 @@ class ChatWebSocket {
       this.connected = false;
       console.log('WebSocket已断开');
     }
+  }
+
+  publish(destination, body) {
+    if (!this.client || !this.connected) {
+      console.error('WebSocket未连接，无法发送消息');
+      return false;
+    }
+    this.client.publish({ destination, body: typeof body === 'string' ? body : JSON.stringify(body) });
+    return true;
   }
 }

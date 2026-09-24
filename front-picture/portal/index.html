@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI Mental Care - 前台页面设计图 - 总览</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+body{height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+.app-header{height:64px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;flex-shrink:0}
+.app-header .brand{font-weight:800;color:var(--primary);font-size:17px;letter-spacing:.5px}
+.app-header .subtitle{font-size:11px;color:var(--text-muted);margin-left:16px}
+.app-header .spacer{flex:1}
+.app-header .count{font-size:11px;color:var(--text-muted);background:var(--bg);padding:4px 12px;border-radius:12px}
+.app-main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.sec{margin-bottom:24px}
+.sec-title{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:12px}
+.sec-desc{font-size:12px;color:var(--text-muted);margin-bottom:16px}
+.nav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.nav-grid.col2{grid-template-columns:repeat(2,1fr)}
+.nav-card{background:var(--card);border-radius:var(--radius);padding:18px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;text-decoration:none;color:var(--text);display:block}
+.nav-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.nav-card .num{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:6px}
+.nav-card .title{font-size:14px;font-weight:600;margin-bottom:3px}
+.nav-card .route{font-size:10px;color:var(--text-muted)}
+.nav-card .desc{font-size:10px;color:var(--text-secondary);margin-top:5px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="app-header">
+<span class="brand">AI Mental Care</span>
+<span class="subtitle">前台（用户端）页面设计图 · Vue 3 + Element Plus + Tailwind CSS · 设计阶段</span>
+<span class="spacer"></span>
+<span class="count">共 13 个界面</span>
+</div>
+<div class="app-main">
+<div class="sec">
+<div class="sec-title">📋 前台页面总览</div>
+<div class="sec-desc">共 13 个页面/组件/弹窗，全面覆盖 /server/controller/user 和 /server/controller/common 下所有接口的参数与返回值。点击下方卡片可查看各页面设计详情。</div>
+</div>
+
+<div class="sec">
+<div class="sec-title">📄 页面列表</div>
+<div class="nav-grid">
+<a class="nav-card" href="1-home.html"><div class="num">1</div><div class="title">首页</div><div class="route">/</div><div class="desc">平台入口，功能卡片展示</div></a>
+<a class="nav-card" href="2-login-dialog.html"><div class="num">2</div><div class="title">登录/注册弹窗</div><div class="route">Dialog 弹窗</div><div class="desc">Tab切换，含验证码</div></a>
+<a class="nav-card" href="3-conversation.html"><div class="num">3</div><div class="title">AI 对话页</div><div class="route">/conversation</div><div class="desc">三栏布局，会话+聊天+情绪</div></a>
+<a class="nav-card" href="4-diagnosis-list.html"><div class="num">4</div><div class="title">心理评估 - 会话列表</div><div class="route">/diagnosis</div><div class="desc">分页搜索会话评估</div></a>
+<a class="nav-card" href="5-diagnosis-detail-list.html"><div class="num">5</div><div class="title">心理评估 - 评估列表</div><div class="route">/diagnosis/:sessionId</div><div class="desc">某会话下的评估记录</div></a>
+<a class="nav-card" href="6-diagnosis-detail.html"><div class="num">6</div><div class="title">心理评估 - 详情页</div><div class="route">/diagnosis/:sessionId/:diagnosisId</div><div class="desc">47字段 + 5种图表(环形/折线/柱状/雷达)</div></a>
+<a class="nav-card" href="7-scale-list.html"><div class="num">7</div><div class="title">量表测评 - 展示页</div><div class="route">/scale</div><div class="desc">分类筛选量表列表</div></a>
+<a class="nav-card" href="8-scale-answer.html"><div class="num">8</div><div class="title">量表测评 - 答题页</div><div class="route">/scale/:scaleId/answer</div><div class="desc">步骤式逐题作答</div></a>
+<a class="nav-card" href="9-scale-records.html"><div class="num">9</div><div class="title">量表测评 - 记录页</div><div class="route">/scale/records</div><div class="desc">个人测评记录 + SAS趋势图</div></a>
+<a class="nav-card" href="10-scale-record-detail.html"><div class="num">10</div><div class="title">量表测评 - 答题明细</div><div class="route">/scale/records/:recordId</div><div class="desc">单次测评完整答题</div></a>
+<a class="nav-card" href="11-profile.html"><div class="num">11</div><div class="title">个人中心</div><div class="route">/profile</div><div class="desc">资料编辑+密码修改</div></a>
+<a class="nav-card" href="12-common-api.html"><div class="num">12</div><div class="title">Common 公共接口</div><div class="route">/common/*</div><div class="desc">验证码+上传接口</div></a>
+</div>
+</div>
+
+<div class="sec">
+<div class="sec-title">🔧 辅助页面</div>
+<div class="nav-grid col2">
+<a class="nav-card" href="13-api-checklist.html"><div class="num">13</div><div class="title">API 对照清单</div><div class="route">Checklist</div><div class="desc">28个接口完整对照</div></a>
+<a class="nav-card" href="navigation.html"><div class="num">🗺️</div><div class="title">页面导航关系图</div><div class="route">Navigation Map</div><div class="desc">13个界面之间的跳转关系</div></a>
+<a class="nav-card" href="color-scheme.html" style="grid-column:span 2"><div class="num">🎨</div><div class="title">配色方案</div><div class="route">Color Scheme</div><div class="desc">柔和、温暖、安全的紫蓝色调</div></a>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

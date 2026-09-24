@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI Mental Care - 后台页面设计图 - 总览</title>
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #eef2ff;
+  --primary-lighter: #e0e7ff;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --bg: #f1f5f9;
+  --card: #fff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  --tag-bg-blue: #eff6ff;
+  --tag-text-blue: #3b82f6;
+  --tag-bg-green: #f0fdf4;
+  --tag-text-green: #22c55e;
+  --tag-bg-orange: #fffbeb;
+  --tag-text-orange: #f59e0b;
+  --tag-bg-red: #fef2f2;
+  --tag-text-red: #ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);padding-bottom:60px;line-height:1.6}
+
+/* 顶部标题区 */
+.pt{text-align:center;padding:48px 0 8px;font-size:34px;font-weight:800;color:#0f172a;letter-spacing:-0.5px}
+.ps{text-align:center;padding:0 0 32px;font-size:16px;color:var(--text-secondary)}
+.ps span{background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:12px;font-size:13px;font-weight:500;margin:0 4px}
+
+/* 退出按钮 */
+.exit-bar{text-align:right;max-width:1640px;margin:0 auto;padding:12px 32px 0}
+.exit-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:all .2s}
+.exit-btn:hover{background:#fef2f2;border-color:#fca5a5;color:var(--danger)}
+.exit-btn svg{width:15px;height:15px}
+
+/* 分区 */
+.sec{margin:0 auto 50px;max-width:1640px;padding:0 32px}
+.st{font-size:24px;font-weight:700;color:#0f172a;margin-bottom:6px;border-left:5px solid var(--primary);padding-left:14px;display:flex;align-items:center;gap:10px}
+.st .st-num{background:var(--primary);color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sd{font-size:14px;color:var(--text-muted);margin-bottom:24px;padding-left:19px}
+
+/* 导航卡片网格 */
+.nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.nav-card{background:var(--card);border-radius:var(--radius-sm);padding:18px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;text-decoration:none;color:var(--text);display:block}
+.nav-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(-1px)}
+.nav-card .num{font-size:20px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.nav-card .title{font-size:14px;font-weight:600;margin-bottom:2px}
+.nav-card .route{font-size:10px;color:var(--text-muted)}
+.nav-card .desc{font-size:10px;color:var(--text-secondary);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="exit-bar">
+  <a class="exit-btn" href="login.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    退出 / 返回登录
+  </a>
+</div>
+
+<div class="pt">AI Mental Care 后台（管理员端）页面设计图</div>
+<div class="ps">Vue 3 + Element Plus + Tailwind CSS | 设计阶段 - 静态页面方案 ｜ <span>共 13 个界面</span></div>
+
+<div class="sec">
+<div class="st"><span class="st-num">📋</span>后台页面总览</div>
+<div class="sd">共 13 个页面，全面覆盖 /server/controller/admin 下所有接口的参数与返回值。点击下方卡片可查看各页面设计详情。</div>
+</div>
+
+<div class="sec">
+<div class="nav-grid">
+<a class="nav-card" href="login.html"><div class="num">1</div><div class="title">管理员登录</div><div class="route">/admin/login</div><div class="desc">管理后台登录认证页面</div></a>
+<a class="nav-card" href="admin.html"><div class="num">2</div><div class="title">管理员管理</div><div class="route">/admin/admins</div><div class="desc">管理员账号增删改查</div></a>
+<a class="nav-card" href="user.html"><div class="num">3</div><div class="title">用户管理</div><div class="route">/admin/users</div><div class="desc">用户信息管理列表</div></a>
+<a class="nav-card" href="file.html"><div class="num">4</div><div class="title">文件管理</div><div class="route">/admin/files</div><div class="desc">文件上传与管理</div></a>
+<a class="nav-card" href="file-vector.html"><div class="num">5</div><div class="title">文件向量管理</div><div class="route">/admin/files/vectors</div><div class="desc">文件向量化与检索</div></a>
+<a class="nav-card" href="scale.html"><div class="num">6</div><div class="title">量表管理</div><div class="route">/admin/scales</div><div class="desc">心理量表列表管理</div></a>
+<a class="nav-card" href="scale-detail.html"><div class="num">7</div><div class="title">量表详情</div><div class="route">/admin/scales/:id</div><div class="desc">量表题目与配置</div></a>
+<a class="nav-card" href="symptom.html"><div class="num">8</div><div class="title">症状字典</div><div class="route">/admin/symptoms</div><div class="desc">心理症状词典管理</div></a>
+<a class="nav-card" href="ai-node.html"><div class="num">9</div><div class="title">AI节点配置</div><div class="route">/admin/ai-nodes</div><div class="desc">AI节点配置管理</div></a>
+<a class="nav-card" href="ai-node-detail.html"><div class="num">10</div><div class="title">AI节点详情</div><div class="route">/admin/ai-nodes/:id</div><div class="desc">节点详情与参数</div></a>
+<a class="nav-card" href="skill.html"><div class="num">11</div><div class="title">Skill管理</div><div class="route">/admin/skills</div><div class="desc">AI Skill管理配置</div></a>
+<a class="nav-card" href="profile.html"><div class="num">12</div><div class="title">个人资料</div><div class="route">/admin/profile</div><div class="desc">管理员个人资料设置</div></a>
+<a class="nav-card" href="log-flow.html"><div class="num">13</div><div class="title">链路观测</div><div class="route">/admin/log/flows</div><div class="desc">AI全链路调用追踪与观测</div></a>
+</div>
+</div>
+
+</body>
+</html>
