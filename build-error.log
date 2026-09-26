@@ -1,0 +1,46 @@
+﻿[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------------< org.lixiyun:pojo >--------------------------
+[INFO] Building pojo 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ pojo ---
+[INFO] Deleting D:\JavaProject\ai_mental_care\pojo\target
+[INFO] 
+[INFO] --- flatten:1.6.0:clean (flatten.clean) @ pojo ---
+[INFO] Deleting D:\JavaProject\ai_mental_care\pojo\.flattened-pom.xml
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ pojo ---
+[INFO] skip non existing resourceDirectory D:\JavaProject\ai_mental_care\pojo\src\main\resources
+[INFO] skip non existing resourceDirectory D:\JavaProject\ai_mental_care\pojo\src\main\resources
+[INFO] 
+[INFO] --- flatten:1.6.0:flatten (flatten) @ pojo ---
+[INFO] Generating flattened POM of project org.lixiyun:pojo:jar:1.0.0...
+[INFO] 
+[INFO] --- compiler:3.16.0:compile (default-compile) @ pojo ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 151 source files with javac [debug parameters release 25] to target\classes
+mvn : WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+所在位置 行:1 字符: 1
++ mvn clean compile -pl pojo -rf :pojo -e 2>&1 | Out-File -FilePath D:\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A term...has been called:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit
+WARNING: Please consider reporting this to the maintainers of class lombok.permit.Permit
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[WARNING] /D:/JavaProject/ai_mental_care/pojo/src/main/java/org/lixiyun/pojo/entity/Admin.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /D:/JavaProject/ai_mental_care/pojo/src/main/java/org/lixiyun/pojo/dto/admin/config/AdminAiNodeConfigQueryDTO.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /D:/JavaProject/ai_mental_care/pojo/src/main/java/org/lixiyun/pojo/dto/admin/symptom/AdminSymptomDictQueryDTO.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /D:/JavaProject/ai_mental_care/pojo/src/main/java/org/lixiyun/pojo/dto/admin/config/AiNodeHistoryQueryDTO.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /D:/JavaProject/ai_mental_care/pojo/src/main/java/org/lixiyun/pojo/entity/User.java:[22,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.071 s
+[INFO] Finished at: 2026-09-25T18:37:48+08:00
+[INFO] ------------------------------------------------------------------------

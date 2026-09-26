@@ -102,6 +102,21 @@ class ChatWebSocket {
     return path;
   }
 
+  subscribeAudioTest(conversationId, onMessage) {
+    const path = CONFIG.websocket.getAudioTestPath(conversationId);
+    console.log('订阅测试音频流:', path);
+
+    if (this.subscriptions[path]) {
+      this.subscriptions[path].unsubscribe();
+    }
+
+    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+      if (onMessage) onMessage(message);
+    });
+
+    return path;
+  }
+
   subscribeAsrIntermediate(conversationId, onMessage) {
     const path = CONFIG.websocket.getAsrIntermediatePath(conversationId);
     console.log('订阅ASR中间结果:', path);

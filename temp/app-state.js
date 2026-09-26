@@ -6,6 +6,10 @@ const AppState = {
   isSending: false,
   wsSubscriptions: {},
 
+  autoTestEnabled: false,
+  playSimulatedVoice: false,
+  autoTestRunning: false,
+
   chatPageNum: 1,
   chatPageSize: 20,
   chatTotalPages: 1,

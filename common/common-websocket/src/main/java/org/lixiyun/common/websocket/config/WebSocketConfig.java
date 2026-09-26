@@ -5,14 +5,15 @@ import org.lixiyun.common.websocket.interceptor.WebSocketInboundInterceptor;
 import org.lixiyun.common.websocket.interceptor.WebSocketOutboundInterceptor;
 import org.lixiyun.common.websocket.properties.WebSocketProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -24,22 +25,28 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableConfigurationProperties(WebSocketProperties.class)
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private TaskScheduler messageBrokerTaskScheduler;
+    private ThreadPoolTaskScheduler messageBrokerTaskScheduler;
     private WebSocketProperties webSocketProperties;
 //    private AuthHandshakeInterceptor authHandshakeInterceptor;
     private WebSocketInboundInterceptor webSocketInboundInterceptor;
     private WebSocketOutboundInterceptor webSocketOutboundInterceptor;
+    private ThreadPoolTaskExecutor webSocketInboundExecutor;
+    private ThreadPoolTaskExecutor webSocketOutboundExecutor;
     @Autowired
-    public void setMessageBrokerTaskScheduler(@Lazy TaskScheduler taskScheduler,
+    public void setMessageBrokerTaskScheduler(@Qualifier("webSocketTaskScheduler") ThreadPoolTaskScheduler taskScheduler,
                                               WebSocketProperties webSocketProperties,
 //                                              AuthHandshakeInterceptor authHandshakeInterceptor,
                                               WebSocketOutboundInterceptor webSocketOutboundInterceptor,
-                                              WebSocketInboundInterceptor webSocketInboundInterceptor) {
+                                              WebSocketInboundInterceptor webSocketInboundInterceptor,
+                                              @Qualifier("webSocketInboundExecutor") ThreadPoolTaskExecutor webSocketInboundExecutor,
+                                              @Qualifier("webSocketOutboundExecutor") ThreadPoolTaskExecutor webSocketOutboundExecutor) {
         this.messageBrokerTaskScheduler = taskScheduler;
         this.webSocketProperties = webSocketProperties;
 //        this.authHandshakeInterceptor = authHandshakeInterceptor;
         this.webSocketInboundInterceptor = webSocketInboundInterceptor;
         this.webSocketOutboundInterceptor = webSocketOutboundInterceptor;
+        this.webSocketInboundExecutor = webSocketInboundExecutor;
+        this.webSocketOutboundExecutor = webSocketOutboundExecutor;
     }
 
     @Override
@@ -67,13 +74,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // 所有客户端请求都会先经过 jwtChannelInterceptor 做身份校验
-        registration.interceptors(webSocketInboundInterceptor);
+        registration.interceptors(webSocketInboundInterceptor)
+                .taskExecutor(webSocketInboundExecutor);
     }
 
     @Override
     public void configureClientOutboundChannel(ChannelRegistration registration) {
         // 拦截从服务端推送到客户端的消息
-        registration.interceptors(webSocketOutboundInterceptor);
+        registration.interceptors(webSocketOutboundInterceptor)
+                .taskExecutor(webSocketOutboundExecutor);
     }
 }

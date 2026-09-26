@@ -2,4 +2,3 @@ org.lixiyun.common.web.config.CaptchaConfig
 org.lixiyun.common.web.config.FilterConfig
 org.lixiyun.common.web.config.I18nConfig
 org.lixiyun.common.web.config.ResourcesConfig
-org.lixiyun.common.web.config.UndertowConfig

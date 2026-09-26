@@ -147,4 +147,21 @@ class ChatAPI {
       throw error;
     }
   }
+
+  static async audioStreamTest(conversationId, message) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.audioTestStream}`;
+    const body = { conversationId };
+    if (message !== null && message !== undefined && message !== '') {
+      body.message = message;
+    }
+    try {
+      return await ChatAPI._request(url, {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      console.error('语音测试流失败:', error);
+      throw error;
+    }
+  }
 }

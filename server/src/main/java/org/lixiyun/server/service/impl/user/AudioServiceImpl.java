@@ -3,6 +3,7 @@ package org.lixiyun.server.service.impl.user;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.tts.api.TtsResultCallback;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -263,8 +264,8 @@ public class AudioServiceImpl implements AudioService {
      * @param userId         用户ID
      * @return TTS结果回调接口实现
      */
-    private TtsConnectionManager.TtsResultCallback createTtsCallback(Long conversationId, Long userId) {
-        return new TtsConnectionManager.TtsResultCallback() {
+    private TtsResultCallback createTtsCallback(Long conversationId, Long userId) {
+        return new TtsResultCallback() {
             @Override
             public void onAudioData(byte[] audioData) {
                 log.debug("TTS回调-音频数据推送，会话ID：{}，数据长度：{}字节", conversationId, audioData.length);

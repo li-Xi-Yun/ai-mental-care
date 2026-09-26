@@ -21,7 +21,9 @@ const CONFIG = {
     conversationTestSend: '/temp/conversation-test/send',
 
     audioInit: '/user/conversation/audio/init',
-    audioEnd: '/user/conversation/audio'
+    audioEnd: '/user/conversation/audio',
+
+    audioTestStream: '/temp/audio-conversation-test/stream'
   },
 
   auth: {
@@ -38,6 +40,7 @@ const CONFIG = {
 
     audioReply: '/audio/reply',
     audioBinary: '/audio/binary',
+    audioTest: '/audio/test',
     asrIntermediate: '/audio/asr/intermediate',
 
     getSubscribePath(subDestination, conversationId) {
@@ -58,6 +61,10 @@ const CONFIG = {
 
     getAudioBinaryPath(conversationId) {
       return this.getSubscribePath(this.audioBinary, conversationId);
+    },
+
+    getAudioTestPath(conversationId) {
+      return this.getSubscribePath(this.audioTest, conversationId);
     },
 
     getAsrIntermediatePath(conversationId) {

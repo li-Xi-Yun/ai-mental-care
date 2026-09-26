@@ -413,26 +413,51 @@ asr:
       token-refresh-hours: ${asr.nls.token-refresh-hours}
 
 tts:
-  nls:
-    app-key: ${tts.nls.app-key}
-    access-key-id: ${tts.nls.access-key-id}
-    access-key-secret: ${tts.nls.access-key-secret}
+  # 厂商选择：alibaba_nls / volcengine
+  provider: ${tts.provider:volcengine}
+
+  # ==================== 阿里云NLS配置 ====================
+  # provider=alibaba_nls 时生效（@ConditionalOnProperty）
+  alibaba:
+    app-key: ${tts.alibaba.app-key:}
+    access-key-id: ${tts.alibaba.access-key-id:}
+    access-key-secret: ${tts.alibaba.access-key-secret:}
     # 网关地址
-    gateway-url: ${tts.nls.gateway-url}
-    # Token刷新间隔(小时)
-    token-refresh-hours: ${tts.nls.token-refresh-hours}
-    # 发音人
-    voice: ${tts.nls.voice}
-    # 音量
-    volume: ${tts.nls.volume}
-    # 语调
-    pitch-rate: ${tts.nls.pitch-rate}
-    # 语速
-    speech-rate: ${tts.nls.speech-rate}
-    # 输出音频格式, 支持WAV和MP3格式
-    format: ${tts.nls.format}
-    # 采样率，支持8K、16K、24K、48K采样率
-    sample-rate: ${tts.nls.sample-rate}
+    gateway-url: ${tts.alibaba.gateway-url:}
+    # Token刷新间隔(小时)，默认23小时
+    token-refresh-hours: ${tts.alibaba.token-refresh-hours:23}
+    # 发音人，默认siyue
+    voice: ${tts.alibaba.voice:siyue}
+    # 音量，取值范围[0,100]，默认50
+    volume: ${tts.alibaba.volume:50}
+    # 语调，取值范围[-500,500]，默认0
+    pitch-rate: ${tts.alibaba.pitch-rate:0}
+    # 语速，取值范围[-500,500]，默认0
+    speech-rate: ${tts.alibaba.speech-rate:0}
+    # 输出音频格式，支持WAV和MP3
+    format: ${tts.alibaba.format:WAV}
+    # 采样率，支持8000/16000/24000/48000
+    sample-rate: ${tts.alibaba.sample-rate:16000}
+
+  # ==================== 火山引擎TTS配置 ====================
+  # provider=volcengine 时生效（@ConditionalOnProperty）
+  volcengine:
+    # API Key（新版控制台鉴权）
+    api-key: ${tts.volcengine.api-key:}
+    # 资源ID，决定模型版本和计费方式，如 seed-tts-2.0
+    resource-id: ${tts.volcengine.resource-id:}
+    # WebSocket服务端点
+    endpoint: ${tts.volcengine.endpoint:wss://openspeech.bytedance.com/api/v3/tts/bidirection}
+    # 发音人，见火山引擎音色列表
+    speaker: ${tts.volcengine.speaker:}
+    # 音频编码格式，支持mp3/ogg_opus/pcm，默认mp3
+    format: ${tts.volcengine.format:mp3}
+    # 音频采样率（Hz），默认24000
+    sample-rate: ${tts.volcengine.sample-rate:24000}
+    # 语速，取值范围[-50,100]，默认0
+    speech-rate: ${tts.volcengine.speech-rate:0}
+    # 音量，取值范围[-50,100]，默认0
+    loudness-rate: ${tts.volcengine.loudness-rate:0}
 
 weather:
   # 天气接口地址

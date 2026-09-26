@@ -17,6 +17,16 @@
   </div>
   <div class="header-right">
     <button class="interrupt-btn" id="interruptBtn">中断对话</button>
+    <label class="toggle-label" title="自动测试：AI回复完成后自动请求测试接口">
+      <span class="toggle-text">自动测试</span>
+      <input type="checkbox" class="toggle-input" id="autoTestToggle">
+      <span class="toggle-slider"></span>
+    </label>
+    <label class="toggle-label" title="播放模拟语音：自动测试时用浏览器朗读生成的文本">
+      <span class="toggle-text">模拟语音</span>
+      <input type="checkbox" class="toggle-input" id="simulatedVoiceToggle">
+      <span class="toggle-slider"></span>
+    </label>
     <span class="status" id="wsStatus">未连接</span>
   </div>
 </div>
@@ -32,10 +42,14 @@
       <div class="volume-meter">
         <div class="volume-bar" id="volumeBar"></div>
       </div>
+      <div class="text-input-row">
+        <input type="text" class="text-input" id="textInput" placeholder="输入文字消息发送..." disabled>
+        <button class="send-text-btn" id="sendTextBtn" disabled>发送</button>
+      </div>
       <button class="record-btn" id="recordBtn" disabled>
         <span id="recordBtnText">🎤</span>
       </button>
-      <div class="record-hint">按空格键快速开始/停止录音</div>
+      <div class="record-hint">按空格键录音 / 回车键发送文本</div>
     </div>
   </div>
 </div>
