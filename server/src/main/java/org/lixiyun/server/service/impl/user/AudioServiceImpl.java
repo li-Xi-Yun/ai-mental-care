@@ -3,6 +3,7 @@ package org.lixiyun.server.service.impl.user;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.agent.asr.api.AsrResultCallback;
 import org.lixiyun.common.agent.tts.api.TtsResultCallback;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
@@ -205,8 +206,8 @@ public class AudioServiceImpl implements AudioService {
      * @param userId         用户ID
      * @return ASR结果回调接口实现
      */
-    private AsrConnectionManager.AsrResultCallback createAsrCallback(Long conversationId, Long userId) {
-        return new AsrConnectionManager.AsrResultCallback() {
+    private AsrResultCallback createAsrCallback(Long conversationId, Long userId) {
+        return new AsrResultCallback() {
             @Override
             public void onIntermediateResult(String text, int sentenceIndex) {
                 log.debug("ASR回调-中间识别结果，会话ID：{}，句子编号：{}，文本：{}", conversationId, sentenceIndex, text);
