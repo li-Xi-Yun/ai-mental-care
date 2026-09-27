@@ -18,9 +18,14 @@ public class WebSocketProperties {
     private Boolean enabled;
 
     /**
-     * WebSocket连接端口
+     * SockJS连接端点（兼容低版本浏览器）
      */
     private String endpoint;
+
+    /**
+     * 原生WebSocket连接端点（支持二进制帧传输，用于音频等场景）
+     */
+    private String nativeEndpoint;
 
     /**
      * 消息前缀

@@ -269,7 +269,9 @@ public class VolcengineTtsProvider implements ITtsProvider {
                 throw new RuntimeException("[火山引擎 TTS] Session启动被中断", e);
             } catch (Exception e) {
                 log.error("[火山引擎 TTS] 会话{}启动Session失败", sessionId, e);
-                protocolSessionIdToSessionId.remove(session.protocolSessionId);
+                if (session.protocolSessionId != null) {
+                    protocolSessionIdToSessionId.remove(session.protocolSessionId);
+                }
                 session.release();
                 throw new RuntimeException("[火山引擎 TTS] Session启动失败: " + e.getMessage(), e);
             }
@@ -312,7 +314,9 @@ public class VolcengineTtsProvider implements ITtsProvider {
         } catch (Exception e) {
             log.error("[火山引擎 TTS] 会话{}完成合成异常", sessionId, e);
         } finally {
-            protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            if (session.protocolSessionId != null) {
+                protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            }
             session.sessionActive.set(false);
             session.release();
             session.lastActiveTime = System.currentTimeMillis();
@@ -346,7 +350,9 @@ public class VolcengineTtsProvider implements ITtsProvider {
         } catch (Exception e) {
             log.error("[火山引擎 TTS] 会话{}中断合成异常", sessionId, e);
         } finally {
-            protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            if (session.protocolSessionId != null) {
+                protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            }
             session.sessionActive.set(false);
             session.canceledLatch = null;
             session.release();
@@ -372,7 +378,9 @@ public class VolcengineTtsProvider implements ITtsProvider {
                 }
             }
 
-            protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            if (session.protocolSessionId != null) {
+                protocolSessionIdToSessionId.remove(session.protocolSessionId);
+            }
             if (session.finishedLatch != null) {
                 session.finishedLatch.countDown();
             }
@@ -579,7 +587,9 @@ public class VolcengineTtsProvider implements ITtsProvider {
     /** 关闭指定会话并清理资源 */
     private void closeSession(VolcSession session, String sessionId) {
         session.closed.set(true);
-        protocolSessionIdToSessionId.remove(session.protocolSessionId);
+        if (session.protocolSessionId != null) {
+            protocolSessionIdToSessionId.remove(session.protocolSessionId);
+        }
         if (session.finishedLatch != null) {
             session.finishedLatch.countDown();
         }

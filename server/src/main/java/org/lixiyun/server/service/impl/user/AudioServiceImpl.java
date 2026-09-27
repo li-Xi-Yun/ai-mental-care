@@ -327,17 +327,17 @@ public class AudioServiceImpl implements AudioService {
         Long conversationId = audioInterruptDTO.getConversationId();
 
         log.debug("音频Service-获取模型处理状态标识，会话ID：{}", conversationId);
-        int processFlag = (int) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG);
+        Integer processFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG);
 
-        if (processFlag != ConversationCacheConstant.PROCESS_FLAG_PROCESSING) {
+        if (processFlag == null || processFlag != ConversationCacheConstant.PROCESS_FLAG_PROCESSING) {
             log.debug("音频Service-会话未处于处理中状态，无需中断，会话ID：{}", conversationId);
             return;
         }
 
         log.debug("音频Service-检查中断标识是否存在，会话ID：{}", conversationId);
-        int interruptFlag = (int) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
+        Integer interruptFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
 
-        if (interruptFlag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE) {
+        if (interruptFlag != null && interruptFlag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE) {
             log.debug("音频Service-中断标识已存在，无需重复设置，会话ID：{}", conversationId);
             return;
         }

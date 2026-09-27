@@ -148,6 +148,7 @@
         <dependency>
             <groupId>org.java-websocket</groupId>
             <artifactId>Java-WebSocket</artifactId>
+            <version>1.6.0</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba.nls</groupId>
@@ -207,12 +208,6 @@
         <!--			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>-->
         <!--		</dependency>-->
 
-        <!-- 火山引擎TTS WebSocket客户端 -->
-        <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.6.0</version>
-        </dependency>
     </dependencies>
 
 </project>

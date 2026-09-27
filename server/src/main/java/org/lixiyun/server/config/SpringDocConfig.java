@@ -119,6 +119,27 @@ public class SpringDocConfig {
     }
 
     /**
+     * WebSocket 接口分组
+     */
+    @Bean
+    public GroupedOpenApi websocketApi() {
+        return GroupedOpenApi.builder()
+                .group("websocket-api")
+                .pathsToMatch("/api/**")
+                .packagesToScan("org.lixiyun.common.websocket.controller")
+                .addOpenApiCustomizer(openApi -> {
+                    openApi.info(new Info()
+                            .title("心聆AI系统 - WebSocket接口")
+                            .description("WebSocket 连接认证相关接口（一次性 Ticket 申请等）")
+                            .version("1.0.0")
+                            .contact(new Contact()
+                                    .name("离晞云")
+                                    .email("lixiyun@example.com")));
+                })
+                .build();
+    }
+
+    /**
      * Agent 接口分组
      */
     @Bean

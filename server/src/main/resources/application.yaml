@@ -327,6 +327,7 @@ url:
     - /swagger-ui.html/**
     - /temp/**
     - ${websocket.endpoint}/**
+    - ${websocket.native-endpoint}/**
     - /actuator/**
     - /api/**
 
@@ -389,8 +390,10 @@ management:
 # websocket
 websocket:
   enabled: true
-  # WebSocke连接端口
+  # SockJS连接端点（兼容低版本浏览器）
   endpoint: '/ws/ai-mental-care'
+  # 原生WebSocket连接端点（支持二进制帧传输，用于音频等场景）
+  native-endpoint: '/ws-native'
   # 应用消息前缀
   message-prefix: '/app'
   # 用户消息前缀

@@ -28,7 +28,7 @@ public class UndertowWebSocketConfig implements WebServerFactoryCustomizer<Under
             WebSocketDeploymentInfo wsInfo = new WebSocketDeploymentInfo();
             wsInfo.setBuffers(new DefaultByteBufferPool(
                     true,
-                    1024
+                    1024  // 1KB
             ));
             deploymentInfo.addServletContextAttribute(
                     WebSocketDeploymentInfo.ATTRIBUTE_NAME, wsInfo

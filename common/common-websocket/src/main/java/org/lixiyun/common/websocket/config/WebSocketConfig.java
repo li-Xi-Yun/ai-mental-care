@@ -1,6 +1,7 @@
 package org.lixiyun.common.websocket.config;
 
 import lombok.RequiredArgsConstructor;
+import org.lixiyun.common.websocket.interceptor.AuthHandshakeInterceptor;
 import org.lixiyun.common.websocket.interceptor.WebSocketInboundInterceptor;
 import org.lixiyun.common.websocket.interceptor.WebSocketOutboundInterceptor;
 import org.lixiyun.common.websocket.properties.WebSocketProperties;
@@ -17,6 +18,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,22 +29,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private ThreadPoolTaskScheduler messageBrokerTaskScheduler;
     private WebSocketProperties webSocketProperties;
-//    private AuthHandshakeInterceptor authHandshakeInterceptor;
+    private AuthHandshakeInterceptor authHandshakeInterceptor;
     private WebSocketInboundInterceptor webSocketInboundInterceptor;
     private WebSocketOutboundInterceptor webSocketOutboundInterceptor;
     private ThreadPoolTaskExecutor webSocketInboundExecutor;
     private ThreadPoolTaskExecutor webSocketOutboundExecutor;
+
     @Autowired
     public void setMessageBrokerTaskScheduler(@Qualifier("webSocketTaskScheduler") ThreadPoolTaskScheduler taskScheduler,
                                               WebSocketProperties webSocketProperties,
-//                                              AuthHandshakeInterceptor authHandshakeInterceptor,
+                                              AuthHandshakeInterceptor authHandshakeInterceptor,
                                               WebSocketOutboundInterceptor webSocketOutboundInterceptor,
                                               WebSocketInboundInterceptor webSocketInboundInterceptor,
                                               @Qualifier("webSocketInboundExecutor") ThreadPoolTaskExecutor webSocketInboundExecutor,
                                               @Qualifier("webSocketOutboundExecutor") ThreadPoolTaskExecutor webSocketOutboundExecutor) {
         this.messageBrokerTaskScheduler = taskScheduler;
         this.webSocketProperties = webSocketProperties;
-//        this.authHandshakeInterceptor = authHandshakeInterceptor;
+        this.authHandshakeInterceptor = authHandshakeInterceptor;
         this.webSocketInboundInterceptor = webSocketInboundInterceptor;
         this.webSocketOutboundInterceptor = webSocketOutboundInterceptor;
         this.webSocketInboundExecutor = webSocketInboundExecutor;
@@ -65,15 +68,30 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 注册第一个连接端点：客户端通过 ws://域名/ws 连接
+        // SockJS端点：客户端通过 ws://域名/ws/ai-mental-care 连接（兼容低版本浏览器）
         registry.addEndpoint(webSocketProperties.getEndpoint())
-                .setAllowedOriginPatterns(webSocketProperties.getAllowedOrigins())// 允许指定跨域请求
-//                .addInterceptors(authHandshakeInterceptor)
-                .withSockJS(); // 支持SockJS兼容方案：浏览器不支持WebSocket时自动降级
+                .setAllowedOriginPatterns(webSocketProperties.getAllowedOrigins())
+                .setHandshakeHandler(new AttributeAwareHandshakeHandler())
+                .addInterceptors(authHandshakeInterceptor)
+                .withSockJS();  // 支持SockJS兼容方案：浏览器不支持WebSocket时自动降级
+
+        // 原生WebSocket端点：支持二进制帧传输，用于音频等场景
+        registry.addEndpoint(webSocketProperties.getNativeEndpoint())
+                .setAllowedOriginPatterns(webSocketProperties.getAllowedOrigins())
+                .setHandshakeHandler(new AttributeAwareHandshakeHandler())
+                .addInterceptors(authHandshakeInterceptor);
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        registration.setMessageSizeLimit(256 * 1024);       // 入站消息上限 256KB ← 你的141KB没问题了
+        registration.setSendBufferSizeLimit(512 * 1024);    // 出站缓冲区 512KB
+        registration.setSendTimeLimit(20 * 1000);           // 发送超时 20秒
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
+        // 拦截客户端发送的消息
         registration.interceptors(webSocketInboundInterceptor)
                 .taskExecutor(webSocketInboundExecutor);
     }

@@ -21,6 +21,11 @@ class ChatAPI {
     return processIdFields(result.data);
   }
 
+  static async getWsTicket() {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.getWsTicket}`;
+    return await ChatAPI._request(url, { method: 'GET' });
+  }
+
   static async sendMessage(message, conversationId = null) {
     const url = `${CONFIG.server.baseUrl}${CONFIG.api.sendMessage}`;
 

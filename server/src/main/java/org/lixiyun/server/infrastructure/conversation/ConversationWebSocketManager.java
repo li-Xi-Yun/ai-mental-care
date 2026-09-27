@@ -91,6 +91,14 @@ public class ConversationWebSocketManager {
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, response);
     }
 
+    /**
+     * 通过WebSocket发送消息（Object类型）
+     *
+     * @param userId         目标用户ID
+     * @param webSocketId    WebSocket目标标识
+     * @param conversationId 会话ID
+     * @param payload        消息内容（Object类型）
+     */
     private void sendViaWebSocket(Long userId, String webSocketId, Long conversationId, Object payload) {
         log.debug("[WebSocket] 发送消息(Object)，用户ID：{}，目标：{}/{}，payload类型：{}", userId, webSocketId, conversationId, payload != null ? payload.getClass().getSimpleName() : "null");
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, payload);

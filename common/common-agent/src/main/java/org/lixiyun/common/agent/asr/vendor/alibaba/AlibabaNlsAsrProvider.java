@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.asr.api.AsrProviderType;
 import org.lixiyun.common.agent.asr.api.AsrResultCallback;
 import org.lixiyun.common.agent.asr.api.IAsrProvider;
+import org.lixiyun.common.agent.asr.common.SilencePcmGenerator;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,10 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -39,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <ul>
  *     <li><b>创建会话</b>：生成抽象sessionId，建立WebSocket长连接并启动识别</li>
  *     <li><b>发送音频帧</b>：复用已有连接持续发送音频数据</li>
+ *     <li><b>静音保活</b>：长时间无人说话时自动发送静音PCM（20ms/帧），防止网关空闲断开</li>
  *     <li><b>取消</b>：关闭连接并清理所有资源</li>
  * </ul>
  *
@@ -81,15 +80,27 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
 
     /** 最大并发ASR会话数 */
     private static final int MAX_SESSIONS = 100;
-    /** 空闲会话超时时间（秒） */
-    private static final int IDLE_TIMEOUT_SECONDS = 60;
+    /** 默认空闲会话超时时间（毫秒），若session未指定idleTimeoutMs则使用此值 */
+    private static final long DEFAULT_IDLE_TIMEOUT_MS = 60_000;
     /** 空闲会话检查间隔（秒） */
     private static final int IDLE_CHECK_INTERVAL_SECONDS = 60;
     /** 网关空闲超时状态码，非致命错误，连接可自动重建 */
     private static final int STATUS_IDLE_TIMEOUT = 40000004;
 
+    /** 静音保活：无真实音频N毫秒后启动保活 */
+    private static final int SILENCE_THRESHOLD_MS = 5000;
+    /** 静音保活：每N毫秒发送一个静音PCM分片 */
+    private static final int KEEPALIVE_INTERVAL_MS = 20;
+    /** 静音保活状态检查间隔（毫秒），兼顾实时性与CPU开销 */
+    private static final int SILENCE_CHECK_INTERVAL_MS = 1000;
+    /** 预生成的静音PCM分片（16kHz、16bit、单声道、20ms = 640字节） */
+    private static final byte[] SILENCE_CHUNK =
+            SilencePcmGenerator.generate(16000, 16, 1, KEEPALIVE_INTERVAL_MS);
+
     /** 抽象ASR会话注册表（key=sessionId） */
     private final ConcurrentHashMap<String, AsrSession> sessions = new ConcurrentHashMap<>();
+    /** 静音保活任务注册表（key=sessionId） */
+    private final ConcurrentHashMap<String, ScheduledFuture<?>> keepAliveTasks = new ConcurrentHashMap<>();
     /** 全局NLS客户端 */
     private volatile NlsClient nlsClient;
     /** 定时任务调度器 */
@@ -129,14 +140,22 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
                 config.getTokenRefreshHours(),
                 TimeUnit.HOURS
         );
+        scheduler.scheduleAtFixedRate(
+                this::checkSilenceAndKeepAlive,
+                SILENCE_CHECK_INTERVAL_MS,
+                SILENCE_CHECK_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+        );
 
-        log.info("[阿里云 ASR] Provider初始化完成，最大会话数：{}，空闲超时：{}s", MAX_SESSIONS, IDLE_TIMEOUT_SECONDS);
+        log.info("[阿里云 ASR] Provider初始化完成，最大会话数：{}，默认空闲超时：{}ms", MAX_SESSIONS, DEFAULT_IDLE_TIMEOUT_MS);
     }
 
     @Override
     @PreDestroy
     public void shutdown() {
         log.info("[阿里云 ASR] Provider关闭，清理所有会话");
+
+        keepAliveTasks.keySet().forEach(this::cancelKeepAlive);
 
         if (scheduler != null) {
             scheduler.shutdownNow();
@@ -160,7 +179,13 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
 
     @Override
     public String createSession(AsrResultCallback callback) {
+        return createSession(callback, DEFAULT_IDLE_TIMEOUT_MS);
+    }
+
+    @Override
+    public String createSession(AsrResultCallback callback, long idleTimeoutMs) {
         String sessionId = UUID.randomUUID().toString();
+        long effectiveTimeout = idleTimeoutMs > 0 ? idleTimeoutMs : DEFAULT_IDLE_TIMEOUT_MS;
         sessions.compute(sessionId, (k, existing) -> {
             if (existing != null && !existing.closed.get()) {
                 log.warn("[阿里云 ASR] 会话{}已存在，先关闭旧会话", sessionId);
@@ -181,7 +206,7 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
                 configureTranscriber(transcriber);
                 transcriber.start();
                 createSuccess = true;
-                log.info("[阿里云 ASR] 会话{}长连接注册成功", sessionId);
+                log.info("[阿里云 ASR] 会话{}长连接注册成功，空闲超时：{}ms", sessionId, effectiveTimeout);
             } catch (Exception e) {
                 log.error("[阿里云 ASR] 会话{}长连接启动失败", sessionId, e);
                 throw new RuntimeException("ASR连接启动失败", e);
@@ -195,7 +220,7 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
                 }
             }
 
-            return new AsrSession(transcriber, callback);
+            return new AsrSession(transcriber, callback, effectiveTimeout);
         });
         return sessionId;
     }
@@ -214,7 +239,9 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
         }
         try {
             session.transcriber.send(data, length);
-            session.lastActiveTime = System.currentTimeMillis();
+            long now = System.currentTimeMillis();
+            session.lastActiveTime = now;
+            session.lastRealAudioTime = now;
             log.debug("[阿里云 ASR] 会话{}音频帧发送成功，长度：{}", sessionId, length);
         } catch (Exception e) {
             log.error("[阿里云 ASR] 会话{}音频帧发送失败", sessionId, e);
@@ -303,14 +330,70 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
         });
     }
 
-    /** 清理空闲超时的ASR会话 */
+    /** 清理空闲超时的ASR会话，使用每个会话自身的空闲超时阈值（基于真实音频时间） */
     private void cleanIdleSessions() {
         long now = System.currentTimeMillis();
         sessions.forEach((sessionId, session) -> {
-            long idleSeconds = (now - session.lastActiveTime) / 1000;
-            if (idleSeconds > IDLE_TIMEOUT_SECONDS) {
-                log.info("[阿里云 ASR] 会话{}空闲超时（{}s > {}s），自动淘汰", sessionId, idleSeconds, IDLE_TIMEOUT_SECONDS);
+            if (session.closed.get()) {
+                return;
+            }
+            long idleMs = now - session.lastRealAudioTime;
+            long threshold = session.idleTimeoutMs > 0 ? session.idleTimeoutMs : DEFAULT_IDLE_TIMEOUT_MS;
+            if (idleMs > threshold) {
+                log.info("[阿里云 ASR] 会话{}空闲超时（{}ms > {}ms），自动淘汰",
+                        sessionId, idleMs, threshold);
                 cancel(sessionId);
+            }
+        });
+    }
+
+    /** 取消指定会话的静音保活任务 */
+    private void cancelKeepAlive(String sessionId) {
+        ScheduledFuture<?> task = keepAliveTasks.remove(sessionId);
+        if (task != null) {
+            task.cancel(false);
+            log.debug("[阿里云 ASR] 会话{}静音保活任务已取消", sessionId);
+        }
+    }
+
+    /** 启动指定会话的静音保活：每KEEPALIVE_INTERVAL_MS发送一个静音PCM分片 */
+    private void startKeepAlive(String sessionId) {
+        ScheduledFuture<?> task = scheduler.scheduleAtFixedRate(() -> {
+            AsrSession session = sessions.get(sessionId);
+            if (session == null || session.closed.get()) {
+                cancelKeepAlive(sessionId);
+                return;
+            }
+            try {
+                session.transcriber.send(SILENCE_CHUNK);
+                session.lastActiveTime = System.currentTimeMillis();
+//                log.debug("[阿里云 ASR] 会话{}静音保活帧发送成功", sessionId);
+            } catch (Exception e) {
+                log.warn("[阿里云 ASR] 会话{}静音保活帧发送失败（连接可能已关闭）", sessionId);
+            }
+        }, 0, KEEPALIVE_INTERVAL_MS, TimeUnit.MILLISECONDS);
+
+        keepAliveTasks.put(sessionId, task);
+        log.debug("[阿里云 ASR] 会话{}静音保活已启动（间隔{}ms）", sessionId, KEEPALIVE_INTERVAL_MS);
+    }
+
+    /**
+     * 定时扫描所有活跃会话，检测静音超时并启动/维持保活
+     * <p>由调度器每{@value #SILENCE_CHECK_INTERVAL_MS}ms触发一次，
+     * 对超过{@value #SILENCE_THRESHOLD_MS}ms未收到真实音频的会话启动保活。</p>
+     */
+    private void checkSilenceAndKeepAlive() {
+        long now = System.currentTimeMillis();
+        sessions.forEach((sessionId, session) -> {
+            if (session.closed.get()) {
+                return;
+            }
+            long silenceDuration = now - session.lastActiveTime;
+            if (silenceDuration > SILENCE_THRESHOLD_MS) {
+                ScheduledFuture<?> existingTask = keepAliveTasks.get(sessionId);
+                if (existingTask == null || existingTask.isDone()) {
+                    startKeepAlive(sessionId);
+                }
             }
         });
     }
@@ -495,8 +578,9 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
                 }
             }
 
-            AsrSession newSession = new AsrSession(newTranscriber, existing.callback);
+            AsrSession newSession = new AsrSession(newTranscriber, existing.callback, existing.idleTimeoutMs);
             newSession.lastActiveTime = existing.lastActiveTime;
+            newSession.lastRealAudioTime = existing.lastRealAudioTime;
             return newSession;
         });
     }
@@ -508,6 +592,7 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
      * @param sessionId 会话ID
      */
     private void closeSession(AsrSession session, String sessionId) {
+        cancelKeepAlive(sessionId);
         session.closed.set(true);
         try {
             session.transcriber.close();
@@ -529,19 +614,27 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
         final AtomicBoolean closed = new AtomicBoolean(false);
         /** 重建连接标记 */
         final AtomicBoolean needsReconnect = new AtomicBoolean(false);
-        /** 最后活跃时间（毫秒） */
+        /** 最后活跃时间（毫秒），含静音保活帧更新（用于静音检测/保活启停判断） */
         volatile long lastActiveTime;
+        /** 最后真实音频时间（毫秒），仅{@link #sendAudio}更新（用于业务空闲超时淘汰） */
+        volatile long lastRealAudioTime;
+        /** 空闲超时时间（毫秒），≤0 时使用全局默认值 */
+        final long idleTimeoutMs;
 
         /**
          * 构造ASR会话
          *
-         * @param transcriber SDK识别器实例
-         * @param callback    业务结果回调
+         * @param transcriber   SDK识别器实例
+         * @param callback      业务结果回调
+         * @param idleTimeoutMs 空闲超时（毫秒），≤0 时使用Provider全局默认值
          */
-        AsrSession(SpeechTranscriber transcriber, AsrResultCallback callback) {
+        AsrSession(SpeechTranscriber transcriber, AsrResultCallback callback, long idleTimeoutMs) {
             this.transcriber = transcriber;
             this.callback = callback;
-            this.lastActiveTime = System.currentTimeMillis();
+            this.idleTimeoutMs = idleTimeoutMs;
+            long now = System.currentTimeMillis();
+            this.lastActiveTime = now;
+            this.lastRealAudioTime = now;
         }
     }
 }

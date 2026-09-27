@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
-import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -13,7 +12,7 @@ import java.lang.reflect.Method;
  * @author lixiyun
  * @since 2026-08-15 17:42
  */
-@Component
+//@Component
 @RequiredArgsConstructor
 @Deprecated
 public class ChatModelInjectProcessor implements InstantiationAwareBeanPostProcessor {

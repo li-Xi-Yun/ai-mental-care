@@ -7,6 +7,9 @@ const CONFIG = {
     },
     get wsUrl() {
       return `http://${this.host}:${this.port}`;
+    },
+    get wsBinaryUrl() {
+      return `ws://${this.host}:${this.port}`;
     }
   },
 
@@ -23,7 +26,8 @@ const CONFIG = {
     audioInit: '/user/conversation/audio/init',
     audioEnd: '/user/conversation/audio',
 
-    audioTestStream: '/temp/audio-conversation-test/stream'
+    audioTestStream: '/temp/audio-conversation-test/stream',
+    getWsTicket: '/api/get-ws-ticket'
   },
 
   auth: {
@@ -33,6 +37,7 @@ const CONFIG = {
 
   websocket: {
     endpoint: '/ws/ai-mental-care',
+    nativeEndpoint: '/ws-native',
     userPrefix: '/user',
     privatePrefix: '/queue',
     textReply: '/text/reply',

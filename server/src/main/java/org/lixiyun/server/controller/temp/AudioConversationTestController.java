@@ -213,7 +213,7 @@ public class AudioConversationTestController {
                 int count = audioChunkCount.incrementAndGet();
                 log.debug("[语音测试-TTS] 音频chunk#{}，大小：{}字节，会话ID：{}", count, audioData.length, conversationId);
                 WebSocketUtils.sendToUserBySubDestination(
-                        userId.toString(), "audio/test/" + conversationId, audioData);
+                        userId.toString(), "/audio/test/" + conversationId, audioData);
             }
 
             @Override

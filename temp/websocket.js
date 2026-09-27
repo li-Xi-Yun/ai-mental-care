@@ -8,10 +8,28 @@ class ChatWebSocket {
     this.onError = null;
   }
 
-  connect() {
+  async connect(useNative = false) {
+    let ticket = null;
+    if (useNative) {
+      try {
+        ticket = await ChatAPI.getWsTicket();
+        console.log('获取WebSocket一次性ticket成功');
+      } catch (error) {
+        throw new Error(`获取WebSocket连接凭证失败: ${error.message}`);
+      }
+    }
+
     return new Promise((resolve, reject) => {
+      const webSocketUrl = useNative
+        ? `${CONFIG.server.wsBinaryUrl}${CONFIG.websocket.nativeEndpoint}?wsTicket=${ticket}`
+        : `${CONFIG.server.wsUrl}${CONFIG.websocket.endpoint}`;
+
+      const factory = useNative
+        ? () => new WebSocket(webSocketUrl)
+        : () => new SockJS(webSocketUrl);
+
       this.client = new StompJs.Client({
-        webSocketFactory: () => new SockJS(`${CONFIG.server.wsUrl}${CONFIG.websocket.endpoint}`),
+        webSocketFactory: factory,
         connectHeaders: {
           token: CONFIG.auth.token
         },

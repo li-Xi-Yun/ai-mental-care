@@ -51,11 +51,23 @@ public interface IAsrProvider {
 
     /**
      * 创建抽象ASR会话并绑定识别结果回调，返回唯一的会话标识
+     * <p>使用Provider默认的空闲超时时间。</p>
      *
      * @param callback 识别结果回调
      * @return 会话唯一标识（Provider内部生成）
      */
     String createSession(AsrResultCallback callback);
+
+    /**
+     * 创建抽象ASR会话并绑定识别结果回调，返回唯一的会话标识
+     * <p>自定义空闲超时时间：若在指定毫秒内未收到真实音频帧（不含静音保活帧），
+     * 会话将被自动关闭。</p>
+     *
+     * @param callback       识别结果回调
+     * @param idleTimeoutMs  空闲超时时间（毫秒）；≤0 时使用Provider默认值
+     * @return 会话唯一标识（Provider内部生成）
+     */
+    String createSession(AsrResultCallback callback, long idleTimeoutMs);
 
     /**
      * 发送音频帧（全量发送）

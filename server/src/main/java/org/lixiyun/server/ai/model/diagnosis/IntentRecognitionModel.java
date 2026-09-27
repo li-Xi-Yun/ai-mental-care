@@ -188,12 +188,12 @@ public class IntentRecognitionModel extends BaseModel {
     @AllArgsConstructor
     public static class IntentRecognitionResult {
         /** 模型输出 1 表示“需要触发诊断” */
-        public static final String NEED_DIAGNOSIS = "1";
+        public static final Integer NEED_DIAGNOSIS = 1;
         /** 模型输出 0 表示“无需触发诊断” */
-        public static final String NO_NEED = "0";
+        public static final Integer NO_NEED = 0;
 
         /** 模型原始响应文本（trimmed） */
-        private String response;
+        private Integer response;
 
         /** @return true 表示需要触发诊断 */
         public boolean isNeedDiagnosis() {
