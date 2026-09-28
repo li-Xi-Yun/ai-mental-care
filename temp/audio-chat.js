@@ -1,4 +1,5 @@
 (function () {
+  const logger = window.__logger.getLogger('AudioChat');
   const chatContainer = document.getElementById('chatContainer');
   const recordBtn = document.getElementById('recordBtn');
   const recordBtnText = document.getElementById('recordBtnText');
@@ -71,7 +72,7 @@
       source.start(nextPlayTime);
       nextPlayTime += buffer.duration;
     } catch (e) {
-      console.warn('播放音频chunk失败:', e);
+      logger.warn('播放音频chunk失败', e);
     }
   }
 
@@ -415,7 +416,7 @@
 
       // 调用测试接口 将文字转为语音
       const data = await ChatAPI.audioStreamTest(AppState.conversationId, text);
-      console.log('文字转语音API返回:', data);
+      logger.info('文字转语音API返回:', data);
 
       // 等待WS音频chunk全部收集完成（由[TTS_COMPLETE]信号触发resolve）
       const chunks = await collectPromise;

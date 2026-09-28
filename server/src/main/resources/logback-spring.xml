@@ -25,6 +25,18 @@
             name="web.logLevel"
             source="web.logLevel"
             defaultValue="INFO"/>
+    <!-- 读取前端日志存储路径，与后端日志隔离存储 -->
+    <springProperty
+            scope="context"
+            name="frontend.log.path"
+            source="logging.file.frontend-path"
+            defaultValue="./logs/frontend"/>
+    <!-- 读取前端日志级别，独立于后端日志级别，归属于 web 配置项，按环境控制 -->
+    <springProperty
+            scope="context"
+            name="frontend.log.level"
+            source="web.frontendLogLevel"
+            defaultValue="INFO"/>
 
     <property name="console.log.pattern"
               value="%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{36}%n) - %msg%n"/>
@@ -172,6 +184,122 @@
         <appender-ref ref="file_error"/>
     </appender>
 
+    <!-- ==================== 前端日志输出（与后端日志隔离存储到 frontend 子目录） ==================== -->
+
+    <!-- 前端 DEBUG 日志输出 -->
+    <appender name="frontend_file_debug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${frontend.log.path}/sys-debug.log</file>
+        <!-- 自动创建日志目录 -->
+        <createOnDemand>true</createOnDemand>
+        <!-- 循环政策：基于时间创建日志文件 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${frontend.log.path}/sys-debug.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <!-- 日志最大的历史 60天 -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <!-- 这里只记录日志级别为 debug 的日志 -->
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 前端 INFO 日志输出 -->
+    <appender name="frontend_file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${frontend.log.path}/sys-info.log</file>
+        <!-- 自动创建日志目录 -->
+        <createOnDemand>true</createOnDemand>
+        <!-- 循环政策：基于时间创建日志文件 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件名格式 -->
+            <fileNamePattern>${frontend.log.path}/sys-info.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <!-- 日志最大的历史 60天 -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <!-- 这里只记录日志级别为 info 的日志 -->
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 前端 WARN 日志输出 -->
+    <appender name="frontend_file_warn" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${frontend.log.path}/sys-warn.log</file>
+        <createOnDemand>true</createOnDemand>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${frontend.log.path}/sys-warn.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 前端 ERROR 日志输出 -->
+    <appender name="frontend_file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${frontend.log.path}/sys-error.log</file>
+        <createOnDemand>true</createOnDemand>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${frontend.log.path}/sys-error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 前端 debug 异步输出 -->
+    <appender name="frontend_async_debug" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="frontend_file_debug"/>
+    </appender>
+
+    <!-- 前端 info 异步输出 -->
+    <appender name="frontend_async_info" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="frontend_file_info"/>
+    </appender>
+
+    <!-- 前端 warn 异步输出 -->
+    <appender name="frontend_async_warn" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="frontend_file_warn"/>
+    </appender>
+
+    <!-- 前端 error 异步输出 -->
+    <appender name="frontend_async_error" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="frontend_file_error"/>
+    </appender>
+
     <!-- 用于集成 Apache SkyWalking 分布式追踪系统 的日志增强功能。
     它们的作用是在每条日志中自动注入 当前请求的链路追踪 ID（Trace ID），从而实现 日志与调用链的关联。 -->
     <!-- 整合 skywalking 控制台输出 tid -->
@@ -210,6 +338,14 @@
     <!--    <logger name="org.apache.fury" level="WARN"/>-->
 
         <logger name="org.lixiyun" level="${web.logLevel}"/>
+
+    <!-- 前端日志专用 logger，additivity="false" 确保前端日志只写入 frontend 子目录，不混入后端日志 -->
+    <logger name="frontend" level="${frontend.log.level}" additivity="false">
+        <appender-ref ref="frontend_async_debug" />
+        <appender-ref ref="frontend_async_info" />
+        <appender-ref ref="frontend_async_warn" />
+        <appender-ref ref="frontend_async_error" />
+    </logger>
 
     <!--系统操作日志，info意味：INFO、WARN、ERROR 级别的日志会被处理，DEBUG、TRACE 级别的日志 会被直接丢弃-->
     <!--  项目中所有未单独配置日志级别的类 / 模块，都会继承这个根节点的配置  -->

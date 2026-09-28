@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <ul>
  *     <li><b>创建会话</b>：生成抽象sessionId，建立WebSocket长连接并启动识别</li>
  *     <li><b>发送音频帧</b>：复用已有连接持续发送音频数据</li>
- *     <li><b>静音保活</b>：长时间无人说话时自动发送静音PCM（20ms/帧），防止网关空闲断开</li>
+ *     <li><b>静音保活</b>：长时间无人说话时自动发送静音PCM（200ms/帧），防止网关空闲断开</li>
  *     <li><b>取消</b>：关闭连接并清理所有资源</li>
  * </ul>
  *
@@ -88,12 +88,12 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
     private static final int STATUS_IDLE_TIMEOUT = 40000004;
 
     /** 静音保活：无真实音频N毫秒后启动保活 */
-    private static final int SILENCE_THRESHOLD_MS = 5000;
+    private static final int SILENCE_THRESHOLD_MS = 2000;
     /** 静音保活：每N毫秒发送一个静音PCM分片 */
-    private static final int KEEPALIVE_INTERVAL_MS = 20;
+    private static final int KEEPALIVE_INTERVAL_MS = 200;
     /** 静音保活状态检查间隔（毫秒），兼顾实时性与CPU开销 */
     private static final int SILENCE_CHECK_INTERVAL_MS = 1000;
-    /** 预生成的静音PCM分片（16kHz、16bit、单声道、20ms = 640字节） */
+    /** 预生成的静音PCM分片（16kHz、16bit、单声道、200ms = 6400字节） */
     private static final byte[] SILENCE_CHUNK =
             SilencePcmGenerator.generate(16000, 16, 1, KEEPALIVE_INTERVAL_MS);
 
@@ -369,7 +369,9 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
                 session.lastActiveTime = System.currentTimeMillis();
 //                log.debug("[阿里云 ASR] 会话{}静音保活帧发送成功", sessionId);
             } catch (Exception e) {
-                log.warn("[阿里云 ASR] 会话{}静音保活帧发送失败（连接可能已关闭）", sessionId);
+                log.warn("[阿里云 ASR] 会话{}静音保活帧发送失败（连接可能已关闭），停止保活任务", sessionId);
+                session.keepAliveFailed.set(true);
+                cancelKeepAlive(sessionId);
             }
         }, 0, KEEPALIVE_INTERVAL_MS, TimeUnit.MILLISECONDS);
 
@@ -386,6 +388,9 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
         long now = System.currentTimeMillis();
         sessions.forEach((sessionId, session) -> {
             if (session.closed.get()) {
+                return;
+            }
+            if (session.keepAliveFailed.get()) {
                 return;
             }
             long silenceDuration = now - session.lastActiveTime;
@@ -614,6 +619,8 @@ public class AlibabaNlsAsrProvider implements IAsrProvider {
         final AtomicBoolean closed = new AtomicBoolean(false);
         /** 重建连接标记 */
         final AtomicBoolean needsReconnect = new AtomicBoolean(false);
+        /** 静音保活失败标记（保活发送失败后设为true，防止checkSilenceAndKeepAlive反复重启） */
+        final AtomicBoolean keepAliveFailed = new AtomicBoolean(false);
         /** 最后活跃时间（毫秒），含静音保活帧更新（用于静音检测/保活启停判断） */
         volatile long lastActiveTime;
         /** 最后真实音频时间（毫秒），仅{@link #sendAudio}更新（用于业务空闲超时淘汰） */

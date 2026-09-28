@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/nls-example-recognizer/nls-example-recognizer.iml" filepath="$PROJECT_DIR$/nls-example-recognizer/nls-example-recognizer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/nls-example-token/nls-example-token.iml" filepath="$PROJECT_DIR$/nls-example-token/nls-example-token.iml" />
+      <module fileurl="file://$PROJECT_DIR$/nls-example-transcriber/nls-example-transcriber.iml" filepath="$PROJECT_DIR$/nls-example-transcriber/nls-example-transcriber.iml" />
+      <module fileurl="file://$PROJECT_DIR$/nls-example-tts/nls-example-tts.iml" filepath="$PROJECT_DIR$/nls-example-tts/nls-example-tts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/nls-sdk-java-examples.iml" filepath="$PROJECT_DIR$/nls-sdk-java-examples.iml" />
+    </modules>
+  </component>
+</project>

@@ -224,7 +224,9 @@ logging:
     root: @logging.level@
   file:
     # 全局日志文件路径
-    path: ./logs
+    path: ${logging.file.path:./logs}
+    # 前端日志路径（与后端隔离存储）
+    frontend-path: ${logging.file.frontend-path:./logs/frontend}
 
 
 # Swagger3 / SpringDoc 基本配置 (OpenAPI 规范)
@@ -285,6 +287,8 @@ web:
   url: ${web.url}
   # 配置开发的项目日志级别
   logLevel: ${web.logLevel}
+  # 前端日志级别（独立于后端项目日志级别）
+  frontendLogLevel: ${web.frontendLogLevel:INFO}
   # 时区
   timeZone: ${web.timeZone}
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="nls-example-recognizer" />
+        <module name="nls-example-token" />
+        <module name="nls-example-transcriber" />
+        <module name="nls-example-tts" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="nls-example-recognizer" target="1.8" />
+      <module name="nls-example-token" target="1.8" />
+      <module name="nls-example-transcriber" target="1.8" />
+      <module name="nls-example-tts" target="1.8" />
+      <module name="nls-sdk-java-examples" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

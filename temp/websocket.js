@@ -1,4 +1,6 @@
 class ChatWebSocket {
+  #logger = window.__logger.getLogger('ChatWebSocket');
+
   constructor() {
     this.client = null;
     this.connected = false;
@@ -13,7 +15,7 @@ class ChatWebSocket {
     if (useNative) {
       try {
         ticket = await ChatAPI.getWsTicket();
-        console.log('获取WebSocket一次性ticket成功');
+        this.#logger.info('获取WebSocket一次性ticket成功');
       } catch (error) {
         throw new Error(`获取WebSocket连接凭证失败: ${error.message}`);
       }
@@ -35,23 +37,23 @@ class ChatWebSocket {
         },
         reconnectDelay: 0,
         debug: (str) => {
-          console.log('[STOMP]', str);
+          this.#logger.debug('[STOMP]', str);
         },
         onConnect: (frame) => {
           this.connected = true;
-          console.log('WebSocket连接成功:', frame);
+          this.#logger.info('WebSocket连接成功');
           if (this.onConnected) this.onConnected(frame);
           resolve(frame);
         },
         onStompError: (frame) => {
           this.connected = false;
-          console.error('WebSocket STOMP错误:', frame);
+          this.#logger.error('WebSocket STOMP错误', frame);
           if (this.onError) this.onError(frame);
           reject(frame);
         },
         onWebSocketClose: (evt) => {
           this.connected = false;
-          console.log('WebSocket连接关闭:', evt);
+          this.#logger.info('WebSocket连接关闭');
           if (this.onDisconnected) this.onDisconnected(evt);
         }
       });
@@ -62,7 +64,7 @@ class ChatWebSocket {
 
   subscribeTextReply(conversationId, onMessage) {
     const path = CONFIG.websocket.getTextReplyPath(conversationId);
-    console.log('订阅文本回复:', path);
+    this.#logger.info('订阅文本回复:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -77,7 +79,7 @@ class ChatWebSocket {
 
   subscribeConversationName(conversationId, onMessage) {
     const path = CONFIG.websocket.getConversationNamePath(conversationId);
-    console.log('订阅会话名称:', path);
+    this.#logger.info('订阅会话名称:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -92,7 +94,7 @@ class ChatWebSocket {
 
   subscribeAudioReply(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioReplyPath(conversationId);
-    console.log('订阅音频文字流:', path);
+    this.#logger.info('订阅音频文字流:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -107,7 +109,7 @@ class ChatWebSocket {
 
   subscribeAudioBinary(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioBinaryPath(conversationId);
-    console.log('订阅音频二进制流:', path);
+    this.#logger.info('订阅音频二进制流:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -122,7 +124,7 @@ class ChatWebSocket {
 
   subscribeAudioTest(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioTestPath(conversationId);
-    console.log('订阅测试音频流:', path);
+    this.#logger.info('订阅测试音频流:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -137,7 +139,7 @@ class ChatWebSocket {
 
   subscribeAsrIntermediate(conversationId, onMessage) {
     const path = CONFIG.websocket.getAsrIntermediatePath(conversationId);
-    console.log('订阅ASR中间结果:', path);
+    this.#logger.info('订阅ASR中间结果:', path);
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
@@ -162,13 +164,13 @@ class ChatWebSocket {
       this.unsubscribeAll();
       this.client.deactivate();
       this.connected = false;
-      console.log('WebSocket已断开');
+      this.#logger.info('WebSocket已断开');
     }
   }
 
   publish(destination, body) {
     if (!this.client || !this.connected) {
-      console.error('WebSocket未连接，无法发送消息');
+      this.#logger.error('WebSocket未连接，无法发送消息');
       return false;
     }
     this.client.publish({ destination, body: typeof body === 'string' ? body : JSON.stringify(body) });

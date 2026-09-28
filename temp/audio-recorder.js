@@ -3,6 +3,7 @@
  * 封装浏览器 MediaRecorder API，提供录音、停止、音频数据获取等功能
  */
 class AudioRecorder {
+  #logger = window.__logger.getLogger('AudioRecorder');
   constructor() {
     this.mediaRecorder = null;
     this.stream = null;
@@ -50,7 +51,7 @@ class AudioRecorder {
       };
 
       this.mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder错误:', event);
+        this.#logger.error('MediaRecorder错误', event);
         this.isRecording = false;
         this._stopVolumeMeter();
         this._releaseStream();
@@ -60,7 +61,7 @@ class AudioRecorder {
       this.mediaRecorder.start(100);
       this._startVolumeMeter();
     } catch (error) {
-      console.error('启动录音失败:', error);
+      this.#logger.error('启动录音失败', error);
       throw error;
     }
   }
@@ -134,7 +135,7 @@ class AudioRecorder {
       };
       updateVolume();
     } catch (e) {
-      console.warn('音量检测初始化失败:', e);
+      this.#logger.warn('音量检测初始化失败', e);
     }
   }
 

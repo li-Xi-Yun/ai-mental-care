@@ -1,4 +1,6 @@
 class ChatAPI {
+  static #logger = window.__logger.getLogger('ChatAPI');
+
   static async _request(url, options = {}) {
     const headers = {
       'Content-Type': 'application/json',
@@ -40,7 +42,7 @@ class ChatAPI {
         body: JSON.stringify(body)
       });
     } catch (error) {
-      console.error('发送消息失败:', error);
+      ChatAPI.#logger.error('发送消息失败:', error);
       throw error;
     }
   }
@@ -53,7 +55,7 @@ class ChatAPI {
         body: JSON.stringify({ pageNum, pageSize })
       });
     } catch (error) {
-      console.error('获取会话列表失败:', error);
+      ChatAPI.#logger.error('获取会话列表失败:', error);
       throw error;
     }
   }
@@ -66,7 +68,7 @@ class ChatAPI {
         body: JSON.stringify({ pageNum, pageSize })
       });
     } catch (error) {
-      console.error('获取对话记录失败:', error);
+      ChatAPI.#logger.error('获取对话记录失败:', error);
       throw error;
     }
   }
@@ -79,7 +81,7 @@ class ChatAPI {
         body: JSON.stringify({ pageNum, pageSize })
       });
     } catch (error) {
-      console.error('获取情绪分析列表失败:', error);
+      ChatAPI.#logger.error('获取情绪分析列表失败:', error);
       throw error;
     }
   }
@@ -89,7 +91,7 @@ class ChatAPI {
     try {
       return await ChatAPI._request(url, { method: 'GET' });
     } catch (error) {
-      console.error('获取情绪分析详情失败:', error);
+      ChatAPI.#logger.error('获取情绪分析详情失败:', error);
       throw error;
     }
   }
@@ -102,7 +104,7 @@ class ChatAPI {
         body: JSON.stringify({ pageNum, pageSize })
       });
     } catch (error) {
-      console.error('获取诊断书列表失败:', error);
+      ChatAPI.#logger.error('获取诊断书列表失败:', error);
       throw error;
     }
   }
@@ -112,7 +114,7 @@ class ChatAPI {
     try {
       return await ChatAPI._request(url, { method: 'GET' });
     } catch (error) {
-      console.error('获取诊断书详情失败:', error);
+      ChatAPI.#logger.error('获取诊断书详情失败:', error);
       throw error;
     }
   }
@@ -125,7 +127,7 @@ class ChatAPI {
         body: JSON.stringify({ conversationId, message })
       });
     } catch (error) {
-      console.error('发送测试消息失败:', error);
+      ChatAPI.#logger.error('发送测试消息失败:', error);
       throw error;
     }
   }
@@ -138,7 +140,7 @@ class ChatAPI {
     try {
       return await ChatAPI._request(url, { method: 'POST' });
     } catch (error) {
-      console.error('初始化语音会话失败:', error);
+      ChatAPI.#logger.error('初始化语音会话失败:', error);
       throw error;
     }
   }
@@ -148,7 +150,7 @@ class ChatAPI {
     try {
       return await ChatAPI._request(url, { method: 'DELETE' });
     } catch (error) {
-      console.error('结束语音会话失败:', error);
+      ChatAPI.#logger.error('结束语音会话失败:', error);
       throw error;
     }
   }
@@ -165,7 +167,7 @@ class ChatAPI {
         body: JSON.stringify(body)
       });
     } catch (error) {
-      console.error('语音测试流失败:', error);
+      ChatAPI.#logger.error('语音测试流失败:', error);
       throw error;
     }
   }
