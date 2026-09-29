@@ -63,6 +63,17 @@ public class ConversationAggregateScheduler {
         resetAggregateTimer(conversationId, DEFAULT_DELAY_SECONDS);
     }
 
+
+    /**
+     * 添加会话聚合任务
+     * <p>原子操作：同一会话并发调用也不会出现任务泄漏</p>
+     *
+     * @param conversationId 会话ID
+     */
+    public void addTask(Long conversationId, long delaySeconds) {
+        resetAggregateTimer(conversationId, delaySeconds);
+    }
+
     /**
      * 重置会话的聚合倒计时
      * <p>原子操作：同一会话并发调用也不会出现任务泄漏</p>
@@ -70,7 +81,7 @@ public class ConversationAggregateScheduler {
      * @param conversationId 会话ID
      * @param delaySeconds   延迟秒数
      */
-    public void resetAggregateTimer(Long conversationId, long delaySeconds) {
+    private void resetAggregateTimer(Long conversationId, long delaySeconds) {
         taskMap.compute(conversationId, (id, oldTimeout) -> {
             // 取消旧任务
             if (oldTimeout != null && !oldTimeout.isExpired()) {
@@ -164,5 +175,9 @@ public class ConversationAggregateScheduler {
         }
         taskMap.clear();
         log.info("语音聚合调度器已关闭");
+    }
+
+    public void setConversationMessageProcessor(ConversationMessageProcessor conversationMessageProcessor) {
+        this.conversationMessageProcessor = conversationMessageProcessor;
     }
 }

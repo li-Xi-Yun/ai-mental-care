@@ -15,10 +15,13 @@ import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
+import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 
 @Configuration
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private WebSocketOutboundInterceptor webSocketOutboundInterceptor;
     private ThreadPoolTaskExecutor webSocketInboundExecutor;
     private ThreadPoolTaskExecutor webSocketOutboundExecutor;
+    private WebSocketSessionHolder webSocketSessionHolder;
 
     @Autowired
     public void setMessageBrokerTaskScheduler(@Qualifier("webSocketTaskScheduler") ThreadPoolTaskScheduler taskScheduler,
@@ -42,7 +46,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                               WebSocketOutboundInterceptor webSocketOutboundInterceptor,
                                               WebSocketInboundInterceptor webSocketInboundInterceptor,
                                               @Qualifier("webSocketInboundExecutor") ThreadPoolTaskExecutor webSocketInboundExecutor,
-                                              @Qualifier("webSocketOutboundExecutor") ThreadPoolTaskExecutor webSocketOutboundExecutor) {
+                                              @Qualifier("webSocketOutboundExecutor") ThreadPoolTaskExecutor webSocketOutboundExecutor,
+                                              WebSocketSessionHolder webSocketSessionHolder) {
         this.messageBrokerTaskScheduler = taskScheduler;
         this.webSocketProperties = webSocketProperties;
         this.authHandshakeInterceptor = authHandshakeInterceptor;
@@ -50,6 +55,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         this.webSocketOutboundInterceptor = webSocketOutboundInterceptor;
         this.webSocketInboundExecutor = webSocketInboundExecutor;
         this.webSocketOutboundExecutor = webSocketOutboundExecutor;
+        this.webSocketSessionHolder = webSocketSessionHolder;
     }
 
     @Override
@@ -87,6 +93,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.setMessageSizeLimit(1024 * 1024);       // 入站消息上限 1MB
         registration.setSendBufferSizeLimit(1024 * 1024);    // 出站缓冲区 1MB
         registration.setSendTimeLimit(20 * 1000);           // 发送超时 20秒
+
+        // 装饰 SubProtocolWebSocketHandler，拦截会话生命周期以追踪活跃连接
+        // 配合 WebSocketSessionHolder + WebSocketGracefulShutdown 实现优雅关闭
+        registration.addDecoratorFactory(handler -> new WebSocketHandlerDecorator(handler) {
+            @Override
+            public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+                webSocketSessionHolder.register(session);
+                super.afterConnectionEstablished(session);
+            }
+
+            @Override
+            public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
+                webSocketSessionHolder.unregister(session.getId());
+                super.afterConnectionClosed(session, closeStatus);
+            }
+        });
     }
 
     @Override

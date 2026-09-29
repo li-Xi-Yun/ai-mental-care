@@ -126,6 +126,22 @@ public class AsrConnectionManager {
     }
 
     /**
+     * 发送音频流结束信号，通知ASR Provider音频已全部发送
+     * <p>会话不存在或已关闭时静默忽略。</p>
+     *
+     * @param userId 用户ID
+     */
+    public void sendEndOfStream(Long userId) {
+        String sessionId = userSessions.get(userId);
+        if (sessionId == null) {
+            log.warn("[ASR防腐层] 用户{}没有活跃的ASR会话，忽略结束信号", userId);
+            return;
+        }
+        log.info("[ASR防腐层] 用户{}会话{}发送音频流结束信号", userId, sessionId);
+        asrProvider.sendEndOfStream(sessionId);
+    }
+
+    /**
      * 获取当前活跃的ASR会话总数
      *
      * @return 活跃会话数

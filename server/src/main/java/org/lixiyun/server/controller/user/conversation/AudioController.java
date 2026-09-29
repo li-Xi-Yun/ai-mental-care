@@ -67,6 +67,15 @@ public class AudioController {
         audioService.interruptAudio(audioInterruptDTO);
     }
 
+    @MessageMapping("/speech/end")
+    @Operation(summary = "通知停止说话（WebSocket）", description = "在持续录音模式下，前端VAD检测到静音后调用，通知ASR引擎用户已停止说话")
+    public void stopSpeaking(
+            @Payload @Valid AudioInterruptDTO audioInterruptDTO
+    ) {
+        log.info("收到停止说话信号, conversationId: {}", audioInterruptDTO.getConversationId());
+        audioService.stopSpeaking(audioInterruptDTO.getConversationId());
+    }
+
     @DeleteMapping("/{conversationId}/end")
     @Operation(summary = "结束语音会话", description = "结束指定会话的语音对话模式，切换回文本对话模式，清理相关资源")
     public Result<Void> endSession(

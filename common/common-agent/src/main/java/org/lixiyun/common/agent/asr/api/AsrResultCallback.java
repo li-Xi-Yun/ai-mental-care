@@ -1,5 +1,7 @@
 package org.lixiyun.common.agent.asr.api;
 
+import org.lixiyun.common.agent.asr.model.AsrResult;
+
 /**
  * ASR实时语音识别结果回调接口
  * <p>所有方法均为default空实现，调用方可按需重写感兴趣的回调事件。</p>
@@ -8,9 +10,10 @@ package org.lixiyun.common.agent.asr.api;
  * <pre>
  * onTranscriberStart → onSentenceBegin →
  *   (onIntermediateResult)* →
- * onSentenceEnd → ... → onComplete
+ * onSentenceEnd → onComplete
  * </pre>
- * 若识别失败则回调{@link #onError(String, String)}替代{@link #onComplete()}
+ * <p>{@link #onComplete()} 为ASR会话生命周期回调，在识别结束后调用，可用于清理资源。</p>
+ * 若识别失败则回调{@link #onError(String, String)}替代{@link #onSentenceEnd(AsrResult)}和{@link #onComplete()}
  *
  * @author lixiyun
  * @since 2026-09-26
@@ -20,10 +23,25 @@ public interface AsrResultCallback {
     /**
      * 中间识别结果回调
      *
-     * @param text          当前中间识别文本
-     * @param sentenceIndex 句子编号，从1开始递增
+     * @param result 标准化AsrResult，包含text/sentenceIndex等字段
      */
-    default void onIntermediateResult(String text, int sentenceIndex) {
+    default void onIntermediateResult(AsrResult result) {
+    }
+
+    /**
+     * 一句话开始回调（服务端智能断句）
+     *
+     * @param result 标准化AsrResult，包含text/sentenceIndex等字段
+     */
+    default void onSentenceBegin(AsrResult result) {
+    }
+
+    /**
+     * 一句话结束回调
+     *
+     * @param result 标准化AsrResult，包含text/sentenceIndex/startTime/endTime/confidence等字段
+     */
+    default void onSentenceEnd(AsrResult result) {
     }
 
     /**
@@ -35,28 +53,8 @@ public interface AsrResultCallback {
     }
 
     /**
-     * 一句话开始回调（服务端智能断句）
-     *
-     * @param text          该句初始识别文本
-     * @param sentenceIndex 句子编号，从1开始递增
-     */
-    default void onSentenceBegin(String text, int sentenceIndex) {
-    }
-
-    /**
-     * 一句话结束回调
-     *
-     * @param text          该句最终识别文本
-     * @param sentenceIndex 句子编号，从1开始递增
-     * @param beginTime     该句在音频流中的开始时间（毫秒）
-     * @param time          当前已处理的音频时长（毫秒）
-     * @param confidence    该句识别置信度，0.0~1.0
-     */
-    default void onSentenceEnd(String text, int sentenceIndex, long beginTime, long time, double confidence) {
-    }
-
-    /**
-     * 整轮识别完毕回调
+     * ASR识别会话结束回调（连接关闭前最后一次通知）
+     * <p>每轮识别结束后调用，无论是否产生识别结果。可用于清理会话级资源。</p>
      */
     default void onComplete() {
     }
@@ -68,5 +66,28 @@ public interface AsrResultCallback {
      * @param statusText 错误状态描述
      */
     default void onError(String taskId, String statusText) {
+    }
+
+    // ==================== 已废弃方法（保留以兼容旧实现，待迁移完成后删除） ====================
+
+    /**
+     * @deprecated 请使用 {@link #onIntermediateResult(AsrResult)} 替代
+     */
+    @Deprecated
+    default void onIntermediateResult(String text, int sentenceIndex) {
+    }
+
+    /**
+     * @deprecated 请使用 {@link #onSentenceBegin(AsrResult)} 替代
+     */
+    @Deprecated
+    default void onSentenceBegin(String text, int sentenceIndex) {
+    }
+
+    /**
+     * @deprecated 请使用 {@link #onSentenceEnd(AsrResult)} 替代
+     */
+    @Deprecated
+    default void onSentenceEnd(String text, int sentenceIndex, long beginTime, long time, double confidence) {
     }
 }

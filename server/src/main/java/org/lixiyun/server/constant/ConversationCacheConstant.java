@@ -34,7 +34,7 @@ public interface ConversationCacheConstant {
     /** Hash Field - 历史心理诊断结果，只保留最新一次诊断数据 */
     String HASH_FIELD_PSYCHOLOGICAL_DIAGNOSIS = "psychological_diagnosis";
 
-    /** Hash Field - 模型处理状态标识，防止并发重复处理 */
+    /** Hash Field - 对话模型处理状态标识，防止并发重复处理 */
     String HASH_FIELD_PROCESS_FLAG = "process_flag";
 
     /** Hash Field - 会话私有映射表，存储Skill工具调用链的原始数据 */

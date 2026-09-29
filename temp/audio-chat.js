@@ -100,6 +100,46 @@
     window.speechSynthesis.speak(utterance);
   }
 
+  // ==================== WebM → PCM 16K 转换 ====================
+
+  async function convertToPcm16k(webmBase64) {
+    const webmBytes = Uint8Array.from(atob(webmBase64), function (c) { return c.charCodeAt(0); });
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let audioBuffer;
+    try {
+      audioBuffer = await audioContext.decodeAudioData(webmBytes.buffer.slice(0));
+    } finally {
+      audioContext.close();
+    }
+
+    const targetRate = 16000;
+    const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetRate, targetRate);
+    const source = offlineCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(offlineCtx.destination);
+    source.start();
+    const resampled = await offlineCtx.startRendering();
+
+    const pcmFloat = resampled.getChannelData(0);
+    const int16Data = new Int16Array(pcmFloat.length);
+    for (var i = 0; i < pcmFloat.length; i++) {
+      var sample = Math.max(-1, Math.min(1, pcmFloat[i]));
+      int16Data[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+    }
+
+    const pcmUint8 = new Uint8Array(int16Data.buffer);
+    const blob = new Blob([pcmUint8], { type: 'application/octet-stream' });
+    const reader = new FileReader();
+    return new Promise(function (resolve, reject) {
+      reader.onloadend = function () {
+        var base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   // ==================== PCM → WAV → Base64 转换 ====================
 
   function writeString(view, offset, str) {
@@ -375,8 +415,10 @@
       currentAsrText = '';
       finalizeAsrMessage();
 
-      // 直接发送到 AudioController 进行语音对话
-      audioSender.sendAudioMessage(audioBase64, AppState.conversationId);
+      // WebM → PCM 16K 转换后再发送到 AudioController
+      recordStatus.textContent = '音频转换中...';
+      const pcmBase64 = await convertToPcm16k(audioBase64);
+      audioSender.sendAudioMessage(pcmBase64, AppState.conversationId);
       recordStatus.textContent = '等待识别结果...';
     } catch (error) {
       addSystemMessage('发送语音失败: ' + error.message);

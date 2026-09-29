@@ -87,6 +87,18 @@ public interface IAsrProvider {
     void sendAudio(String sessionId, byte[] data, int length);
 
     /**
+     * 发送音频流结束信号，通知Provider"音频已全部发送，可以开始识别"
+     * <p>仅发送结束帧（{@code NEG_WITH_SEQUENCE}），不断开WebSocket连接。
+     * 保持连接存活以等待服务端返回识别结果，结果将通过创建会话时注册的
+     * {@link AsrResultCallback}异步回调。</p>
+     * <p>默认空实现，由各厂商Provider按需覆写。</p>
+     *
+     * @param sessionId 会话唯一标识
+     */
+    default void sendEndOfStream(String sessionId) {
+    }
+
+    /**
      * 取消ASR会话：关闭连接并清理所有资源，释放会话槽位
      *
      * @param sessionId 会话唯一标识

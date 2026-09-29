@@ -410,7 +410,7 @@ websocket:
   user-private-prefix: '/queue'
 
 asr:
-  # 厂商选择：alibaba_nls（默认）/ volcengine（待实现）
+  # 厂商选择：alibaba_nls（默认）/ volcengine
   provider: ${asr.provider:alibaba_nls}
 
   # ==================== 阿里云NLS配置 ====================
@@ -423,6 +423,38 @@ asr:
     gateway-url: ${asr.alibaba.gateway-url:}
     # Token刷新间隔(小时)
     token-refresh-hours: ${asr.alibaba.token-refresh-hours:23}
+
+  # ==================== 火山引擎ASR配置 ====================
+  # provider=volcengine 时生效（@ConditionalOnProperty）
+  volcengine:
+    # WebSocket端点地址
+    endpoint: ${asr.volcengine.endpoint:wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async}
+    # X-Api-Key（新版控制台鉴权）
+    api-key: ${asr.volcengine.api-key:}
+    # X-Api-Resource-Id（模型版本标识）
+    resource-id: ${asr.volcengine.resource-id:}
+    # X-Api-App-Key（旧版控制台鉴权，兼容）
+    app-key: ${asr.volcengine.app-key:}
+    # X-Api-Access-Key（旧版控制台鉴权，兼容）
+    access-key: ${asr.volcengine.access-key:}
+    # 音频格式
+    format: ${asr.volcengine.format:pcm}
+    # 音频编码格式
+    codec: ${asr.volcengine.codec:raw}
+    # 采样率 Hz
+    rate: ${asr.volcengine.rate:16000}
+    # 采样位深 bit
+    bits: ${asr.volcengine.bits:16}
+    # 声道数
+    channel: ${asr.volcengine.channel:1}
+    # WebSocket连接超时时间（毫秒）
+    connect-timeout-ms: ${asr.volcengine.connect-timeout-ms:10000}
+    # 会话空闲超时时间（毫秒）
+    session-idle-timeout-ms: ${asr.volcengine.session-idle-timeout-ms:120000}
+    # 最大并发会话数
+    max-sessions: ${asr.volcengine.max-sessions:100}
+    # 保活静音发送间隔（毫秒），0表示不发送
+    keep-alive-interval-ms: ${asr.volcengine.keep-alive-interval-ms:15000}
 
 tts:
   # 厂商选择：alibaba_nls / volcengine

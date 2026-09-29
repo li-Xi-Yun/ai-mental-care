@@ -135,4 +135,17 @@ public interface AudioService {
      */
     void endSession(Long conversationId);
 
+    /**
+     * 通知ASR引擎用户已停止说话
+     * <p>
+     * 在持续录音模式下，前端VAD检测到静音后调用此方法，
+     * 通知ASR引擎"音频已全部发送，可以开始识别"。
+     * ASR识别结果将通过已注册的{@link org.lixiyun.common.agent.asr.api.AsrResultCallback}异步回调，
+     * 触发{@code onSentenceEnd} → 聚合调度 → LLM对话流程。
+     * </p>
+     *
+     * @param conversationId 会话ID
+     */
+    void stopSpeaking(Long conversationId);
+
 }

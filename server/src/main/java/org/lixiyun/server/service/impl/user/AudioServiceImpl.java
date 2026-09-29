@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.asr.api.AsrResultCallback;
+import org.lixiyun.common.agent.asr.model.AsrResult;
 import org.lixiyun.common.agent.tts.api.TtsResultCallback;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
@@ -60,19 +61,23 @@ public class AudioServiceImpl implements AudioService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AudioSessionInitVO initSession(Long conversationId) {
-        log.info("音频Service-开始初始化语音会话，会话ID：{}", conversationId);
-
         Long currentUserId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[AI语音交互] 开始初始化语音会话，会话ID：{}，用户ID：{}", conversationId, currentUserId);
 
         AudioSessionInitVO sessionInitVO;
         if (conversationId == null) {
+            log.debug("[AI语音交互] 会话ID为空，将创建新语音会话，用户ID：{}", currentUserId);
             sessionInitVO = createNewAudioConversation(currentUserId);
             conversationId = sessionInitVO.getConversationId();
         } else {
+            log.debug("[AI语音交互] 会话ID非空，处理已存在会话，会话ID：{}，用户ID：{}", conversationId, currentUserId);
             sessionInitVO = handleExistingConversation(conversationId, currentUserId);
         }
 
         conversationIdMap.put(currentUserId, conversationId);
+        log.debug("[AI语音交互] 会话ID映射已记录，用户ID：{} -> 会话ID：{}", currentUserId, conversationId);
+
+        log.info("[AI语音交互] 语音会话初始化完成，会话ID：{}，用户ID：{}", conversationId, currentUserId);
         return sessionInitVO;
     }
 
@@ -87,7 +92,7 @@ public class AudioServiceImpl implements AudioService {
      * @return 语音会话初始化响应VO，包含新创建的会话ID
      */
     private AudioSessionInitVO createNewAudioConversation(Long userId) {
-        log.info("音频Service-创建新语音会话，用户ID：{}", userId);
+        log.info("[AI语音交互] 创建新语音会话，用户ID：{}", userId);
 
         Conversation newConversation = Conversation.builder()
                 .userId(userId)
@@ -95,13 +100,16 @@ public class AudioServiceImpl implements AudioService {
                 .lastActiveTime(LocalDateTime.now())
                 .build();
 
-        conversationMapper.insert(newConversation);
-
+        int insertCount = conversationMapper.insert(newConversation);
         Long newConversationId = newConversation.getId();
-        log.info("音频Service-新会话创建成功，会话ID：{}", newConversationId);
+        log.debug("[AI语音交互] 数据库插入结果：{}，新会话ID：{}，会话模式：{}，活跃时间：{}",
+                insertCount, newConversationId, newConversation.getChatMode(), newConversation.getLastActiveTime());
+
+        log.info("[AI语音交互] 新会话创建成功，会话ID：{}", newConversationId);
 
         initializeAudioResources(newConversationId, userId);
 
+        log.debug("[AI语音交互] 返回AudioSessionInitVO，会话ID：{}", newConversationId);
         return AudioSessionInitVO.builder()
                 .conversationId(newConversationId)
                 .build();
@@ -120,22 +128,27 @@ public class AudioServiceImpl implements AudioService {
      * @throws BusinessException 会话不存在或状态异常时抛出
      */
     private AudioSessionInitVO handleExistingConversation(Long conversationId, Long userId) {
-        log.info("音频Service-处理已存在会话，会话ID：{}，用户ID：{}", conversationId, userId);
+        log.info("[AI语音交互] 处理已存在会话，会话ID：{}，用户ID：{}", conversationId, userId);
 
         Conversation existingConversation = validateConversationExistence(conversationId, userId);
+        log.debug("[AI语音交互] 会话校验通过，当前轮次：{}，当前模式：{}",
+                existingConversation.getCurrentRound(), existingConversation.getChatMode());
 
         Conversation cacheMetadata = conversationCacheManager.getCacheMetadata(conversationId);
         String currentChatMode = cacheMetadata != null ? cacheMetadata.getChatMode() : null;
 
-        log.debug("音频Service-当前会话模式：{}，会话ID：{}", currentChatMode, conversationId);
+        log.debug("[AI语音交互] 缓存中的会话模式：{}，会话ID：{}", currentChatMode, conversationId);
 
         if (!ConversationCacheConstant.CONVERSATION_TYPE_AUDIO.equals(currentChatMode)) {
-            log.info("音频Service-会话需要从文本模式切换为语音模式，会话ID：{}", conversationId);
+            log.info("[AI语音交互] 会话需要从文本模式（{}）切换为语音模式，会话ID：{}", currentChatMode, conversationId);
             switchToAudioMode(conversationId, existingConversation);
+        } else {
+            log.debug("[AI语音交互] 会话已是语音模式，无需切换，会话ID：{}", conversationId);
         }
 
         initializeAudioResources(conversationId, userId);
 
+        log.debug("[AI语音交互] 已存在会话处理完成，会话ID：{}，用户ID：{}", conversationId, userId);
         return AudioSessionInitVO.builder()
                 .conversationId(conversationId)
                 .build();
@@ -152,19 +165,20 @@ public class AudioServiceImpl implements AudioService {
      * @param conversation            会话实体对象
      */
     private void switchToAudioMode(Long conversationId, Conversation conversation) {
-        log.info("音频Service-开始切换会话模式为语音模式，会话ID：{}", conversationId);
+        log.info("[AI语音交互] 开始切换会话模式为语音模式，会话ID：{}，原始模式：{}", conversationId, conversation.getChatMode());
 
         conversation.setChatMode(ConversationCacheConstant.CONVERSATION_TYPE_AUDIO);
         conversation.setLastActiveTime(LocalDateTime.now());
-        conversationMapper.updateById(conversation);
-
-        log.debug("音频Service-数据库模式更新完成，会话ID：{}", conversationId);
+        int updateCount = conversationMapper.updateById(conversation);
+        log.debug("[AI语音交互] 数据库模式更新完成，影响行数：{}，会话ID：{}", updateCount, conversationId);
 
         conversationCacheManager.updateCacheMetadata(conversationId, conversation);
-        conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_CONVERSATION_TYPE, ConversationCacheConstant.CONVERSATION_TYPE_AUDIO);
-        log.debug("音频Service-缓存元数据刷新完成，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 缓存元数据已刷新，会话ID：{}", conversationId);
 
-        log.info("音频Service-会话模式切换完成，会话ID：{}", conversationId);
+        conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_CONVERSATION_TYPE, ConversationCacheConstant.CONVERSATION_TYPE_AUDIO);
+        log.debug("[AI语音交互] 缓存Map字段已更新，会话ID：{}", conversationId);
+
+        log.info("[AI语音交互] 会话模式切换完成，会话ID：{}", conversationId);
     }
 
     /**
@@ -178,18 +192,22 @@ public class AudioServiceImpl implements AudioService {
      * @param userId         当前用户ID
      */
     private void initializeAudioResources(Long conversationId, Long userId) {
-        log.info("音频Service-开始初始化音频资源，会话ID：{}，用户ID：{}", conversationId, userId);
+        log.info("[AI语音交互] 开始初始化音频资源，会话ID：{}，用户ID：{}", conversationId, userId);
 
         Long oldConversationId = conversationIdMap.remove(userId);
-        if(oldConversationId != null){
-            log.error("音频Service-会话已存在音频资源，清除旧资源，会话ID：{}，用户ID：{}", conversationId, userId);
+        if (oldConversationId != null) {
+            log.warn("[AI语音交互] 用户存在旧的音频资源映射，旧会话ID：{}，新会话ID：{}，用户ID：{}",
+                    oldConversationId, conversationId, userId);
             endSession(oldConversationId);
         }
+
         asrConnectionManager.register(userId, createAsrCallback(conversationId, userId));
-        log.debug("音频Service-ASR连接确认就绪，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] ASR连接注册成功，会话ID：{}，用户ID：{}", conversationId, userId);
 
         ttsConnectionManager.register(userId, createTtsCallback(conversationId, userId));
-        log.debug("音频Service-TTS连接确认就绪，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] TTS连接注册成功，会话ID：{}，用户ID：{}", conversationId, userId);
+
+        log.info("[AI语音交互] 音频资源初始化完成，会话ID：{}，用户ID：{}", conversationId, userId);
     }
 
     /**
@@ -209,14 +227,18 @@ public class AudioServiceImpl implements AudioService {
     private AsrResultCallback createAsrCallback(Long conversationId, Long userId) {
         return new AsrResultCallback() {
             @Override
-            public void onIntermediateResult(String text, int sentenceIndex) {
-                log.debug("ASR回调-中间识别结果，会话ID：{}，句子编号：{}，文本：{}", conversationId, sentenceIndex, text);
+            public void onIntermediateResult(AsrResult result) {
+                String text = result.getText() != null ? result.getText() : "";
+                log.debug("[AI语音交互] ASR回调-中间识别结果，会话ID：{}，句子编号：{}，文本：{}",
+                        conversationId, result.getSentenceIndex(), text);
                 conversationWebSocketManager.sendAsrIntermediateResult(userId, conversationId, text);
             }
 
             @Override
-            public void onSentenceEnd(String text, int sentenceIndex, long beginTime, long time, double confidence) {
-                log.info("ASR回调-句子识别完成，会话ID：{}，句子编号：{}，文本：{}，置信度：{}", conversationId, sentenceIndex, text, confidence);
+            public void onSentenceEnd(AsrResult result) {
+                String text = result.getText() != null ? result.getText() : "";
+                log.info("[AI语音交互] ASR回调-句子识别完成，会话ID：{}，句子编号：{}，文本：{}，置信度：{}",
+                        conversationId, result.getSentenceIndex(), text, result.getConfidence());
 
                 Conversation cacheMetadata = conversationCacheManager.getCacheMetadata(conversationId);
                 int currentRound;
@@ -237,17 +259,17 @@ public class AudioServiceImpl implements AudioService {
                         .build();
 
                 conversationMemoryMapper.insert(conversationMemory);
-                log.debug("ASR回调-用户消息保存成功，会话ID：{}，轮次：{}，消息ID：{}", conversationId, currentRound, conversationMemory.getId());
+                log.debug("[AI语音交互] ASR回调-用户消息保存成功，会话ID：{}，轮次：{}，消息ID：{}", conversationId, currentRound, conversationMemory.getId());
 
                 saveMessageToZSet(conversationId);
 
-                aggregateScheduler.addTask(conversationId);
-                log.debug("ASR回调-聚合调度器已添加任务，会话ID：{}", conversationId);
+                aggregateScheduler.addTask(conversationId, 2);
+                log.debug("[AI语音交互] ASR回调-聚合调度器已添加任务，会话ID：{}", conversationId);
             }
 
             @Override
             public void onError(String taskId, String statusText) {
-                log.error("ASR回调-识别失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
+                log.error("[AI语音交互] ASR回调-识别失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
             }
         };
     }
@@ -269,13 +291,13 @@ public class AudioServiceImpl implements AudioService {
         return new TtsResultCallback() {
             @Override
             public void onAudioData(byte[] audioData) {
-                log.debug("TTS回调-音频数据推送，会话ID：{}，数据长度：{}字节", conversationId, audioData.length);
+                log.debug("[AI语音交互] TTS回调-音频数据推送，会话ID：{}，数据长度：{}字节", conversationId, audioData.length);
                 conversationWebSocketManager.sendAudioBinary(userId, conversationId, audioData);
             }
 
             @Override
             public void onFail(String taskId, String statusText) {
-                log.error("TTS回调-合成失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
+                log.error("[AI语音交互] TTS回调-合成失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
             }
         };
     }
@@ -287,28 +309,30 @@ public class AudioServiceImpl implements AudioService {
      */
     private void saveMessageToZSet(Long conversationId) {
         conversationCacheManager.saveMessageToZSet(conversationId, LocalDateTime.now());
-        log.debug("消息ZSet集合保存成功，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 消息ZSet集合保存成功，会话ID：{}", conversationId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void sendAudioMessage(AudioMessageSendDTO audioMessageSendDTO) {
-        log.info("音频Service-开始发送语音消息");
-
         byte[] audioMessage = audioMessageSendDTO.getAudioMessage();
         Long conversationId = audioMessageSendDTO.getConversationId();
 
+        log.info("[AI语音交互] 开始发送语音消息，会话ID：{}，音频数据长度：{}字节", conversationId,
+                audioMessage == null ? 0 : audioMessage.length);
+
         if (audioMessage == null || audioMessage.length == 0) {
-            log.error("音频Service-语音消息数据为空");
+            log.error("[AI语音交互] 语音消息数据为空，会话ID：{}", conversationId);
             throw new BusinessException(ConversationExceptionEnum.AUDIO_DATA_NOT_EXIST);
         }
 
         Long currentUserId = UserInfoThreadLocalUtil.getCurrentIdThrow();
         validateConversationExistence(conversationId, currentUserId);
 
-        log.debug("音频Service-参数校验通过，会话ID：{}，用户ID：{}，音频数据长度：{}字节", conversationId, currentUserId, audioMessage.length);
+        log.debug("[AI语音交互] 参数校验通过，会话ID：{}，用户ID：{}，音频数据长度：{}字节", conversationId, currentUserId, audioMessage.length);
 
         asrConnectionManager.sendAudio(currentUserId, audioMessage);
+        log.debug("[AI语音交互] 音频数据已发送至ASR引擎，会话ID：{}，用户ID：{}", conversationId, currentUserId);
 
         Conversation conversationUpdate = Conversation.builder()
                 .id(conversationId)
@@ -316,92 +340,103 @@ public class AudioServiceImpl implements AudioService {
                 .build();
 
         conversationMapper.updateById(conversationUpdate);
+        log.debug("[AI语音交互] 数据库活跃时间已更新，会话ID：{}", conversationId);
 
-        log.info("音频Service-语音消息发送完成，会话ID：{}", conversationId);
+        log.info("[AI语音交互] 语音消息发送完成，会话ID：{}，用户ID：{}", conversationId, currentUserId);
     }
 
     @Override
     public void interruptAudio(AudioInterruptDTO audioInterruptDTO) {
-        log.info("音频Service-开始执行语音中断");
-
         Long conversationId = audioInterruptDTO.getConversationId();
+        log.info("[AI语音交互] 开始执行语音中断，会话ID：{}", conversationId);
 
-        log.debug("音频Service-获取模型处理状态标识，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 获取模型处理状态标识，会话ID：{}", conversationId);
         Integer processFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG);
 
         if (processFlag == null || processFlag != ConversationCacheConstant.PROCESS_FLAG_PROCESSING) {
-            log.debug("音频Service-会话未处于处理中状态，无需中断，会话ID：{}", conversationId);
+            log.debug("[AI语音交互] 会话未处于处理中状态（processFlag={}），无需中断，会话ID：{}", processFlag, conversationId);
             return;
         }
 
-        log.debug("音频Service-检查中断标识是否存在，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 会话处于处理中状态，检查中断标识，processFlag={}，会话ID：{}", processFlag, conversationId);
         Integer interruptFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
 
         if (interruptFlag != null && interruptFlag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE) {
-            log.debug("音频Service-中断标识已存在，无需重复设置，会话ID：{}", conversationId);
+            log.debug("[AI语音交互] 中断标识已存在（interruptFlag={}），无需重复设置，会话ID：{}", interruptFlag, conversationId);
             return;
         }
 
-        log.debug("音频Service-设置中断标志，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 设置中断标志，当前interruptFlag={}，会话ID：{}", interruptFlag, conversationId);
         conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG, ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE);
 
         conversationStreamHolder.cancelStream(conversationId);
-        log.debug("音频Service-LLM流式订阅已取消，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] LLM流式订阅已取消，会话ID：{}", conversationId);
 
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
 
         ttsConnectionManager.interrupt(currentId);
-        log.debug("音频Service-TTS合成已中断，用户ID：{}", currentId);
+        log.debug("[AI语音交互] TTS合成已中断，用户ID：{}", currentId);
 
-        log.info("音频Service-语音中断执行完成，会话ID：{}，用户ID：{}", conversationId, currentId);
+        log.info("[AI语音交互] 语音中断执行完成，会话ID：{}，用户ID：{}", conversationId, currentId);
+    }
+
+    @Override
+    public void stopSpeaking(Long conversationId) {
+        Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[AI语音交互] 收到用户停止说话信号，会话ID：{}，用户ID：{}", conversationId, userId);
+        asrConnectionManager.sendEndOfStream(userId);
+        log.debug("[AI语音交互] 音频流结束信号已发送，等待ASR识别结果，会话ID：{}", conversationId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void endSession(Long conversationId) {
-        log.info("音频Service-开始结束语音会话，会话ID：{}", conversationId);
-
         Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[AI语音交互] 开始结束语音会话，会话ID：{}，用户ID：{}", conversationId, userId);
 
         Conversation conversation = validateConversationExistence(conversationId, userId);
+        log.debug("[AI语音交互] 会话校验通过，准备检查消息记录，会话ID：{}", conversationId);
+
         boolean isCleanSuccess = checkAndCleanEmptyConversation(conversationId);
 
         Conversation cacheMetadata = conversationCacheManager.getCacheMetadata(conversationId);
         if (cacheMetadata != null) {
-            log.debug("音频Service-会话缓存不存在，直接结束，会话ID：{}", conversationId);
             String currentChatMode = cacheMetadata.getChatMode();
+            log.debug("[AI语音交互] 缓存中存在会话元数据，当前模式：{}，会话ID：{}", currentChatMode, conversationId);
             if (!ConversationCacheConstant.CONVERSATION_TYPE_AUDIO.equals(currentChatMode)) {
-                log.debug("音频Service-当前会话非语音模式，无需处理，会话ID：{}，当前模式：{}", conversationId, currentChatMode);
+                log.debug("[AI语音交互] 当前会话非语音模式，无需处理，会话ID：{}，当前模式：{}", conversationId, currentChatMode);
                 return;
             }
+        } else {
+            log.debug("[AI语音交互] 缓存中不存在会话元数据，会话ID：{}", conversationId);
         }
 
-        log.debug("音频Service-开始执行语音中断流程，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 开始执行语音中断流程，会话ID：{}", conversationId);
         interruptAudio(AudioInterruptDTO.builder().conversationId(conversationId).build());
 
-        log.debug("音频Service-关闭ASR连接，用户ID：{}", userId);
+        log.debug("[AI语音交互] 关闭ASR连接，用户ID：{}", userId);
         asrConnectionManager.cancel(userId);
 
-        log.debug("音频Service-关闭TTS连接，用户ID：{}", userId);
+        log.debug("[AI语音交互] 关闭TTS连接，用户ID：{}", userId);
         ttsConnectionManager.cancel(userId);
 
-        log.debug("音频Service-取消时间轮中的聚合任务，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 取消时间轮中的聚合任务，会话ID：{}", conversationId);
         aggregateScheduler.cancelTask(conversationId);
 
-        log.debug("音频Service-从ZSet中移除会话ID，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 从ZSet中移除会话ID，会话ID：{}", conversationId);
         conversationCacheManager.removeCacheZSetValue(conversationId);
 
         if (isCleanSuccess) {
-            log.debug("音频Service-删除会话所有消息，会话ID：{}", conversationId);
+            log.info("[AI语音交互] 会话无消息记录，删除会话及所有相关数据，会话ID：{}", conversationId);
             conversationMemoryMapper.delete(
                     new LambdaQueryWrapper<ConversationMemory>()
                             .eq(ConversationMemory::getConversationId, conversationId)
             );
         } else {
-            log.debug("音频Service-更新数据库会话模式为文本模式，会话ID：{}", conversationId);
+            log.debug("[AI语音交互] 更新数据库会话模式为文本模式，会话ID：{}", conversationId);
             updateConversationModeToText(conversationId, conversation);
 
-            log.debug("音频Service-更新缓存会话模式为文本模式，会话ID：{}", conversationId);
+            log.debug("[AI语音交互] 更新缓存会话模式为文本模式，会话ID：{}", conversationId);
             conversationCacheManager.updateCacheMapValue(
                     conversationId,
                     ConversationCacheConstant.HASH_FIELD_CONVERSATION_TYPE,
@@ -409,7 +444,7 @@ public class AudioServiceImpl implements AudioService {
             );
         }
 
-        log.info("音频Service-语音会话结束完成，会话ID：{}，用户ID：{}", conversationId, userId);
+        log.info("[AI语音交互] 语音会话结束完成，会话ID：{}，用户ID：{}", conversationId, userId);
     }
 
     /**
@@ -425,7 +460,7 @@ public class AudioServiceImpl implements AudioService {
      * @throws BusinessException 会话不存在时抛出{@link ConversationExceptionEnum#CONVERSATION_NOT_EXIST}
      */
     private Conversation validateConversationExistence(Long conversationId, Long userId) {
-        log.debug("音频Service-校验会话存在性，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 校验会话存在性，会话ID：{}，用户ID：{}", conversationId, userId);
 
         Conversation conversation = conversationMapper.selectOne(
                 new LambdaQueryWrapper<Conversation>()
@@ -434,11 +469,12 @@ public class AudioServiceImpl implements AudioService {
         );
 
         if (conversation == null) {
-            log.error("音频Service-会话不存在或无权访问，会话ID：{}，用户ID：{}", conversationId, userId);
+            log.error("[AI语音交互] 会话不存在或无权访问，会话ID：{}，用户ID：{}", conversationId, userId);
             throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
         }
 
-        log.debug("音频Service-会话存在性校验通过，会话ID：{}，用户ID：{}", conversationId, conversation.getUserId());
+        log.debug("[AI语音交互] 会话存在性校验通过，会话ID：{}，所属用户ID：{}，当前模式：{}，当前轮次：{}",
+                conversationId, conversation.getUserId(), conversation.getChatMode(), conversation.getCurrentRound());
         return conversation;
     }
 
@@ -448,7 +484,7 @@ public class AudioServiceImpl implements AudioService {
      * @return 是否清理成功
      */
     private boolean checkAndCleanEmptyConversation(Long conversationId) {
-        log.debug("音频Service-检查会话是否包含消息记录，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 检查会话是否包含消息记录，会话ID：{}", conversationId);
 
         long messageCount = conversationMemoryMapper.selectCount(
                 new LambdaQueryWrapper<ConversationMemory>()
@@ -456,12 +492,12 @@ public class AudioServiceImpl implements AudioService {
         );
 
         if (messageCount == 0) {
-            log.warn("音频Service-会话无消息记录，执行删除操作，会话ID：{}", conversationId);
+            log.warn("[AI语音交互] 会话无消息记录，执行删除操作，会话ID：{}", conversationId);
             conversationMapper.deleteById(conversationId);
             return true;
         }
 
-        log.debug("音频Service-会话包含消息记录，消息数：{}，会话ID：{}", messageCount, conversationId);
+        log.debug("[AI语音交互] 会话包含消息记录，消息数：{}，会话ID：{}", messageCount, conversationId);
         return false;
     }
 
@@ -479,7 +515,7 @@ public class AudioServiceImpl implements AudioService {
         conversation.setChatMode(ConversationCacheConstant.CONVERSATION_TYPE_TEXT);
         conversation.setLastActiveTime(LocalDateTime.now());
         conversationMapper.updateById(conversation);
-        log.debug("音频Service-数据库模式更新成功，会话ID：{}", conversationId);
+        log.debug("[AI语音交互] 数据库模式更新成功，会话ID：{}", conversationId);
     }
 
 }

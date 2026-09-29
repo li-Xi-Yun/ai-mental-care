@@ -1,0 +1,53 @@
+# ================================================================
+# 火山引擎实时语音识别(ASR) - Request请求可选参数配置
+# 这些参数会在每次创建FullClientRequest时通过JSON下发给服务端
+# 密钥/鉴权参数请勿放在此处，应在server模块的application.yml中配置
+# ================================================================
+
+asr:
+  volcengine:
+    request:
+      # 模型名称（bigmodel/bigmodel_new/streaming等）
+      model-name: bigmodel
+      # 是否启用二遍识别模式
+      enable-nonstream: true
+      # 是否启用说话人识别
+      enable-speaker-info: true
+      # 是否启用ITN（逆文本正则化，如将"一千二百三十四"转为"1234"）
+      enable-itn: true
+      # 是否启用标点预测
+      enable-punc: true
+      # 是否启用DDC（人声音质增强检测）
+      enable-ddc: true
+      # 中文特殊方言文本转换，留空表示不做转换
+      output-zh-variant:
+      # 是否展示分句信息
+      show-utterances: true
+      # 是否展示语速信息（token/s），需enable-nonstream=true
+      show-speech-rate: true
+      # 是否展示音量信息（dB），需enable-nonstream=true
+      show-volume: true
+      # 是否启用语种检测（相邻两次语种识别结果相同时才会对外展示）
+      enable-lid: true
+      # 是否启用情绪检测（angry/happy/neutral/sad/surprise）
+      enable-emotion-detection: true
+      # 是否启用性别检测
+      enable-gender-detection: true
+      # 是否启用年龄检测
+      enable-age-detection: true
+      # 结果返回类型：full=全量结果，single=增量结果返回，即不返回之前分句的结果
+      result-type: single
+      # 是否启用大模型语义润色（需开通对应服务）
+      enable-accelerate-text: false
+      # 大模型语义润色分数阈值（0~100），结果confidence超过此阈值才会触发润色
+      accelerate-score: 0
+      # VAD切句时长 ms（2000~6000），值越小切句越细
+      vad-segment-duration: 3000
+      # 静音事件VAD结束窗口大小 ms（300~3000）
+      end-window-size: 800
+      # 强制转语音等待时间 ms
+      force-to-speech-time: 100
+      # 敏感词过滤配置（JSON字符串），留空表示不过滤
+      sensitive-words-filter:
+      # 是否启用POI-Match兴趣点匹配
+      enable-poi-fc: false
