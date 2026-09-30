@@ -121,6 +121,21 @@ public interface IAsrProvider {
     int getActiveSessionCount();
 
     /**
+     * 短连接语音识别：一次调用完成"建立连接→发送音频→获取结果→自动关闭连接"的完整生命周期。
+     * <p>Provider内部负责：创建临时WebSocket、发送FullClientRequest启动识别、
+     * 发送全部音频帧、发送结束帧（{@code NEG_WITH_SEQUENCE}）、
+     * 接收识别结果后自动关闭连接。识别结果异步回调给{@code callback}。</p>
+     * <p>默认抛出{@link UnsupportedOperationException}，由各厂商Provider按需覆写。</p>
+     *
+     * @param data     完整音频数据（PCM 16kHz 16bit 单声道）
+     * @param callback 识别结果回调（异步）
+     */
+    default void recognizeShortAudio(byte[] data, AsrResultCallback callback) {
+        throw new UnsupportedOperationException(
+                "Short-connection ASR not supported by " + getProviderType());
+    }
+
+    /**
      * 获取当前Provider对应的厂商类型
      *
      * @return 厂商类型枚举

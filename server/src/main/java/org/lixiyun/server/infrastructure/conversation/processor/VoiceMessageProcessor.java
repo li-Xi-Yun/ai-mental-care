@@ -144,24 +144,24 @@ public class VoiceMessageProcessor implements MessageProcessor {
         return new StreamEventListener() {
             @Override
             public void onContentChunk(String text) {
-                if (isInterrupted(conversationId)) {
-                    log.info("AI对话语音处理器-检测到中断标志，停止WebSocket推送，会话ID：{}", conversationId);
-                    ConversationMemory finalMemory = ConversationMemory.builder()
-                            .userId(userId)
-                            .conversationId(conversationId)
-                            .content(contentBuilder.toString())
-                            .type(MessageType.ASSISTANT.getName())
-                            .state(ConversationMemory.STATE_PROCESSED)
-                            .roundNum(currentRound)
-                            .build();
-
-                    updateCacheHistory(conversationId, finalMemory);
-                    return;
-                }
                 log.debug("[语音处理] 收到内容分块，长度：{}，累计长度：{}，会话ID：{}", text != null ? text.length() : 0, contentBuilder.length(), conversationId);
                 contentBuilder.append(text);
                 ttsConnectionManager.sendTextSegment(userId, text);
                 conversationWebSocketManager.sendAudioStream(userId, conversationId, text);
+            }
+
+            @Override
+            public void onInterrupted() {
+                log.info("AI对话语音处理器-检测到流中断，保存已输出部分内容，会话ID：{}", conversationId);
+                ConversationMemory finalMemory = ConversationMemory.builder()
+                        .userId(userId)
+                        .conversationId(conversationId)
+                        .content(contentBuilder.toString())
+                        .type(MessageType.ASSISTANT.getName())
+                        .state(ConversationMemory.STATE_PROCESSED)
+                        .roundNum(currentRound)
+                        .build();
+                updateCacheHistory(conversationId, finalMemory);
             }
 
             @Override
@@ -194,43 +194,9 @@ public class VoiceMessageProcessor implements MessageProcessor {
             @Override
             public void onFinished() {
                 conversationStreamHolder.removeStream(conversationId);
-                clearInterruptFlag(conversationId);
                 log.info("AI对话语音处理器-流程结束，会话ID：{}", conversationId);
             }
         };
-    }
-
-    /**
-     * 检查会话是否存在中断标志
-     *
-     * @param conversationId 会话ID
-     * @return 是否被中断
-     */
-    private boolean isInterrupted(Long conversationId) {
-        try {
-            int flag = (int) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
-            boolean interrupted = flag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE;
-            log.debug("[语音处理] 检查中断标志，会话ID：{}，标志值：{}，是否中断：{}", conversationId, flag, interrupted);
-            return interrupted;
-        } catch (Exception e) {
-            log.error("AI对话语音处理器-读取中断标志失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
-            return false;
-        }
-    }
-
-    /**
-     * 清除会话的中断标志，恢复为非中断状态
-     *
-     * @param conversationId 会话ID
-     */
-    private void clearInterruptFlag(Long conversationId) {
-        try {
-            conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG,
-                    ConversationCacheConstant.INTERRUPT_FLAG_INACTIVE);
-            log.info("AI对话语音处理器-清除中断标识成功，会话ID：{}", conversationId);
-        } catch (Exception e) {
-            log.error("AI对话语音处理器-清除中断标识失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
-        }
     }
 
     /**

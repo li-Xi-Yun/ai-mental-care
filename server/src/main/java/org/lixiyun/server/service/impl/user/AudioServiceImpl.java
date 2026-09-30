@@ -227,6 +227,14 @@ public class AudioServiceImpl implements AudioService {
     private AsrResultCallback createAsrCallback(Long conversationId, Long userId) {
         return new AsrResultCallback() {
             @Override
+            public void onSentenceBegin(AsrResult result) {
+                conversationCacheManager.updateCacheMapValue(conversationId,
+                        ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG,
+                        ConversationCacheConstant.AUDIO_PROCESSING_FLAG_ACTIVE);
+                log.debug("[AI语音交互] 设置语音处理标识为活跃，会话ID：{}", conversationId);
+            }
+
+            @Override
             public void onIntermediateResult(AsrResult result) {
                 String text = result.getText() != null ? result.getText() : "";
                 log.debug("[AI语音交互] ASR回调-中间识别结果，会话ID：{}，句子编号：{}，文本：{}",
@@ -296,7 +304,16 @@ public class AudioServiceImpl implements AudioService {
             }
 
             @Override
+            public void onSynthesisComplete() {
+                conversationCacheManager.deleteCacheMapField(conversationId,
+                        ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG);
+                log.debug("[AI语音交互] 删除语音处理标识（合成完成），会话ID：{}", conversationId);
+            }
+
+            @Override
             public void onFail(String taskId, String statusText) {
+                conversationCacheManager.deleteCacheMapField(conversationId,
+                        ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG);
                 log.error("[AI语音交互] TTS回调-合成失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
             }
         };
@@ -331,6 +348,16 @@ public class AudioServiceImpl implements AudioService {
 
         log.debug("[AI语音交互] 参数校验通过，会话ID：{}，用户ID：{}，音频数据长度：{}字节", conversationId, currentUserId, audioMessage.length);
 
+        Integer processingFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId,
+                ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG);
+        if (processingFlag != null && processingFlag == ConversationCacheConstant.AUDIO_PROCESSING_FLAG_ACTIVE) {
+            log.info("[AI语音交互] 检测到上次语音处理未完成，触发中断，会话ID：{}", conversationId);
+            this.interruptAudio(AudioInterruptDTO.builder().conversationId(conversationId).build());
+
+            conversationCacheManager.deleteCacheMapField(conversationId, ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG);
+            log.debug("[AI语音交互] 中断执行完毕，删除语音处理标识，会话ID：{}", conversationId);
+        }
+
         asrConnectionManager.sendAudio(currentUserId, audioMessage);
         log.debug("[AI语音交互] 音频数据已发送至ASR引擎，会话ID：{}，用户ID：{}", conversationId, currentUserId);
 
@@ -350,24 +377,13 @@ public class AudioServiceImpl implements AudioService {
         Long conversationId = audioInterruptDTO.getConversationId();
         log.info("[AI语音交互] 开始执行语音中断，会话ID：{}", conversationId);
 
-        log.debug("[AI语音交互] 获取模型处理状态标识，会话ID：{}", conversationId);
-        Integer processFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG);
+        log.debug("[AI语音交互] 获取语音处理状态标识，会话ID：{}", conversationId);
+        Integer audioProcessingFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_AUDIO_PROCESSING_FLAG);
 
-        if (processFlag == null || processFlag != ConversationCacheConstant.PROCESS_FLAG_PROCESSING) {
-            log.debug("[AI语音交互] 会话未处于处理中状态（processFlag={}），无需中断，会话ID：{}", processFlag, conversationId);
+        if (audioProcessingFlag == null || audioProcessingFlag != ConversationCacheConstant.AUDIO_PROCESSING_FLAG_ACTIVE) {
+            log.debug("[AI语音交互] 语音未处于处理中状态（audioProcessingFlag={}），无需中断，会话ID：{}", audioProcessingFlag, conversationId);
             return;
         }
-
-        log.debug("[AI语音交互] 会话处于处理中状态，检查中断标识，processFlag={}，会话ID：{}", processFlag, conversationId);
-        Integer interruptFlag = (Integer) conversationCacheManager.getCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG);
-
-        if (interruptFlag != null && interruptFlag == ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE) {
-            log.debug("[AI语音交互] 中断标识已存在（interruptFlag={}），无需重复设置，会话ID：{}", interruptFlag, conversationId);
-            return;
-        }
-
-        log.debug("[AI语音交互] 设置中断标志，当前interruptFlag={}，会话ID：{}", interruptFlag, conversationId);
-        conversationCacheManager.updateCacheMapValue(conversationId, ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG, ConversationCacheConstant.INTERRUPT_FLAG_ACTIVE);
 
         conversationStreamHolder.cancelStream(conversationId);
         log.debug("[AI语音交互] LLM流式订阅已取消，会话ID：{}", conversationId);

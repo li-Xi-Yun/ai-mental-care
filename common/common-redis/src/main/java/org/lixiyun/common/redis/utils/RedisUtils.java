@@ -252,6 +252,29 @@ public class RedisUtils {
     }
 
     /**
+     * 删除Map结构(hash)中指定的field
+     *
+     * @param key   hash的key
+     * @param field hash内的字段
+     * @return 删除成功数量（1=已删除，0=字段不存在）
+     */
+    public static long deleteMapField(final String key, final String field) {
+        Object prev = CLIENT.getMap(key).remove(field);
+        return prev != null ? 1L : 0L;
+    }
+
+    /**
+     * 批量删除Map(hash)多个field
+     *
+     * @param key    hash的key
+     * @param fields hash字段集合
+     * @return 删除成功数量
+     */
+    public static long deleteMapFields(final String key, final Collection<?> fields) {
+        return CLIENT.getMap(key).fastRemove(fields.toArray());
+    }
+
+    /**
      * 检查缓存对象是否存在
      *
      * @param key 缓存的键值

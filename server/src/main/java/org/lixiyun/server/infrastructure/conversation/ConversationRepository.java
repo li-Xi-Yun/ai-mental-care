@@ -204,7 +204,6 @@ public class ConversationRepository {
         conversationData.put(ConversationCacheConstant.HASH_FIELD_PSYCHOLOGICAL_DIAGNOSIS, latestDiagnosis);
         conversationData.put(ConversationCacheConstant.HASH_FIELD_PRIVATE_MAPPING_TABLE, conversation.getSessionMapping());
         conversationData.put(ConversationCacheConstant.HASH_FIELD_CONVERSATION_TYPE, conversation.getChatMode());
-        conversationData.put(ConversationCacheConstant.HASH_FIELD_INTERRUPT_FLAG, ConversationCacheConstant.INTERRUPT_FLAG_INACTIVE);
         conversationData.put(ConversationCacheConstant.HASH_FIELD_PROCESS_FLAG, ConversationCacheConstant.PROCESS_FLAG_NOT_PROCESSED);
 
         return conversationData;

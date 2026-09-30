@@ -78,7 +78,8 @@ const CONFIG = {
 
     stompSend: {
       audioMessage: '/app/message/send',
-      audioInterrupt: '/app/interrupt'
+      audioInterrupt: '/app/interrupt',
+      speechEnd: '/app/speech/end'
     }
   }
 };

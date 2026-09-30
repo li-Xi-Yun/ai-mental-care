@@ -7,6 +7,7 @@ import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.core.AgentStreamDecorator;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SignalType;
 
 /**
  * 业务回调分发装饰器
@@ -45,7 +46,13 @@ public class ListenerDispatchDecorator extends AgentStreamDecorator {
         return delegate.process(rawOutputFlux)
                 .doOnNext(this::dispatch)
                 // 兜底：无论成功、失败、取消，最终都会执行一次收尾
-                .doFinally(signalType -> listener.onFinished());
+                //   CANCEL → 先回调 onInterrupted 保存已输出部分内容，再回调 onFinished
+                .doFinally(signalType -> {
+                    if (signalType == SignalType.CANCEL) {
+                        listener.onInterrupted();
+                    }
+                    listener.onFinished();
+                });
     }
 
     private void dispatch(AgentStreamEvent event) {

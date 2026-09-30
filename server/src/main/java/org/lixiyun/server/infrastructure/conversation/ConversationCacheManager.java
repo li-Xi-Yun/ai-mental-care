@@ -199,7 +199,7 @@ public class ConversationCacheManager {
     }
 
     /**
-     * 更新缓存中的会话数据
+     * 更新/新增缓存中的会话数据
      *
      * @param conversationId 会话ID
      * @param hKey           缓存字段
@@ -236,6 +236,18 @@ public class ConversationCacheManager {
         Object value = RedisUtils.getCacheMapValue(cacheKey, hKey);
         log.debug("[缓存] 获取缓存字段，会话ID：{}，字段：{}，值存在：{}", conversationId, hKey, value != null);
         return value;
+    }
+
+    /**
+     * 删除缓存Hash中的指定字段
+     *
+     * @param conversationId 会话ID
+     * @param hKey           缓存字段
+     */
+    public void deleteCacheMapField(Long conversationId, String hKey) {
+        String cacheKey = ConversationCacheConstant.buildConversationCacheKey(conversationId);
+        long deleted = RedisUtils.deleteMapField(cacheKey, hKey);
+        log.debug("[缓存] 删除缓存字段，会话ID：{}，字段：{}，删除数：{}", conversationId, hKey, deleted);
     }
 
     /**
@@ -294,4 +306,5 @@ public class ConversationCacheManager {
         log.debug("[缓存] 从ZSet移除会话，会话ID：{}，ZSetKey：{}", conversationId, zSetKey);
         RedisUtils.removeFromScoredSortedSet(zSetKey, String.valueOf(conversationId));
     }
+
 }

@@ -62,22 +62,15 @@ public interface AudioService {
      * <h3>处理流程</h3>
      * <ol>
      *     <li>从{@link org.lixiyun.pojo.dto.user.conversation.AudioInterruptDTO}获取会话ID</li>
-     *     <li>从Redis缓存获取模型处理标识（{@code process_flag}）</li>
-     *     <li>判断会话是否处于处理中状态：
+     *     <li>从Redis缓存获取语音处理标识（{@code audio_processing_flag}）</li>
+     *     <li>判断语音是否处于处理中状态：
      *         <ul>
      *             <li>未处于处理中状态 → 直接结束，无需中断</li>
      *             <li>处于处理中状态 → 继续后续流程</li>
      *         </ul>
      *     </li>
-     *     <li>判断缓存中是否存在中断标识（{@code interrupt_flag}）：
-     *         <ul>
-     *             <li>已存在中断标识 → 直接结束，避免重复中断</li>
-     *             <li>不存在 → 继续设置中断标志并执行中断</li>
-     *         </ul>
-     *     </li>
-     *     <li>设置中断标志到缓存</li>
-     *     <li>从会话元数据中获取用户ID</li>
-     *     <li>中断ASR连接和TTS合成执行</li>
+     *     <li>取消LLM流式订阅，触发{@link org.lixiyun.server.ai.model.processor.api.StreamEventListener#onInterrupted}保存已输出部分内容</li>
+     *     <li>中断TTS合成执行</li>
      * </ol>
      *
      * <h3>异常场景</h3>

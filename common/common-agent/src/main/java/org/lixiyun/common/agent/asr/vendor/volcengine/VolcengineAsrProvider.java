@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -119,6 +120,12 @@ public class VolcengineAsrProvider implements IAsrProvider {
     private static final int PING_CHECK_INTERVAL_MS = 1000;
     /** 音频帧序号起始值 */
     private static final int AUDIO_SEQUENCE_START = 1;
+    /** 短连接：PCM音频分片大小（20ms @ 16kHz 16bit 单声道 = 640字节） */
+    private static final int SHORT_AUDIO_CHUNK_SIZE = 640;
+    /** 短连接：会话超时时间（ms），超时后强制关闭 */
+    private static final int SHORT_SESSION_TIMEOUT_MS = 30_000;
+    /** 短连接：音频发送前等待时间（ms），确保FullClientRequest已发送 */
+    private static final int SHORT_AUDIO_SEND_DELAY_MS = 500;
 
     /** JSON序列化工具 */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -334,6 +341,57 @@ public class VolcengineAsrProvider implements IAsrProvider {
     }
 
     @Override
+    public void recognizeShortAudio(byte[] data, AsrResultCallback callback) {
+        String sessionId = UUID.randomUUID().toString();
+
+        if (sessions.size() >= MAX_SESSIONS) {
+            log.error("[火山引擎 ASR-短连接] 并发会话数已达上限{}", MAX_SESSIONS);
+            throw new BusinessException(ConversationExceptionEnum.CANNOT_HAVE_MULTIPLE_VOICE_DIALOGS);
+        }
+
+        WsSession session = new WsSession(callback, SHORT_SESSION_TIMEOUT_MS, sessionId, true);
+        try {
+            session.connect();
+            log.info("[火山引擎 ASR-短连接] 会话{}连接已建立", sessionId);
+        } catch (Exception e) {
+            log.error("[火山引擎 ASR-短连接] 会话{}连接建立失败", sessionId, e);
+            throw new RuntimeException("火山引擎ASR短连接启动失败", e);
+        }
+
+        sessions.put(sessionId, session);
+
+        scheduler.schedule(() -> {
+            if (!session.closed.get()) {
+                log.warn("[火山引擎 ASR-短连接] 会话{}超时（{}ms），强制关闭",
+                        sessionId, SHORT_SESSION_TIMEOUT_MS);
+                closeSession(session, sessionId);
+            }
+        }, SHORT_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        callbackExecutor.execute(() -> {
+            try {
+                Thread.sleep(SHORT_AUDIO_SEND_DELAY_MS);
+                if (session.closed.get()) {
+                    return;
+                }
+                for (int offset = 0; offset < data.length; offset += SHORT_AUDIO_CHUNK_SIZE) {
+                    if (session.closed.get()) {
+                        return;
+                    }
+                    int len = Math.min(SHORT_AUDIO_CHUNK_SIZE, data.length - offset);
+                    sendAudioFrame(session, data, offset, len);
+                }
+                if (!session.closed.get()) {
+                    sendEndOfStreamForSession(session, sessionId);
+                }
+            } catch (Exception e) {
+                log.error("[火山引擎 ASR-短连接] 会话{}音频发送失败", sessionId, e);
+                closeSession(session, sessionId);
+            }
+        });
+    }
+
+    @Override
     public void cancel(String sessionId) {
         WsSession session = sessions.get(sessionId);
         if (session == null || session.closed.get()) {
@@ -361,6 +419,65 @@ public class VolcengineAsrProvider implements IAsrProvider {
     }
 
     // ==================== 内部辅助方法 ====================
+
+    /**
+     * 直接向指定会话发送音频帧（跳过sessionId查找，供短连接内部使用）
+     *
+     * @param session 目标会话
+     * @param data    音频数据
+     * @param offset  数据起始偏移
+     * @param length  实际发送长度
+     */
+    private void sendAudioFrame(WsSession session, byte[] data, int offset, int length) {
+        if (length == 0) {
+            return;
+        }
+        session.touch();
+
+        try {
+            byte[] audioData;
+            if (offset == 0 && length == data.length) {
+                audioData = data;
+            } else {
+                audioData = new byte[length];
+                System.arraycopy(data, offset, audioData, 0, length);
+            }
+
+            int seq = session.sequenceCounter.getAndIncrement();
+            byte[] frame = ProtocolCodec.buildFrame(
+                    MessageType.CLIENT_AUDIO_ONLY_REQUEST,
+                    MessageFlag.POS_SEQUENCE,
+                    seq,
+                    audioData
+            );
+
+            if (!session.safeSend(frame)) {
+                log.warn("[火山引擎 ASR] 会话{} WebSocket已断开，无法发送音频帧", session.sessionId);
+            }
+        } catch (IOException e) {
+            log.error("[火山引擎 ASR] 会话{}构建音频帧失败", session.sessionId, e);
+        }
+    }
+
+    /**
+     * 直接向指定会话发送音频流结束信号（跳过sessionId查找，供短连接内部使用）
+     */
+    private void sendEndOfStreamForSession(WsSession session, String sessionId) {
+        int seq = session.sequenceCounter.getAndIncrement();
+        log.info("[火山引擎 ASR] 会话{}发送音频流结束信号，seq=-{}", sessionId, seq);
+
+        try {
+            byte[] frame = ProtocolCodec.buildFrame(
+                    MessageType.CLIENT_AUDIO_ONLY_REQUEST,
+                    MessageFlag.NEG_WITH_SEQUENCE,
+                    -seq,
+                    new byte[0]
+            );
+            session.safeSend(frame);
+        } catch (Exception e) {
+            log.error("[火山引擎 ASR] 会话{}发送结束帧失败", sessionId, e);
+        }
+    }
 
     /**
      * 构建鉴权请求头
@@ -470,6 +587,9 @@ public class VolcengineAsrProvider implements IAsrProvider {
     private void cleanIdleSessions() {
         long now = System.currentTimeMillis();
         sessions.forEach((sessionId, session) -> {
+            if (session.shortConnection) {
+                return;
+            }
             if (!session.closed.get() && (now - session.lastActiveTime.get()) > session.idleTimeoutMs) {
                 log.info("[火山引擎 ASR] 会话{}空闲超时（{}ms），自动关闭",
                         sessionId, now - session.lastActiveTime.get());
@@ -484,7 +604,7 @@ public class VolcengineAsrProvider implements IAsrProvider {
     private void checkAndKeepAlive() {
         long now = System.currentTimeMillis();
         sessions.forEach((sessionId, session) -> {
-            if (session.closed.get()) {
+            if (session.closed.get() || session.shortConnection) {
                 return;
             }
             long elapsedSinceLastActivity = now - session.lastActiveTime.get();
@@ -580,6 +700,8 @@ public class VolcengineAsrProvider implements IAsrProvider {
         final AsrResultCallback callback;
         /** 空闲超时时间（毫秒） */
         final long idleTimeoutMs;
+        /** 是否为短连接会话（短连接不参与保活，不参与空闲淘汰） */
+        final boolean shortConnection;
         /** 会话是否已关闭 */
         final AtomicBoolean closed;
         /** 当前句子是否已触发onSentenceBegin（收到SENTENCE_END后重置） */
@@ -596,9 +718,14 @@ public class VolcengineAsrProvider implements IAsrProvider {
         private final ReentrantLock sendLock = new ReentrantLock();
 
         WsSession(AsrResultCallback callback, long idleTimeoutMs, String sessionId) {
+            this(callback, idleTimeoutMs, sessionId, false);
+        }
+
+        WsSession(AsrResultCallback callback, long idleTimeoutMs, String sessionId, boolean shortConnection) {
             this.callback = callback;
             this.idleTimeoutMs = idleTimeoutMs;
             this.sessionId = sessionId;
+            this.shortConnection = shortConnection;
             this.closed = new AtomicBoolean(false);
             this.sentenceStarted = new AtomicBoolean(false);
             this.sequenceCounter = new AtomicInteger(AUDIO_SEQUENCE_START);

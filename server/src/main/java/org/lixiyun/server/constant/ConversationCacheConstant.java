@@ -43,8 +43,8 @@ public interface ConversationCacheConstant {
     /** Hash Field - 会话模式/类型标识，决定后续处理逻辑分支 */
     String HASH_FIELD_CONVERSATION_TYPE = "conversation_type";
 
-    /** Hash Field - 会话中断标识，用于异常恢复和流程控制 */
-    String HASH_FIELD_INTERRUPT_FLAG = "interrupt_flag";
+    /** Hash Field - 语音处理中标识，用于新语音到达时判断是否需要中断旧任务 */
+    String HASH_FIELD_AUDIO_PROCESSING_FLAG = "audio_processing_flag";
 
 
 
@@ -72,11 +72,8 @@ public interface ConversationCacheConstant {
     /** 会话类型 - 语音模式 */
     String CONVERSATION_TYPE_AUDIO = "audio";
 
-    /** 中断标识 - 激活状态（已中断） */
-    int INTERRUPT_FLAG_ACTIVE = 1;
-
-    /** 中断标识 - 非激活状态（正常/未中断） */
-    int INTERRUPT_FLAG_INACTIVE = 0;
+    /** 语音处理标识 - 活跃（正在处理中），不存在即视为非活跃 */
+    int AUDIO_PROCESSING_FLAG_ACTIVE = 1;
 
     static String buildConversationCacheKey(Long conversationId) {
         return CONVERSATION_CACHE_KEY_PREFIX + conversationId;

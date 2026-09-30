@@ -3,6 +3,7 @@ package org.lixiyun.server.infrastructure.audio;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.asr.api.AsrResultCallback;
 import org.lixiyun.common.agent.asr.api.IAsrProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,11 +45,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class AsrConnectionManager {
 
+    /** 短连接模式标识 */
+    private static final String SHORT_MODE = "short";
+
     /** ASR Provider策略接口，由Spring根据{@code asr.provider}配置自动注入实现 */
     private final IAsrProvider asrProvider;
 
-    /** 用户ID → 抽象会话ID 映射表 */
+    /** 连接模式：{@code "long"}（默认）或 {@code "short"} */
+    @Value("${asr.connection-mode:long}")
+    private String connectionMode;
+
+    /** 用户ID → 抽象会话ID 映射表（长连接模式） */
     private final ConcurrentHashMap<Long, String> userSessions = new ConcurrentHashMap<>();
+
+    /** 短连接模式：用户ID → 回调 映射表（仅存储，不建长连接） */
+    private final ConcurrentHashMap<Long, AsrResultCallback> shortCallbacks = new ConcurrentHashMap<>();
 
     public AsrConnectionManager(IAsrProvider asrProvider) {
         this.asrProvider = asrProvider;
@@ -64,6 +75,11 @@ public class AsrConnectionManager {
      * @throws RuntimeException                                           当ASR连接启动失败时
      */
     public void register(Long userId, AsrResultCallback callback) {
+        if (SHORT_MODE.equals(connectionMode)) {
+            shortCallbacks.put(userId, callback);
+            log.info("[ASR防腐层-短连接] 用户{}已注册回调", userId);
+            return;
+        }
         userSessions.compute(userId, (k, oldSessionId) -> {
             if (oldSessionId != null) {
                 log.info("[ASR防腐层] 用户{}已有会话{}，先关闭旧会话", userId, oldSessionId);
@@ -93,6 +109,16 @@ public class AsrConnectionManager {
      * @param length 实际发送长度
      */
     public void sendAudio(Long userId, byte[] data, int length) {
+        if (SHORT_MODE.equals(connectionMode)) {
+            AsrResultCallback callback = shortCallbacks.get(userId);
+            if (callback == null) {
+                log.warn("[ASR防腐层-短连接] 用户{}未注册回调", userId);
+                return;
+            }
+            log.info("[ASR防腐层-短连接] 用户{}发起一次性识别，数据长度{}", userId, length);
+            asrProvider.recognizeShortAudio(data, callback);
+            return;
+        }
         String sessionId = userSessions.get(userId);
         if (sessionId == null) {
             log.warn("[ASR防腐层] 用户{}没有活跃的ASR会话", userId);
@@ -107,6 +133,11 @@ public class AsrConnectionManager {
      * @param userId 用户ID
      */
     public void cancel(Long userId) {
+        if (SHORT_MODE.equals(connectionMode)) {
+            shortCallbacks.remove(userId);
+            log.info("[ASR防腐层-短连接] 用户{}回调已移除", userId);
+            return;
+        }
         String sessionId = userSessions.remove(userId);
         if (sessionId != null) {
             log.info("[ASR防腐层] 用户{}会话{}已取消并解除映射", userId, sessionId);
@@ -121,6 +152,9 @@ public class AsrConnectionManager {
      * @return {@code true}表示会话活跃
      */
     public boolean isSessionActive(Long userId) {
+        if (SHORT_MODE.equals(connectionMode)) {
+            return false;
+        }
         String sessionId = userSessions.get(userId);
         return sessionId != null && asrProvider.isSessionActive(sessionId);
     }
@@ -132,6 +166,10 @@ public class AsrConnectionManager {
      * @param userId 用户ID
      */
     public void sendEndOfStream(Long userId) {
+        if (SHORT_MODE.equals(connectionMode)) {
+            log.debug("[ASR防腐层-短连接] endOfStream已在sendAudio中自动发送，跳过");
+            return;
+        }
         String sessionId = userSessions.get(userId);
         if (sessionId == null) {
             log.warn("[ASR防腐层] 用户{}没有活跃的ASR会话，忽略结束信号", userId);

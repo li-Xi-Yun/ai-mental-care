@@ -26,4 +26,14 @@ class AudioWebSocketSender {
     this.#logger.info('发送中断指令, conversationId:', conversationId);
     return this.ws.publish(CONFIG.websocket.stompSend.audioInterrupt, body);
   }
+
+  sendStopSpeaking(conversationId) {
+    if (!conversationId) {
+      this.#logger.warn('无法发送停止说话信号：conversationId为空');
+      return false;
+    }
+    const body = { conversationId: conversationId };
+    this.#logger.info('发送停止说话信号, conversationId:', conversationId);
+    return this.ws.publish(CONFIG.websocket.stompSend.speechEnd, body);
+  }
 }
