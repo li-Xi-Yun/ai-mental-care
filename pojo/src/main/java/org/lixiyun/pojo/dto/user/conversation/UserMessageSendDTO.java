@@ -2,6 +2,7 @@ package org.lixiyun.pojo.dto.user.conversation;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,7 +29,8 @@ public class UserMessageSendDTO implements Serializable {
     @Schema(description = "用户输入的消息内容", example = "我最近压力好大", requiredMode = Schema.RequiredMode.REQUIRED)
     private String message;
 
-    @Schema(description = "会话ID（可选），第一次对话时不需要发送", example = "2412321342421", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @NotNull(message = "会话ID不能为空")
+    @Schema(description = "会话ID", example = "2412321342421", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long conversationId;
 
 }

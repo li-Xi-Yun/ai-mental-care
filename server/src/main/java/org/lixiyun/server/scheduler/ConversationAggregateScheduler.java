@@ -5,9 +5,12 @@ import io.netty.util.Timeout;
 import jakarta.annotation.PreDestroy;
 import jodd.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.ConversationMessageProcessor;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +55,9 @@ public class ConversationAggregateScheduler {
 
     @Autowired
     private ConversationMessageProcessor conversationMessageProcessor;
+
+    @Autowired
+    private OutputPipelineSessionManager outputPipelineSessionManager;
 
     /**
      * 添加会话聚合任务
@@ -124,7 +130,7 @@ public class ConversationAggregateScheduler {
     }
 
     /**
-     * 语音任务执行流程（触发条件：定时任务到达指定时间）
+     * 会话聚合任务执行流程（触发条件：定时任务到达指定时间）
      * <p>
      * 执行流程：
      * <ol>
@@ -147,9 +153,20 @@ public class ConversationAggregateScheduler {
             }
 
             log.info("从ZSet集合中移除会话ID成功，开始处理会话消息，会话ID：{}", conversationId);
-            conversationMessageProcessor.processConversationMessage(conversationId);
+            OutputContext outputContext = OutputContext.builder()
+                    .conversationId(conversationId)
+                    .build();
+
+            // 主路径：从管道管理器获取该会话管道并执行（带状态追踪，供 barge-in 判断）
+            // 回退：会话未绑定管道（未走 lifecycle init 的老路径）时直调编排器，保证老会话不中断
+            try {
+                outputPipelineSessionManager.executeWithTracking(conversationId, outputContext);
+            } catch (BusinessException e) {
+                log.error("会话聚合任务执行异常，会话ID：{}，异常信息：{}", conversationId, e.getMessage(), e);
+                throw e;
+            }
         } catch (Exception e) {
-            log.error("语音聚合任务执行异常，会话ID：{}", conversationId, e);
+            log.error("会话聚合任务执行异常，会话ID：{}", conversationId, e);
         } finally {
             taskMap.remove(conversationId, currentTimeout);
         }
@@ -175,9 +192,5 @@ public class ConversationAggregateScheduler {
         }
         taskMap.clear();
         log.info("语音聚合调度器已关闭");
-    }
-
-    public void setConversationMessageProcessor(ConversationMessageProcessor conversationMessageProcessor) {
-        this.conversationMessageProcessor = conversationMessageProcessor;
     }
 }

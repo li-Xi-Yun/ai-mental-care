@@ -3,10 +3,12 @@ package org.lixiyun.server.task;
 import jodd.util.concurrent.ThreadFactoryBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.DateUtils;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.infrastructure.conversation.ConversationMessageProcessor;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
 public class ConversationCleanupTask {
 
     private final DateUtils dateUtils;
-    private final ConversationMessageProcessor conversationMessageProcessor;
+    private final OutputPipelineSessionManager outputPipelineSessionManager;
 
     private static final int SCAN_BATCH_SIZE = 50;
 
@@ -135,7 +137,16 @@ public class ConversationCleanupTask {
 
     public void processConversationMessage(Long conversationId) {
         log.info("开始处理会话消息，会话ID：{}", conversationId);
-        conversationMessageProcessor.processConversationMessage(conversationId);
+        OutputContext outputContext = OutputContext.builder()
+                .conversationId(conversationId)
+                .build();
+
+        try {
+            outputPipelineSessionManager.executeWithTracking(conversationId, outputContext);
+        } catch (BusinessException e) {
+            log.error("会话{}处理消息异常，异常信息：{}", conversationId, e.getMessage(), e);
+            throw e;
+        }
     }
 
 }

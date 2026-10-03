@@ -11,7 +11,7 @@ import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.infrastructure.storage.ConversationHistoryMessagesStorage;
 import org.lixiyun.server.ai.message.enums.MessageType;
-import org.lixiyun.server.ai.model.conversation.TextMessageProcessorModel;
+import org.lixiyun.server.ai.model.conversation.ChatMessageProcessorModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
@@ -46,30 +46,18 @@ import java.util.List;
 @Slf4j
 @Component(ConversationCacheConstant.CONVERSATION_TYPE_TEXT)
 @RequiredArgsConstructor
+@Deprecated
 public class TextMessageProcessor implements MessageProcessor {
 
     public static final String NODE_NAME = "textMessageProcessor";
 
-    private final TextMessageProcessorModel textMessageProcessorModel;
+    private final ChatMessageProcessorModel chatMessageProcessorModel;
     private final ConversationHistoryMessagesStorage conversationHistoryMessagesStorage;
     private final ConversationWebSocketManager conversationWebSocketManager;
     private final ConversationCacheManager conversationCacheManager;
     private final AiNodeConfigManager aiNodeConfigManager;
     private final ChatModelFactory chatModelFactory;
 
-    /**
-     * 处理文本类型的会话消息
-     * <p>主线程执行流程（按图片要求）：</p>
-     * <ol>
-     *     <li>接收参数：临时消息数据、会话历史上下文、历史情绪分析结果、历史心理诊断结果</li>
-     *     <li>调用LLM生成文本回答</li>
-     *     <li>通过WebSocket流式发送消息</li>
-     *     <li>将回答保存到数据库</li>
-     *     <li>更新Redis缓存中的历史上下文</li>
-     * </ol>
-     *
-     * @param context 会话消息处理上下文 {@link ConversationProcessContextBO}
-     */
     @Override
     public void processMessage(ConversationProcessContextBO context) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
@@ -115,7 +103,7 @@ public class TextMessageProcessor implements MessageProcessor {
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();
             log.debug("[AI对话文本处理器] 用户提示词：{}", prompt);
-            processor.process(textMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig, runnableConfig))
+            processor.process(chatMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig, runnableConfig))
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe(
                             event -> {},

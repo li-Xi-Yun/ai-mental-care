@@ -44,7 +44,7 @@
 | 输入 | 输出 | 实现路径 | 对应类 |
 |------|------|---------|--------|
 | 文本 | 文本 | `input → Model → output` | `TextMessageProcessor` |
-| 语音 | 语音 | `input → ASR → Model → TTS → output` | `VoiceMessageProcessor` + `AudioServiceImpl` |
+| 语音 | 语音 | `input → ASR → Model → TTS → output` | `ChatMessageProcessor` + `AudioServiceImpl` |
 
 ### 1.3 期望支持的全部组合
 
@@ -97,7 +97,7 @@ public void onModelComplete(AssistantMessage message) {
 }
 ```
 
-**问题**：LLM 输出文本到 TTS 的级联逻辑写死在 `VoiceMessageProcessor` 内部，`TextMessageProcessor` 和 `VoiceMessageProcessor` 是独立类，没有任何复用。
+**问题**：LLM 输出文本到 TTS 的级联逻辑写死在 `ChatMessageProcessor` 内部，`TextMessageProcessor` 和 `ChatMessageProcessor` 是独立类，没有任何复用。
 
 ### 2.3 资源销毁的耦合
 
@@ -610,8 +610,8 @@ public class AudioChunk {
 
 | 节点 | IOMode | OutputContext 所需数据 | Upstream | 输出 | key 内部依赖 |
 |------|--------|----------------------|----------|------|-------------|
-| `ModelNode` | BATCH_IN_STREAM_OUT | temporaryMessages, historyMessages, emotionAnalysis, diagnosisAnalysis, aiNodeConfig, compressedSummary | null | `Flux<TextChunk>` | ChatModelFactory, TextMessageProcessorModel |
-| `TtsNode` | STREAM_IN_STREAM_OUT | ∅（不需要额外上下文） | `Flux<TextChunk>` | `Flux<AudioChunk>` | TtsConnectionManager |
+| `ModelChatOutputNode` | BATCH_IN_STREAM_OUT | temporaryMessages, historyMessages, emotionAnalysis, diagnosisAnalysis, aiNodeConfig, compressedSummary | null | `Flux<TextChunk>` | ChatModelFactory, TextMessageProcessorModel |
+| `TtsOutputNode` | STREAM_IN_STREAM_OUT | ∅（不需要额外上下文） | `Flux<TextChunk>` | `Flux<AudioChunk>` | TtsConnectionManager |
 
 > **注意**：AsrNode 被移动到输入层（`AudioInputAdapter`），输出层不包含 ASR。对于"音频输入"场景，ASR 识别和文本存储已经在输入层完成，时间轮触发时输出层拿到的已经是文本。
 
@@ -1382,12 +1382,12 @@ ConversationAggregateScheduler (不变)
 | **新增** `OutputPipeline` 类 | 输出管道容器 | 新增 |
 | **新增** `OutputPipelineFactory` | 输出管道组装工厂 | 新增 |
 | **新增** `OutputPipelineSessionManager` | 会话级输出管道管理 | 新增 |
-| **改** `ModelNode` | 从 `TextMessageProcessor` 提取核心逻辑 | 改造 |
-| **改** `TtsNode` | 从 `VoiceMessageProcessor` 提取 TTS 逻辑 | 改造 |
+| **改** `ModelChatOutputNode` | 从 `TextMessageProcessor` 提取核心逻辑 | 改造 |
+| **改** `TtsOutputNode` | 从 `ChatMessageProcessor` 提取 TTS 逻辑 | 改造 |
 | **改** `AudioServiceImpl` | initSession/endSession 委托新组件 | 改造 |
 | **改** `ConversationMessageProcessor` | 装配 OutputContext → 调用 OutputPipeline | 改造 |
 | **废弃** `TextMessageProcessor` | 被 OutputPipeline + ModelNode 替代 | 最终废弃 |
-| **废弃** `VoiceMessageProcessor` | 被 OutputPipeline + ModelNode + TtsNode 替代 | 最终废弃 |
+| **废弃** `ChatMessageProcessor` | 被 OutputPipeline + ModelNode + TtsNode 替代 | 最终废弃 |
 | **不变** `AsrConnectionManager` | 调用方从 AudioServiceImpl → AudioInputAdapter | 不变 |
 | **不变** `TtsConnectionManager` | 调用方从 VoiceMessageProcessor → TtsNode | 不变 |
 | **不变** `ConversationCacheManager` | 仅 OutputContext 装配时读取 | 不变 |
@@ -1538,8 +1538,8 @@ public enum IOMode {
 
 | 节点 | 输入来源 | 输出方式 | IOMode |
 |------|---------|---------|--------|
-| `ModelNode` | OutputContext（批量文本数据） | Flux<TextChunk> | BATCH_IN_STREAM_OUT |
-| `TtsNode` | upstream Flux<TextChunk> | Flux<AudioChunk> | STREAM_IN_STREAM_OUT |
+| `ModelChatOutputNode` | OutputContext（批量文本数据） | Flux<TextChunk> | BATCH_IN_STREAM_OUT |
+| `TtsOutputNode` | upstream Flux<TextChunk> | Flux<AudioChunk> | STREAM_IN_STREAM_OUT |
 | `SensitiveWordFilterNode`（未来） | String | FilterResult | BATCH_IN_BATCH_OUT |
 | `TextAggregatorNode`（未来） | Flux<TextChunk> | String（完整文本） | STREAM_IN_BATCH_OUT |
 
@@ -1585,7 +1585,7 @@ public enum IOMode {
 推荐**路径 A**，理由与 v1 相同：
 
 1. 线上系统需要保证稳定性
-2. `ModelNode` / `TtsNode` 的 LLM 流式处理逻辑可先独立抽取验证
+2. `ModelChatOutputNode` / `TtsOutputNode` 的 LLM 流式处理逻辑可先独立抽取验证
 3. ASR/TTS 连接管理已通过防腐层解耦，Adapter 化改动范围可控
 4. 每步都可独立测试和灰度发布
 
@@ -1615,7 +1615,7 @@ public enum IOMode {
 
 ### 18.3 模型供应商切换
 
-替换 `ModelNode` 内部的 `ChatModelFactory` 实现或配置，不影响任何其他节点。
+替换 `ModelChatOutputNode` 内部的 `ChatModelFactory` 实现或配置，不影响任何其他节点。
 
 ### 18.4 多模型链式调用
 

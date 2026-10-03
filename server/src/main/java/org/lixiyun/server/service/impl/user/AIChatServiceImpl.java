@@ -37,7 +37,9 @@ import java.time.LocalDateTime;
  *
  * @author lixiyun
  * @since 2026-07-14 16:45
+ * @deprecated 已被 {@code TextInputAdapter} 取代（存储逻辑等价复刻）。保留供回退参考。
  */
+@Deprecated
 @Slf4j
 @Service
 @RequiredArgsConstructor

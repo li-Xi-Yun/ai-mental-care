@@ -40,7 +40,7 @@
 | 输入 | 输出 | 实现路径 | 对应类 |
 |------|------|---------|--------|
 | 文本 | 文本 | `input → Model → output` | `TextMessageProcessor` |
-| 语音 | 语音 | `input → ASR → Model → TTS → output` | `VoiceMessageProcessor` + `AudioServiceImpl` |
+| 语音 | 语音 | `input → ASR → Model → TTS → output` | `ChatMessageProcessor` + `AudioServiceImpl` |
 
 ### 1.3 期望支持的全部组合
 
@@ -71,7 +71,7 @@ private void initializeAudioResources(Long conversationId, Long userId) {
 
 ### 2.2 数据流转的耦合
 
-LLM 输出文本到 TTS 的级联逻辑写死在 `VoiceMessageProcessor` 内部，`TextMessageProcessor` 和 `VoiceMessageProcessor` 是独立类，没有任何复用。
+LLM 输出文本到 TTS 的级联逻辑写死在 `ChatMessageProcessor` 内部，`TextMessageProcessor` 和 `ChatMessageProcessor` 是独立类，没有任何复用。
 
 ### 2.3 资源销毁的耦合
 

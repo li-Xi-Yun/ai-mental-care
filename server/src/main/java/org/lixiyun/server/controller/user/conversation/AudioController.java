@@ -27,7 +27,11 @@ import org.springframework.web.bind.annotation.*;
  *
  * @author lixiyun
  * @since 2026-03-29 18:17
+ * @deprecated 已被 {@code ConversationLifecycleController} + {@code AdapterController} + 适配器/管道体系取代：
+ * init → lifecycle/init，message/send → audio/frame，speech/end → audio/vad-stop，end → lifecycle/{id}。
+ * interrupt 不再暴露独立端点（由适配器内部 barge-in 自动触发）。保留供回退参考。
  */
+@Deprecated
 @Slf4j
 @Validated
 @RestController

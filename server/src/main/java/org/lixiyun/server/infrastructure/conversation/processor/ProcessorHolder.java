@@ -13,6 +13,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@Deprecated
 public class ProcessorHolder {
 
     @Autowired

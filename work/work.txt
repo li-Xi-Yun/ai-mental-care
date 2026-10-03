@@ -1,0 +1,4 @@
+对于.cache()这个方法主要是用于进行Flux流复用的，对于实际的Flux流的调用是在各个节点中自行获取调用的
+你先将ModelNode与TtsNode创建出来，让我看看
+D:\JavaProject\ai_mental_care\server\src\main\java\org\lixiyun\server\infrastructure\interaction\pipeline
+在这里单独创建一个文件夹进行存储

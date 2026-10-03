@@ -10,6 +10,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.log.AiFlowExecution;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.log.FlowExecutionContextManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationRepository;
 import org.lixiyun.server.mapper.AiFlowExecutionMapper;
@@ -21,12 +22,12 @@ import java.time.LocalDateTime;
 
 /**
  * AI主流程执行记录切面
- * <p>拦截 {@code ConversationMessageProcessor.processConversationMessage(Long)} 方法，
+ * <p>拦截 {@code ConversationMessageProcessor.processConversationMessage(OutputContext)} 方法，
  * 在流程入口INSERT一条ai_flow_execution记录，在finally中UPDATE该记录的状态、耗时等信息。</p>
  *
  * <h3>执行流程</h3>
  * <pre>
- * @Around 拦截 processConversationMessage(conversationId)
+ * @Around 拦截 processConversationMessage(OutputContext)
  * │
  * ├── 【入口 — INSERT】
  * │   ├── trace_id = IdUtil.getSnowflake(23, 17).nextId()
@@ -65,30 +66,31 @@ public class FlowExecutionAspect {
     private final ConversationRepository conversationRepository;
 
     /**
-     * 切点：拦截 {@code ConversationMessageProcessor.processConversationMessage(Long)} 方法，
+     * 切点：拦截 {@code ConversationMessageProcessor.processConversationMessage(OutputContext)} 方法，
      * 即 AI 主流程的入口方法
      */
-    @Pointcut("execution(* org.lixiyun.server.infrastructure.conversation.ConversationMessageProcessor.processConversationMessage(Long))")
+    @Pointcut("execution(* org.lixiyun.server.infrastructure.conversation.ConversationMessageProcessor.processConversationMessage(org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext))")
     public void processConversationMessagePointcut() {
     }
 
     /**
      * 环绕通知：在 AI 主流程入口 INSERT 一条执行记录，流程结束后 UPDATE 状态、耗时等信息
      * <ol>
-     *   <li>从方法参数获取 conversationId，生成雪花 traceId，记录 startedAt</li>
+     *   <li>从方法参数（OutputContext）获取 conversationId，生成雪花 traceId，记录 startedAt</li>
      *   <li>调用 {@link FlowExecutionContextManager#initContext} 初始化上下文</li>
      *   <li>INSERT ai_flow_execution 记录（状态=RUNNING）</li>
      *   <li>执行原方法 {@code pjp.proceed()}</li>
      *   <li>finally 中 UPDATE 记录为 COMPLETED/FAILED，并移除上下文</li>
      * </ol>
      *
-     * @param pjp 切点连接点，第一个参数为 conversationId
+     * @param pjp 切点连接点，第一个参数为 OutputContext
      * @return 原方法的返回值
      * @throws Throwable 原方法抛出的异常
      */
     @Around("processConversationMessagePointcut()")
     public Object aroundProcessConversationMessage(ProceedingJoinPoint pjp) throws Throwable {
-        Long conversationId = (Long) pjp.getArgs()[0];
+        OutputContext outputContext = (OutputContext) pjp.getArgs()[0];
+        Long conversationId = outputContext.getConversationId();
         long traceId = IdUtil.getSnowflake(23, 17).nextId();
         LocalDateTime startedAt = LocalDateTime.now();
 

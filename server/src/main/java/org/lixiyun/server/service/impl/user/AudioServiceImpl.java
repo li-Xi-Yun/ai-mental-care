@@ -40,7 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author lixiyun
  * @since 2026-03-29 18:17
+ * @deprecated 已被 {@code AudioInputAdapter} + {@code TtsOutputNode} + {@code ConversationLifecycleService} 取代。
+ * 保留供回退参考。
  */
+@Deprecated
 @Slf4j
 @Service
 @RequiredArgsConstructor

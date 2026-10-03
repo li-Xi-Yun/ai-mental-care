@@ -8,8 +8,10 @@ import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.server.ai.node.conversation.ConversationNameGenerationNode;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.infrastructure.conversation.processor.MessageProcessor;
-import org.lixiyun.server.infrastructure.conversation.processor.ProcessorHolder;
+import org.lixiyun.server.infrastructure.conversation.processor.ChatMessageProcessor;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 会话消息处理器（流程编排器）
@@ -50,11 +53,13 @@ public class ConversationMessageProcessor {
     @Autowired
     private ConversationAiService conversationAiService;
     @Autowired
-    private ProcessorHolder processorHolder;
-    @Autowired
     private ConversationNameGenerationNode conversationNameGenerationNode;
     @Autowired
     private ConversationWebSocketManager conversationWebSocketManager;
+    @Autowired
+    private ChatMessageProcessor chatMessageProcessor;
+    @Autowired
+    private OutputPipelineSessionManager outputPipelineSessionManager;
 
     @Autowired
     @Qualifier("diagnosisThreadPoolTaskExecutor")
@@ -66,11 +71,20 @@ public class ConversationMessageProcessor {
      * 异步语义压缩 → 异步分析与诊断 → 主线程消息处理 → 更新数据库状态 →
      * 刷新缓存元数据 → 释放处理令牌。任何步骤异常均会清理处理标识。</p>
      *
-     * @param conversationId 会话ID
+     * @param outputContext 会话上下文
      * @throws RuntimeException 消息处理失败时抛出
      */
-    public void processConversationMessage(Long conversationId) {
+    public void processConversationMessage(OutputContext outputContext) {
+        Long conversationId = outputContext.getConversationId();
         log.info("[流程编排] 开始会话消息处理，会话ID：{}", conversationId);
+
+        // 输出模式缺失时回填：优先取会话管道绑定的 outputTypes（lifecycle init 时记录），未绑定则默认纯文本
+        if (outputContext.getOutputTypes() == null || outputContext.getOutputTypes().isEmpty()) {
+            Set<OutputDataType> boundTypes = outputPipelineSessionManager.getOutputTypes(conversationId);
+            outputContext.setOutputTypes(
+                    boundTypes != null && !boundTypes.isEmpty() ? boundTypes : Set.of(OutputDataType.TEXT));
+            log.debug("[流程编排] 输出模式缺失，已回填：{}，会话ID：{}", outputContext.getOutputTypes(), conversationId);
+        }
         log.debug("[流程编排] 步骤1/9：尝试获取处理令牌，会话ID：{}", conversationId);
 
         try {
@@ -105,13 +119,14 @@ public class ConversationMessageProcessor {
 
             log.debug("[流程编排] 步骤4/9：构建处理上下文，会话ID：{}，消息数：{}", conversationId, unprocessedMessages.size());
             ConversationProcessContextBO processContext = conversationCacheManager.getProcessContext(conversationId, unprocessedMessages);
+            outputContext.setUserId(processContext.getConversation().getUserId());
             log.debug("[流程编排] 处理上下文构建完成，会话ID：{}，ConversationProcessContextBO：{}", conversationId, processContext);
 
-            String conversationType = conversationCacheManager.getConversationType(conversationId, processContext);
-            log.debug("[流程编排] 会话类型路由结果：{}，会话ID：{}", conversationType, conversationId);
+//            String conversationType = conversationCacheManager.getConversationType(conversationId, processContext);
+//            log.debug("[流程编排] 会话类型路由结果：{}，会话ID：{}", conversationType, conversationId);
 
-            MessageProcessor executorInstance = processorHolder.getProcessor(conversationType);
-            log.debug("[流程编排] 消息处理器实例：{}，会话ID：{}", executorInstance != null ? executorInstance.getClass().getSimpleName() : "null", conversationId);
+//            MessageProcessor executorInstance = processorHolder.getProcessor(conversationType);
+//            log.debug("[流程编排] 消息处理器实例：{}，会话ID：{}", executorInstance != null ? executorInstance.getClass().getSimpleName() : "null", conversationId);
 
             log.debug("[流程编排] 步骤5/9：提交异步语义压缩任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
@@ -125,7 +140,7 @@ public class ConversationMessageProcessor {
             });
 
             log.debug("[流程编排] 步骤6/9：主线程消息处理，会话ID：{}", conversationId);
-            executeMainThread(conversationId, processContext, executorInstance);
+            executeMainThread(conversationId, processContext, chatMessageProcessor, outputContext);
 
             log.debug("[流程编排] 步骤7/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
@@ -176,6 +191,7 @@ public class ConversationMessageProcessor {
      * @param conversationId 会话ID
      * @return {@code true} 缓存加载成功；{@code false} 加载失败
      */
+    @Deprecated
     public boolean loadConversationCache(Long conversationId) {
         log.debug("[缓存加载] 委托ConversationCacheManager加载会话缓存，会话ID：{}", conversationId);
         boolean result = conversationCacheManager.loadConversationCache(conversationId);
@@ -185,21 +201,24 @@ public class ConversationMessageProcessor {
 
     /**
      * 执行主线程消息处理
-     * <p>调用对应的{@link MessageProcessor}处理消息，记录执行耗时。
+     * <p>调用 {@link ChatMessageProcessor} 处理消息，输出上下文（含输出模式）透传给处理器，
+     * 由处理器根据 outputTypes 判断是否级联 TTS（方案A）。记录执行耗时。
      * 处理器为空时抛出业务异常，业务异常直接抛出，系统异常包装为业务异常抛出。</p>
      *
-     * @param conversationId  会话ID
-     * @param processContext   会话处理上下文
-     * @param executorInstance 消息处理器实例
+     * @param conversationId     会话ID
+     * @param processContext     会话处理上下文
+     * @param chatMessageProcessor 消息处理器实例
+     * @param outputContext      输出上下文（透传给处理器判断输出模式）
      * @throws BusinessException 处理器未找到或执行异常时抛出
      */
-    private void executeMainThread(Long conversationId, ConversationProcessContextBO processContext, MessageProcessor executorInstance) {
-        String executorName = executorInstance != null ? executorInstance.getClass().getSimpleName() : "null";
+    private void executeMainThread(Long conversationId, ConversationProcessContextBO processContext,
+                                   ChatMessageProcessor chatMessageProcessor, OutputContext outputContext) {
+        String executorName = ChatMessageProcessor.NODE_NAME;
         log.info("[主线程] 开始主线程执行，会话ID：{}，执行器：{}", conversationId, executorName);
         log.debug("[主线程] 会话ID：{}，处理器类型：{}，上下文轮次：{}", conversationId, executorName,
                 processContext.getConversation() != null ? processContext.getConversation().getCurrentRound() : "null");
 
-        if (executorInstance == null) {
+        if (chatMessageProcessor == null) {
             log.debug("[主线程] 处理器实例为空，抛出PROCESSOR_NOT_FOUND异常，会话ID：{}", conversationId);
             throw new BusinessException(AIChatExceptionEnum.PROCESSOR_NOT_FOUND);
         }
@@ -210,7 +229,7 @@ public class ConversationMessageProcessor {
 
             long startTime = System.currentTimeMillis();
 
-            executorInstance.processMessage(processContext);
+            chatMessageProcessor.processMessage(processContext, outputContext);
 
             long endTime = System.currentTimeMillis();
             long elapsed = endTime - startTime;

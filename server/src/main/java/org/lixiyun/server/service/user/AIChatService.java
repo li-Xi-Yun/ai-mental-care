@@ -9,7 +9,10 @@ import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
  *
  * @author lixiyun
  * @since 2026-07-14 16:42
+ * @deprecated 已被 {@code AdapterService#sendTextMessage} + {@code TextInputAdapter} 取代，
+ * 文本消息发送统一走输入适配器链路。保留供回退参考。
  */
+@Deprecated
 public interface AIChatService {
 
     UserMessageSendVO sendUserMessage(UserMessageSendDTO userMessageSendDTO);

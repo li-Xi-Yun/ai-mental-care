@@ -3,7 +3,7 @@ package org.lixiyun.server.infrastructure.conversation;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.server.socket.constant.AudioConstant;
-import org.lixiyun.server.socket.constant.TextConstant;
+import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,7 +27,7 @@ public class ConversationWebSocketManager {
      */
     public void sendTextStream(Long userId, Long conversationId, String response) {
         log.debug("会话WebSocket管理器-文本内容流式发送开始，会话ID：{}，消息长度：{}", conversationId, response.length());
-        sendViaWebSocket(userId, TextConstant.AI_TEXT_REPLY, conversationId, response);
+        sendViaWebSocket(userId, ConversationConstant.AI_TEXT_REPLY, conversationId, response);
     }
 
     /**
@@ -39,7 +39,7 @@ public class ConversationWebSocketManager {
      */
     public void sendConversationName(Long userId, Long conversationId, String conversationName) {
         log.debug("会话WebSocket管理器-发送会话名称，会话ID：{}，名称：{}", conversationId, conversationName);
-        sendViaWebSocket(userId, TextConstant.CONVERSATION_NAME, conversationId, conversationName);
+        sendViaWebSocket(userId, ConversationConstant.CONVERSATION_NAME, conversationId, conversationName);
     }
 
     /**
@@ -49,6 +49,7 @@ public class ConversationWebSocketManager {
      * @param conversationId 会话ID
      * @param text           音频文本内容
      */
+    @Deprecated
     public void sendAudioStream(Long userId, Long conversationId, String text) {
         log.debug("会话WebSocket管理器-音频内容流式发送开始，会话ID：{}，消息长度：{}", conversationId, text.length());
         sendViaWebSocket(userId, AudioConstant.AI_AUDIO_REPLY, conversationId, text);
@@ -63,7 +64,7 @@ public class ConversationWebSocketManager {
      */
     public void sendAudioBinary(Long userId, Long conversationId, byte[] audioData) {
         log.debug("会话WebSocket管理器-音频二进制数据流式发送开始，会话ID：{}，数据长度：{}", conversationId, audioData.length);
-        sendViaWebSocket(userId, AudioConstant.AI_AUDIO_BINARY, conversationId, audioData);
+        sendViaWebSocket(userId, ConversationConstant.AI_AUDIO_BINARY, conversationId, audioData);
     }
 
     /**
@@ -75,7 +76,7 @@ public class ConversationWebSocketManager {
      */
     public void sendAsrIntermediateResult(Long userId, Long conversationId, String text) {
         log.debug("会话WebSocket管理器-ASR中间识别结果弹幕推送，会话ID：{}，消息长度：{}", conversationId, text.length());
-        sendViaWebSocket(userId, AudioConstant.ASR_INTERMEDIATE_RESULT, conversationId, text);
+        sendViaWebSocket(userId, ConversationConstant.ASR_INTERMEDIATE_RESULT, conversationId, text);
     }
 
     /**

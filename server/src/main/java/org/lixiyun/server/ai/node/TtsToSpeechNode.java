@@ -12,10 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.infrastructure.audio.TtsStreamHolder;
-import org.lixiyun.server.socket.constant.AudioConstant;
 import org.springframework.ai.chat.messages.Message;
 
 import java.io.OutputStream;
@@ -65,7 +63,7 @@ public class TtsToSpeechNode implements NodeActionWithConfig {
             // 本轮数据无效
             audioTextData = INVALID_REPLY_TEXT.get(random.nextInt(INVALID_REPLY_TEXT.size()));
             // 清除本轮会话数据，并发送WebSocket消息告知前端本轮轮次减一
-            WebSocketUtils.sendToUserBySubDestination(userId.toString(), AudioConstant.AUDIO_ROUND, 0);
+//            WebSocketUtils.sendToUserBySubDestination(userId.toString(), AudioConstant.AUDIO_ROUND, 0);
             // config 存放无效对话标识，用于后续检查点数据的清除
             Optional<Object> invalidConversationInfoOpl = config.metadata(GraphConstant.INVALID_CONVERSATION_INFO);
             AtomicBoolean invalidConversationInfo = (AtomicBoolean) invalidConversationInfoOpl.orElseThrow(() -> new BusinessException(ConversationExceptionEnum.CONVERSATION_METADATA_NOT_CONFIGURED));

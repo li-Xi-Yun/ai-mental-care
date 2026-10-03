@@ -7,5 +7,7 @@ SkillExceptionEnum:2000
 AIChatExceptionEnum:2200
 SymptomDictExceptionEnum:2400
 AiNodeConfigExceptionEnum:2600
+InputAdapterExceptionEnum:2800
+OutputPipelineExceptionEnum:3000
 
 SystemExceptionEnum:10000

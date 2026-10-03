@@ -14,7 +14,7 @@
 
 | 模板方法 | 返回类型 | 典型调用方 |
 |---------|---------|-----------|
-| `doStream(ChatModel, String, AiNodeConfig)` | `Flux<NodeOutput>` | `TextMessageProcessorModel`（主线程对话） |
+| `doStream(ChatModel, String, AiNodeConfig)` | `Flux<NodeOutput>` | `ChatMessageProcessorModel`（主线程对话） |
 
 ### 1.2 不覆盖的调用路径
 

@@ -13,7 +13,12 @@ import org.lixiyun.pojo.vo.user.conversation.AudioSessionInitVO;
  *
  * @author lixiyun
  * @since 2026-03-29 18:17
+ * @deprecated 已被 {@code ConversationLifecycleService} + {@code AudioInputAdapter} + {@code TtsOutputNode} 取代：
+ * init → lifecycle/init，sendAudioMessage → AdapterController#sendAudioFrame，
+ * stopSpeaking → AdapterController#notifyVadStop，endSession → lifecycle/{id}，
+ * interruptAudio 由适配器内部 barge-in 自动触发。保留供回退参考。
  */
+@Deprecated
 public interface AudioService {
 
     /**

@@ -43,7 +43,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class TextMessageProcessorModel extends BaseModel {
+public class ChatMessageProcessorModel extends BaseModel {
 
     private final String defaultDeepseekModelName = "deepseek-chat";
     private final String defaultOllamaModelName = "qwen2.5:7b";

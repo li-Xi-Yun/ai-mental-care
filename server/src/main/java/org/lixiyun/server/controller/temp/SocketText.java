@@ -4,8 +4,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
-import org.lixiyun.common.websocket.utils.WebSocketUtils;
-import org.lixiyun.server.socket.constant.AudioConstant;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +27,7 @@ public class SocketText {
     public StreamingResponseBody audioModel() {
         log.info("服务端推送消息到客户端");
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
-        WebSocketUtils.sendToUserBySubDestination(String.valueOf(currentId), AudioConstant.AUDIO_CONVERSATION_ID, 13523);
+//        WebSocketUtils.sendToUserBySubDestination(String.valueOf(currentId), ConversationConstant.AI_AUDIO_REPLY, 13523);
         return null;
     }
 

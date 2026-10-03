@@ -2,17 +2,15 @@ package org.lixiyun.server.socket.constant;
 
 /**
  * @author lixiyun
- * @since 2026-04-03 15:02
+ * @date 2026/10/3 14:58
  */
-@Deprecated
-public interface AudioConstant {
+public interface ConversationConstant {
 
-    String AUDIO_CONVERSATION_ID = "/audio/conversationId";
+    /** AI 文本回复，客户端订阅时，需要在后面路径中添加/{conversationId} */
+    String AI_TEXT_REPLY = "/text/reply";
 
-    String AUDIO_ROUND = "/audio/round";
-
-    /** AI语音对话文本流式返回，需要在后面路径中添加/{conversationId} */
-    String AI_AUDIO_REPLY = "/audio/reply";
+    /** 会话名称，客户端订阅时，需要在后面路径中添加/{conversationId} */
+    String CONVERSATION_NAME = "/conversation/name";
 
     /** AI语音对话音频二进制数据流式推送，需要在后面路径中添加/{conversationId} */
     String AI_AUDIO_BINARY = "/audio/binary";

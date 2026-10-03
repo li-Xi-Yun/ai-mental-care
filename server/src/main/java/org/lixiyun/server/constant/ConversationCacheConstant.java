@@ -41,6 +41,7 @@ public interface ConversationCacheConstant {
     String HASH_FIELD_PRIVATE_MAPPING_TABLE = "private_mapping_table";
 
     /** Hash Field - 会话模式/类型标识，决定后续处理逻辑分支 */
+    // todo 后续需要删除
     String HASH_FIELD_CONVERSATION_TYPE = "conversation_type";
 
     /** Hash Field - 语音处理中标识，用于新语音到达时判断是否需要中断旧任务 */

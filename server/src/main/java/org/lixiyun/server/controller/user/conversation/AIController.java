@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * @author lixiyun
  * @since 2026-07-14 16:27
+ * @deprecated 已被 {@code AdapterController#sendTextMessage} + {@code TextInputAdapter} 取代，
+ * 文本消息发送统一走输入适配器链路。保留供回退参考，待新链路稳定后移除。
  */
+@Deprecated
 @Slf4j
 @Validated
 @RestController

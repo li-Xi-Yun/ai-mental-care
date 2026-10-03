@@ -9,6 +9,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
  * @author lixiyun
  * @since 2026-07-14 18:02
  */
+@Deprecated
 public interface MessageProcessor {
 
     /**

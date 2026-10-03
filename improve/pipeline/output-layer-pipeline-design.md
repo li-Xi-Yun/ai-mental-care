@@ -46,7 +46,7 @@
 | 输入 | 输出 | 实现路径 | 对应类 |
 |------|------|---------|--------|
 | 文本 | 文本 | `input → Model → output` | `TextMessageProcessor` |
-| 语音 | 语音 | `input → ASR → Model → TTS → output` | `VoiceMessageProcessor` + `AudioServiceImpl` |
+| 语音 | 语音 | `input → ASR → Model → TTS → output` | `ChatMessageProcessor` + `AudioServiceImpl` |
 
 ### 1.3 期望支持的全部组合
 
@@ -290,8 +290,8 @@ public class AudioChunk {
 
 | 节点 | OutputContext 所需数据 | 写入 fluxStore 的 key | 写入 dataStore 的 key | 内部依赖 |
 |------|----------------------|----------------------|----------------------|---------|
-| `ModelNode` | temporaryMessages, historyMessages, emotionAnalysis, diagnosisAnalysis, aiNodeConfig, compressedSummary | `"model_output"` (Flux\<String\>) | — | ChatModelFactory, TextMessageProcessorModel |
-| `TtsNode` | 从 fluxStore 读取 `"model_output"` | `"tts_output"` (Flux\<byte[]\>) | — | TtsConnectionManager |
+| `ModelChatOutputNode` | temporaryMessages, historyMessages, emotionAnalysis, diagnosisAnalysis, aiNodeConfig, compressedSummary | `"model_output"` (Flux\<String\>) | — | ChatModelFactory, TextMessageProcessorModel |
+| `TtsOutputNode` | 从 fluxStore 读取 `"model_output"` | `"tts_output"` (Flux\<byte[]\>) | — | TtsConnectionManager |
 
 > **设计要点**：各节点通过 `context.getFlux(key, type)` / `context.putFlux(key, flux)` / `context.getData(key, type)` / `context.putData(key, value)` 读写共享状态池，不再通过方法参数传递。
 
@@ -1088,8 +1088,8 @@ public enum IOMode {
 
 | 节点 | 输入来源 | 输出方式 | IOMode |
 |------|---------|---------|--------|
-| `ModelNode` | OutputContext（批量文本数据） | Flux<TextChunk> | BATCH_IN_STREAM_OUT |
-| `TtsNode` | upstream Flux<TextChunk> | Flux<AudioChunk> | STREAM_IN_STREAM_OUT |
+| `ModelChatOutputNode` | OutputContext（批量文本数据） | Flux<TextChunk> | BATCH_IN_STREAM_OUT |
+| `TtsOutputNode` | upstream Flux<TextChunk> | Flux<AudioChunk> | STREAM_IN_STREAM_OUT |
 
 </details>
 
@@ -1250,10 +1250,10 @@ ConversationAggregateScheduler (不变)
 | **新增** `OutputPipeline` 类 | 输出管道容器（按序调度，execute 返回 void） | 新增 |
 | **新增** `OutputPipelineFactory` | 输出管道组装工厂（@Component，按 outputTypes 组装） | 新增 |
 | **新增** `OutputPipelineSessionManager` | 会话级输出管道管理（含 buildEndpointInfo） | 新增 |
-| **改** `ModelNode` | 从 `TextMessageProcessor` 提取核心逻辑，增加 `hasOutputType(TEXT)` 条件判断，通过 `context.putFlux/getFlux` 通信 | 改造 |
-| **改** `TtsNode` | 从 `VoiceMessageProcessor` 提取 TTS 逻辑，增加 `hasOutputType(AUDIO)` 条件判断，通过 `context.getFlux/putFlux` 通信 | 改造 |
+| **改** `ModelChatOutputNode` | 从 `TextMessageProcessor` 提取核心逻辑，增加 `hasOutputType(TEXT)` 条件判断，通过 `context.putFlux/getFlux` 通信 | 改造 |
+| **改** `TtsOutputNode` | 从 `ChatMessageProcessor` 提取 TTS 逻辑，增加 `hasOutputType(AUDIO)` 条件判断，通过 `context.getFlux/putFlux` 通信 | 改造 |
 | **废弃** `TextMessageProcessor` | 被 OutputPipeline + ModelNode 替代 | 最终废弃 |
-| **废弃** `VoiceMessageProcessor` | 被 OutputPipeline + ModelNode + TtsNode 替代 | 最终废弃 |
+| **废弃** `ChatMessageProcessor` | 被 OutputPipeline + ModelNode + TtsNode 替代 | 最终废弃 |
 | **废弃** `ProcessingResult` | 不再需要，process() 返回 void | 移除 |
 | **废弃** `IOMode` | 不再需要，统一通过 context 的 fluxStore/dataStore 读写 | 移除 |
 | **不变** `TtsConnectionManager` | 调用方从 VoiceMessageProcessor → TtsNode | 不变 |
@@ -1394,7 +1394,7 @@ AudioServiceImpl.interruptAudio(conversationId)
 推荐**路径 A**：
 
 1. 线上系统需要保证稳定性
-2. `ModelNode` / `TtsNode` 的 LLM 流式处理逻辑可先独立抽取验证
+2. `ModelChatOutputNode` / `TtsOutputNode` 的 LLM 流式处理逻辑可先独立抽取验证
 3. TTS 连接管理已通过防腐层解耦，Node 化改动范围可控
 4. 每步都可独立测试和灰度发布
 
@@ -1414,7 +1414,7 @@ AudioServiceImpl.interruptAudio(conversationId)
 
 ### 20.2 模型供应商切换
 
-替换 `ModelNode` 内部的 `ChatModelFactory` 实现或配置，不影响任何其他节点。
+替换 `ModelChatOutputNode` 内部的 `ChatModelFactory` 实现或配置，不影响任何其他节点。
 
 ### 20.3 多模型链式调用
 
@@ -1482,7 +1482,7 @@ InputAdapter 接口                OutputNode 接口
 | 维度 | 说明 |
 |------|------|
 | 独立编译 | 输出层代码不 `import` 输入层包（除了共享的 `OutputDataType` / `StandardMessage`） |
-| 独立测试 | `ModelNode` 的测试 mock `OutputContext`（填充 dataStore + fluxStore）+ `ChatModelFactory`，不需要输入层类 |
+| 独立测试 | `ModelChatOutputNode` 的测试 mock `OutputContext`（填充 dataStore + fluxStore）+ `ChatModelFactory`，不需要输入层类 |
 | 独立演进 | 新增 `AvatarAnimationNode` 不影响任何输入层适配器 |
 
 ---
