@@ -47,6 +47,60 @@ class ChatAPI {
     }
   }
 
+  // ==================== 适配器 + 管道方案：生命周期 ====================
+
+  /**
+   * 初始化对话生命周期
+   *
+   * <p>会话ID为空时后端自动创建新会话；非空时校验归属后绑定适配器与管道。
+   * 返回值包含 conversationId 与输入/输出端点路径。</p>
+   *
+   * @param inputTypes 输入类型集合（TEXT / AUDIO）
+   * @param outputTypes 输出类型集合（TEXT / AUDIO）
+   * @param conversationId 会话ID（可选，为空自动创建）
+   * @returns {Promise<{conversationId: string, inputEndpoints: [], outputEndpoints: []}>}
+   */
+  static async initLifecycle(inputTypes, outputTypes, conversationId = null) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.lifecycleInit}`;
+
+    const body = {
+      inputTypes: inputTypes || ['TEXT'],
+      outputTypes: outputTypes || ['TEXT']
+    };
+    if (conversationId !== null && conversationId !== undefined && conversationId !== '') {
+      body.conversationId = conversationId;
+    }
+
+    try {
+      return await ChatAPI._request(url, {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      ChatAPI.#logger.error('初始化对话生命周期失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 销毁对话生命周期
+   *
+   * <p>释放输入适配器与输出管道资源，取消时间轮任务，清理空会话。</p>
+   *
+   * @param conversationId 会话ID
+   */
+  static async endLifecycle(conversationId) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.lifecycleEnd}/${conversationId}`;
+    try {
+      return await ChatAPI._request(url, { method: 'DELETE' });
+    } catch (error) {
+      ChatAPI.#logger.error('销毁对话生命周期失败:', error);
+      throw error;
+    }
+  }
+
+  // ==================== 旧链路（测试/回退参考，新流程不再使用） ====================
+
   static async getConversationList(pageNum = 1, pageSize = 20) {
     const url = `${CONFIG.server.baseUrl}${CONFIG.api.conversationList}`;
     try {

@@ -14,7 +14,7 @@ const CONFIG = {
   },
 
   api: {
-    sendMessage: '/user/conversation/ai-chat/user-message',
+    sendMessage: '/user/conversation/adapter/text/send',
     conversationList: '/user/conversation/list',
     dialogueMemory: '/user/conversaion/dialogue/',
     emotionAnalysisList: '/user/conversation/emotion-analysis/list/',
@@ -23,6 +23,12 @@ const CONFIG = {
     emotionDiagnosisDetail: '/user/conversation/emotion-diagnosis/detail/',
     conversationTestSend: '/temp/conversation-test/send',
 
+    /* ==================== 适配器 + 管道方案 ==================== */
+    /* 生命周期：会话创建/绑定适配器与管道、销毁 */
+    lifecycleInit: '/user/conversation/lifecycle/init',
+    lifecycleEnd: '/user/conversation/lifecycle',
+
+    /* 以下为旧链路保留（测试/回退参考），新流程不再使用 */
     audioInit: '/user/conversation/audio/init',
     audioEnd: '/user/conversation/audio',
 
@@ -76,10 +82,13 @@ const CONFIG = {
       return this.getSubscribePath(this.asrIntermediate, conversationId);
     },
 
+    /* ==================== 适配器 + 管道方案：STOMP 发送目的地 ==================== */
+    /* 类级 @RequestMapping 不参与 STOMP 映射，此处为 app 前缀 + @MessageMapping 路径 */
     stompSend: {
-      audioMessage: '/app/message/send',
-      audioInterrupt: '/app/interrupt',
-      speechEnd: '/app/speech/end'
+      /* AdapterController @MessageMapping("/audio/frame") */
+      audioMessage: '/app/audio/frame',
+      /* AdapterController @MessageMapping("/audio/vad-stop") */
+      audioVadStop: '/app/audio/vad-stop'
     }
   }
 };

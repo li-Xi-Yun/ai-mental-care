@@ -78,21 +78,35 @@ public class InputAdapterSessionManager {
     /**
      * 注册适配器——工厂组装 + 统一初始化 + 纳入会话管理
      *
+     * <p><b>并发安全</b>：使用 {@code ConcurrentHashMap.compute} 对同一会话的
+     * 「销毁旧适配器 → 组装新适配器 → 初始化 → 绑定」整体加 per-key 互斥，
+     * 防止同一会话并发注册时旧适配器资源泄漏或新适配器被覆盖。</p>
+     *
      * @param inputTypes     客户端请求的输入方式集合
      * @param userId         用户ID
      * @param conversationId 会话ID
-     * @throws BusinessException 如果该会话已被注册
      */
     public void register(Set<InputDataType> inputTypes, Long userId, Long conversationId) {
-        if (sessionAdapters.containsKey(conversationId)) {
-            log.error("[输入适配器管理器] 会话{}已被注册，不允许重复注册", conversationId);
-            throw new BusinessException(InputAdapterExceptionEnum.SESSION_ALREADY_REGISTERED);
-        }
-        List<InputAdapter> adapterList = factory.assemble(inputTypes);
-        adapterList.forEach(item -> item.init(userId, conversationId));
-        sessionAdapters.put(conversationId, adapterList);
-        log.info("[输入适配器管理器] 会话{}注册完成，输入类型：{}，适配器数量：{}",
-                conversationId, inputTypes, adapterList.size());
+        sessionAdapters.compute(conversationId, (cid, oldList) -> {
+            // 会话已注册：先销毁旧适配器资源，再按新输入类型重建
+            if (oldList != null) {
+                log.info("[输入适配器管理器] 会话{}已被注册，先销毁旧适配器资源", cid);
+                for (int i = oldList.size() - 1; i >= 0; i--) {
+                    try {
+                        oldList.get(i).destroy();
+                    } catch (Exception e) {
+                        // 销毁失败不阻断重建，避免 compute 失败导致残留已销毁实例
+                        log.error("[输入适配器管理器] 会话{}旧适配器销毁失败（继续重建），错误：{}", cid, e.getMessage(), e);
+                    }
+                }
+            }
+
+            List<InputAdapter> adapterList = factory.assemble(inputTypes);
+            adapterList.forEach(item -> item.init(userId, cid));
+            log.info("[输入适配器管理器] 会话{}注册完成，输入类型：{}，适配器数量：{}",
+                    cid, inputTypes, adapterList.size());
+            return adapterList;
+        });
     }
 
     /**

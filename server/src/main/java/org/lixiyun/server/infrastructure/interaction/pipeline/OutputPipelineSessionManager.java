@@ -91,28 +91,38 @@ public class OutputPipelineSessionManager {
     /**
      * 初始化会话——组装管道、初始化节点资源、绑定到会话
      *
+     * <p><b>并发安全</b>：使用 {@code ConcurrentHashMap.compute} 对同一会话的
+     * 「销毁旧管道 → 创建新管道 → 初始化 → 绑定」整体加 per-key 互斥，
+     * 防止同一会话并发 init 时旧管道资源泄漏或新管道被覆盖。</p>
+     *
      * @param conversationId 会话ID（Map 的 key）
      * @param userId         用户ID
      * @param outputTypes    前端请求的输出模式集合
      */
     public void initSession(Long conversationId, Long userId, Set<OutputDataType> outputTypes) {
-        // 先销毁旧管道（如果存在）
-        OutputPipeline old = sessionPipelines.remove(conversationId);
-        if (old != null) {
-            log.info("[管道会话管理器] 会话{}存在旧管道，先销毁", conversationId);
-            old.destroy();
-        }
+        sessionPipelines.compute(conversationId, (cid, old) -> {
+            // 先销毁旧管道（如果存在）
+            if (old != null) {
+                log.info("[管道会话管理器] 会话{}存在旧管道，先销毁", cid);
+                try {
+                    old.destroy();
+                } catch (Exception e) {
+                    // 销毁失败不阻断重建，避免 compute 失败导致残留已销毁实例
+                    log.error("[管道会话管理器] 会话{}旧管道销毁失败（继续重建），错误：{}", cid, e.getMessage(), e);
+                }
+            }
 
-        // 1. Factory 组装节点链 → 产出 Pipeline
-        OutputPipeline pipeline = pipelineFactory.createPipeline(outputTypes, conversationId, userId);
+            // 1. Factory 组装节点链 → 产出 Pipeline
+            OutputPipeline pipeline = pipelineFactory.createPipeline(outputTypes, cid, userId);
 
-        // 2. 初始化各节点资源
-        pipeline.init();
+            // 2. 初始化各节点资源
+            pipeline.init();
 
-        // 3. 绑定到会话
-        sessionPipelines.put(conversationId, pipeline);
-        sessionOutputTypes.put(conversationId, outputTypes);
-        log.info("[管道会话管理器] 会话{}初始化完成，outputTypes={}", conversationId, outputTypes);
+            // 3. sessionOutputTypes 在 compute 内一并更新，保证原子
+            sessionOutputTypes.put(cid, outputTypes);
+            log.info("[管道会话管理器] 会话{}初始化完成，outputTypes={}", cid, outputTypes);
+            return pipeline;
+        });
     }
 
     /**

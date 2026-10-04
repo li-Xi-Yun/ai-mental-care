@@ -28,6 +28,47 @@
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
 
+  /**
+   * 确保当前会话已完成生命周期初始化（适配器 + 管道绑定）
+   *
+   * <p>新流程：文本消息统一走输入适配器（/adapter/text/send），
+   * 发送前必须先通过 lifecycle/init 创建/绑定会话，否则适配器不存在。</p>
+   */
+  async function ensureTextConversation() {
+    if (AppState.conversationId && AppState.lifecycleInitialized) return;
+
+    // 同一会话进行模式切换（如语音 → 文本）：先销毁旧生命周期绑定，再按文本模式重新初始化
+    if (AppState.conversationId && AppState.lifecycleBoundId
+        && safeBigIntEqual(AppState.conversationId, AppState.lifecycleBoundId)) {
+      try {
+        await ChatAPI.endLifecycle(AppState.conversationId);
+        AppState.fn.addSystemMessage('已释放旧会话资源');
+      } catch (e) {
+        AppState.fn.addSystemMessage('释放旧会话资源失败: ' + e.message);
+      }
+      AppState.lifecycleInitialized = false;
+      AppState.lifecycleBoundId = null;
+    }
+
+    const data = await ChatAPI.initLifecycle(['TEXT'], ['TEXT'], AppState.conversationId || null);
+    const newlyCreated = !AppState.conversationId;
+    AppState.conversationId = String(data.conversationId);
+    AppState.lifecycleInitialized = true;
+    AppState.lifecycleBoundId = AppState.conversationId;
+
+    if (newlyCreated) {
+      AppState.fn.addSystemMessage(`新会话已创建，ID: ${AppState.conversationId}`);
+
+      ws.subscribeTextReply(AppState.conversationId, onTextReply);
+      ws.subscribeConversationName(AppState.conversationId, onConversationName);
+
+      document.getElementById('emotionToggleBtn').disabled = false;
+      document.getElementById('diagnosisPageBtn').disabled = false;
+
+      AppState.fn.loadConversationList();
+    }
+  }
+
   function prependMessage(msg) {
     const type = (msg.type || '').toUpperCase();
     const el = document.createElement('div');
@@ -110,6 +151,9 @@
     addMessage(text, 'user');
 
     try {
+      // 新流程：发送前确保会话已完成生命周期初始化（创建/绑定适配器与管道）
+      await ensureTextConversation();
+
       const data = await ChatAPI.sendMessage(text, AppState.conversationId);
 
       if (!AppState.conversationId) {

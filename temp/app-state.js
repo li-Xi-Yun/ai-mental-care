@@ -6,6 +6,12 @@ const AppState = {
   isSending: false,
   wsSubscriptions: {},
 
+  /** 当前会话是否已完成适配器/管道生命周期绑定 */
+  lifecycleInitialized: false,
+
+  /** 本页会话内已绑定生命周期的会话ID（用于判断切换/模式切换时是否需要先 endLifecycle） */
+  lifecycleBoundId: null,
+
   autoTestEnabled: false,
   playSimulatedVoice: false,
   autoTestRunning: false,

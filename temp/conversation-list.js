@@ -13,8 +13,21 @@
     leftPanel.classList.toggle('collapsed');
   });
 
-  newConversationBtn.addEventListener('click', () => {
+  newConversationBtn.addEventListener('click', async () => {
+    // 文本对话中新建会话：先释放旧会话的生命周期绑定（适配器/管道资源）
+    if (AppState.conversationId && AppState.lifecycleBoundId
+        && safeBigIntEqual(AppState.conversationId, AppState.lifecycleBoundId)) {
+      try {
+        await ChatAPI.endLifecycle(AppState.conversationId);
+        AppState.fn.addSystemMessage('已释放会话: ' + AppState.conversationId + ' 的资源');
+      } catch (error) {
+        AppState.fn.addSystemMessage('释放会话资源失败: ' + error.message);
+      }
+    }
+
     AppState.conversationId = null;
+    AppState.lifecycleInitialized = false;
+    AppState.lifecycleBoundId = null;
     AppState.currentRound = 0;
     AppState.currentAiMessageEl = null;
     AppState.currentAiText = '';
@@ -122,7 +135,20 @@
     const targetId = String(item.id);
     if (AppState.conversationId && safeBigIntEqual(AppState.conversationId, targetId)) return;
 
+    // 文本对话中切换会话：先释放旧会话的生命周期绑定（适配器/管道资源）
+    if (AppState.conversationId && AppState.lifecycleBoundId
+        && safeBigIntEqual(AppState.conversationId, AppState.lifecycleBoundId)) {
+      try {
+        await ChatAPI.endLifecycle(AppState.conversationId);
+        AppState.fn.addSystemMessage('已释放会话: ' + AppState.conversationId + ' 的资源');
+      } catch (error) {
+        AppState.fn.addSystemMessage('释放会话资源失败: ' + error.message);
+      }
+    }
+
     AppState.conversationId = targetId;
+    AppState.lifecycleInitialized = false;
+    AppState.lifecycleBoundId = null;
     AppState.currentRound = 0;
     AppState.currentAiMessageEl = null;
     AppState.currentAiText = '';
@@ -195,4 +221,28 @@
 
   AppState.fn.loadConversationList = loadConversationList;
   AppState.fn.switchConversation = switchConversation;
+
+  // ==================== 语音对话入口（模式切换前置） ====================
+
+  /**
+   * 跳转语音对话页时携带当前会话ID与绑定标记：
+   * 同一会话从文本模式切到语音模式，语音页会先 endLifecycle 旧绑定，再按语音模式 init。
+   */
+  (function () {
+    const voiceLink = document.getElementById('voiceConversationLink');
+    if (!voiceLink) return;
+
+    voiceLink.addEventListener('click', function () {
+      const href = voiceLink.getAttribute('href') || 'audio-conversation.html';
+      if (AppState.conversationId) {
+        const base = href.split('?')[0];
+        const params = new URLSearchParams();
+        params.set('conversationId', String(AppState.conversationId));
+        if (AppState.lifecycleBoundId && safeBigIntEqual(AppState.conversationId, AppState.lifecycleBoundId)) {
+          params.set('lifecycleBound', '1');
+        }
+        voiceLink.setAttribute('href', base + '?' + params.toString());
+      }
+    });
+  })();
 })();
