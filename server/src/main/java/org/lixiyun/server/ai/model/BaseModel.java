@@ -20,6 +20,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
@@ -136,6 +138,36 @@ public abstract class BaseModel implements Model {
      */
     protected ChatOptions buildDeepSeekCompanionOptions(AiNodeConfig config){
         return null;
+    }
+
+    /**
+     * 构建OpenAI兼容模型的ChatOptions配置
+     * <p>适用于自定义远程网关（one-api/new-api/vLLM/LM Studio等）上部署的OpenAI兼容协议模型，
+     * base-url与api-key在 {@code spring.ai.openai.base-url / api-key} 中全局配置，
+     * 模型名同样取自 yaml 的 {@code spring.ai.openai.chat.options.model}（此处不重复设置，沿用全局默认）。
+     * 默认实现将通用推理参数映射为 {@link OpenAiChatOptions}，子类可按需覆盖微调。</p>
+     *
+     * @param config 节点配置，可为null（使用默认值）
+     * @return OpenAI兼容模型的ChatOptions实例
+     */
+    protected ChatOptions buildOpenAiCompanionOptions(AiNodeConfig config){
+        double temperature = config != null && config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.4;
+        double topP = config != null && config.getTopP() != null ? config.getTopP().doubleValue() : 0.9;
+        int maxToken = config != null && config.getMaxToken() != null ? config.getMaxToken() : 1024;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : null;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : null;
+
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
+                .temperature(temperature)
+                .topP(topP)
+                .maxTokens(maxToken);
+        if (frequencyPenalty != null) {
+            builder.frequencyPenalty(frequencyPenalty);
+        }
+        if (presencePenalty != null) {
+            builder.presencePenalty(presencePenalty);
+        }
+        return builder.build();
     }
 
     /**
@@ -465,6 +497,7 @@ public abstract class BaseModel implements Model {
      *     <li>{@link OllamaChatModel} → {@link #buildOllamaCompanionOptions(AiNodeConfig)}</li>
      *     <li>{@link DashScopeChatModel} → {@link #buildDashScopeCompanionOptions(AiNodeConfig)}</li>
      *     <li>{@link DeepSeekChatModel} → {@link #buildDeepSeekCompanionOptions(AiNodeConfig)}</li>
+     *     <li>{@link OpenAiChatModel} → {@link #buildOpenAiCompanionOptions(AiNodeConfig)}（为null时回退默认）</li>
      *     <li>其他 → {@link #buildDefaultCompanionOptions(AiNodeConfig)}</li>
      * </ul>
      * </p>
@@ -480,6 +513,9 @@ public abstract class BaseModel implements Model {
             return buildDashScopeCompanionOptions(config);
         } else if (chatModel instanceof DeepSeekChatModel) {
             return buildDeepSeekCompanionOptions(config);
+        } else if (chatModel instanceof OpenAiChatModel) {
+            ChatOptions openAiOptions = buildOpenAiCompanionOptions(config);
+            return openAiOptions != null ? openAiOptions : buildDefaultCompanionOptions(config);
         } else {
             return buildDefaultCompanionOptions(config);
         }

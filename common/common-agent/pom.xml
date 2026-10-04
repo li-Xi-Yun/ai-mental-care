@@ -80,6 +80,12 @@
             <artifactId>spring-ai-starter-model-deepseek</artifactId>
         </dependency>
 
+        <!-- OpenAI兼容协议：自定义远程模型（one-api/new-api/vLLM等网关），base-url+api-key 由 spring.ai.openai 配置 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>

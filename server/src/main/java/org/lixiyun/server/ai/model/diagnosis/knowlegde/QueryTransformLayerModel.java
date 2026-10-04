@@ -18,6 +18,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -227,6 +228,28 @@ public class QueryTransformLayerModel extends BaseModel {
                 .logprobs(false)
                 .topLogprobs(null)
                 .build();
+    }
+
+    @Override
+    protected ChatOptions buildOpenAiCompanionOptions(AiNodeConfig config) {
+        double temperature = config != null && config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.2;
+        double topP = config != null && config.getTopP() != null ? config.getTopP().doubleValue() : 0.85;
+        int maxToken = config != null && config.getMaxToken() != null ? config.getMaxToken() : defaultMaxToken;
+        Double frequencyPenalty = config != null && config.getFrequencyPenalty() != null ? config.getFrequencyPenalty().doubleValue() : 0.7;
+        Double presencePenalty = config != null && config.getPresencePenalty() != null ? config.getPresencePenalty().doubleValue() : 0.3;
+
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
+                .temperature(temperature)
+                .topP(topP)
+                .maxTokens(maxToken)
+                .frequencyPenalty(frequencyPenalty)
+                .presencePenalty(presencePenalty)
+                ;
+        // 节点级模型名覆盖：未配置时沿用 yaml 中 spring.ai.openai.chat.options.model 全局默认
+        if (config != null && config.getOpenaiModelName() != null) {
+            builder.model(config.getOpenaiModelName());
+        }
+        return builder.build();
     }
 
     @Override

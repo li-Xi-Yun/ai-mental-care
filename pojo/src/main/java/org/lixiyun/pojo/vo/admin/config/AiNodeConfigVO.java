@@ -40,7 +40,7 @@ public class AiNodeConfigVO implements Serializable {
     @Schema(description = "系统提示词", example = "你是一个心理健康领域的评估助手……")
     private String systemPrompt;
 
-    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE", example = "1")
+    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型)", example = "1")
     private Integer modelType;
 
     @Schema(description = "DeepSeek模型名称", example = "deepseek-chat")
@@ -51,6 +51,9 @@ public class AiNodeConfigVO implements Serializable {
 
     @Schema(description = "DashScope模型名称", example = "qwen-max")
     private String dashscopeModelName;
+
+    @Schema(description = "OpenAI兼容模型名称，未配置时沿用 yaml 全局默认", example = "gpt-4o-mini")
+    private String openaiModelName;
 
     @Schema(description = "最大输出token数", example = "2048")
     private Integer maxToken;

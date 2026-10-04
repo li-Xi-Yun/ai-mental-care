@@ -41,8 +41,8 @@ public class AiNodeConfigDTO implements Serializable {
     private String systemPrompt;
 
     @NotNull(message = "模型类型不能为空", groups = {AddGroup.class, UpdateGroup.class})
-    @NumberOfRanges(min = 0, max = 2)
-    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @NumberOfRanges(min = 0, max = 3)
+    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型)", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Integer modelType;
 
     @Schema(description = "DeepSeek模型名称", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "deepseek-chat")
@@ -53,6 +53,9 @@ public class AiNodeConfigDTO implements Serializable {
 
     @Schema(description = "DashScope模型名称", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "qwen-max")
     private String dashscopeModelName;
+
+    @Schema(description = "OpenAI兼容模型名称，未配置时沿用 yaml 中 spring.ai.openai.chat.options.model 全局默认", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "gpt-4o-mini")
+    private String openaiModelName;
 
     @NotNull(message = "最大输出token数不能为空", groups = {AddGroup.class, UpdateGroup.class})
     @Schema(description = "最大输出token数", requiredMode = Schema.RequiredMode.REQUIRED, example = "2048")

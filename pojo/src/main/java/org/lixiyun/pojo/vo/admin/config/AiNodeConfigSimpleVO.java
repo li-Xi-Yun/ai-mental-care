@@ -36,7 +36,7 @@ public class AiNodeConfigSimpleVO implements Serializable {
     @Schema(description = "节点分组", example = "process")
     private String nodeGroup;
 
-    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE", example = "1")
+    @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型)", example = "1")
     private Integer modelType;
 
     @Schema(description = "是否启用：0-禁用 1-启用", example = "1")

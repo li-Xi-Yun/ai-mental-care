@@ -51,7 +51,7 @@ public class AiNodeConfig implements Serializable {
     /** 系统提示词，定义模型角色、输出格式、字段说明、注意事项等 */
     private String systemPrompt;
 
-    /** 默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE */
+    /** 默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型) */
     private Integer modelType;
 
     /** DeepSeek模型名称 */
@@ -62,6 +62,9 @@ public class AiNodeConfig implements Serializable {
 
     /** DashScope模型名称 */
     private String dashscopeModelName;
+
+    /** OpenAI兼容(自定义远程模型)模型名称，未配置时沿用 yaml 中 spring.ai.openai.chat.options.model 全局默认 */
+    private String openaiModelName;
 
     /** 最大输出token数 */
     private Integer maxToken;

@@ -17,6 +17,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -146,6 +147,22 @@ public class IntentRecognitionModel extends BaseModel {
                         .type(DashScopeResponseFormat.Type.TEXT)
                         .build())
                 .build();
+    }
+
+    @Override
+    protected ChatOptions buildOpenAiCompanionOptions(AiNodeConfig config) {
+        double temperature = config != null && config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.1;
+        int maxToken = config != null && config.getMaxToken() != null ? config.getMaxToken() : defaultMaxToken;
+
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
+                .temperature(temperature)
+                .maxTokens(maxToken)
+                ;
+        // 节点级模型名覆盖：未配置时沿用 yaml 中 spring.ai.openai.chat.options.model 全局默认
+        if (config != null && config.getOpenaiModelName() != null) {
+            builder.model(config.getOpenaiModelName());
+        }
+        return builder.build();
     }
 
     @Override

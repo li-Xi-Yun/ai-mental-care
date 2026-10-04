@@ -203,6 +203,13 @@ spring:
           model: ${ai-model-config.ollama.embedding-model}
       chat:
         model: ${ai-model-config.ollama.chat-model}
+    openai:
+      base-url: ${ai-model-config.openai.base-url}   # 自定义远程模型的完整路径（OpenAI兼容协议），注意是否带 /v1
+      api-key: ${ai-model-config.openai.api-key}     # 网关/模型 API Key
+      chat:
+        enabled: true
+        options:
+          model: ${ai-model-config.openai.chat-model}  # 网关上的模型名，如 deepseek-chat / qwen2.5-72b 等
 
 mybatis:
   mapper-locations: classpath:mapper/**.xml

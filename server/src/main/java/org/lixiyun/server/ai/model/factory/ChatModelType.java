@@ -8,7 +8,8 @@ public enum ChatModelType {
 
     OLLAMA("ollama", "getOllamaChatModel", 0),
     DEEP_SEEK("deepSeek", "getDeepSeekChatModel", 1),
-    DASH_SCOPE("dashScope", "getDashScopeChatModel", 2);
+    DASH_SCOPE("dashScope", "getDashScopeChatModel", 2),
+    OPEN_AI("openAi", "getOpenAiChatModel", 3);
 
     /** 工厂标识key */
     public final String factoryKey;
