@@ -12,7 +12,7 @@
  *     → Logger（级别过滤）
  *       → ConsoleAppender.write()  → 浏览器控制台（始终启用，开发友好）
  *       → IndexedDBAppender.write() → IndexedDB 本地暂存
- *         → RemoteUploader._upload() → POST /api/logs/upload → 后端 logback name="frontend"
+ *         → RemoteUploader._upload() → POST /common/logs/frontend/upload → 后端 logback name="frontend"
  *           → ./logs/frontend/sys-info|warn|error|debug.log
  */
 (function () {
@@ -29,7 +29,7 @@
     });
 
     const remoteUploader = new RemoteUploader({
-        uploadUrl: '/api/logs/upload',
+        uploadUrl: '/common/logs/frontend/upload',
         dbAppender: dbAppender,
         uploadInterval: 30000,  // 30 秒上传一次
         maxBatchSize: 100       // 单次最多 100 条

@@ -18,6 +18,16 @@
   let isRecording = false;
   let currentAsrText = '';
 
+  // ==================== 输入/输出方式（由文本页语音对话弹窗通过 URL 参数传入） ====================
+  // 默认语音+文字双通道；可选值为 TEXT / AUDIO 的组合
+  let voiceInputTypes = ['TEXT', 'AUDIO'];
+  let voiceOutputTypes = ['TEXT', 'AUDIO'];
+
+  const hasAudioInput = () => voiceInputTypes.includes('AUDIO');
+  const hasTextInput = () => voiceInputTypes.includes('TEXT');
+  const hasAudioOutput = () => voiceOutputTypes.includes('AUDIO');
+  const hasTextOutput = () => voiceOutputTypes.includes('TEXT');
+
   // ==================== VAD 连续语音输入 ====================
   // 语音输入采用 VAD（语音活动检测）驱动：持续采集麦克风 → 检测到说话自动逐帧发送音频，
   // 检测到静音自动发送 vad-stop 结束当前语句，全程无需按钮控制"停止说话"。
@@ -229,9 +239,9 @@
         executeAutoTestRound();
       }, 2500);
     } else {
-      recordStatus.textContent = '点击开启语音输入';
-      textInput.disabled = false;
-      sendTextBtn.disabled = false;
+      recordStatus.textContent = hasAudioInput() ? '点击开启语音输入' : '当前模式未开启语音输入（仅文字）';
+      textInput.disabled = !hasTextInput();
+      sendTextBtn.disabled = !hasTextInput();
     }
   }
 
@@ -295,7 +305,13 @@
     } else {
       recordBtn.classList.remove('recording');
       recordBtnText.textContent = '\u{1F3A4}';
-      recordStatus.textContent = AppState.autoTestEnabled ? '自动测试中...' : '点击开启语音输入';
+      if (AppState.autoTestEnabled) {
+        recordStatus.textContent = '自动测试中...';
+      } else if (!hasAudioInput()) {
+        recordStatus.textContent = '当前模式未开启语音输入（仅文字）';
+      } else {
+        recordStatus.textContent = '点击开启语音输入';
+      }
     }
   }
 
@@ -311,16 +327,21 @@
   }
 
   function enableInputs() {
-    recordBtn.disabled = false;
-    textInput.disabled = false;
-    sendTextBtn.disabled = false;
-    autoTestToggle.disabled = false;
-    simulatedVoiceToggle.disabled = false;
+    const autoTestSupported = hasAudioInput() && hasAudioOutput();
+    recordBtn.disabled = !hasAudioInput();
+    textInput.disabled = !hasTextInput();
+    sendTextBtn.disabled = !hasTextInput();
+    // 自动测试依赖语音输入 + 语音播放的双向通路
+    autoTestToggle.disabled = !autoTestSupported;
+    simulatedVoiceToggle.disabled = !autoTestSupported;
+    if (!hasAudioInput()) {
+      setRecordButtonState(false);
+    }
   }
 
   // ==================== 会话初始化（适配器 + 管道方案） ====================
 
-  // 从 URL 读取跳转带入的会话信息（支持同一会话文本 ↔ 语音模式切换）
+  // 从 URL 读取跳转带入的会话信息（支持同一会话文本 ↔ 语音模式切换）与输入/输出方式
   (function () {
     const params = new URLSearchParams(window.location.search);
     const cid = params.get('conversationId');
@@ -330,7 +351,25 @@
       AppState.lifecycleBoundId = params.get('lifecycleBound') === '1' ? cid : null;
       AppState.lifecycleInitialized = false;
     }
+
+    // 输入/输出方式：来自文本页"语音对话"弹窗的选择（逗号分隔的 TEXT/AUDIO 子集）
+    const inputStr = params.get('input') || '';
+    const outputStr = params.get('output') || '';
+    if (inputStr) {
+      const parsedInput = inputStr.split(',')
+        .map(s => s.trim().toUpperCase())
+        .filter(t => t === 'TEXT' || t === 'AUDIO');
+      if (parsedInput.length > 0) voiceInputTypes = parsedInput;
+    }
+    if (outputStr) {
+      const parsedOutput = outputStr.split(',')
+        .map(s => s.trim().toUpperCase())
+        .filter(t => t === 'TEXT' || t === 'AUDIO');
+      if (parsedOutput.length > 0) voiceOutputTypes = parsedOutput;
+    }
   })();
+
+  addSystemMessage('当前语音对话模式：输入[' + voiceInputTypes.join('+') + '] 输出[' + voiceOutputTypes.join('+') + ']');
 
   async function ensureConversation() {
     // 会话已绑定生命周期则复用
@@ -351,8 +390,8 @@
 
     try {
       addSystemMessage('正在初始化语音会话...');
-      // 注册文本+音频输入适配器，文本+音频输出（文字走 /text/reply，语音走 /audio/binary）
-      const data = await ChatAPI.initLifecycle(['TEXT', 'AUDIO'], ['TEXT', 'AUDIO'], AppState.conversationId || null);
+      // 按文本页弹窗选择的输入/输出方式初始化：输入（TEXT/AUDIO），输出（TEXT/AUDIO）
+      const data = await ChatAPI.initLifecycle(voiceInputTypes, voiceOutputTypes, AppState.conversationId || null);
       AppState.conversationId = String(data.conversationId);
       AppState.lifecycleInitialized = true;
       AppState.lifecycleBoundId = AppState.conversationId;
@@ -374,6 +413,10 @@
   async function toggleListening() {
     if (AppState.autoTestEnabled) {
       addSystemMessage('自动测试模式下不支持语音输入');
+      return;
+    }
+    if (!hasAudioInput()) {
+      addSystemMessage('当前模式未开启语音输入，请在文本页"语音对话"弹窗中选择语音输入后重试');
       return;
     }
     if (VAD.enabled) {
@@ -528,6 +571,11 @@
       return;
     }
 
+    if (!hasTextInput()) {
+      addSystemMessage('当前模式未开启文字输入，请在文本页"语音对话"弹窗中选择文字输入后重试');
+      return;
+    }
+
     try {
       await ensureConversation();
     } catch (error) {
@@ -555,9 +603,9 @@
       }
     } catch (error) {
       addSystemMessage('发送失败: ' + error.message);
-      recordStatus.textContent = '发送失败';
-      textInput.disabled = false;
-      sendTextBtn.disabled = false;
+      recordStatus.textContent = hasAudioInput() ? '点击开启语音输入' : '当前模式未开启语音输入（仅文字）';
+      textInput.disabled = !hasTextInput();
+      sendTextBtn.disabled = !hasTextInput();
       cancelAiReplyCompleteTimer();
     }
   }
@@ -568,13 +616,20 @@
     if (!AppState.conversationId) return;
 
     // 文字字幕流（outputTypes 含 TEXT 时由 /text/reply 推送）
-    ws.subscribeTextReply(AppState.conversationId, onAiTextReply);
-    // 音频二进制流（含 AUDIO 时由 /audio/binary 推送）
-    ws.subscribeAudioBinary(AppState.conversationId, onAudioBinary);
-    // 测试接口的 TTS 完成信号（仅自动测试/文本转语音临时链路使用）
-    ws.subscribeAudioReply(AppState.conversationId, onAudioReply);
-    ws.subscribeAudioTest(AppState.conversationId, onAudioTestBinary);
-    ws.subscribeAsrIntermediate(AppState.conversationId, onAsrIntermediate);
+    if (hasTextOutput()) {
+      ws.subscribeTextReply(AppState.conversationId, onAiTextReply);
+    }
+    // 音频二进制流 + 测试/完成信号（outputTypes 含 AUDIO 时有效）
+    if (hasAudioOutput()) {
+      ws.subscribeAudioBinary(AppState.conversationId, onAudioBinary);
+      // 测试接口的 TTS 完成信号（仅自动测试/文本转语音临时链路使用）
+      ws.subscribeAudioReply(AppState.conversationId, onAudioReply);
+      ws.subscribeAudioTest(AppState.conversationId, onAudioTestBinary);
+    }
+    // ASR 中间结果（inputTypes 含 AUDIO 时有效）
+    if (hasAudioInput()) {
+      ws.subscribeAsrIntermediate(AppState.conversationId, onAsrIntermediate);
+    }
     ws.subscribeConversationName(AppState.conversationId, onConversationName);
   }
 
@@ -709,6 +764,13 @@
       return;
     }
 
+    if (!hasAudioInput() || !hasAudioOutput()) {
+      addSystemMessage('自动测试需要同时开启语音输入与语音播放，请返回文本页重新选择');
+      autoTestToggle.checked = false;
+      AppState.autoTestEnabled = false;
+      return;
+    }
+
     // 自动测试与连续语音输入互斥
     stopListening();
 
@@ -747,9 +809,9 @@
     window.speechSynthesis && window.speechSynthesis.cancel();
     resetAudioPlayback();
     addSystemMessage('自动测试已关闭');
-    recordStatus.textContent = '点击开启语音输入';
-    textInput.disabled = false;
-    sendTextBtn.disabled = false;
+    recordStatus.textContent = hasAudioInput() ? '点击开启语音输入' : '当前模式未开启语音输入（仅文字）';
+    textInput.disabled = !hasTextInput();
+    sendTextBtn.disabled = !hasTextInput();
     setRecordButtonState(false);
   }
 

@@ -52,6 +52,41 @@
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- 语音对话：输入/输出方式选择弹窗 -->
+<div class="voice-mode-overlay" id="voiceModeOverlay">
+  <div class="voice-mode-dialog">
+    <div class="voice-mode-title">选择语音对话方式</div>
+    <div class="voice-mode-group">
+      <div class="voice-mode-label">输入方式</div>
+      <label class="voice-mode-option">
+        <input type="checkbox" data-group="input" value="AUDIO" checked>
+        <span>🎤 语音输入（麦克风）</span>
+      </label>
+      <label class="voice-mode-option">
+        <input type="checkbox" data-group="input" value="TEXT" checked>
+        <span>⌨️ 文字输入</span>
+      </label>
+    </div>
+    <div class="voice-mode-group">
+      <div class="voice-mode-label">输出方式</div>
+      <label class="voice-mode-option">
+        <input type="checkbox" data-group="output" value="AUDIO" checked>
+        <span>🔊 语音播放</span>
+      </label>
+      <label class="voice-mode-option">
+        <input type="checkbox" data-group="output" value="TEXT" checked>
+        <span>📝 文字回复</span>
+      </label>
+    </div>
+    <div class="voice-mode-hint">请至少选择一种输入与输出方式</div>
+    <div class="voice-mode-actions">
+      <button class="voice-mode-btn cancel" id="voiceModeCancelBtn">取消</button>
+      <button class="voice-mode-btn confirm" id="voiceModeConfirmBtn">进入语音对话</button>
+    </div>
+  </div>
+</div>
+
 <div class="emotion-sidebar" id="emotionSidebar">
   <div class="sidebar-header">
     <h3>情绪分析数据</h3>

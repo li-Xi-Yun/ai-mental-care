@@ -11,20 +11,20 @@ class ChatWebSocket {
   }
 
   async connect(useNative = false) {
+    // 后端 AuthHandshakeInterceptor 对 SockJS 与原生 WebSocket 握手统一要求 URL 携带一次性 wsTicket
+    // （通过 /api/get-ws-ticket 用 user-token Header 换取，10s 过期、使用即删），故两种模式都必须先取票
     let ticket = null;
-    if (useNative) {
-      try {
-        ticket = await ChatAPI.getWsTicket();
-        this.#logger.info('获取WebSocket一次性ticket成功');
-      } catch (error) {
-        throw new Error(`获取WebSocket连接凭证失败: ${error.message}`);
-      }
+    try {
+      ticket = await ChatAPI.getWsTicket();
+      this.#logger.info('获取WebSocket一次性ticket成功');
+    } catch (error) {
+      throw new Error(`获取WebSocket连接凭证失败: ${error.message}`);
     }
 
     return new Promise((resolve, reject) => {
       const webSocketUrl = useNative
         ? `${CONFIG.server.wsBinaryUrl}${CONFIG.websocket.nativeEndpoint}?wsTicket=${ticket}`
-        : `${CONFIG.server.wsUrl}${CONFIG.websocket.endpoint}`;
+        : `${CONFIG.server.wsUrl}${CONFIG.websocket.endpoint}?wsTicket=${ticket}`;
 
       const factory = useNative
         ? () => new WebSocket(webSocketUrl)
@@ -62,94 +62,73 @@ class ChatWebSocket {
     });
   }
 
-  subscribeTextReply(conversationId, onMessage) {
-    const path = CONFIG.websocket.getTextReplyPath(conversationId);
-    this.#logger.info('订阅文本回复:', path);
+  /**
+   * 统一的订阅执行入口：先确保客户端已初始化（connect 被调用过），
+   * 未初始化时记录错误并返回 null，避免在 client 为 null 时抛 TypeError。
+   */
+  #doSubscribe(path, onMessage) {
+    if (!this.client) {
+      this.#logger.error('WebSocket客户端未初始化，无法订阅:', path);
+      return null;
+    }
 
     if (this.subscriptions[path]) {
       this.subscriptions[path].unsubscribe();
     }
 
     this.subscriptions[path] = this.client.subscribe(path, (message) => {
-      if (onMessage) onMessage(message.body);
+      if (onMessage) onMessage(message);
     });
 
     return path;
+  }
+
+  subscribeTextReply(conversationId, onMessage) {
+    const path = CONFIG.websocket.getTextReplyPath(conversationId);
+    this.#logger.info('订阅文本回复:', path);
+    return this.#doSubscribe(path, (message) => {
+      if (onMessage) onMessage(message.body);
+    });
   }
 
   subscribeConversationName(conversationId, onMessage) {
     const path = CONFIG.websocket.getConversationNamePath(conversationId);
     this.#logger.info('订阅会话名称:', path);
-
-    if (this.subscriptions[path]) {
-      this.subscriptions[path].unsubscribe();
-    }
-
-    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+    return this.#doSubscribe(path, (message) => {
       if (onMessage) onMessage(message.body);
     });
-
-    return path;
   }
 
   subscribeAudioReply(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioReplyPath(conversationId);
     this.#logger.info('订阅音频文字流:', path);
-
-    if (this.subscriptions[path]) {
-      this.subscriptions[path].unsubscribe();
-    }
-
-    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+    return this.#doSubscribe(path, (message) => {
       if (onMessage) onMessage(message.body);
     });
-
-    return path;
   }
 
   subscribeAudioBinary(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioBinaryPath(conversationId);
     this.#logger.info('订阅音频二进制流:', path);
-
-    if (this.subscriptions[path]) {
-      this.subscriptions[path].unsubscribe();
-    }
-
-    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+    return this.#doSubscribe(path, (message) => {
       if (onMessage) onMessage(message);
     });
-
-    return path;
   }
 
   subscribeAudioTest(conversationId, onMessage) {
     const path = CONFIG.websocket.getAudioTestPath(conversationId);
     this.#logger.info('订阅测试音频流:', path);
-
-    if (this.subscriptions[path]) {
-      this.subscriptions[path].unsubscribe();
-    }
-
-    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+    return this.#doSubscribe(path, (message) => {
       if (onMessage) onMessage(message);
     });
-
-    return path;
   }
 
   subscribeAsrIntermediate(conversationId, onMessage) {
     const path = CONFIG.websocket.getAsrIntermediatePath(conversationId);
     this.#logger.info('订阅ASR中间结果:', path);
-
-    if (this.subscriptions[path]) {
-      this.subscriptions[path].unsubscribe();
-    }
-
-    this.subscriptions[path] = this.client.subscribe(path, (message) => {
+    return this.#doSubscribe(path, (message) => {
       if (onMessage) onMessage(message.body);
     });
-
-    return path;
   }
 
   unsubscribeAll() {

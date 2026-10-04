@@ -75,7 +75,6 @@ public class AdapterController {
             通过 STOMP 上传一帧音频数据，交由音频输入适配器转发 ASR 引擎进行语音识别。
             前端在说话过程中持续发送本消息。
             """)
-    @RateLimit(type = RateLimit.RateLimitType.INTERFACE, key = "conversation-audio", maxRequests = 1, windowSizeInMillis = 200)
     public void sendAudioFrame(@Payload @Valid AudioMessageSendDTO dto) {
         log.info("[适配器控制层] 收到音频帧上传消息，会话ID：{}，数据长度：{}字节",
                 dto.getConversationId(), dto.getAudioMessage() == null ? 0 : dto.getAudioMessage().length);

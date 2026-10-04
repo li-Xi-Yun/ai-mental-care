@@ -58,15 +58,14 @@
 
     if (newlyCreated) {
       AppState.fn.addSystemMessage(`新会话已创建，ID: ${AppState.conversationId}`);
-
-      ws.subscribeTextReply(AppState.conversationId, onTextReply);
-      ws.subscribeConversationName(AppState.conversationId, onConversationName);
-
       document.getElementById('emotionToggleBtn').disabled = false;
       document.getElementById('diagnosisPageBtn').disabled = false;
-
       AppState.fn.loadConversationList();
     }
+
+    // 无论新建还是复用既有会话，都（重新）订阅文本回复流，保证会话绑定成功后一定能收到 AI 回复
+    ws.subscribeTextReply(AppState.conversationId, onTextReply);
+    ws.subscribeConversationName(AppState.conversationId, onConversationName);
   }
 
   function prependMessage(msg) {
@@ -140,6 +139,42 @@
     }
   });
 
+  // ==================== AI 回复流处理加固 ====================
+  // 适配器管道方案中，AI 回复通过 STOMP /text/reply 流式推送，可能早于
+  // send 接口的 HTTP 响应返回。若此时回复气泡尚未创建，onTextReply 会丢弃首段，
+  // 导致页面只显示"AI正在思考"而看不到任何回复。这里统一用 ensureAiReplyElement
+  // 创建/复用气泡，并在流空闲一定时间后标记完成，供下一轮复用。
+
+  const AI_STREAM_IDLE_MS = 1500;
+
+  let aiStreamIdleTimer = null;
+
+  function ensureAiReplyElement() {
+    if (AppState.currentAiMessageEl && AppState.currentAiMessageEl.dataset.complete !== 'true') {
+      return;
+    }
+    AppState.currentAiText = '';
+    const el = document.createElement('div');
+    el.className = 'message ai';
+    el.dataset.complete = 'false';
+    el.innerHTML = '<span class="typing-indicator">AI正在思考</span>';
+    AppState.currentAiMessageEl = el;
+    chatContainer.appendChild(el);
+    scrollToBottom();
+  }
+
+  function resetAiStreamIdleTimer() {
+    if (aiStreamIdleTimer) {
+      clearTimeout(aiStreamIdleTimer);
+    }
+    aiStreamIdleTimer = setTimeout(() => {
+      aiStreamIdleTimer = null;
+      if (AppState.currentAiMessageEl && AppState.currentAiText) {
+        AppState.currentAiMessageEl.dataset.complete = 'true';
+      }
+    }, AI_STREAM_IDLE_MS);
+  }
+
   async function sendMessage() {
     const text = messageInput.value.trim();
     if (!text || AppState.isSending) return;
@@ -154,33 +189,23 @@
       // 新流程：发送前确保会话已完成生命周期初始化（创建/绑定适配器与管道）
       await ensureTextConversation();
 
+      // 发送前先创建 AI 回复占位气泡，避免回复流早于 send 接口返回到达时被丢弃
+      ensureAiReplyElement();
+
       const data = await ChatAPI.sendMessage(text, AppState.conversationId);
+      AppState.currentRound = data.currentRound;
+      addSystemMessage(`轮次: ${AppState.currentRound}`);
 
-      if (!AppState.conversationId) {
-        AppState.conversationId = String(data.conversationId);
-        AppState.currentRound = data.currentRound;
-        addSystemMessage(`新会话已创建，ID: ${AppState.conversationId}，轮次: ${AppState.currentRound}`);
-
-        ws.subscribeTextReply(AppState.conversationId, onTextReply);
-        ws.subscribeConversationName(AppState.conversationId, onConversationName);
-
-        document.getElementById('emotionToggleBtn').disabled = false;
-        document.getElementById('diagnosisPageBtn').disabled = false;
-
-        AppState.fn.loadConversationList();
-      } else {
-        AppState.currentRound = data.currentRound;
-        addSystemMessage(`轮次: ${AppState.currentRound}`);
-      }
-
-      AppState.currentAiText = '';
-      AppState.currentAiMessageEl = document.createElement('div');
-      AppState.currentAiMessageEl.className = 'message ai';
-      AppState.currentAiMessageEl.innerHTML = '<span class="typing-indicator">AI正在思考</span>';
-      chatContainer.appendChild(AppState.currentAiMessageEl);
-      scrollToBottom();
-
+      // 极少数情况下回复完全同步返回，刷新空闲计时
+      resetAiStreamIdleTimer();
     } catch (error) {
+      // 发送失败时清理未收到任何内容的占位气泡
+      if (AppState.currentAiMessageEl
+          && AppState.currentAiMessageEl.dataset.complete !== 'true'
+          && !AppState.currentAiText) {
+        AppState.currentAiMessageEl.remove();
+        AppState.currentAiMessageEl = null;
+      }
       addSystemMessage(`发送失败: ${error.message}`);
     } finally {
       AppState.isSending = false;
@@ -189,11 +214,16 @@
   }
 
   function onTextReply(chunk) {
-    if (!AppState.currentAiMessageEl) return;
+    // 首个文本chunk到达时若还没有气泡（如回复流早于 send 响应返回），懒创建
+    if (!AppState.currentAiMessageEl || AppState.currentAiMessageEl.dataset.complete === 'true') {
+      ensureAiReplyElement();
+    }
 
     AppState.currentAiText += chunk;
     AppState.currentAiMessageEl.textContent = AppState.currentAiText;
     scrollToBottom();
+    resetAiStreamIdleTimer();
+
     if (AppState.fn.onStreamChunk) AppState.fn.onStreamChunk(chunk);
   }
 

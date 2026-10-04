@@ -222,26 +222,92 @@
   AppState.fn.loadConversationList = loadConversationList;
   AppState.fn.switchConversation = switchConversation;
 
-  // ==================== 语音对话入口（模式切换前置） ====================
+  // ==================== 语音对话入口（输入/输出方式选择弹窗 + 前置处理） ====================
 
   /**
-   * 跳转语音对话页时携带当前会话ID与绑定标记：
-   * 同一会话从文本模式切到语音模式，语音页会先 endLifecycle 旧绑定，再按语音模式 init。
+   * 点击"语音对话"时弹出小弹窗，让用户选择输入与输出方式（TEXT/AUDIO），
+   * 确认后携带会话ID、绑定标记与所选方式跳转 audio-conversation.html；
+   * 同一会话从文本模式切到语音模式时，语音页会先 endLifecycle 旧绑定，再按所选方式 init。
    */
   (function () {
     const voiceLink = document.getElementById('voiceConversationLink');
-    if (!voiceLink) return;
+    const overlay = document.getElementById('voiceModeOverlay');
+    if (!voiceLink || !overlay) return;
 
-    voiceLink.addEventListener('click', function () {
-      const href = voiceLink.getAttribute('href') || 'audio-conversation.html';
+    const inputBoxes = overlay.querySelectorAll('input[data-group="input"]');
+    const outputBoxes = overlay.querySelectorAll('input[data-group="output"]');
+    const confirmBtn = document.getElementById('voiceModeConfirmBtn');
+    const cancelBtn = document.getElementById('voiceModeCancelBtn');
+    const PRESET_KEY = 'voiceModePreset';
+
+    function loadPreset() {
+      try {
+        return JSON.parse(localStorage.getItem(PRESET_KEY) || 'null');
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function applyPreset() {
+      const preset = loadPreset();
+      overlay.querySelectorAll('input[data-group]').forEach(box => {
+        const group = box.dataset.group;
+        if (preset && preset[group] && Array.isArray(preset[group])) {
+          box.checked = preset[group].includes(box.value);
+        } else {
+          box.checked = true;
+        }
+      });
+    }
+
+    function collectSelected(boxes) {
+      return Array.from(boxes)
+        .filter(box => box.checked)
+        .map(box => box.value);
+    }
+
+    function buildVoiceUrl() {
+      let inputTypes = collectSelected(inputBoxes);
+      let outputTypes = collectSelected(outputBoxes);
+      // 至少保留一种，避免后端无输入/输出可用
+      if (inputTypes.length === 0) inputTypes = ['TEXT'];
+      if (outputTypes.length === 0) outputTypes = ['TEXT'];
+
+      try {
+        localStorage.setItem(PRESET_KEY, JSON.stringify({ input: inputTypes, output: outputTypes }));
+      } catch (e) {}
+
+      const base = (voiceLink.getAttribute('href') || 'audio-conversation.html').split('?')[0];
+      const params = new URLSearchParams();
+      params.set('input', inputTypes.join(','));
+      params.set('output', outputTypes.join(','));
       if (AppState.conversationId) {
-        const base = href.split('?')[0];
-        const params = new URLSearchParams();
         params.set('conversationId', String(AppState.conversationId));
         if (AppState.lifecycleBoundId && safeBigIntEqual(AppState.conversationId, AppState.lifecycleBoundId)) {
           params.set('lifecycleBound', '1');
         }
-        voiceLink.setAttribute('href', base + '?' + params.toString());
+      }
+      return base + '?' + params.toString();
+    }
+
+    voiceLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      applyPreset();
+      overlay.classList.add('active');
+    });
+
+    confirmBtn.addEventListener('click', function () {
+      overlay.classList.remove('active');
+      window.location.href = buildVoiceUrl();
+    });
+
+    cancelBtn.addEventListener('click', function () {
+      overlay.classList.remove('active');
+    });
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
       }
     });
   })();

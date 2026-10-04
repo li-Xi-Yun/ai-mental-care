@@ -2,7 +2,7 @@
  * 远程日志上报器
  * 仿照后端 SkyWalking GRPC 上报（被注释掉的 sky_log appender）
  *
- * 定时从 IndexedDB 读取未上报的日志，批量 POST 到后端 /api/logs/upload
+ * 定时从 IndexedDB 读取未上报的日志，批量 POST 到后端 /common/logs/frontend/upload
  * 上传成功后标记为已发送，避免重复上报
  */
 class RemoteUploader {
@@ -14,7 +14,7 @@ class RemoteUploader {
      * @param {number} options.maxBatchSize  单次最大上报条数，默认 100
      */
     constructor(options = {}) {
-        this.uploadUrl = options.uploadUrl || '/api/logs/upload';
+        this.uploadUrl = options.uploadUrl || '/common/logs/frontend/upload';
         this.dbAppender = options.dbAppender;
         this.uploadInterval = options.uploadInterval || 30000;
         this.maxBatchSize = options.maxBatchSize || 100;

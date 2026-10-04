@@ -104,7 +104,7 @@ public class ChatMessageProcessorModel extends BaseModel {
 
     @Override
     protected String getAgentName() {
-        return "emotionalCompanion";
+        return "ChatMessageProcessorModel";
     }
 
     @Override

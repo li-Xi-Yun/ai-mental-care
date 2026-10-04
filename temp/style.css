@@ -571,3 +571,119 @@ body {
   background: #ff4d4f;
   border-color: #ff7875;
 }
+
+/* ==================== 语音对话：输入/输出方式选择弹窗 ==================== */
+.voice-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-mode-overlay.active {
+  display: flex;
+}
+
+.voice-mode-dialog {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: voiceModeIn 0.2s ease;
+}
+
+@keyframes voiceModeIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.voice-mode-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.voice-mode-group {
+  margin-bottom: 14px;
+}
+
+.voice-mode-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.voice-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.voice-mode-option:hover {
+  background: #f7f9ff;
+  border-color: #4a90d9;
+}
+
+.voice-mode-option input {
+  accent-color: #4a90d9;
+  flex-shrink: 0;
+}
+
+.voice-mode-hint {
+  font-size: 11px;
+  color: #bbb;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.voice-mode-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.voice-mode-btn {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.voice-mode-btn.cancel {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.voice-mode-btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.voice-mode-btn.confirm {
+  background: #4a90d9;
+  color: white;
+}
+
+.voice-mode-btn.confirm:hover {
+  background: #357abd;
+}
