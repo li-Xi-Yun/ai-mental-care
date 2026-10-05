@@ -1,12 +1,12 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
-import org.lixiyun.pojo.dto.admin.user.AdminQueryDTO;
 import org.lixiyun.pojo.entity.Admin;
-import org.lixiyun.pojo.vo.admin.user.AdminVO;
+import org.lixiyun.pojo.vo.admin.sysadmin.AdminDetailVO;
+import org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO;
+
+import java.util.List;
 
 /**
  * @author lixiyun
@@ -15,19 +15,22 @@ import org.lixiyun.pojo.vo.admin.user.AdminVO;
 public interface AdminMapper extends BaseMapper<Admin> {
 
     /**
-     * 分页查询管理员VO（联表：角色、创建人用户名）
+     * 分页查询管理员列表（包含删除状态查询）
      *
-     * @param page     分页对象
-     * @param queryDTO 查询条件
-     * @return 管理员VO分页结果
+     * @param keyword 查询关键词
+     * @param status 状态
+     * @return 管理员列表
      */
-    IPage<AdminVO> selectAdminPage(Page<AdminVO> page, @Param("queryDTO") AdminQueryDTO queryDTO);
+    List<AdminPageVO> pageAdminListWithDeleted(@Param("keyword") String keyword,
+                                               @Param("status") Integer status,
+                                               @Param("deleted") Integer deleted);
 
     /**
-     * 根据ID查询管理员VO（联表：角色、创建人用户名）
+     * 查询管理员详情（外联查获取创建人与更新人的名称）
      *
      * @param id 管理员ID
-     * @return 管理员VO
+     * @return 管理员详情
      */
-    AdminVO selectAdminVOById(@Param("id") Long id);
+    AdminDetailVO getAdminDetailWithNames(@Param("id") Long id);
+
 }

@@ -2,9 +2,36 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.lixiyun.server.mapper.PermissionMapper">
     <select id="queryPermsByPersonId" resultType="java.lang.String">
-        select permission.perms from permission
-            join role_permission on permission.id = role_permission.permission_id
-            join person_role on role_permission.role_id = person_role.role_id
-        where person_role.person_id = #{personId}
+        select p.perms from permission as p
+                                join role_permission on p.id = role_permission.permission_id
+                                join person_role on role_permission.role_id = person_role.role_id
+        where person_role.person_id = #{personId} and p.status = 0 and p.deleted = 0
+        UNION
+        select p.perms from permission as p
+                                join person_temp_permission as ptp on p.id = ptp.permission_id
+        where ptp.person_id = #{personId}
+          and ptp.status = 0 and p.deleted = 0
+          and ptp.start_time &lt;= now()
+          and ptp.expire_time &gt;= now()
+    </select>
+
+    <select id="getPermissionDetailWithNames" resultType="org.lixiyun.pojo.vo.admin.permission.SysPermissionDetailVO">
+        SELECT
+            p.id,
+            p.perms,
+            p.name,
+            p.group_name AS groupName,
+            p.status,
+            p.remark,
+            p.created_time AS createdTime,
+            p.created_by AS createdBy,
+            creator.username AS createdByName,
+            p.updated_time AS updatedTime,
+            p.updated_by AS updatedBy,
+            updater.username AS updatedByName
+        FROM permission p
+                 LEFT JOIN admin creator ON p.created_by = creator.id
+                 LEFT JOIN admin updater ON p.updated_by = updater.id
+        WHERE p.id = #{id} AND p.deleted = 0 AND p.status = 0
     </select>
 </mapper>

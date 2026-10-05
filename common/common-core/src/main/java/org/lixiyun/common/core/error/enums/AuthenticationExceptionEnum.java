@@ -49,7 +49,42 @@ public enum AuthenticationExceptionEnum implements ErrorCode {
 
     // 角色权限
     SUPER_ADMIN_ONLY("仅超级管理员可执行该操作", 1029),
-    ROLE_UPDATE_FAILED("角色更新失败", 1030),
+    ROLE_UPDATE_FAILED("角色修改失败", 1030),
+
+    PERMISSION_NOT_FOUND("权限不存在", 1031),
+    PERMISSION_EXIST("权限标识符或名称或分组名称已存在", 1032),
+    PERMISSION_ADD_FAILED("权限新增失败", 1033),
+    PERMISSION_UPDATE_FAILED("权限修改失败", 1034),
+    PERMISSION_DELETE_FAILED("权限删除失败", 1035),
+    TEMP_PERMISSION_NOT_FOUND("临时权限记录不存在", 1036),
+    TEMP_PERMISSION_ALREADY_REVOKED("临时权限已作废", 1037),
+    TEMP_PERMISSION_GRANT_FAILED("临时权限授予失败", 1038),
+    TEMP_PERMISSION_REVOKE_FAILED("临时权限作废失败", 1039),
+
+    ROLE_NOT_FOUND("角色不存在", 1040),
+    ROLE_EXIST("角色标识或名称已存在", 1041),
+    ROLE_ADD_FAILED("角色新增失败", 1042),
+    ROLE_DELETE_FAILED("角色删除失败", 1043),
+    ROLE_STATUS_UPDATE_FAILED("角色状态修改失败", 1044),
+    ROLE_PERMISSION_QUERY_FAILED("角色权限查询失败", 1045),
+    ROLE_PERMISSION_ASSIGN_FAILED("角色权限分配失败", 1046),
+
+    ADMIN_ADD_FAILED("管理员新增失败", 1047),
+    ADMIN_PASSWORD_RESET_FAILED("管理员密码重置失败", 1048),
+    ADMIN_ROLE_ASSIGN_FAILED("管理员角色分配失败", 1049),
+    ADMIN_USERNAME_EXIST("管理员用户名已存在", 1050),
+    ADMIN_EMAIL_EXIST("管理员邮箱已存在", 1051),
+    ADMIN_MOBILE_EXIST("管理员手机号已存在", 1052),
+    DEFAULT_PASSWORD_NOT_CONFIGURED("默认密码未配置", 1053),
+    CAN_NOT_BAN_SELF("不能禁用自己", 1054),
+    BAN_END_TIME_CANNOT_BE_BEFORE_BAN_START_TIME("封禁结束时间不能早于当前或封禁开始时间", 1055),
+
+    USER_NOT_FOUND("用户不存在", 1056),
+    USER_ROLE_ASSIGN_FAILED("用户角色分配失败", 1057),
+    USER_BAN_END_TIME_INVALID("封禁结束时间无效", 1058),
+    USER_CANT_ASSIGN_ROLE_TO_SELF("用户不能给自己分配角色", 1059),
+
+    MULTIPLE_TOKEN_ERROR("请求中同时存在多个token，将优先使用第一个获取到的token。建议前端检查是否重复传递token", 1060),
 
 
 

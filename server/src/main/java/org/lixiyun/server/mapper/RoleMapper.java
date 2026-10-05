@@ -3,6 +3,7 @@ package org.lixiyun.server.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import org.lixiyun.pojo.entity.permission.Role;
+import org.lixiyun.pojo.vo.admin.permission.SysRoleDetailVO;
 
 import java.util.List;
 
@@ -14,6 +15,25 @@ import java.util.List;
  */
 public interface RoleMapper extends BaseMapper<Role> {
 
-    List<String> queryRoleByPersonId(@Param("personId") Long personId);
+    /**
+     * 查询用户角色键列表
+     * @param personId 用户ID
+     * @return 角色键列表
+     */
+    List<String> queryRoleKeysByPersonId(@Param("personId") Long personId);
+
+    /**
+     * 查询用户角色详情列表
+     * @param personId 用户ID
+     * @return 角色详情列表
+     */
+    List<Role> queryRoleDetailByPersonId(@Param("personId") Long personId);
+
+    /**
+     * 查询角色详情
+     * @param id 角色ID
+     * @return 角色详情
+     */
+    SysRoleDetailVO queryRoleDetailByRoleId(@Param("id") Long id);
 }
 

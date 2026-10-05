@@ -12,6 +12,7 @@ import org.lixiyun.pojo.entity.permission.PersonRole;
  */
 public interface PersonRoleMapper extends BaseMapper<PersonRole> {
 
-    void saveUserRole(@Param("personId") Long personId, @Param("roleName") String roleName);
+    void saveUserRole(@Param("personId") Long personId, @Param("roleKey") String roleKey);
+
 }
 

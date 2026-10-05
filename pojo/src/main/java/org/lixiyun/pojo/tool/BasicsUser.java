@@ -2,19 +2,29 @@ package org.lixiyun.pojo.tool;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 
 
 @Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BasicsUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 用户状态 0-正常 */
     public static final int USER_STATUS_NORMAL = 0;
+    /** 用户状态 1-异常 */
     public static final int USER_STATUS_ABNORMAL = 1;
+    /** 用户状态 2-封禁 */
     public static final int USER_STATUS_BAN = 2;
+    /** 用户状态 3-注销 */
     public static final int USER_STATUS_LOGOUT = 3;
 
     /**

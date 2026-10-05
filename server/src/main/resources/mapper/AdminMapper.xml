@@ -2,7 +2,37 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.lixiyun.server.mapper.AdminMapper">
 
-    <sql id="adminVoSql">
+    <select id="pageAdminListWithDeleted" resultType="org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO">
+        SELECT
+        a.id,
+        a.login_account AS loginAccount,
+        a.username,
+        a.email,
+        a.mobile,
+        a.status,
+        a.created_time AS createdTime,
+        a.updated_time AS updatedTime
+        FROM admin a
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (
+                a.username LIKE CONCAT('%', #{keyword}, '%')
+                OR a.login_account = #{keyword}
+                OR a.email LIKE CONCAT(#{keyword}, '%')
+                OR a.mobile LIKE CONCAT(#{keyword}, '%')
+                )
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+            <if test="deleted != null">
+                AND a.deleted = #{deleted}
+            </if>
+        </where>
+        ORDER BY a.created_time DESC
+    </select>
+
+    <select id="getAdminDetailWithNames" resultType="org.lixiyun.pojo.vo.admin.sysadmin.AdminDetailVO">
         SELECT
             a.id,
             a.login_account AS loginAccount,
@@ -13,37 +43,16 @@
             a.ban_time AS banTime,
             a.ban_end_time AS banEndTime,
             a.ban_reason AS banReason,
+            a.login_account_update_time AS loginAccountUpdateTime,
+            a.created_by AS createdBy,
+            creator.username AS createdByName,
             a.created_time AS createdTime,
-            a.updated_time AS updatedTime,
-            r.name AS role,
-            c.username AS createdByName
+            a.updated_by AS updatedBy,
+            updater.username AS updatedByName,
+            a.updated_time AS updatedTime
         FROM admin a
-        LEFT JOIN person_role pr ON pr.person_id = a.id
-        LEFT JOIN role r ON r.id = pr.role_id
-        LEFT JOIN admin c ON c.id = a.created_by
-    </sql>
-
-    <select id="selectAdminPage" resultType="org.lixiyun.pojo.vo.admin.user.AdminVO">
-        <include refid="adminVoSql"/>
-        <where>
-            <if test="queryDTO.loginAccount != null and queryDTO.loginAccount != ''">
-                AND a.login_account LIKE CONCAT('%', #{queryDTO.loginAccount}, '%')
-            </if>
-            <if test="queryDTO.username != null and queryDTO.username != ''">
-                AND a.username LIKE CONCAT('%', #{queryDTO.username}, '%')
-            </if>
-            <if test="queryDTO.mobile != null and queryDTO.mobile != ''">
-                AND a.mobile LIKE CONCAT('%', #{queryDTO.mobile}, '%')
-            </if>
-            <if test="queryDTO.status != null">
-                AND a.status = #{queryDTO.status}
-            </if>
-        </where>
-        ORDER BY a.created_time DESC
-    </select>
-
-    <select id="selectAdminVOById" resultType="org.lixiyun.pojo.vo.admin.user.AdminVO">
-        <include refid="adminVoSql"/>
+                 LEFT JOIN admin creator ON a.created_by = creator.id
+                 LEFT JOIN admin updater ON a.updated_by = updater.id
         WHERE a.id = #{id}
     </select>
 

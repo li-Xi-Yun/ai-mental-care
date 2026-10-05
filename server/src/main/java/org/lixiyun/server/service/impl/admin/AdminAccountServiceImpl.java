@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.common.authentication.constant.LoginConstant;
 import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
@@ -25,7 +24,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 管理员账号服务实现类
@@ -65,7 +63,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         }
 
         // 判断该账号状态是否处于正常状态
-        if (!Objects.equals(admin.getStatus(), LoginConstant.ACCOUNT_NORMAL)) {
+        if (!admin.isNormal()) {
             log.warn("管理员登录失败：账号状态异常，ID：{}，状态：{}", admin.getId(), admin.getStatus());
             throw new BusinessException(AuthenticationExceptionEnum.USER_BANNED);
         }
@@ -77,9 +75,11 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             throw new BusinessException(AuthenticationExceptionEnum.PASSWORD_AND_ACCOUNT_ERROR);
         }
 
-        // 查询管理员权限与角色
+        // 查询管理员权限
         List<String> permissions = permissionMapper.queryPermsByPersonId(admin.getId());
-        List<String> roles = roleMapper.queryRoleByPersonId(admin.getId());
+
+        // 查询管理员角色
+        List<String> roles = roleMapper.queryRoleKeysByPersonId(admin.getId());
 
         // 认证成功生成token，根据adminId生成token
         LoginUser loginUser = new LoginUser(admin, permissions, roles);

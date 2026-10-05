@@ -108,9 +108,11 @@ public class UserAccountServiceImpl implements UserAccountService {
             throw new BusinessException(AuthenticationExceptionEnum.PASSWORD_AND_ACCOUNT_ERROR);
         }
 
-        // 查询用户权限与角色
+        // 查询管理员权限
         List<String> permissions = permissionMapper.queryPermsByPersonId(user.getId());
-        List<String> roles = roleMapper.queryRoleByPersonId(user.getId());
+
+        // 查询管理员角色
+        List<String> roles = roleMapper.queryRoleKeysByPersonId(user.getId());
 
         // 认证成功生成token，根据userId生成token
         LoginUser loginUser = new LoginUser(user, permissions, roles);

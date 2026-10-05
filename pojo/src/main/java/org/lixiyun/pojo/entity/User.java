@@ -3,9 +3,9 @@ package org.lixiyun.pojo.entity;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.lixiyun.pojo.tool.BasicsUser;
 
 import java.io.Serializable;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * @since 2025-12-13 22:39:54
  */
 @Data
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 public class User extends BasicsUser implements Serializable {
