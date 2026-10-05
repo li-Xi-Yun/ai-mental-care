@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.aop.annotation.RateLimit;
 import org.lixiyun.common.core.result.Result;
-import org.lixiyun.pojo.dto.user.conversation.AudioInterruptDTO;
 import org.lixiyun.pojo.dto.user.conversation.AudioMessageSendDTO;
 import org.lixiyun.pojo.dto.user.conversation.UserMessageSendDTO;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
@@ -81,18 +80,4 @@ public class AdapterController {
         adapterService.sendAudioFrame(dto);
     }
 
-    /**
-     * 前端 VAD 检测到用户停止说话后通知后端（WebSocket，ASR 结束信令接口）
-     *
-     * <p>STOMP 目的地：{@code /user/conversation/adapter/audio/vad-stop}。</p>
-     */
-    @MessageMapping("/audio/vad-stop")
-    @Operation(summary = "前端VAD通知用户停止说话（WebSocket）", description = """
-            持续录音模式下，前端 VAD 检测到静音后发送本消息，
-            通知 ASR 引擎用户已停止说话，触发最终识别结果回调。
-            """)
-    public void notifyVadStop(@Payload @Valid AudioInterruptDTO dto) {
-        log.info("[适配器控制层] 收到前端VAD停止信号，会话ID：{}", dto.getConversationId());
-        adapterService.notifyVadStop(dto);
-    }
 }

@@ -44,9 +44,9 @@ asr:
       # VAD切句时长 ms（2000~6000），值越小切句越细
       vad-segment-duration: 3000
       # 静音事件VAD结束窗口大小 ms（300~3000）
-      end-window-size: 800
+      end-window-size: 600
       # 强制转语音等待时间 ms
-      force-to-speech-time: 100
+      force-to-speech-time: 800
       # 敏感词过滤配置（JSON字符串），留空表示不过滤
       sensitive-words-filter:
       # 是否启用POI-Match兴趣点匹配

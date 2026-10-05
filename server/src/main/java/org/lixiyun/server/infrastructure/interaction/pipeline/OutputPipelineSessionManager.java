@@ -248,7 +248,40 @@ public class OutputPipelineSessionManager {
      * @throws BusinessException 如果会话管道不存在
      */
     public void executeWithTracking(Long conversationId, OutputContext context) {
-        // todo 这里有一个问题：Flux流是延迟执行了，导致所有节点只要一执行完，就会标记为非活跃状态，但Flux流还是在执行中
+        // ============ todo：输出管道"活跃状态"生命周期与异步执行不匹配（barge-in 失效根因） ============
+        //
+        // 【问题现象】
+        // 用户说话期间 AI 语音（TTS）仍在播放，此时用户再次开口（barge-in），期望立即中断当前输出
+        // （停止模型流式推理 / TTS 下发），但实际上一段时间内 AI 仍在继续说话，中断不生效。
+        // 本次运行日志中全程没有任何 "[管道会话管理器] 会话{}已中断" / "[TtsNode] 节点中断" 记录，
+        // 证明 AudioInputAdapter.handleAudioFrame 中的 isActive 判断从未为 true。
+        //
+        // 【根因分析】
+        // 1. 本方法在执行管道（pipeline.execute → 各节点 process）之前 markActive(true)，
+        //    管道返回后立刻在 finally 中 markInactive(false)。
+        // 2. 但 execute() 只是"同步建立"节点处理链路：ModelChatOutputNode.process() 会调用
+        //    ConversationMessageProcessor 发起 LLM 流式推理 + TTS 合成，这些实际工作是通过
+        //    Reactor / 线程池异步执行的。日志可见：主线程"执行完成，耗时：31ms"返回之后，
+        //    数秒后模型才在 boundedElastic-N 线程上完成流式输出、TTS 音频随后才下发。
+        // 3. 因此从 execute() 返回到"模型流式 + TTS 合成真正结束"之前的整段时间内，
+        //    pipelineActiveStates 已经是 false。AudioInputAdapter.handleAudioFrame 的
+        //    outputPipelineSessionManager.isActive(conversationId) 永远返回 false，
+        //    永远不会触发 interrupt()（conversationStreamHolder.cancelStream + ttsConnectionManager.interrupt）。
+        //
+        // 【正确做法（待实现）】
+        //   markInactive 不应在 execute() 返回时立即执行，而应延迟到"当前输出真正结束"再复位。可选实现：
+        //   - 方案A：持有 execute 返回的 Flux 流，将流的终止信号（complete / error / cancel）与
+        //     pipelineActiveStates 绑定——subscribe 回调中 markInactive；interrupt() 显式取消流并同步复位。
+        //   - 方案B：在 ChatMessageProcessor 的 LLM 流式 onComplete / onError、以及
+        //     TTS onSynthesisComplete / SessionFinished 回调中回调通知 markInactive。
+        //   - 方案C：引入"输出会话"抽象（beginOutput/endOutput 配对），TTS 播放完成才 endOutput，
+        //     使 isActive 覆盖"音频仍在下发"的整段时间。
+        //
+        // 【验证要点】
+        //   修复后需一并验证 barge-in 全链路：VAD 检测到语音 → handleAudioFrame → isActive=true
+        //   → interrupt() → 模型流取消 + TTS 中断；同时保证 destroy / endSession 清理路径不受影响，
+        //   且不会出现"状态残留 true 导致后续输入被误中断"的反向问题。
+        // ============================================================================================
         markActive(conversationId);
         try {
             execute(conversationId, context);

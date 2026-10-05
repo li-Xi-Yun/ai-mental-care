@@ -30,7 +30,8 @@
 
   // ==================== VAD 连续语音输入 ====================
   // 语音输入采用 VAD（语音活动检测）驱动：持续采集麦克风 → 检测到说话自动逐帧发送音频，
-  // 检测到静音自动发送 vad-stop 结束当前语句，全程无需按钮控制"停止说话"。
+  // 检测到静音后继续补发一段全零PCM静音帧（约1.3s），让火山引擎服务端 VAD 自动切句并返回 definite=true，
+  // 全程无需按钮控制"停止说话"，也无需发送 vad-stop（负包=结束整个识别会话）。
   const VAD = {
     enabled: false,
     stream: null,
@@ -40,9 +41,10 @@
     analyser: null,
     targetSampleRate: 16000,
     energyThreshold: 0.012,       // RMS 能量阈值：高于视为语音
-    silenceHoldFrames: 15,        // 连续静音帧数达到该值 → 判定本次说话结束（每帧约 90ms）
+    trailingSilenceFrames: 15,    // 说话结束后补发的连续静音帧数（每帧约90ms，共约1.3s，远超火山 end_window_size=600ms）
     inSpeech: false,
     silenceFrames: 0,
+    frameSamples: 0,              // 最近一帧16kHz PCM采样数（补发静音时复用）
     onVolumeChange: null,
     onSpeechStateChange: null
   };
@@ -50,6 +52,8 @@
   let audioContext = null;
   let nextPlayTime = 0;
   const PCM_SAMPLE_RATE = 24000;
+  // 正在播放/已排队播放的TTS音频源集合，供 barge-in（用户开口）时统一停止
+  const activeAudioSources = new Set();
 
   let autoTestTimer = null;
 
@@ -98,6 +102,13 @@
       }
       source.start(nextPlayTime);
       nextPlayTime += buffer.duration;
+
+      // 登记正在播放的音频源，供 barge-in（用户开口）时统一中断
+      activeAudioSources.add(source);
+      source.onended = function () {
+        activeAudioSources.delete(source);
+        try { source.disconnect(); } catch (e) {}
+      };
     } catch (e) {
       logger.warn('播放音频chunk失败', e);
     }
@@ -105,6 +116,28 @@
 
   function resetAudioPlayback() {
     nextPlayTime = 0;
+  }
+
+  /**
+   * 中断AI语音播放（barge-in）
+   *
+   * <p>用户开始说话时调用：立即停止所有正在播放 / 已排队等待播放的 TTS 音频源，
+   * 并重置播放时间轴（nextPlayTime=0），使后续新一轮 AI 回复的音频能够从当前时刻即时播放；
+   * 同时取消 speechSynthesis 的模拟朗读（自动测试链路）。</p>
+   *
+   * <p>注意：这里只是"前端侧"的中断（开口即静音）。服务端是否继续下发/合成 TTS
+   * 由后端 barge-in（isActive → interrupt）链路负责，前端不依赖服务端先停才停。</p>
+   */
+  function interruptAudioPlayback() {
+    if (audioContext && activeAudioSources.size > 0) {
+      activeAudioSources.forEach(source => {
+        try { source.stop(); } catch (e) { /* 已播放结束的源忽略 */ }
+        try { source.disconnect(); } catch (e) {}
+      });
+      activeAudioSources.clear();
+    }
+    resetAudioPlayback();
+    window.speechSynthesis && window.speechSynthesis.cancel();
   }
 
   function speakSimulatedVoice(text) {
@@ -438,6 +471,8 @@
       VAD.onSpeechStateChange = function (speaking) {
         if (speaking) {
           recordStatus.textContent = '识别中...';
+          // 用户开始说话（barge-in）：立即中断正在播放的AI语音，避免AI继续讲话盖过用户
+          interruptAudioPlayback();
         }
       };
       await startContinuousCapture();
@@ -497,6 +532,7 @@
         energy += s * s;
       }
       const rms = Math.sqrt(energy / outLen);
+      VAD.frameSamples = outLen;
 
       handleVadFrame(pcm16, rms);
 
@@ -511,7 +547,8 @@
   }
 
   /**
-   * VAD 帧处理：说话 → 逐帧发音频；静音持续达到阈值 → 发 vad-stop
+   * VAD 帧处理：说话 → 逐帧发音频；静音 → 持续补发全零静音帧，
+   * 补发帧数达到阈值后判定本次说话结束，由火山引擎服务端 VAD 自动切句返回 definite=true。
    *
    * @param pcm16 16kHz PCM 帧（Int16Array）
    * @param rms   当前帧 RMS 能量
@@ -531,11 +568,16 @@
     } else {
       if (VAD.inSpeech) {
         VAD.silenceFrames++;
-        if (VAD.silenceFrames >= VAD.silenceHoldFrames) {
-          // 静音持续达到阈值 → 本次说话结束，通知 ASR 结束音频流
+        // 说话结束后的静音阶段：逐帧补发全零 PCM 静音（16kHz/16bit/单声道），
+        // 凑足火山引擎 end_window_size(600ms)+余量，让服务端 VAD 自动判停并返回 definite=true
+        if (VAD.silenceFrames <= VAD.trailingSilenceFrames) {
+          const silenceFrame = new Int16Array(pcm16.length); // 全零 = PCM 静音
+          audioSender.sendAudioMessage(arrayBufferToBase64(silenceFrame.buffer), AppState.conversationId);
+        }
+        if (VAD.silenceFrames >= VAD.trailingSilenceFrames) {
+          // 连续静音已达阈值 → 本次说话结束（静音已送够，无需发送 vad-stop 负包）
           VAD.inSpeech = false;
           VAD.silenceFrames = 0;
-          audioSender.sendStopSpeaking(AppState.conversationId);
           recordStatus.textContent = '识别中...（可继续说话）';
           if (VAD.onSpeechStateChange) VAD.onSpeechStateChange(false);
         }
@@ -544,7 +586,18 @@
   }
 
   /**
-   * 停止连续采集并释放资源；若仍在说话中，补发 vad-stop 收尾
+   * 手动停止采集时，补发一段连续静音帧，让火山引擎 VAD 完成当前句子的最终识别（definite=true）
+   */
+  function sendTrailingSilence() {
+    const samples = VAD.frameSamples || Math.round(16000 * 0.09); // 缺省按 90ms/帧
+    const silenceFrame = new Int16Array(samples); // 全零 = PCM 静音
+    for (let i = 0; i < VAD.trailingSilenceFrames; i++) {
+      audioSender.sendAudioMessage(arrayBufferToBase64(silenceFrame.buffer), AppState.conversationId);
+    }
+  }
+
+  /**
+   * 停止连续采集并释放资源；若仍在说话中，补发连续静音收尾
    */
   function stopContinuousCapture() {
     if (VAD.scriptNode) { try { VAD.scriptNode.disconnect(); } catch (e) {} VAD.scriptNode = null; }
@@ -556,7 +609,8 @@
     if (VAD.inSpeech) {
       VAD.inSpeech = false;
       VAD.silenceFrames = 0;
-      audioSender.sendStopSpeaking(AppState.conversationId);
+      // 手动停止采集：补发连续静音，让火山 VAD 完成当前句子的最终识别
+      sendTrailingSilence();
     }
   }
 
@@ -740,9 +794,9 @@
         speakSimulatedVoice(data.assistantMessage);
       }
 
-      // 发送音频帧到适配器层（ASR），随后通知ASR结束音频流
+      // 发送音频帧到适配器层（ASR），随后补发连续静音，让火山 VAD 自动切句
       audioSender.sendAudioMessage(audioBase64, AppState.conversationId);
-      audioSender.sendStopSpeaking(AppState.conversationId);
+      sendTrailingSilence();
       recordStatus.textContent = '自动测试: AI回复中...';
 
     } catch (error) {
