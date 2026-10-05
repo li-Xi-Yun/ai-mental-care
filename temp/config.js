@@ -16,11 +16,13 @@ const CONFIG = {
   api: {
     sendMessage: '/user/conversation/adapter/text/send',
     conversationList: '/user/conversation/list',
-    dialogueMemory: '/user/conversaion/dialogue/',
+    dialogueMemory: '/user/conversation/dialogue/',
     emotionAnalysisList: '/user/conversation/emotion-analysis/list/',
     emotionAnalysisDetail: '/user/conversation/emotion-analysis/detail/',
     emotionDiagnosisList: '/user/conversation/emotion-diagnosis/list/',
     emotionDiagnosisDetail: '/user/conversation/emotion-diagnosis/detail/',
+    /* ==================== 诊断反馈（独立控制器） ==================== */
+    assessmentFeedback: '/user/conversation/assessment-feedback/',
     conversationTestSend: '/temp/conversation-test/send',
 
     /* ==================== 适配器 + 管道方案 ==================== */

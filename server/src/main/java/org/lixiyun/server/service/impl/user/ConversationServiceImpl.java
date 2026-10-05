@@ -12,16 +12,22 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.user.conversation.ConversationInfoDTO;
+import org.lixiyun.pojo.entity.conversation.AssessmentFeedback;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
 import org.lixiyun.pojo.vo.user.conversation.ConversationVO;
+import org.lixiyun.server.mapper.AssessmentFeedbackMapper;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
+import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.lixiyun.server.service.user.ConversationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * @author lixiyun
@@ -35,6 +41,8 @@ public class ConversationServiceImpl implements ConversationService {
     private final ConversationMapper conversationMapper;
     private final ConversationMemoryMapper conversationMemoryMapper;
     private final EmotionAnalysisMapper emotionAnalysisMapper;
+    private final EmotionDiagnosisMapper emotionDiagnosisMapper;
+    private final AssessmentFeedbackMapper assessmentFeedbackMapper;
 
     @Override
     public PageResult<ConversationVO> listDisplay(Integer pageNum, Integer pageSize) {
@@ -53,6 +61,21 @@ public class ConversationServiceImpl implements ConversationService {
 
         // 转换为 VO 并返回分页结果
         return PageResult.convert(conversationPage, ConversationVO.class);
+    }
+
+    @Override
+    public ConversationVO getConversationDetail(Long conversationId) {
+        Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+
+        Conversation conversation = conversationMapper.selectOne(new LambdaQueryWrapper<Conversation>()
+                .eq(Conversation::getId, conversationId)
+                .eq(Conversation::getUserId, currentId));
+
+        if (conversation == null) {
+            log.error("会话不存在或无权限访问，conversationId={}，userId={}", conversationId, currentId);
+            throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
+        }
+        return BeanUtil.copyProperties(conversation, ConversationVO.class);
     }
 
     @Override
@@ -81,5 +104,16 @@ public class ConversationServiceImpl implements ConversationService {
                 .eq(EmotionAnalysis::getConversationId, conversationId));
         conversationMemoryMapper.delete(new LambdaUpdateWrapper<ConversationMemory>()
                 .eq(ConversationMemory::getConversationId, conversationId));
+
+        // 级联删除该会话下的情绪诊断书及其反馈记录
+        List<Long> diagnosisIds = emotionDiagnosisMapper.selectList(new LambdaUpdateWrapper<EmotionDiagnosis>()
+                .eq(EmotionDiagnosis::getConversationId, conversationId))
+                .stream().map(EmotionDiagnosis::getId).toList();
+        if (!diagnosisIds.isEmpty()) {
+            assessmentFeedbackMapper.delete(new LambdaUpdateWrapper<AssessmentFeedback>()
+                    .in(AssessmentFeedback::getDiagnosisId, diagnosisIds));
+        }
+        emotionDiagnosisMapper.delete(new LambdaUpdateWrapper<EmotionDiagnosis>()
+                .eq(EmotionDiagnosis::getConversationId, conversationId));
     }
 }

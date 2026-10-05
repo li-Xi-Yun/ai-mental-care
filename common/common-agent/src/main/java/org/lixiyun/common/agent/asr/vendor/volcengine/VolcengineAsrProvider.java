@@ -318,26 +318,27 @@ public class VolcengineAsrProvider implements IAsrProvider {
 
     @Override
     public void sendEndOfStream(String sessionId) {
-        WsSession session = sessions.get(sessionId);
-        if (session == null || session.closed.get()) {
-            log.warn("[火山引擎 ASR] 会话{}不存在或已关闭，忽略结束信号", sessionId);
-            return;
-        }
-
-        int seq = session.sequenceCounter.getAndIncrement();
-        log.info("[火山引擎 ASR] 会话{}发送音频流结束信号，seq=-{}", sessionId, seq);
-
-        try {
-            byte[] frame = ProtocolCodec.buildFrame(
-                    MessageType.CLIENT_AUDIO_ONLY_REQUEST,
-                    MessageFlag.NEG_WITH_SEQUENCE,
-                    -seq,
-                    new byte[0]
-            );
-            session.safeSend(frame);
-        } catch (Exception e) {
-            log.error("[火山引擎 ASR] 会话{}发送结束帧失败", sessionId, e);
-        }
+        // 火山引擎中是没有客户端手动标识一句话结束的功能的
+//        WsSession session = sessions.get(sessionId);
+//        if (session == null || session.closed.get()) {
+//            log.warn("[火山引擎 ASR] 会话{}不存在或已关闭，忽略结束信号", sessionId);
+//            return;
+//        }
+//
+//        int seq = session.sequenceCounter.getAndIncrement();
+//        log.info("[火山引擎 ASR] 会话{}发送音频流结束信号，seq=-{}", sessionId, seq);
+//
+//        try {
+//            byte[] frame = ProtocolCodec.buildFrame(
+//                    MessageType.CLIENT_AUDIO_ONLY_REQUEST,
+//                    MessageFlag.NEG_WITH_SEQUENCE,
+//                    -seq,
+//                    new byte[0]
+//            );
+//            session.safeSend(frame);
+//        } catch (Exception e) {
+//            log.error("[火山引擎 ASR] 会话{}发送结束帧失败", sessionId, e);
+//        }
     }
 
     @Override

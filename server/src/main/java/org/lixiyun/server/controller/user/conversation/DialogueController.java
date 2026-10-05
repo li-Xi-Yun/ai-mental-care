@@ -21,14 +21,14 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user/conversaion/dialogue")
+@RequestMapping("/user/conversation/dialogue")
 @Tag(name = "对话信息相关接口", description = "对话内容上下文信息相关接口")
 public class DialogueController {
 
     private final DialogueService dialogueService;
 
     @PostMapping(value = "/{conversationId}/memory")
-    @Operation(summary = "对话记录分页展示", description = "按创建时间正序排列，一共有三个类型，user、thinking、assistant，如果轮次相同，表明为同一个对话内容")
+    @Operation(summary = "对话记录分页展示", description = "按创建时间逆序排列，一共有三个类型，user、thinking、assistant，如果轮次相同，表明为同一个对话内容")
     public Result<PageResult<ConversationMemoryVO>> listMemory(
             @PathVariable @Parameter(description = "会话ID") Long conversationId,
             @RequestBody @Validated PageBaseDTO pageBaseDTO

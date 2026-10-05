@@ -28,6 +28,17 @@ public interface ConversationService {
     PageResult<ConversationVO> listDisplay(Integer pageNum, Integer pageSize);
 
     /**
+     * 查询会话详情
+     * <p>
+     * 校验会话归属后，返回指定会话的元数据信息
+     * </p>
+     *
+     * @param conversationId 会话 ID
+     * @return 会话详情 VO
+     */
+    ConversationVO getConversationDetail(Long conversationId);
+
+    /**
      * 更新会话信息
      * <p>
      * 修改指定会话的名称、上下文概括等信息

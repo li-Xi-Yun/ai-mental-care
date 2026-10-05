@@ -249,6 +249,41 @@
     }
 
     .detail-expand.open { display: block; }
+
+    .feedback-form .feedback-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .feedback-form .feedback-row .info-label {
+      color: #555;
+      flex-shrink: 0;
+      width: 140px;
+    }
+
+    .feedback-select {
+      padding: 4px 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .feedback-textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    .feedback-msg {
+      margin-top: 8px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -368,6 +403,16 @@
     return apiRequest(url, { method: 'GET' });
   }
 
+  async function getFeedback(diagnosisId) {
+    const url = `${baseUrl}/user/conversation/assessment-feedback/${diagnosisId}`;
+    return apiRequest(url, { method: 'GET' });
+  }
+
+  async function saveFeedback(diagnosisId, data) {
+    const url = `${baseUrl}/user/conversation/assessment-feedback/${diagnosisId}`;
+    return apiRequest(url, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
   const pageContainer = document.getElementById('pageContainer');
   const pagination = document.getElementById('pagination');
   const prevBtn = document.getElementById('prevBtn');
@@ -471,11 +516,14 @@
         body.innerHTML = '<div class="loading-state" style="padding:20px;">加载中...</div>';
         try {
           const detail = await getDiagnosisDetail(item.id);
+          let feedback = null;
+          try { feedback = await getFeedback(item.id); } catch (e) { /* 未反馈时后端返回 null */ }
           loaded = true;
           body.innerHTML = '';
           body.appendChild(renderDiagnosisSummary(detail));
           detailExpand.innerHTML = '';
-          detailExpand.appendChild(renderDiagnosisFull(detail));
+          detailExpand.appendChild(renderDiagnosisFull(detail, feedback));
+          detailExpand.appendChild(createFeedbackForm(item.id, feedback));
         } catch (error) {
           body.innerHTML = `<div class="error-state" style="padding:20px;">加载失败: ${error.message}</div>`;
         }
@@ -558,7 +606,7 @@
     return frag;
   }
 
-  function renderDiagnosisFull(d) {
+  function renderDiagnosisFull(d, feedback) {
     const frag = document.createDocumentFragment();
 
     function addSection(title, content) {
@@ -678,19 +726,109 @@
       { label: '需要人工干预', value: d.needManualIntervene === 1 ? '是' : '否' }
     ]);
 
-    if (d.diagnosisScore != null || d.feedbackContent || d.agreeRiskJudge != null) {
+    if (feedback && (feedback.diagnosisScore != null || feedback.feedbackContent || feedback.agreeRiskJudge != null)) {
       addMetricSection('用户反馈', [
-        { label: '诊断打分', value: d.diagnosisScore != null ? `${d.diagnosisScore} / 5` : '-' },
-        { label: '认同风险评估', value: d.agreeRiskJudge === 1 ? '认同' : d.agreeRiskJudge === 0 ? '不认同' : '未反馈' },
-        { label: '认同自助建议', value: d.agreeSuggestionSelf === 1 ? '认同' : d.agreeSuggestionSelf === 0 ? '不认同' : '未反馈' },
-        { label: '认同社会支持建议', value: d.agreeSuggestionSocial === 1 ? '认同' : d.agreeSuggestionSocial === 0 ? '不认同' : '未反馈' },
-        { label: '认同专业干预建议', value: d.agreeSuggestionProfessional === 1 ? '认同' : d.agreeSuggestionProfessional === 0 ? '不认同' : '未反馈' },
-        { label: '采纳建议', value: d.useSuggestion === 2 ? '全部尝试' : d.useSuggestion === 1 ? '尝试部分' : d.useSuggestion === 0 ? '没有' : '未反馈' }
+        { label: '诊断打分', value: feedback.diagnosisScore != null ? `${feedback.diagnosisScore} / 5` : '-' },
+        { label: '认同风险评估', value: feedback.agreeRiskJudge === 1 ? '认同' : feedback.agreeRiskJudge === 0 ? '不认同' : '未反馈' },
+        { label: '认同自助建议', value: feedback.agreeSuggestionSelf === 1 ? '认同' : feedback.agreeSuggestionSelf === 0 ? '不认同' : '未反馈' },
+        { label: '认同社会支持建议', value: feedback.agreeSuggestionSocial === 1 ? '认同' : feedback.agreeSuggestionSocial === 0 ? '不认同' : '未反馈' },
+        { label: '认同专业干预建议', value: feedback.agreeSuggestionProfessional === 1 ? '认同' : feedback.agreeSuggestionProfessional === 0 ? '不认同' : '未反馈' },
+        { label: '采纳建议', value: feedback.useSuggestion === 2 ? '全部尝试' : feedback.useSuggestion === 1 ? '尝试部分' : feedback.useSuggestion === 0 ? '没有' : '未反馈' }
       ]);
-      addSection('反馈内容', d.feedbackContent);
+      addSection('反馈内容', feedback.feedbackContent);
     }
 
     return frag;
+  }
+
+  function createFeedbackForm(diagnosisId, feedback) {
+    const wrap = document.createElement('div');
+    wrap.className = 'section';
+    wrap.innerHTML = `
+      <div class="section-title">✍️ 提交/更新反馈</div>
+      <div class="feedback-form">
+        <div class="feedback-row">
+          <span class="info-label">诊断评分：</span>
+          <select id="feedbackScore" class="feedback-select">
+            ${[1,2,3,4,5].map(v => `<option value="${v}" ${feedback && feedback.diagnosisScore === v ? 'selected' : ''}>${v} 分</option>`).join('')}
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">认同风险评估：</span>
+          <select id="feedbackRisk" class="feedback-select">
+            <option value="" ${feedback && feedback.agreeRiskJudge == null ? 'selected' : ''}>未反馈</option>
+            <option value="1" ${feedback && feedback.agreeRiskJudge === 1 ? 'selected' : ''}>认同</option>
+            <option value="0" ${feedback && feedback.agreeRiskJudge === 0 ? 'selected' : ''}>不认同</option>
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">认同自助建议：</span>
+          <select id="feedbackSelf" class="feedback-select">
+            <option value="" ${feedback && feedback.agreeSuggestionSelf == null ? 'selected' : ''}>未反馈</option>
+            <option value="1" ${feedback && feedback.agreeSuggestionSelf === 1 ? 'selected' : ''}>认同</option>
+            <option value="0" ${feedback && feedback.agreeSuggestionSelf === 0 ? 'selected' : ''}>不认同</option>
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">认同社会支持建议：</span>
+          <select id="feedbackSocial" class="feedback-select">
+            <option value="" ${feedback && feedback.agreeSuggestionSocial == null ? 'selected' : ''}>未反馈</option>
+            <option value="1" ${feedback && feedback.agreeSuggestionSocial === 1 ? 'selected' : ''}>认同</option>
+            <option value="0" ${feedback && feedback.agreeSuggestionSocial === 0 ? 'selected' : ''}>不认同</option>
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">认同专业干预建议：</span>
+          <select id="feedbackPro" class="feedback-select">
+            <option value="" ${feedback && feedback.agreeSuggestionProfessional == null ? 'selected' : ''}>未反馈</option>
+            <option value="1" ${feedback && feedback.agreeSuggestionProfessional === 1 ? 'selected' : ''}>认同</option>
+            <option value="0" ${feedback && feedback.agreeSuggestionProfessional === 0 ? 'selected' : ''}>不认同</option>
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">采纳建议：</span>
+          <select id="feedbackUse" class="feedback-select">
+            <option value="" ${feedback && feedback.useSuggestion == null ? 'selected' : ''}>未反馈</option>
+            <option value="2" ${feedback && feedback.useSuggestion === 2 ? 'selected' : ''}>全部尝试</option>
+            <option value="1" ${feedback && feedback.useSuggestion === 1 ? 'selected' : ''}>尝试部分</option>
+            <option value="0" ${feedback && feedback.useSuggestion === 0 ? 'selected' : ''}>没有</option>
+          </select>
+        </div>
+        <div class="feedback-row">
+          <span class="info-label">文字反馈：</span>
+          <textarea id="feedbackContent" class="feedback-textarea" rows="3" maxlength="500">${feedback && feedback.feedbackContent ? feedback.feedbackContent : ''}</textarea>
+        </div>
+        <button id="feedbackSubmit" class="detail-toggle-btn">提交反馈</button>
+        <div id="feedbackMsg" class="feedback-msg"></div>
+      </div>
+    `;
+
+    const submitBtn = wrap.querySelector('#feedbackSubmit');
+    submitBtn.addEventListener('click', async () => {
+      const data = {
+        diagnosisScore: wrap.querySelector('#feedbackScore').value ? Number(wrap.querySelector('#feedbackScore').value) : null,
+        agreeRiskJudge: wrap.querySelector('#feedbackRisk').value === '' ? null : Number(wrap.querySelector('#feedbackRisk').value),
+        agreeSuggestionSelf: wrap.querySelector('#feedbackSelf').value === '' ? null : Number(wrap.querySelector('#feedbackSelf').value),
+        agreeSuggestionSocial: wrap.querySelector('#feedbackSocial').value === '' ? null : Number(wrap.querySelector('#feedbackSocial').value),
+        agreeSuggestionProfessional: wrap.querySelector('#feedbackPro').value === '' ? null : Number(wrap.querySelector('#feedbackPro').value),
+        useSuggestion: wrap.querySelector('#feedbackUse').value === '' ? null : Number(wrap.querySelector('#feedbackUse').value),
+        feedbackContent: wrap.querySelector('#feedbackContent').value
+      };
+      const msg = wrap.querySelector('#feedbackMsg');
+      submitBtn.disabled = true;
+      try {
+        await saveFeedback(diagnosisId, data);
+        msg.textContent = '反馈已提交';
+        msg.style.color = '#52c41a';
+      } catch (error) {
+        msg.textContent = '提交失败: ' + error.message;
+        msg.style.color = '#ff4d4f';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    return wrap;
   }
 
   prevBtn.addEventListener('click', () => {

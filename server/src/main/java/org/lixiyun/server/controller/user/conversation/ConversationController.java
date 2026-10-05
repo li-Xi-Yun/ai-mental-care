@@ -40,6 +40,16 @@ public class ConversationController {
         return Result.success(result);
     }
 
+    @GetMapping("/{conversationId}")
+    @Operation(summary = "查询会话详情", description = "按会话ID查询当前用户会话的元数据信息")
+    public Result<ConversationVO> getConversationDetail(
+            @PathVariable @Parameter(description = "会话ID", required = true) @NotNull Long conversationId
+    ) {
+        log.info("查询会话详情: {}", conversationId);
+        ConversationVO result = conversationService.getConversationDetail(conversationId);
+        return Result.success(result);
+    }
+
     @PutMapping("/{conversationId}/name")
     @Operation(summary = "修改会话属性", description = "修改指定会话的元数据信息")
     public Result<Void> updateConversationInfo(

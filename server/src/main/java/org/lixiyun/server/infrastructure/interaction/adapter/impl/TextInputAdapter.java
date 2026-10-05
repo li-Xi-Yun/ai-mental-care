@@ -14,10 +14,11 @@ import org.lixiyun.pojo.entity.conversation.ConversationMemory;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
 import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.constant.ConversationCacheConstant;
-import org.lixiyun.server.infrastructure.interaction.adapter.InputAdapter;
-import org.lixiyun.server.infrastructure.interaction.adapter.InputDataType;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
+import org.lixiyun.server.infrastructure.interaction.adapter.InputAdapter;
+import org.lixiyun.server.infrastructure.interaction.adapter.InputAdapterSessionManager;
+import org.lixiyun.server.infrastructure.interaction.adapter.InputDataType;
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.scheduler.ConversationAggregateScheduler;
@@ -33,8 +34,7 @@ import java.util.List;
  * 文本输入适配器
  *
  * <p>负责处理文本类型的用户输入消息，将其持久化到数据库并触发后续的AI对话流程。
- * 实现采用与 {@code AIChatServiceImpl} 一致的存储模式，直接通过 Mapper 操作数据库，
- * 确保消息状态标记、会话活跃时间、ZSet消息队列均正确维护。</p>
+ * 直接通过 Mapper 操作数据库，确保消息状态标记、会话活跃时间、ZSet消息队列均正确维护。</p>
  *
  * <h3>处理流程：</h3>
  * <ol>
@@ -46,10 +46,9 @@ import java.util.List;
  *     <li>触发聚合：向 {@link ConversationAggregateScheduler} 提交定时任务</li>
  * </ol>
  *
- * <h3>与AIChatServiceImpl的关系：</h3>
- * <p>本适配器是AIChatServiceImpl中 {@code sendUserMessage} 逻辑的适配器层等价实现，
- * 保留相同的会话创建/校验/存储/状态更新/ZSet时序/聚合触发逻辑，
- * 以便后续通过 {@link InputAdapter} 的 {@link #init} 生命周期统一接管会话资源。</p>
+ * <h3>职责说明：</h3>
+ * <p>本适配器统一承载文本消息的会话创建/校验/存储/状态更新/ZSet时序/聚合触发逻辑，
+ * 由 {@link InputAdapterSessionManager} 按会话注册与生命周期管理。</p>
  *
  * @author lixiyun
  * @since 2026-10-02

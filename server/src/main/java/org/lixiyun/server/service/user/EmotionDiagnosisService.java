@@ -1,7 +1,6 @@
 package org.lixiyun.server.service.user;
 
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.dto.user.conversation.EmotionDiagnosisFeedbackDTO;
 import org.lixiyun.pojo.dto.user.conversation.EmotionDiagnosisQueryDTO;
 import org.lixiyun.pojo.vo.user.conversation.DiagnosisConversationVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisListVO;
@@ -52,17 +51,5 @@ public interface EmotionDiagnosisService {
      * @return 情感诊断书详情 VO
      */
     EmotionDiagnosisVO getDiagnosisDetail(Long diagnosisId);
-
-    /**
-     * 用户反馈诊断书
-     * <p>
-     * 用户对指定诊断书提交反馈信息，包括打分、认同度、采纳情况等，
-     * 同时自动记录反馈时间
-     * </p>
-     *
-     * @param diagnosisId 诊断书 ID
-     * @param feedbackDTO 用户反馈 DTO
-     */
-    void updateFeedback(Long diagnosisId, EmotionDiagnosisFeedbackDTO feedbackDTO);
 
 }

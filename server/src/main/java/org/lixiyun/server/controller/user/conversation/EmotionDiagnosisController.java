@@ -14,6 +14,7 @@ import org.lixiyun.pojo.dto.user.conversation.EmotionDiagnosisQueryDTO;
 import org.lixiyun.pojo.vo.user.conversation.DiagnosisConversationVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisListVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisVO;
+import org.lixiyun.server.service.user.AssessmentFeedbackService;
 import org.lixiyun.server.service.user.EmotionDiagnosisService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class EmotionDiagnosisController {
 
     private final EmotionDiagnosisService emotionDiagnosisService;
+    private final AssessmentFeedbackService assessmentFeedbackService;
 
     @PostMapping("/list")
     @Operation(summary = "用户个人中心分页查询拥有诊断的会话列表", description = "按会话名称模糊匹配，按诊断更新时间逆序排列")
@@ -64,17 +66,6 @@ public class EmotionDiagnosisController {
         log.info("获取诊断书详情: {}", diagnosisId);
         EmotionDiagnosisVO result = emotionDiagnosisService.getDiagnosisDetail(diagnosisId);
         return Result.success(result);
-    }
-
-    @PutMapping("/{diagnosisId}/feedback")
-    @Operation(summary = "用户反馈诊断书", description = "用户对指定诊断书提交反馈信息，包括打分、认同度、采纳情况等")
-    public Result<Void> updateFeedback(
-            @PathVariable @Parameter(description = "诊断书ID", required = true) @NotNull Long diagnosisId,
-            @RequestBody @Validated EmotionDiagnosisFeedbackDTO feedbackDTO
-    ) {
-        log.info("用户反馈诊断书: diagnosisId={}, feedback={}", diagnosisId, feedbackDTO);
-        emotionDiagnosisService.updateFeedback(diagnosisId, feedbackDTO);
-        return Result.success();
     }
 
 }

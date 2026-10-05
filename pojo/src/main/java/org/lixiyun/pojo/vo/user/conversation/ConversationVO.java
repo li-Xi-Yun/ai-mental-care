@@ -28,4 +28,10 @@ public class ConversationVO implements Serializable {
     @Schema(description = "更新时间")
     private LocalDateTime updatedTime;
 
+    @Schema(description = "最后活跃时间（业务展示、排序、统计）")
+    private LocalDateTime lastActiveTime;
+
+    @Schema(description = "当前轮次")
+    private Integer currentRound;
+
 }

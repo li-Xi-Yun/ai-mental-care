@@ -202,34 +202,6 @@ public class EmotionDiagnosisVO implements Serializable {
     @Schema(description = "建议优先级：1-自助为主 2-建议寻求支持 3-强烈建议专业干预 4-无法判断")
     private Integer suggestionPriority;
 
-
-
-    @Schema(description = "用户对本次诊断打分 1~5分，null代表未评分")
-    private Integer diagnosisScore;
-
-    @Schema(description = "用户文字反馈")
-    private String feedbackContent;
-
-    @Schema(description = "是否认同风险评估：0-不认同 1-认同 null未反馈")
-    private Integer agreeRiskJudge;
-
-    @Schema(description = "是否认同自助调节建议：0-不认同 1-认同 null未反馈")
-    private Integer agreeSuggestionSelf;
-
-    @Schema(description = "是否认同社会支持建议：0-不认同 1-认同 null未反馈")
-    private Integer agreeSuggestionSocial;
-
-    @Schema(description = "是否认同专业干预建议：0-不认同 1-认同 null未反馈")
-    private Integer agreeSuggestionProfessional;
-
-    @Schema(description = "是否尝试采纳建议：0-没有 1-尝试部分 2-全部尝试 null未反馈")
-    private Integer useSuggestion;
-
-
-
-    @Schema(description = "用户提交反馈时间")
-    private LocalDateTime feedbackTime;
-
     @Schema(description = "记录创建时间")
     private LocalDateTime createdTime;
 

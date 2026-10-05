@@ -173,6 +173,39 @@ class ChatAPI {
     }
   }
 
+  static async getAssessmentFeedback(diagnosisId) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.assessmentFeedback}${diagnosisId}`;
+    try {
+      return await ChatAPI._request(url, { method: 'GET' });
+    } catch (error) {
+      ChatAPI.#logger.error('获取诊断反馈失败:', error);
+      throw error;
+    }
+  }
+
+  static async submitAssessmentFeedback(diagnosisId, data) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.assessmentFeedback}${diagnosisId}`;
+    try {
+      return await ChatAPI._request(url, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    } catch (error) {
+      ChatAPI.#logger.error('提交诊断反馈失败:', error);
+      throw error;
+    }
+  }
+
+  static async deleteAssessmentFeedback(diagnosisId) {
+    const url = `${CONFIG.server.baseUrl}${CONFIG.api.assessmentFeedback}${diagnosisId}`;
+    try {
+      return await ChatAPI._request(url, { method: 'DELETE' });
+    } catch (error) {
+      ChatAPI.#logger.error('删除诊断反馈失败:', error);
+      throw error;
+    }
+  }
+
   static async sendTestMessage(conversationId, message) {
     const url = `${CONFIG.server.baseUrl}${CONFIG.api.conversationTestSend}`;
     try {
@@ -186,6 +219,9 @@ class ChatAPI {
     }
   }
 
+  /**
+   * @deprecated 旧链路：音频会话初始化已由 lifecycle/init 取代，端点已被删除
+   */
   static async initAudioSession(conversationId = null) {
     let url = `${CONFIG.server.baseUrl}${CONFIG.api.audioInit}`;
     if (conversationId !== null) {
@@ -199,6 +235,9 @@ class ChatAPI {
     }
   }
 
+  /**
+   * @deprecated 旧链路：音频会话结束已由 lifecycle/{id} 取代，端点已被删除
+   */
   static async endAudioSession(conversationId) {
     const url = `${CONFIG.server.baseUrl}${CONFIG.api.audioEnd}/${conversationId}/end`;
     try {
@@ -209,6 +248,9 @@ class ChatAPI {
     }
   }
 
+  /**
+   * @deprecated 旧链路：/temp/audio-conversation-test/stream 为测试接口，正式流程不再使用
+   */
   static async audioStreamTest(conversationId, message) {
     const url = `${CONFIG.server.baseUrl}${CONFIG.api.audioTestStream}`;
     const body = { conversationId };

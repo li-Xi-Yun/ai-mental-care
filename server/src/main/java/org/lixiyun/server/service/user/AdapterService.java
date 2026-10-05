@@ -36,12 +36,4 @@ public interface AdapterService {
      */
     void sendAudioFrame(AudioMessageSendDTO dto);
 
-    /**
-     * 前端 VAD 检测到用户停止说话后通知后端
-     *
-     * <p>校验会话归属后，向 ASR 引擎发送音频流结束信号，触发最终识别结果回调。</p>
-     *
-     * @param dto 含会话ID的中断/停止请求
-     */
-    void notifyVadStop(AudioInterruptDTO dto);
 }

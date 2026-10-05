@@ -17,13 +17,13 @@ public class EmotionAnalysisDetailVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "思考内容")
+    @Schema(description = "模型内容")
     private String modelContent;
 
-    @Schema(description = "模型内容")
+    @Schema(description = "用户内容")
     private String userContent;
 
-    @Schema(description = "用户内容")
+    @Schema(description = "思考内容")
     private String thinkContent;
 
 }

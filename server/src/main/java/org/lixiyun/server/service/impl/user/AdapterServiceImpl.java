@@ -72,18 +72,6 @@ public class AdapterServiceImpl implements AdapterService {
         log.info("[输入适配器] 音频帧发送完成，会话ID：{}", conversationId);
     }
 
-    @Override
-    public void notifyVadStop(AudioInterruptDTO dto) {
-        Long conversationId = dto.getConversationId();
-        Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
-        validateConversationOwnership(conversationId, userId);
-        log.info("[输入适配器] 前端VAD检测停止说话，通知ASR结束音频流，会话ID：{}，用户ID：{}", conversationId, userId);
-
-        AudioInputAdapter adapter = getAudioAdapter(conversationId);
-        adapter.handleEndOfStream(userId);
-        log.info("[输入适配器] ASR结束信号已发送，会话ID：{}", conversationId);
-    }
-
     /**
      * 校验会话存在且归属当前用户
      *
