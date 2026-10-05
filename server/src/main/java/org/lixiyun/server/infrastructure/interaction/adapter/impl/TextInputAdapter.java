@@ -142,27 +142,6 @@ public class TextInputAdapter implements InputAdapter {
     }
 
     /**
-     * 创建新的文本模式会话
-     *
-     * <p>会话模式固定为 {@link ConversationCacheConstant#CONVERSATION_TYPE_TEXT}，
-     * 创建后立即写入数据库并在日志中记录新会话ID。</p>
-     *
-     * @param userId 用户ID
-     * @return 新创建的会话实体（含自增ID）
-     */
-    private Conversation createNewConversation(Long userId) {
-        Conversation conversation = Conversation.builder()
-                .userId(userId)
-                .chatMode(ConversationCacheConstant.CONVERSATION_TYPE_TEXT)
-                .build();
-
-        conversationMapper.insert(conversation);
-        log.info("[文本输入适配器] 新文本会话创建成功，conversationId={}，userId={}",
-                conversation.getId(), userId);
-        return conversation;
-    }
-
-    /**
      * 校验会话归属与有效性
      *
      * <p>通过会话ID + 用户ID + 未删除标记三重条件查询，
