@@ -12,6 +12,7 @@ import java.util.List;
 
 /**
  * 症状词典VO
+ * <p>严重程度由字符串调整为数值类型，便于前端星级组件直接使用</p>
  *
  * @author lixiyun
  * @since 2026-08-15
@@ -37,8 +38,8 @@ public class SymptomDictVO implements Serializable {
     @Schema(description = "同义口语词数组")
     private List<String> synonymWords;
 
-    @Schema(description = "默认严重程度：1=轻度 2=中度 3=重度")
-    private String severityDefault;
+    @Schema(description = "默认严重程度：1=轻度 2=中度 3=重度", example = "2")
+    private Integer severityDefault;
 
     @Schema(description = "状态 0：禁用 1：启用")
     private Integer status;

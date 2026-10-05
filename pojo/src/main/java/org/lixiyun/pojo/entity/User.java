@@ -2,7 +2,6 @@ package org.lixiyun.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -64,35 +63,30 @@ public class User extends BasicsUser implements Serializable {
     private String banReason;
 
     /**
+     * 用户账号名，半年可修改一次，不能重复
+     */
+    private String loginAccount;
+
+    /**
+     * 账号名修改时间
+     */
+    private LocalDateTime loginAccountUpdateTime;
+
+    /**
      * 最后更新时间
      */
     private LocalDateTime updatedTime;
-    
+
     /**
      * 注册时间
      */
     private LocalDateTime createdTime;
-    
+
     /**
      * 最后更新所属id
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updatedBy;
-
-    /**
-     * 逻辑删除，0：未删除，1：已删除
-     */
-    @TableLogic
-    private Integer deleted;
-
-    /**
-     * 判断当前用户是否被删除
-     * @return true: 已删除 false: 未删除
-     */
-    public boolean deletedFlat() {
-        return deleted != null && deleted == 1;
-    }
-
 
 }
 

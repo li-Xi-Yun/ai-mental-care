@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.lixiyun.server.mapper.ScaleCategoryMapper">
+
+    <!-- 分页查询量表类别（支持已删除数据筛选），scale_count 为该类别下「启用且有当前生效版本」的量表数 -->
+    <select id="pageCategories" resultType="org.lixiyun.pojo.vo.admin.scale.AdminScaleCategoryVO">
+        SELECT c.id,
+               c.category_name,
+               c.sort,
+               c.created_time,
+               c.updated_time,
+               c.deleted              AS deleted_flag,
+               (SELECT COUNT(*)
+                FROM scale s
+                WHERE s.scale_category_id = c.id
+                  AND s.deleted = 0
+                  AND s.status = 1
+                  AND s.current_version_id IS NOT NULL) AS scale_count
+        FROM scale_category c
+        <where>
+            <if test="categoryName != null and categoryName != ''">
+                AND c.category_name LIKE CONCAT('%', #{categoryName}, '%')
+            </if>
+            <if test="deletedFlag != null">
+                AND c.deleted = #{deletedFlag}
+            </if>
+        </where>
+        ORDER BY c.sort ASC, c.id ASC
+    </select>
+
+</mapper>

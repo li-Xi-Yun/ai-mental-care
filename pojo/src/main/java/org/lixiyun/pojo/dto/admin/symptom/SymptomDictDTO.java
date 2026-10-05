@@ -2,7 +2,6 @@ package org.lixiyun.pojo.dto.admin.symptom;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 import org.lixiyun.common.validation.group.AddGroup;
 import org.lixiyun.common.validation.group.UpdateGroup;
@@ -30,12 +29,11 @@ public class SymptomDictDTO implements Serializable {
     @NotBlank(message = "症状大类不能为空", groups = {AddGroup.class, UpdateGroup.class})
     private String symptomCategory;
 
-    @NotEmpty(message = "同义口语词数组不能为空", groups = {AddGroup.class, UpdateGroup.class})
-    @Schema(description = "同义口语词数组，例：[\"睡不着\",\"躺床上翻来覆去睡不着\"]", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(description = "同义口语词数组，例：[\"睡不着\",\"躺床上翻来覆去睡不着\"]，可空", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private List<String> synonymWords;
 
-    @Schema(description = "默认严重程度：1=轻度 2=中度 3=重度", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String severityDefault;
+    @Schema(description = "默认严重程度：1=轻度 2=中度 3=重度", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "2")
+    private Integer severityDefault;
 
     @Schema(description = "状态 0：禁用 1：启用", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Integer status;

@@ -1,14 +1,13 @@
 package org.lixiyun.server.service.admin;
 
 import org.lixiyun.pojo.dto.admin.admin.LoginAdminDTO;
-import org.lixiyun.pojo.dto.admin.admin.RegisterAdminDTO;
 import org.lixiyun.pojo.dto.user.user.PasswordDTO;
 import org.lixiyun.pojo.vo.user.user.LoginResultVO;
 
 /**
  * 管理员账号服务接口
  * <p>
- * 提供管理员注册、登录、登出、密码修改等功能
+ * 提供管理员登录、登出、密码修改等功能
  * </p>
  *
  * @author lixiyun
@@ -17,23 +16,13 @@ import org.lixiyun.pojo.vo.user.user.LoginResultVO;
 public interface AdminAccountService {
 
     /**
-     * 管理员注册功能
+     * 管理员登录功能
      * <p>
-     * 接收管理员注册信息，完成管理员账户的创建
+     * 管理员通过账号名(loginAccount)登录，返回token及管理员简要信息
      * </p>
      *
-     * @param registerAdminDTO 管理员注册信息数据传输对象 {@link RegisterAdminDTO}
-     */
-    void register(RegisterAdminDTO registerAdminDTO);
-
-    /**
-     * 登录功能
-     * <p>
-     * 管理员登录功能，返回token
-     * </p>
-     *
-     * @param loginAdminDTO 登录信息数据传输对象(包含用户名、密码、验证码等) {@link LoginAdminDTO}
-     * @return 管理员权限、角色、token信息 {@link LoginResultVO}
+     * @param loginAdminDTO 登录信息数据传输对象(包含账号名、密码、验证码等) {@link LoginAdminDTO}
+     * @return 管理员权限、角色、token及简要信息 {@link LoginResultVO}
      */
     LoginResultVO login(LoginAdminDTO loginAdminDTO);
 

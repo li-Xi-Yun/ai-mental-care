@@ -40,6 +40,13 @@ public class FileQueryDTO implements Serializable {
     @Schema(description = "文件名（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String fileName;
 
+    @Schema(description = "文件后缀（如 pdf、png，精确匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String fileSuffix;
+
+    @NumberOfRanges(min = 0, max = 1)
+    @Schema(description = "是否启用向量检索，0-否，1-是", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Integer vectorStatus;
+
     @NumberOfRanges(min = 0, max = 3)
     @Schema(description = "文件状态：0-待解析，1-解析中，2-解析失败，3-解析完成", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Integer status;

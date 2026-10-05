@@ -1,36 +1,46 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.pojo.dto.admin.scale.ScaleOptionBatchAddDTO;
-import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionBatchDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionDeleteDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionSortItemDTO;
 
 import java.util.List;
 
 /**
+ * 管理员量表选项服务接口
+ *
  * @author lixiyun
- * @since 2026-04-15 16:27
+ * @since 2026-10-05
  */
 public interface AdminScaleOptionService {
 
     /**
-     * 批量新增选项
+     * 为题目批量新增选项
      *
-     * @param addDTO 批量新增选项DTO {@link ScaleOptionBatchAddDTO}
+     * @param dto 批量新增DTO {@link AdminScaleOptionBatchDTO}
      */
-    void batchAddOptions(ScaleOptionBatchAddDTO addDTO);
+    void batchAddOptions(AdminScaleOptionBatchDTO dto);
 
     /**
-     * 删除给定问题的多个选项。
+     * 修改单个选项
      *
-     * @param questionId 问题的ID
-     * @param optionIds  要删除的选项ID列表
+     * @param optionId 选项ID
+     * @param dto      选项DTO {@link AdminScaleOptionDTO}
      */
-    void deleteOptions(Long questionId, List<Long> optionIds);
+    void updateOption(Long optionId, AdminScaleOptionDTO dto);
 
     /**
-     * 使用提供的数据更新选项。
+     * 批量调整选项顺序
      *
-     * @param optionId   要更新的选项的ID
-     * @param updateDTO  包含更新的选项信息的DTO
+     * @param sortItems 排序项列表 {@link AdminScaleOptionSortItemDTO}
      */
-    void updateOption(Long optionId, ScaleOptionDTO updateDTO);
+    void updateOptionSort(List<AdminScaleOptionSortItemDTO> sortItems);
+
+    /**
+     * 批量删除选项（需保证选项归属题目一致）
+     *
+     * @param dto 批量删除DTO {@link AdminScaleOptionDeleteDTO}
+     */
+    void batchDeleteOptions(AdminScaleOptionDeleteDTO dto);
 }

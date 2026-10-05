@@ -28,8 +28,8 @@ public class AdminAiNodeConfigQueryDTO extends PageBaseDTO implements Serializab
     @Schema(description = "节点分组：process/input/knowledge", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "process")
     private String nodeGroup;
 
-    @NumberOfRanges(min = 0, max = 2)
-    @Schema(description = "模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1")
+    @NumberOfRanges(min = 0, max = 3)
+    @Schema(description = "模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型)", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1")
     private Integer modelType;
 
     @NumberOfRanges(min = 0, max = 1)

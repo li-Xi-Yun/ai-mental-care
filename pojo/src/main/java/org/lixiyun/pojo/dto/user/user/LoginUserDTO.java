@@ -13,11 +13,13 @@ public class LoginUserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @NotBlank
     @NotReservedWord
-    @Schema(description = "用户名，长度为2-12个字符，不能为保留字", example = "张三", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String username;
+    @Schema(description = "用户账号名，不能为保留字", example = "zhangsan", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String loginAccount;
 
-    @Schema(description = "密码", example = "Password123!", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @NotBlank
+    @Schema(description = "密码", example = "Password123!", requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
 
     // 验证码对应在redis中的key

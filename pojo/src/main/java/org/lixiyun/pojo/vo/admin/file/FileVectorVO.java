@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 文件向量信息VO
@@ -31,5 +32,8 @@ public class FileVectorVO implements Serializable {
 
     @Schema(description = "二级分块索引")
     private Integer chunkLevel2Idx;
+
+    @Schema(description = "创建时间")
+    private LocalDateTime createdTime;
 
 }

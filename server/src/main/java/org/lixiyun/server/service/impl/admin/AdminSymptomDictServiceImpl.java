@@ -8,19 +8,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SymptomDictExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.core.utils.StreamUtils;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.symptom.AdminSymptomDictQueryDTO;
 import org.lixiyun.pojo.dto.admin.symptom.SymptomDictDTO;
 import org.lixiyun.pojo.entity.conversation.SymptomDict;
+import org.lixiyun.pojo.vo.admin.symptom.SymptomDictOptionItemVO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictOptionVO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictVO;
 import org.lixiyun.server.mapper.SymptomDictMapper;
 import org.lixiyun.server.service.admin.AdminSymptomDictService;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 管理员症状词典服务实现类
@@ -130,16 +133,29 @@ public class AdminSymptomDictServiceImpl implements AdminSymptomDictService {
 
     @Override
     public List<SymptomDictOptionVO> getSymptomDictOptions() {
-        log.info("症状词典-获取下拉选项");
+        log.info("症状词典-获取下拉选项，按分类分组，只返回启用数据");
 
+        // 查询启用的症状记录，按分类与术语排序，保证分组顺序稳定
         List<SymptomDict> enabledDict = symptomDictMapper.selectList(new LambdaQueryWrapper<SymptomDict>()
-                        .eq(SymptomDict::getStatus, SymptomDict.STATUS_ENABLED)
+                .eq(SymptomDict::getStatus, SymptomDict.STATUS_ENABLED)
+                .orderByAsc(SymptomDict::getSymptomCategory)
+                .orderByAsc(SymptomDict::getSymptomTerm)
         );
 
-        List<SymptomDictOptionVO> list = new ArrayList<>();
-        enabledDict.forEach(item -> list.add(new SymptomDictOptionVO(item.getSymptomCategory())));
+        // 按症状大类分组（LinkedHashMap 保持首次出现的顺序）
+        Map<String, List<SymptomDict>> grouped = StreamUtils.groupByKey(enabledDict, SymptomDict::getSymptomCategory);
 
-        log.info("症状词典-获取下拉选项成功，分组数量：{}", list.size());
+        // 每个分组转换为 分类+术语列表 的结构
+        List<SymptomDictOptionVO> list = grouped.entrySet().stream().map(entry -> {
+            List<SymptomDictOptionItemVO> items = StreamUtils.toList(entry.getValue(),
+                    dict -> BeanUtil.copyProperties(dict, SymptomDictOptionItemVO.class));
+            return SymptomDictOptionVO.builder()
+                    .symptomCategory(entry.getKey())
+                    .terms(items)
+                    .build();
+        }).collect(Collectors.toList());
+
+        log.info("症状词典-获取下拉选项成功，分组数量：{}，总症状数：{}", list.size(), enabledDict.size());
         return list;
     }
 

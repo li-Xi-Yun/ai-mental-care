@@ -23,7 +23,7 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @PutMapping("/profileUpdate")
-    @Operation(summary = "更新用户个人资料", description = "更新用户个人资料信息")
+    @Operation(summary = "更新用户个人资料", description = "更新用户个人资料信息，支持账号名修改（间隔>=180天）")
     public Result<?> updateProfile(@RequestBody @Validated @Parameter(description = "用户个人资料信息") UserProfileDTO userProfileDTO){
         log.info("更新用户个人资料信息：{}", userProfileDTO);
         profileService.updateProfile(userProfileDTO);

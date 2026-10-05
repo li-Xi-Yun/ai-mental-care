@@ -3,6 +3,7 @@ package org.lixiyun.server.service.admin;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.file.FileQueryDTO;
 import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
+import org.lixiyun.pojo.vo.admin.file.FileDownloadVO;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +34,24 @@ public interface AdminFileService {
      * @return 文件元数据信息分页结果
      */
     PageResult<FileVO> queryFilePage(FileQueryDTO queryDTO);
+
+    /**
+     * 获取单个文件详情
+     * <p>根据文件ID查询文件元数据信息，并补充分类名称与上传人姓名</p>
+     *
+     * @param fileId 文件ID
+     * @return 文件元数据信息 {@link FileVO}
+     */
+    FileVO getFileDetail(Long fileId);
+
+    /**
+     * 下载文件内容
+     * <p>根据文件ID读取本地存储的文件字节内容，用于以附件形式下载</p>
+     *
+     * @param fileId 文件ID
+     * @return 文件下载内容 {@link FileDownloadVO}
+     */
+    FileDownloadVO downloadFile(Long fileId);
 
     /**
      * 文件删除

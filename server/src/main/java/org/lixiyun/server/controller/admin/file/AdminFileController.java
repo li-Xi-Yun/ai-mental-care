@@ -11,11 +11,18 @@ import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.file.FileQueryDTO;
 import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
+import org.lixiyun.pojo.vo.admin.file.FileDownloadVO;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
 import org.lixiyun.server.service.admin.AdminFileService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 文件管理相关接口
@@ -70,6 +77,28 @@ public class AdminFileController {
         updateDTO.setId(fileId);
         FileVO fileVO = adminFileService.updateFileInfo(updateDTO);
         return Result.success(fileVO);
+    }
+
+    @GetMapping("/{fileId}")
+    @Operation(summary = "获取文件详情", description = "根据文件ID查询单个文件元数据详情（含分类名称与上传人姓名）")
+    public Result<FileVO> getFileDetail(
+            @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
+        log.info("获取文件详情请求接口，文件ID：{}", fileId);
+        FileVO fileVO = adminFileService.getFileDetail(fileId);
+        return Result.success(fileVO);
+    }
+
+    @GetMapping("/{fileId}/download")
+    @Operation(summary = "文件下载", description = "根据文件ID以附件形式下载文件")
+    public ResponseEntity<byte[]> downloadFile(
+            @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
+        log.info("文件下载请求接口，文件ID：{}", fileId);
+        FileDownloadVO downloadVO = adminFileService.downloadFile(fileId);
+        String encodedName = URLEncoder.encode(downloadVO.getOriginalName(), StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(downloadVO.getBytes());
     }
 
 }

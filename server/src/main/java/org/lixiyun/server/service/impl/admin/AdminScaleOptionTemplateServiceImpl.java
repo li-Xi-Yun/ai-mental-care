@@ -1,141 +1,202 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ScaleExceptionEnum;
-import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.StreamUtils;
-import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.pojo.dto.admin.scale.ScaleOptionTemplateDTO;
-import org.lixiyun.pojo.entity.scale.Scale;
-import org.lixiyun.pojo.entity.scale.ScaleOptionTemplate;
-import org.lixiyun.pojo.vo.admin.scale.ScaleOptionTemplateVO;
-import org.lixiyun.server.mapper.ScaleMapper;
-import org.lixiyun.server.mapper.ScaleOptionTemplateMapper;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateApplyDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateCopyDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateItemDTO;
+import org.lixiyun.pojo.entity.scale.ScaleOption;
+import org.lixiyun.pojo.entity.scale.ScaleOptionTemplateGroup;
+import org.lixiyun.pojo.entity.scale.ScaleOptionTemplateItem;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleOptionTemplateItemVO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleOptionTemplateVO;
+import org.lixiyun.server.mapper.ScaleOptionMapper;
+import org.lixiyun.server.mapper.ScaleOptionTemplateGroupMapper;
+import org.lixiyun.server.mapper.ScaleOptionTemplateItemMapper;
 import org.lixiyun.server.service.admin.AdminScaleOptionTemplateService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 管理员量表选项模板服务实现类
  *
  * @author lixiyun
- * @since 2026-04-20 21:40
+ * @since 2026-10-05
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminScaleOptionTemplateServiceImpl implements AdminScaleOptionTemplateService {
 
-    private final ScaleOptionTemplateMapper scaleOptionTemplateMapper;
-    private final ScaleMapper scaleMapper;
+    private final ScaleOptionTemplateGroupMapper scaleOptionTemplateGroupMapper;
+    private final ScaleOptionTemplateItemMapper scaleOptionTemplateItemMapper;
+    private final ScaleOptionMapper scaleOptionMapper;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void createTemplate(List<ScaleOptionTemplateDTO> dtoList) {
-        log.info("开始创建选项模板，数量: {}", dtoList.size());
-
-        // 获取第一个DTO的量表ID进行验证（所有模板应该属于同一个量表）
-        Long scaleId = dtoList.get(0).getScaleId();
-        List<ScaleOptionTemplate> templates = dtoList.stream().map(item -> {
-            if(!item.getScaleId().equals(scaleId)){
-                log.error("创建选项模板-量表ID不一致，scaleId: {}, scaleId: {}", scaleId, item.getScaleId());
-                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+    public List<AdminScaleOptionTemplateVO> listTemplates(Long scaleVersionId) {
+        log.info("查询版本选项模板列表，版本ID：{}", scaleVersionId);
+        List<ScaleOptionTemplateGroup> groups = scaleOptionTemplateGroupMapper.selectList(new LambdaQueryWrapper<ScaleOptionTemplateGroup>()
+                .eq(ScaleOptionTemplateGroup::getScaleVersionId, scaleVersionId));
+        if (CollUtil.isEmpty(groups)) {
+            return Collections.emptyList();
+        }
+        List<Long> groupIds = StreamUtils.toList(groups, ScaleOptionTemplateGroup::getId);
+        List<ScaleOptionTemplateItem> items = scaleOptionTemplateItemMapper.selectList(new LambdaQueryWrapper<ScaleOptionTemplateItem>()
+                .in(ScaleOptionTemplateItem::getTemplateGroupId, groupIds));
+        Map<Long, List<ScaleOptionTemplateItem>> itemMap = StreamUtils.groupByKey(items, ScaleOptionTemplateItem::getTemplateGroupId);
+        return StreamUtils.toList(groups, group -> {
+            AdminScaleOptionTemplateVO vo = BeanUtil.copyProperties(group, AdminScaleOptionTemplateVO.class);
+            vo.setDeletedFlag(group.getDeleted());
+            List<ScaleOptionTemplateItem> groupItems = itemMap.get(group.getId());
+            if (CollUtil.isNotEmpty(groupItems)) {
+                vo.setItems(StreamUtils.toListVO(groupItems, AdminScaleOptionTemplateItemVO.class));
             }
-            return BeanUtil.copyProperties(item, ScaleOptionTemplate.class);
-        }).toList();
-
-        // 验证量表是否存在
-        Scale scale = scaleMapper.selectMyById(scaleId);
-        if (scale == null) {
-            log.error("创建选项模板-量表不存在，scaleId: {}", scaleId);
-            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
-        }
-
-        // 批量插入选项模板
-        scaleOptionTemplateMapper.insert(templates);
-
-        log.info("选项模板创建成功，共创建 {} 条记录", templates.size());
-    }
-
-    @Override
-    public List<ScaleOptionTemplateVO> listTemplates(Long scaleId) {
-        log.debug("开始查询选项模板列表，scaleId: {}", scaleId);
-
-        // 验证量表是否存在
-        Scale scale = scaleMapper.selectMyById(scaleId);
-        if (scale == null) {
-            log.error("量表不存在，scaleId: {}", scaleId);
-            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
-        }
-
-        // 查询该量表下的所有选项模板，按排序字段升序排列
-        List<ScaleOptionTemplate> templates = scaleOptionTemplateMapper.selectList(
-                new LambdaQueryWrapper<ScaleOptionTemplate>()
-                        .eq(ScaleOptionTemplate::getScaleId, scaleId)
-                        .eq(ScaleOptionTemplate::getDeleted, DeleteConstant.DELETE_FLAG_NO)
-                        .orderByAsc(ScaleOptionTemplate::getSort)
-        );
-
-        // 使用StreamUtils转换为VO列表
-        List<ScaleOptionTemplateVO> voList = StreamUtils.toListVO(templates, ScaleOptionTemplateVO.class);
-
-        log.debug("选项模板列表查询完成，共 {} 条记录", voList.size());
-        return voList;
+            return vo;
+        });
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTemplate(List<ScaleOptionTemplateDTO> dtoList) {
-        log.info("开始更新选项模板，数量: {}", dtoList.size());
+    public void createTemplate(AdminScaleOptionTemplateDTO dto) {
+        log.info("新增选项模板组，版本ID：{}，参数：{}", dto.getScaleVersionId(), dto.getTemplateName());
+        ScaleOptionTemplateGroup group = BeanUtil.copyProperties(dto, ScaleOptionTemplateGroup.class);
+        group.setId(null);
+        int row = scaleOptionTemplateGroupMapper.insert(group);
+        if (row == 0) {
+            log.error("选项模板组新增失败：{}", dto.getTemplateName());
+            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_TEMPLATE_ADD_FAIL);
+        }
+        List<AdminScaleOptionTemplateItemDTO> items = dto.getItems();
+        if (CollUtil.isNotEmpty(items)) {
+            Db.saveBatch(buildItems(items, group.getId()));
+        }
+        log.info("选项模板组新增成功，模板组ID：{}", group.getId());
+    }
 
-        // 获取第一个DTO的量表ID进行验证（所有模板应该属于同一个量表）
-        Long scaleId = dtoList.get(0).getScaleId();
-        List<ScaleOptionTemplate> updateTemplates = dtoList.stream().map(item -> {
-            if(!item.getScaleId().equals(scaleId)){
-                log.error("更新选项模板-量表ID不一致，scaleId: {}, scaleId: {}", scaleId, item.getScaleId());
-                throw new BusinessException(SystemExceptionEnum.PARAM_ERROR);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateTemplate(Long groupId, AdminScaleOptionTemplateDTO dto) {
+        log.info("修改选项模板组，模板组ID：{}，参数：{}", groupId, dto.getTemplateName());
+        ScaleOptionTemplateGroup group = BeanUtil.copyProperties(dto, ScaleOptionTemplateGroup.class);
+        group.setId(groupId);
+        scaleOptionTemplateGroupMapper.updateById(group);
+        List<AdminScaleOptionTemplateItemDTO> items = dto.getItems();
+        if (items != null) {
+            scaleOptionTemplateItemMapper.delete(new LambdaQueryWrapper<ScaleOptionTemplateItem>()
+                    .eq(ScaleOptionTemplateItem::getTemplateGroupId, groupId));
+            if (CollUtil.isNotEmpty(items)) {
+                Db.saveBatch(buildItems(items, groupId));
             }
-            return BeanUtil.copyProperties(item, ScaleOptionTemplate.class);
-        }).toList();
-
-        // 验证量表是否存在
-        Scale scale = scaleMapper.selectMyById(scaleId);
-        if (scale == null) {
-            log.error("更新选项模板-量表不存在，scaleId: {}", scaleId);
-            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
         }
-
-        // 批量更新选项模板
-        scaleOptionTemplateMapper.updateById(updateTemplates);
-
-        log.info("选项模板更新成功录");
+        log.info("选项模板组修改成功，模板组ID：{}", groupId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteTemplate(Long templateId) {
-        log.info("开始删除选项模板，templateId: {}", templateId);
-
-        // 查询模板是否存在
-        ScaleOptionTemplate template = scaleOptionTemplateMapper.selectById(templateId);
-        if (template == null) {
-            log.error("选项模板不存在，templateId: {}", templateId);
-            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_NOT_FOUND);
+    public void applyTemplate(Long groupId, AdminScaleOptionTemplateApplyDTO dto) {
+        log.info("应用选项模板到题目，模板组ID：{}，参数：{}", groupId, dto.getQuestionIds());
+        ScaleOptionTemplateGroup group = scaleOptionTemplateGroupMapper.selectById(groupId);
+        if (group == null) {
+            log.warn("选项模板组不存在，模板组ID：{}", groupId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_TEMPLATE_GROUP_NOT_FOUND);
         }
-
-        // 逻辑删除
-        int deleted = scaleOptionTemplateMapper.deleteById(templateId);
-        if (deleted == 0) {
-            log.error("选项模板删除失败，templateId: {}", templateId);
-            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_NOT_FOUND);
+        List<ScaleOptionTemplateItem> items = scaleOptionTemplateItemMapper.selectList(new LambdaQueryWrapper<ScaleOptionTemplateItem>()
+                .eq(ScaleOptionTemplateItem::getTemplateGroupId, groupId)
+                .orderByAsc(ScaleOptionTemplateItem::getSort));
+        if (CollUtil.isEmpty(items)) {
+            log.warn("选项模板组下无明细，模板组ID：{}", groupId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_TEMPLATE_GROUP_NOT_FOUND);
         }
+        String mode = StrUtil.isBlank(dto.getMode()) ? "REPLACE" : dto.getMode();
+        List<Long> questionIds = dto.getQuestionIds();
+        try {
+            List<ScaleOption> newOptions = new ArrayList<>();
+            for (Long questionId : questionIds) {
+                if ("REPLACE".equalsIgnoreCase(mode)) {
+                    scaleOptionMapper.delete(new LambdaQueryWrapper<ScaleOption>().eq(ScaleOption::getQuestionId, questionId));
+                }
+                for (ScaleOptionTemplateItem item : items) {
+                    ScaleOption option = new ScaleOption();
+                    option.setQuestionId(questionId);
+                    option.setOptionText(item.getOptionText());
+                    option.setScore(item.getScore());
+                    option.setSort(item.getSort());
+                    newOptions.add(option);
+                }
+            }
+            Db.saveBatch(newOptions);
+        } catch (Exception e) {
+            log.error("模板应用到题目失败，模板组ID：{}", groupId, e);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_TEMPLATE_APPLY_FAIL);
+        }
+        log.info("选项模板应用成功，模板组ID：{}，题目数：{}", groupId, questionIds.size());
+    }
 
-        log.info("选项模板删除成功，templateId: {}", templateId);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void copyTemplate(AdminScaleOptionTemplateCopyDTO dto) {
+        log.info("复制选项模板，模板组ID：{}，目标版本ID：{}", dto.getGroupId(), dto.getTargetScaleVersionId());
+        Long groupId = dto.getGroupId();
+        Long targetScaleVersionId = dto.getTargetScaleVersionId();
+        ScaleOptionTemplateGroup sourceGroup = scaleOptionTemplateGroupMapper.selectById(groupId);
+        if (sourceGroup == null) {
+            log.warn("选项模板组不存在，模板组ID：{}", groupId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_OPTION_TEMPLATE_GROUP_NOT_FOUND);
+        }
+        ScaleOptionTemplateGroup newGroup = BeanUtil.copyProperties(sourceGroup, ScaleOptionTemplateGroup.class);
+        newGroup.setId(null);
+        newGroup.setScaleVersionId(targetScaleVersionId);
+        scaleOptionTemplateGroupMapper.insert(newGroup);
+        List<ScaleOptionTemplateItem> items = scaleOptionTemplateItemMapper.selectList(new LambdaQueryWrapper<ScaleOptionTemplateItem>()
+                .eq(ScaleOptionTemplateItem::getTemplateGroupId, groupId)
+                .orderByAsc(ScaleOptionTemplateItem::getSort));
+        if (CollUtil.isNotEmpty(items)) {
+            Db.saveBatch(StreamUtils.toList(items, item -> {
+                ScaleOptionTemplateItem newItem = BeanUtil.copyProperties(item, ScaleOptionTemplateItem.class);
+                newItem.setId(null);
+                newItem.setTemplateGroupId(newGroup.getId());
+                return newItem;
+            }));
+        }
+        log.info("选项模板复制成功，模板组ID：{}，新模板组ID：{}", groupId, newGroup.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteTemplate(Long groupId) {
+        log.info("删除选项模板组，模板组ID：{}", groupId);
+        scaleOptionTemplateItemMapper.delete(new LambdaQueryWrapper<ScaleOptionTemplateItem>()
+                .eq(ScaleOptionTemplateItem::getTemplateGroupId, groupId));
+        scaleOptionTemplateGroupMapper.deleteById(groupId);
+        log.info("选项模板组删除成功，模板组ID：{}", groupId);
+    }
+
+    /**
+     * 将模板项DTO列表转换为模板项实体列表并绑定模板组ID
+     *
+     * @param items      模板项DTO列表
+     * @param templateGroupId 模板组ID
+     * @return 模板项实体列表
+     */
+    private List<ScaleOptionTemplateItem> buildItems(List<AdminScaleOptionTemplateItemDTO> items, Long templateGroupId) {
+        return StreamUtils.toList(items, item -> {
+            ScaleOptionTemplateItem entity = BeanUtil.copyProperties(item, ScaleOptionTemplateItem.class);
+            entity.setTemplateGroupId(templateGroupId);
+            return entity;
+        });
     }
 }

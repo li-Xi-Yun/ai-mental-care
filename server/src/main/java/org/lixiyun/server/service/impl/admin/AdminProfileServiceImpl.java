@@ -1,6 +1,7 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +10,12 @@ import org.lixiyun.pojo.dto.admin.profile.AdminProfileDTO;
 import org.lixiyun.pojo.entity.Admin;
 import org.lixiyun.pojo.vo.admin.profile.AdminProfileVO;
 import org.lixiyun.server.mapper.AdminMapper;
+import org.lixiyun.server.mapper.RoleMapper;
 import org.lixiyun.server.service.admin.AdminProfileService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 管理员个人资料服务实现类
@@ -32,7 +36,8 @@ public class AdminProfileServiceImpl implements AdminProfileService {
     /**
      * 更新管理员资料
      * <p>
-     * 根据传入的管理员资料信息更新管理员的个人资料，包括用户名、手机号、邮箱
+     * 根据传入的管理员资料信息更新管理员的个人资料，包括用户名、手机号、邮箱，
+     * 账号名(login_account)不支持本人修改
      * </p>
      *
      * @param adminProfileDTO 管理员资料数据传输对象 {@link AdminProfileDTO}
@@ -40,7 +45,7 @@ public class AdminProfileServiceImpl implements AdminProfileService {
     @Override
     @Transactional
     public void updateProfile(AdminProfileDTO adminProfileDTO) {
-        log.debug("开始更新管理员资料");
+        log.info("管理员资料更新，用户名：{}", adminProfileDTO.getUsername());
 
         // 获取当前管理员ID
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
@@ -56,19 +61,15 @@ public class AdminProfileServiceImpl implements AdminProfileService {
 
     @Override
     public AdminProfileVO getAdminProfile() {
-        log.debug("开始获取管理员资料");
-
         // 获取当前管理员ID
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.debug("管理员资料查询，ID：{}", currentId);
 
         // 查询管理员信息
         Admin admin = adminMapper.selectById(currentId);
 
-        // 转换为VO对象，将mobile字段映射为phone
-        AdminProfileVO adminProfileVO = BeanUtil.copyProperties(admin, AdminProfileVO.class);
+        // 转换为VO对象
 
-        log.info("获取管理员资料成功，ID：{}", currentId);
-
-        return adminProfileVO;
+        return BeanUtil.copyProperties(admin, AdminProfileVO.class);
     }
 }

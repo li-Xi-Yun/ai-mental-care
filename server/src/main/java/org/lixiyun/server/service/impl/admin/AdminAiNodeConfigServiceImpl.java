@@ -17,6 +17,8 @@ import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.config.AiNodeConfigHistory;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigSimpleVO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeGroupVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeKeyVO;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.server.mapper.AiNodeConfigHistoryMapper;
 import org.lixiyun.server.mapper.AiNodeConfigMapper;
@@ -67,7 +69,12 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
         );
 
         log.info("AI节点配置-分页查询完成，总数：{}", result.getTotal());
-        return PageResult.convert(result, AiNodeConfigSimpleVO.class);
+        // 分页转换时解析当前生效的模型名称，便于列表直接展示
+        return PageResult.convert(result, config -> {
+            AiNodeConfigSimpleVO vo = BeanUtil.copyProperties(config, AiNodeConfigSimpleVO.class);
+            vo.setModelName(resolveModelName(config));
+            return vo;
+        });
     }
 
     @Override
@@ -191,17 +198,63 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
     }
 
     @Override
-    public List<String> listNodeKeys() {
-        log.info("AI节点配置-获取全部节点唯一标识列表");
+    public List<AiNodeKeyVO> listNodeKeys() {
+        log.info("AI节点配置-获取全部节点标识列表");
 
         List<AiNodeConfig> configs = aiNodeConfigMapper.selectList(new LambdaQueryWrapper<AiNodeConfig>()
-                .select(AiNodeConfig::getNodeKey)
+                .select(AiNodeConfig::getId, AiNodeConfig::getNodeKey, AiNodeConfig::getNodeName, AiNodeConfig::getNodeGroup)
                 .orderByAsc(AiNodeConfig::getSort)
         );
 
-        List<String> nodeKeys = configs.stream().map(AiNodeConfig::getNodeKey).toList();
-        log.info("AI节点配置-获取全部节点唯一标识列表完成，数量：{}", nodeKeys.size());
+        List<AiNodeKeyVO> nodeKeys = configs.stream()
+                .map(config -> AiNodeKeyVO.builder()
+                        .id(config.getId())
+                        .nodeKey(config.getNodeKey())
+                        .nodeName(config.getNodeName())
+                        .nodeGroup(config.getNodeGroup())
+                        .build())
+                .toList();
+        log.info("AI节点配置-获取全部节点标识列表完成，数量：{}", nodeKeys.size());
         return nodeKeys;
+    }
+
+    @Override
+    public List<AiNodeGroupVO> listNodeGroups() {
+        log.info("AI节点配置-获取节点分组列表");
+
+        List<AiNodeGroupVO> nodeGroups = aiNodeConfigMapper.selectNodeGroups();
+
+        log.info("AI节点配置-获取节点分组列表完成，分组数量：{}", nodeGroups.size());
+        return nodeGroups;
+    }
+
+    /**
+     * 根据模型类型解析当前生效的模型名称
+     *
+     * @param config 节点配置 {@link AiNodeConfig}
+     * @return 模型名称，未配置时返回 null
+     */
+    private String resolveModelName(AiNodeConfig config) {
+        if (config.getModelType() == null) {
+            return null;
+        }
+        return switch (config.getModelType()) {
+            case ModelType.OLLAMA -> config.getOllamaModelName();
+            case ModelType.DEEP_SEEK -> config.getDeepseekModelName();
+            case ModelType.DASH_SCOPE -> config.getDashscopeModelName();
+            case ModelType.OPEN_AI -> config.getOpenaiModelName();
+            default -> null;
+        };
+    }
+
+    /**
+     * 模型类型常量
+     */
+    private interface ModelType {
+        int OLLAMA = 0;
+        int DEEP_SEEK = 1;
+        int DASH_SCOPE = 2;
+        int OPEN_AI = 3;
     }
 
     /**

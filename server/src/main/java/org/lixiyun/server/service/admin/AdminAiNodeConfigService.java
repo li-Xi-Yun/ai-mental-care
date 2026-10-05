@@ -6,6 +6,8 @@ import org.lixiyun.pojo.dto.admin.config.AiNodeConfigBatchEnabledDTO;
 import org.lixiyun.pojo.dto.admin.config.AiNodeConfigDTO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigSimpleVO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeGroupVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeKeyVO;
 
 import java.util.List;
 
@@ -63,9 +65,18 @@ public interface AdminAiNodeConfigService {
     void batchUpdateEnabled(AiNodeConfigBatchEnabledDTO dto);
 
     /**
-     * 获取全部节点唯一标识列表（下拉选项用）
+     * 获取全部节点标识列表（下拉选项用）
+     * <p>返回节点ID、唯一标识、中文名称与分组，便于前端下拉展示可读文案</p>
      *
-     * @return 节点唯一标识列表
+     * @return 节点标识列表
      */
-    List<String> listNodeKeys();
+    List<AiNodeKeyVO> listNodeKeys();
+
+    /**
+     * 获取节点分组列表（分组筛选下拉用）
+     * <p>按节点分组统计数量，返回去重后的分组及数量</p>
+     *
+     * @return 节点分组列表
+     */
+    List<AiNodeGroupVO> listNodeGroups();
 }

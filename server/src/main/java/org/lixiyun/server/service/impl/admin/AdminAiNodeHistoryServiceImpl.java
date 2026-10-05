@@ -1,6 +1,7 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AiNodeConfigExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.core.utils.StreamUtils;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.config.AiNodeHistoryQueryDTO;
@@ -18,9 +20,11 @@ import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.server.mapper.AiNodeConfigHistoryMapper;
 import org.lixiyun.server.mapper.AiNodeConfigMapper;
 import org.lixiyun.server.service.admin.AdminAiNodeHistoryService;
+import org.lixiyun.server.service.support.PersonNameHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +41,7 @@ public class AdminAiNodeHistoryServiceImpl implements AdminAiNodeHistoryService 
     private final AiNodeConfigMapper aiNodeConfigMapper;
     private final AiNodeConfigHistoryMapper aiNodeConfigHistoryMapper;
     private final AiNodeConfigManager aiNodeConfigManager;
+    private final PersonNameHelper personNameHelper;
 
     @Override
     public PageResult<AiNodeConfigHistoryVO> pageHistory(Long id, AiNodeHistoryQueryDTO queryDTO) {
@@ -56,7 +61,10 @@ public class AdminAiNodeHistoryServiceImpl implements AdminAiNodeHistoryService 
         );
 
         log.info("AI节点配置变更历史-分页查询完成，总数：{}", result.getTotal());
-        return PageResult.convert(result, AiNodeConfigHistoryVO.class);
+        // 转换并补充操作人姓名
+        PageResult<AiNodeConfigHistoryVO> pageResult = PageResult.convert(result, AiNodeConfigHistoryVO.class);
+        enrichCreatedByName(pageResult.getRecords());
+        return pageResult;
     }
 
     @Override
@@ -71,7 +79,9 @@ public class AdminAiNodeHistoryServiceImpl implements AdminAiNodeHistoryService 
 
         log.debug("AI节点配置变更历史-获取详情成功，nodeKey：{}，oldVersion：{}，newVersion：{}",
                 history.getNodeKey(), history.getOldVersion(), history.getNewVersion());
-        return BeanUtil.copyProperties(history, AiNodeConfigHistoryVO.class);
+        AiNodeConfigHistoryVO vo = BeanUtil.copyProperties(history, AiNodeConfigHistoryVO.class);
+        vo.setCreatedByName(personNameHelper.resolveName(history.getCreatedBy()));
+        return vo;
     }
 
     @Override
@@ -109,6 +119,20 @@ public class AdminAiNodeHistoryServiceImpl implements AdminAiNodeHistoryService 
         recordRollbackHistory(currentConfig, history);
         aiNodeConfigManager.refresh(currentConfig.getNodeKey());
         log.info("AI节点配置变更历史-回滚成功，configId：{}，nodeKey：{}", id, currentConfig.getNodeKey());
+    }
+
+    /**
+     * 批量补充变更记录的操作人姓名
+     *
+     * @param records 变更历史VO列表
+     */
+    private void enrichCreatedByName(List<AiNodeConfigHistoryVO> records) {
+        if (CollUtil.isEmpty(records)) {
+            return;
+        }
+        List<Long> createdByIds = StreamUtils.toList(records, AiNodeConfigHistoryVO::getCreatedBy);
+        Map<Long, String> nameMap = personNameHelper.resolveNames(createdByIds);
+        records.forEach(record -> record.setCreatedByName(nameMap.get(record.getCreatedBy())));
     }
 
     /**

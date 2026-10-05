@@ -39,6 +39,9 @@ public class AiNodeConfigSimpleVO implements Serializable {
     @Schema(description = "默认使用的模型类型：0-OLLAMA 1-DEEP_SEEK 2-DASH_SCOPE 3-OPEN_AI(OpenAI兼容自定义远程模型)", example = "1")
     private Integer modelType;
 
+    @Schema(description = "当前生效的模型名称（按模型类型解析），用于列表直接展示", example = "deepseek-chat")
+    private String modelName;
+
     @Schema(description = "是否启用：0-禁用 1-启用", example = "1")
     private Integer enabled;
 

@@ -1,41 +1,37 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 import org.lixiyun.pojo.entity.scale.ScaleOption;
 
-import java.util.List;
-
 /**
- * 题目选项表(ScaleOption)表数据库访问层
+ * 题目选项 数据访问层
  *
  * @author lixiyun
- * @since 2026-04-15 08:24:17
+ * @since 2026-10-05
  */
 public interface ScaleOptionMapper extends BaseMapper<ScaleOption> {
 
     /**
-     * 批量逻辑删除选项
+     * 级联恢复指定版本下的选项
      *
-     * @param questionId 问题ID
-     * @param optionIds  选项ID列表
+     * @param versionId 版本ID
+     * @return 影响行数
      */
-    void deletePhysicsWithOptions(@Param("questionId") Long questionId, @Param("optionIds") List<Long> optionIds);
+    @Update("UPDATE scale_option SET deleted = 0, updated_time = NOW() " +
+            "WHERE question_id IN (SELECT id FROM scale_question WHERE scale_version_id = #{versionId})")
+    int restoreByVersionId(@Param("versionId") Long versionId);
 
     /**
-     * 批量逻辑删除选项
+     * 级联恢复指定量表全部版本下的选项
      *
-     * @param questionId 问题ID
+     * @param scaleId 量表ID
+     * @return 影响行数
      */
-    @Delete("delete from ai_mental_care.scale_option where question_id = #{questionId}")
-    void deletePhysics(@Param("questionId") Long questionId);
+    @Update("UPDATE scale_option SET deleted = 0, updated_time = NOW() " +
+            "WHERE question_id IN (SELECT id FROM scale_question " +
+            "WHERE scale_version_id IN (SELECT id FROM scale_version WHERE scale_id = #{scaleId}))")
+    int restoreByScaleId(@Param("scaleId") Long scaleId);
 
-    /**
-     * 批量恢复选项
-     *
-     * @param scaleId    量表ID
-     * @param deleteFlag 删除状态
-     */
-    void retractDelete(@Param("scaleId") Long scaleId, @Param("deleteFlag") int deleteFlag);
 }

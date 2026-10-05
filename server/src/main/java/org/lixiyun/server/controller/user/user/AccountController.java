@@ -33,7 +33,7 @@ public class AccountController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "用户登录接口")
+    @Operation(summary = "用户登录", description = "用户通过账号名登录")
     public Result<LoginResultVO> login(@RequestBody @Validated LoginUserDTO user) {
         log.info("用户登录:{}", user);
         LoginResultVO result = userAccountService.login(user);
@@ -41,7 +41,6 @@ public class AccountController {
     }
 
     @PostMapping("/logout")
-//    @PreAuthorize("isAuthenticated()") // 要求用户已认证
     @Operation(summary = "用户登出", description = "用户登出")
     public Result<?> logout() {
         log.info("用户登出");

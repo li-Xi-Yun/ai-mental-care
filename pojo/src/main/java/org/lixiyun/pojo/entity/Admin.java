@@ -1,5 +1,7 @@
 package org.lixiyun.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,6 +36,16 @@ public class Admin extends BasicsUser implements Serializable {
     private String mobile;
 
     /**
+     * 账号名，创建时系统自动生成，之后由超级管理员修改
+     */
+    private String loginAccount;
+
+    /**
+     * 账号名修改时间
+     */
+    private LocalDateTime loginAccountUpdateTime;
+
+    /**
      * 封禁开始时间
      */
     private LocalDateTime banTime;
@@ -54,19 +66,21 @@ public class Admin extends BasicsUser implements Serializable {
     private LocalDateTime createdTime;
 
     /**
+     * 创建人用户id
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private Long createdBy;
+
+    /**
      * 更新者
      */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updatedBy;
 
     /**
      * 更新时间
      */
     private LocalDateTime updatedTime;
-
-    /**
-     * 是否删除，0-否，1-是
-     */
-    private Integer deleted;
 
 }
 

@@ -1,36 +1,43 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ScaleExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.common.sql.core.page.PageQuery;
-import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.pojo.dto.user.scale.ScaleOptionDTO;
-import org.lixiyun.pojo.dto.user.scale.ScaleQuestionDTO;
-import org.lixiyun.pojo.entity.scale.Scale;
+import org.lixiyun.common.core.utils.StreamUtils;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionItemDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleQuestionDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleQuestionSortItemDTO;
+import org.lixiyun.pojo.entity.scale.ScaleBranchRule;
+import org.lixiyun.pojo.entity.scale.ScaleDimension;
 import org.lixiyun.pojo.entity.scale.ScaleOption;
 import org.lixiyun.pojo.entity.scale.ScaleQuestion;
-import org.lixiyun.pojo.vo.user.scale.ScaleOptionVO;
-import org.lixiyun.pojo.vo.user.scale.ScaleQuestionVO;
-import org.lixiyun.server.mapper.ScaleMapper;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleOptionVO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleQuestionVO;
+import org.lixiyun.server.mapper.ScaleBranchRuleMapper;
+import org.lixiyun.server.mapper.ScaleDimensionMapper;
 import org.lixiyun.server.mapper.ScaleOptionMapper;
 import org.lixiyun.server.mapper.ScaleQuestionMapper;
 import org.lixiyun.server.service.admin.AdminScaleQuestionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 /**
+ * 管理员量表题目服务实现类
+ *
  * @author lixiyun
- * @since 2026-04-19 15:37
+ * @since 2026-10-05
  */
 @Slf4j
 @Service
@@ -39,165 +46,186 @@ public class AdminScaleQuestionServiceImpl implements AdminScaleQuestionService 
 
     private final ScaleQuestionMapper scaleQuestionMapper;
     private final ScaleOptionMapper scaleOptionMapper;
-    private final ScaleMapper scaleMapper;
+    private final ScaleDimensionMapper scaleDimensionMapper;
+    private final ScaleBranchRuleMapper scaleBranchRuleMapper;
 
     @Override
-    @Transactional
-    public void createWithOptions(ScaleQuestionDTO scaleQuestionDTO) {
-        // 插入题目
-        ScaleQuestion question = new ScaleQuestion();
-        BeanUtil.copyProperties(scaleQuestionDTO, question);
-        scaleQuestionMapper.insert(question);
-        Long questionId = question.getId();
-
-        // 插入选项
-        List<ScaleOptionDTO> optionList = scaleQuestionDTO.getOptionList();
-        List<ScaleOption> options = optionList.stream()
-                .map(optionDTO -> {
-                    ScaleOption option = BeanUtil.copyProperties(optionDTO, ScaleOption.class);
-                    option.setQuestionId(questionId);
-                    return option;
-                })
-                .toList();
-        scaleOptionMapper.insert(options);
-
-        // 更新量表的题目数量
-        scaleMapper.updateQuestionCount(scaleQuestionDTO.getScaleId(), 1);
-
-        log.info("题目及选项创建成功，题目ID: {}", questionId);
+    public List<AdminScaleQuestionVO> listQuestions(Long scaleVersionId) {
+        log.info("查询版本题目列表，版本ID：{}", scaleVersionId);
+        List<ScaleQuestion> questions = scaleQuestionMapper.selectList(new LambdaQueryWrapper<ScaleQuestion>()
+                .eq(ScaleQuestion::getScaleVersionId, scaleVersionId)
+                .orderByAsc(ScaleQuestion::getSort)
+                .orderByAsc(ScaleQuestion::getId));
+        if (CollUtil.isEmpty(questions)) {
+            return Collections.emptyList();
+        }
+        List<Long> questionIds = StreamUtils.toList(questions, ScaleQuestion::getId);
+        List<ScaleOption> options = scaleOptionMapper.selectList(new LambdaQueryWrapper<ScaleOption>()
+                .in(ScaleOption::getQuestionId, questionIds)
+                .orderByAsc(ScaleOption::getSort)
+                .orderByAsc(ScaleOption::getId));
+        Map<Long, List<ScaleOption>> optionMap = StreamUtils.groupByKey(options, ScaleOption::getQuestionId);
+        List<Long> dimensionIds = questions.stream().map(ScaleQuestion::getDimensionId)
+                .filter(Objects::nonNull).distinct().toList();
+        Map<Long, ScaleDimension> dimensionMap = CollUtil.isEmpty(dimensionIds) ? Collections.emptyMap()
+                : StreamUtils.toIdentityMap(scaleDimensionMapper.selectBatchIds(dimensionIds), ScaleDimension::getId);
+        return StreamUtils.toList(questions, question -> {
+            AdminScaleQuestionVO vo = BeanUtil.copyProperties(question, AdminScaleQuestionVO.class);
+            ScaleDimension dimension = dimensionMap.get(question.getDimensionId());
+            if (dimension != null) {
+                vo.setDimensionName(dimension.getDimName());
+            }
+            List<ScaleOption> questionOptions = optionMap.get(question.getId());
+            if (CollUtil.isNotEmpty(questionOptions)) {
+                vo.setOptions(StreamUtils.toListVO(questionOptions, AdminScaleOptionVO.class));
+            }
+            return vo;
+        });
     }
 
     @Override
-    public ScaleQuestionVO getWithOptions(Long questionId) {
-        // 获取题目
+    public AdminScaleQuestionVO getQuestionDetail(Long questionId) {
+        log.info("查询题目详情，题目ID：{}", questionId);
         ScaleQuestion question = scaleQuestionMapper.selectById(questionId);
         if (question == null) {
+            log.warn("量表题目不存在，题目ID：{}", questionId);
             throw new BusinessException(ScaleExceptionEnum.SCALE_QUESTION_NOT_FOUND);
         }
-
-        // 检查量表是否启用且未删除
-        Scale scale = scaleMapper.selectById(question.getScaleId());
-        if (scale == null || scale.getStatus() == Scale.STATUS_DISABLE || scale.getDeleted() == DeleteConstant.DELETE_FLAG_YES) {
-            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
+        AdminScaleQuestionVO vo = BeanUtil.copyProperties(question, AdminScaleQuestionVO.class);
+        if (question.getDimensionId() != null) {
+            ScaleDimension dimension = scaleDimensionMapper.selectById(question.getDimensionId());
+            if (dimension != null) {
+                vo.setDimensionName(dimension.getDimName());
+            }
         }
-
-        // 获取选项
         List<ScaleOption> options = scaleOptionMapper.selectList(new LambdaQueryWrapper<ScaleOption>()
                 .eq(ScaleOption::getQuestionId, questionId)
-                .orderByAsc(ScaleOption::getSort));
-
-        // 转换为VO
-        ScaleQuestionVO vo = BeanUtil.copyProperties(question, ScaleQuestionVO.class);
-        List<ScaleOptionVO> optionDTOs = options.stream()
-                .map(option -> ScaleOptionVO.builder()
-                        .optionText(option.getOptionText())
-                        .score(option.getScore())
-                        .sort(option.getSort())
-                        .build())
-                .toList();
-        vo.setOptionList(optionDTOs);
-
+                .orderByAsc(ScaleOption::getSort)
+                .orderByAsc(ScaleOption::getId));
+        if (CollUtil.isNotEmpty(options)) {
+            vo.setOptions(StreamUtils.toListVO(options, AdminScaleOptionVO.class));
+        }
         return vo;
     }
 
     @Override
-    public PageResult<ScaleQuestionVO> listQuestionsWithOptions(Long scaleId, Integer pageNum, Integer pageSize) {
-        // 检查量表是否存在
-        Scale scale = scaleMapper.selectMyById(scaleId);
-        if (scale == null) {
-            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
+    @Transactional(rollbackFor = Exception.class)
+    public void createQuestion(AdminScaleQuestionDTO dto) {
+        log.info("新增题目，版本ID：{}，参数：{}", dto.getScaleVersionId(), dto.getTitle());
+        ScaleQuestion question = BeanUtil.copyProperties(dto, ScaleQuestion.class);
+        question.setId(null);
+        int row = scaleQuestionMapper.insert(question);
+        if (row == 0) {
+            log.error("量表题目新增失败：{}", dto.getTitle());
+            throw new BusinessException(ScaleExceptionEnum.SCALE_QUESTION_ADD_FAIL);
         }
-
-        // 构建分页对象
-        Page<ScaleQuestion> pageParam = new PageQuery(pageSize, pageNum).build();
-
-        // 查询指定量表下的题目，按排序字段升序排列
-        Page<ScaleQuestion> questionPage = scaleQuestionMapper.selectPage(pageParam, new LambdaQueryWrapper<ScaleQuestion>()
-                .eq(ScaleQuestion::getScaleId, scaleId)
-                .eq(ScaleQuestion::getDeleted, scale.getDeleted())
-                .orderByAsc(ScaleQuestion::getSort));
-
-        // 获取当前页的所有题目ID
-        List<Long> questionIds = questionPage.getRecords().stream()
-                .map(ScaleQuestion::getId)
-                .toList();
-
-        // 批量查询这些题目的所有选项
-        Map<Long, List<ScaleOption>> optionMap = Map.of();
-        if (!questionIds.isEmpty()) {
-            List<ScaleOption> allOptions = scaleOptionMapper.selectList(new LambdaQueryWrapper<ScaleOption>()
-                    .in(ScaleOption::getQuestionId, questionIds)
-                    .eq(ScaleOption::getDeleted, scale.getDeleted())
-                    .orderByAsc(ScaleOption::getSort));
-
-            // 使用Stream将选项按题目ID分组
-            optionMap = allOptions.stream()
-                    .collect(Collectors.groupingBy(ScaleOption::getQuestionId));
+        List<AdminScaleOptionItemDTO> options = dto.getOptions();
+        if (CollUtil.isNotEmpty(options) && !Objects.equals(dto.getQuestionType(), ScaleQuestion.QUESTION_TYPE_FILL)) {
+            Db.saveBatch(buildOptions(options, question.getId()));
         }
-
-        // 使用Stream将题目和选项组合成VO
-        final Map<Long, List<ScaleOption>> finalOptionMap = optionMap;
-        List<ScaleQuestionVO> voList = questionPage.getRecords().stream()
-                .map(question -> {
-                    ScaleQuestionVO vo = BeanUtil.copyProperties(question, ScaleQuestionVO.class);
-                    List<ScaleOption> options = finalOptionMap.getOrDefault(question.getId(), List.of());
-                    List<ScaleOptionVO> optionVOs = options.stream()
-                            .map(option -> ScaleOptionVO.builder()
-                                    .id(option.getId())
-                                    .optionText(option.getOptionText())
-                                    .score(option.getScore())
-                                    .sort(option.getSort())
-                                    .build())
-                            .toList();
-                    vo.setOptionList(optionVOs);
-                    return vo;
-                })
-                .toList();
-
-        // 返回分页结果
-        return new PageResult<>(questionPage.getTotal(), voList);
+        log.info("量表题目新增成功，题目ID：{}", question.getId());
     }
 
     @Override
-    @Transactional
-    public void deleteWithOptions(Long questionId, Long scaleId) {
-        // 删除题目
-        scaleQuestionMapper.deletePhysics(questionId);
-        // 级联删除选项
-        scaleOptionMapper.deletePhysics(questionId);
-
-        // 更新量表的题目数量
-        scaleMapper.updateQuestionCount(scaleId, -1);
-
-        log.info("题目及选项删除成功，题目ID: {}", questionId);
-    }
-
-    @Override
-    @Transactional
-    public void updateMetadata(Long questionId, ScaleQuestionDTO scaleQuestionDTO) {
-        // 只更新题目元数据信息，不更新选项
-        ScaleQuestion question = new ScaleQuestion();
-        BeanUtil.copyProperties(scaleQuestionDTO, question);
+    @Transactional(rollbackFor = Exception.class)
+    public void updateQuestion(Long questionId, AdminScaleQuestionDTO dto) {
+        log.info("修改题目，题目ID：{}，参数：{}", questionId, dto.getTitle());
+        ScaleQuestion question = BeanUtil.copyProperties(dto, ScaleQuestion.class);
         question.setId(questionId);
-        // 确保不更新scaleId，如果DTO中有的话
-        question.setScaleId(null); // 防止修改量表ID
-        scaleQuestionMapper.updateById(question);
+        int row = scaleQuestionMapper.updateById(question);
+        if (row == 0) {
+            log.warn("量表题目不存在，题目ID：{}", questionId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_QUESTION_NOT_FOUND);
+        }
+        List<AdminScaleOptionItemDTO> options = dto.getOptions();
+        if (options != null) {
+            scaleOptionMapper.delete(new LambdaQueryWrapper<ScaleOption>().eq(ScaleOption::getQuestionId, questionId));
+            if (CollUtil.isNotEmpty(options)) {
+                Db.saveBatch(buildOptions(options, questionId));
+            }
+        }
+        log.info("量表题目修改成功，题目ID：{}", questionId);
+    }
 
-        // 级联删除选项
-        scaleOptionMapper.deletePhysics(questionId);
+    @Override
+    public void updateQuestionSort(List<AdminScaleQuestionSortItemDTO> sortItems) {
+        log.info("批量调整题目顺序，参数：{}", sortItems);
+        if (CollUtil.isEmpty(sortItems)) {
+            return;
+        }
+        List<ScaleQuestion> questions = StreamUtils.toList(sortItems, item -> {
+            ScaleQuestion question = new ScaleQuestion();
+            question.setId(item.getQuestionId());
+            question.setSort(item.getSort());
+            return question;
+        });
+        Db.updateBatchById(questions);
+    }
 
-        // 批量插入选项
-        List<ScaleOptionDTO> optionDTOList = scaleQuestionDTO.getOptionList();
-        List<ScaleOption> scaleOptionList = optionDTOList.stream().map(item -> {
+    @Override
+    public void updateQuestionDimension(Long questionId, Long dimensionId) {
+        log.info("调整题目所属维度，题目ID：{}，维度ID：{}", questionId, dimensionId);
+        scaleQuestionMapper.update(null, new LambdaUpdateWrapper<ScaleQuestion>()
+                .eq(ScaleQuestion::getId, questionId)
+                .set(ScaleQuestion::getDimensionId, dimensionId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void copyQuestion(Long questionId, Long targetScaleVersionId) {
+        log.info("复制题目，题目ID：{}，目标版本ID：{}", questionId, targetScaleVersionId);
+        ScaleQuestion source = scaleQuestionMapper.selectById(questionId);
+        if (source == null) {
+            log.warn("量表题目不存在，题目ID：{}", questionId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_QUESTION_NOT_FOUND);
+        }
+        ScaleQuestion newQuestion = BeanUtil.copyProperties(source, ScaleQuestion.class);
+        newQuestion.setId(null);
+        newQuestion.setScaleVersionId(targetScaleVersionId);
+        int row = scaleQuestionMapper.insert(newQuestion);
+        if (row == 0) {
+            log.error("复制题目失败，题目ID：{}", questionId);
+            throw new BusinessException(ScaleExceptionEnum.SCALE_QUESTION_COPY_FAIL);
+        }
+        List<ScaleOption> options = scaleOptionMapper.selectList(new LambdaQueryWrapper<ScaleOption>()
+                .eq(ScaleOption::getQuestionId, questionId)
+                .orderByAsc(ScaleOption::getSort)
+                .orderByAsc(ScaleOption::getId));
+        if (CollUtil.isNotEmpty(options)) {
+            List<ScaleOption> newOptions = new ArrayList<>();
+            options.forEach(option -> {
+                ScaleOption newOption = BeanUtil.copyProperties(option, ScaleOption.class);
+                newOption.setId(null);
+                newOption.setQuestionId(newQuestion.getId());
+                newOptions.add(newOption);
+            });
+            Db.saveBatch(newOptions);
+        }
+        log.info("题目复制成功，题目ID：{}，新题目ID：{}", questionId, newQuestion.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteQuestion(Long questionId) {
+        log.info("删除题目，题目ID：{}", questionId);
+        scaleOptionMapper.delete(new LambdaQueryWrapper<ScaleOption>().eq(ScaleOption::getQuestionId, questionId));
+        scaleBranchRuleMapper.delete(new LambdaQueryWrapper<ScaleBranchRule>().eq(ScaleBranchRule::getSourceQuestionId, questionId));
+        scaleQuestionMapper.deleteById(questionId);
+        log.info("题目删除成功，题目ID：{}", questionId);
+    }
+
+    /**
+     * 将选项项DTO列表转换为选项实体列表并绑定题目ID
+     *
+     * @param items      选项项DTO列表
+     * @param questionId 题目ID
+     * @return 选项实体列表
+     */
+    private List<ScaleOption> buildOptions(List<AdminScaleOptionItemDTO> items, Long questionId) {
+        return StreamUtils.toList(items, item -> {
             ScaleOption option = BeanUtil.copyProperties(item, ScaleOption.class);
             option.setQuestionId(questionId);
             return option;
-        }).toList();
-
-        scaleOptionMapper.insert(scaleOptionList);
-
-
-        log.info("题目元数据修改成功，题目ID: {}", questionId);
+        });
     }
-
 }

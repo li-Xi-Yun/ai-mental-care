@@ -1,40 +1,33 @@
 package org.lixiyun.pojo.vo.user.scale;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
 
 /**
- * 量表类别VO
+ * 量表类别VO（前台）
+ *
  * @author lixiyun
- * @since 2026-04-15
+ * @since 2026-10-05
  */
-@Schema(description = "量表类别VO")
 @Data
-public class ScaleCategoryVO {
+@Builder
+@Schema(description = "量表类别VO")
+public class ScaleCategoryVO implements Serializable {
 
-    @Schema(description = "ID")
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "类别ID", example = "1")
     private Long id;
 
-    @Schema(description = "类别名称")
+    @Schema(description = "类别名称", example = "焦虑类")
     private String categoryName;
 
-    @Schema(description = "使用数量")
-    private Integer useCount;
+    @Schema(description = "排序", example = "1")
+    private Integer sort;
 
-    @Schema(description = "创建时间")
-    private LocalDateTime createdTime;
-
-    @Schema(description = "创建人")
-    private Long createdBy;
-
-    @Schema(description = "更新时间")
-    private LocalDateTime updatedTime;
-
-    @Schema(description = "更新人")
-    private Long updatedBy;
-
-    @Schema(description = "删除标志")
-    private Integer deleted;
+    @Schema(description = "该类别下启用且有当前版本的量表数量", example = "3")
+    private Long scaleCount;
 }

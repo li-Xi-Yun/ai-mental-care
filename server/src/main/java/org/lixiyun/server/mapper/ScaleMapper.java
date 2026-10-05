@@ -1,50 +1,43 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.lixiyun.pojo.entity.scale.Scale;
-
-import java.util.List;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleVO;
 
 /**
- * 量表主表(Scale)表数据库访问层
+ * 量表主表 数据访问层
  *
  * @author lixiyun
- * @since 2026-04-15 08:24:15
+ * @since 2026-10-05
  */
 public interface ScaleMapper extends BaseMapper<Scale> {
 
     /**
-     * 更新量表的题目数量
-     * @param scaleId 量表ID
-     * @param updateCount 增加的题目数量（可正可负）
+     * 分页查询量表主表（支持已删除数据筛选与当前版本统计，使用原生 SQL）
+     *
+     * @param page            分页参数
+     * @param scaleName       量表名称，模糊匹配
+     * @param scaleCategoryId 量表分类ID
+     * @param status          状态：0-禁用 1-启用
+     * @param deletedFlag     删除状态：0-未删除 1-已删除，为空查全部
+     * @return 量表分页结果
      */
-    @Update("UPDATE ai_mental_care.scale SET question_count = question_count + #{updateCount} WHERE id = #{scaleId}")
-    void updateQuestionCount(Long scaleId, int updateCount);
+    Page<AdminScaleVO> pageScales(Page<AdminScaleVO> page,
+                                  @Param("scaleName") String scaleName,
+                                  @Param("scaleCategoryId") Long scaleCategoryId,
+                                  @Param("status") Integer status,
+                                  @Param("deletedFlag") Integer deletedFlag);
 
     /**
-     * 查询当前用户有权限的量表列表
-     * @param scaleName 量表名称，可模糊匹配
-     * @param isDeleted 是否已删除，0-否，1-是
-     * @param status 状态：1=启用 0=禁用
-     * @return 当前用户有权限的量表列表
+     * 恢复已删除的量表主表
+     *
+     * @param id 量表ID
+     * @return 影响行数
      */
-    List<Scale> selectMyPage(@Param("scaleName") String scaleName, @Param("isDeleted") Integer isDeleted, @Param("status") Integer status);
+    @Update("UPDATE scale SET deleted = 0, updated_time = NOW() WHERE id = #{id}")
+    int restoreScale(@Param("id") Long id);
 
-    /**
-     * 用于管理员查询量表数据
-     * @param scaleId 量表ID
-     * @return 量表数据 {@link Scale}
-     */
-    @Select("select * from ai_mental_care.scale where id = #{scaleId}")
-    Scale selectMyById(@Param("scaleId") Long scaleId);
-
-    /**
-     * 更新量表删除状态
-     * @param scale 量表数据
-     */
-    @Update("UPDATE ai_mental_care.scale SET deleted = #{deleted} WHERE id = #{id}")
-    void updateMyDeleteFlat(Scale scale);
 }

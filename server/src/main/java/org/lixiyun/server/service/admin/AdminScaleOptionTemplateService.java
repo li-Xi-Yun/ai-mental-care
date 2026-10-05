@@ -1,7 +1,9 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.pojo.dto.admin.scale.ScaleOptionTemplateDTO;
-import org.lixiyun.pojo.vo.admin.scale.ScaleOptionTemplateVO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateApplyDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateCopyDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleOptionTemplateDTO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleOptionTemplateVO;
 
 import java.util.List;
 
@@ -9,48 +11,52 @@ import java.util.List;
  * 管理员量表选项模板服务接口
  *
  * @author lixiyun
- * @since 2026-04-20 21:39
+ * @since 2026-10-05
  */
 public interface AdminScaleOptionTemplateService {
 
     /**
-     * 创建选项模板
-     * <p>
-     * 批量创建量表选项模板，支持一次创建多个选项模板
-     * </p>
+     * 查询版本选项模板组列表（含明细）
      *
-     * @param dtoList 选项模板DTO列表 {@link ScaleOptionTemplateDTO}
+     * @param scaleVersionId 量表版本ID
+     * @return 模板组列表
      */
-    void createTemplate(List<ScaleOptionTemplateDTO> dtoList);
+    List<AdminScaleOptionTemplateVO> listTemplates(Long scaleVersionId);
 
     /**
-     * 查询选项模板列表
-     * <p>
-     * 根据量表ID查询该量表下的所有选项模板列表
-     * </p>
+     * 新增模板组
      *
-     * @param scaleId 量表ID
-     * @return 选项模板VO列表 {@link ScaleOptionTemplateVO}
+     * @param dto 模板组DTO {@link AdminScaleOptionTemplateDTO}
      */
-    List<ScaleOptionTemplateVO> listTemplates(Long scaleId);
+    void createTemplate(AdminScaleOptionTemplateDTO dto);
 
     /**
-     * 更新选项模板
-     * <p>
-     * 批量更新量表选项模板，支持一次更新多个选项模板
-     * </p>
+     * 修改模板组及明细
      *
-     * @param dtoList 选项模板DTO列表 {@link ScaleOptionTemplateDTO}
+     * @param groupId 模板组ID
+     * @param dto     模板组DTO {@link AdminScaleOptionTemplateDTO}
      */
-    void updateTemplate(List<ScaleOptionTemplateDTO> dtoList);
+    void updateTemplate(Long groupId, AdminScaleOptionTemplateDTO dto);
 
     /**
-     * 删除选项模板
-     * <p>
-     * 根据模板ID逻辑删除选项模板
-     * </p>
+     * 将模板应用到题目（把模板明细复制为该题选项，支持覆盖/追加策略）
      *
-     * @param templateId 选项模板ID
+     * @param groupId 模板组ID
+     * @param dto     应用DTO {@link AdminScaleOptionTemplateApplyDTO}
      */
-    void deleteTemplate(Long templateId);
+    void applyTemplate(Long groupId, AdminScaleOptionTemplateApplyDTO dto);
+
+    /**
+     * 复制模板到目标版本
+     *
+     * @param dto 复制DTO {@link AdminScaleOptionTemplateCopyDTO}
+     */
+    void copyTemplate(AdminScaleOptionTemplateCopyDTO dto);
+
+    /**
+     * 删除模板组
+     *
+     * @param groupId 模板组ID
+     */
+    void deleteTemplate(Long groupId);
 }

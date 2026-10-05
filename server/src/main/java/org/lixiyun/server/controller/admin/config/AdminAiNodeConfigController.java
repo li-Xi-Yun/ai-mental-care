@@ -16,7 +16,10 @@ import org.lixiyun.pojo.dto.admin.config.AiNodeConfigBatchEnabledDTO;
 import org.lixiyun.pojo.dto.admin.config.AiNodeConfigDTO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigSimpleVO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeGroupVO;
+import org.lixiyun.pojo.vo.admin.config.AiNodeKeyVO;
 import org.lixiyun.server.service.admin.AdminAiNodeConfigService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +42,7 @@ public class AdminAiNodeConfigController {
     private final AdminAiNodeConfigService adminAiNodeConfigService;
 
     @PostMapping("/page")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
     @Operation(summary = "分页查询AI节点配置", description = "支持节点标识/名称模糊匹配、分组筛选、模型类型筛选、启用状态筛选")
     public Result<PageResult<AiNodeConfigSimpleVO>> pageAiNodeConfig(@RequestBody @Validated AdminAiNodeConfigQueryDTO queryDTO) {
         log.info("分页查询AI节点配置：{}", queryDTO);
@@ -48,7 +51,7 @@ public class AdminAiNodeConfigController {
     }
 
     @GetMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
     @Operation(summary = "获取AI节点配置详情", description = "根据主键ID获取完整配置（含提示词全文）")
     public Result<AiNodeConfigVO> getAiNodeConfigDetail(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id) {
@@ -58,7 +61,7 @@ public class AdminAiNodeConfigController {
     }
 
     @PostMapping
-//    @PreAuthorize("hasAuthority('ai:node:config:create')")
+    @PreAuthorize("hasAuthority('ai:node:config:create')")
     @Operation(summary = "新增AI节点配置", description = "新增一个诊断节点的配置信息")
     public Result<Void> createAiNodeConfig(@RequestBody @Validated(AddGroup.class) AiNodeConfigDTO dto) {
         log.info("新增AI节点配置：{}", dto);
@@ -67,7 +70,7 @@ public class AdminAiNodeConfigController {
     }
 
     @PutMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ai:node:config:update')")
+    @PreAuthorize("hasAuthority('ai:node:config:update')")
     @Operation(summary = "修改AI节点配置", description = "修改节点配置，需传version乐观锁校验")
     public Result<Void> updateAiNodeConfig(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id,
@@ -78,7 +81,7 @@ public class AdminAiNodeConfigController {
     }
 
     @DeleteMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ai:node:config:delete')")
+    @PreAuthorize("hasAuthority('ai:node:config:delete')")
     @Operation(summary = "删除AI节点配置", description = "根据主键ID逻辑删除配置")
     public Result<Void> deleteAiNodeConfig(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id) {
@@ -88,7 +91,7 @@ public class AdminAiNodeConfigController {
     }
 
     @PutMapping("/batch-enabled")
-//    @PreAuthorize("hasAuthority('ai:node:config:update')")
+    @PreAuthorize("hasAuthority('ai:node:config:update')")
     @Operation(summary = "批量启用/禁用AI节点配置", description = "批量切换节点的启用状态")
     public Result<Void> batchUpdateEnabled(@RequestBody @Validated AiNodeConfigBatchEnabledDTO dto) {
         log.info("批量启用/禁用AI节点配置：{}", dto);
@@ -97,11 +100,20 @@ public class AdminAiNodeConfigController {
     }
 
     @GetMapping("/node-keys")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
-    @Operation(summary = "获取全部节点唯一标识列表", description = "返回所有节点唯一标识，用于前端下拉选项")
-    public Result<List<String>> listNodeKeys() {
-        log.info("获取全部节点唯一标识列表");
-        List<String> nodeKeys = adminAiNodeConfigService.listNodeKeys();
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @Operation(summary = "获取全部节点标识列表", description = "返回节点ID、唯一标识、中文名称与分组，用于前端下拉选项")
+    public Result<List<AiNodeKeyVO>> listNodeKeys() {
+        log.info("获取全部节点标识列表");
+        List<AiNodeKeyVO> nodeKeys = adminAiNodeConfigService.listNodeKeys();
         return Result.success(nodeKeys);
+    }
+
+    @GetMapping("/groups")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @Operation(summary = "获取节点分组列表", description = "返回去重后的节点分组及数量，用于前端分组筛选下拉")
+    public Result<List<AiNodeGroupVO>> listNodeGroups() {
+        log.info("获取节点分组列表");
+        List<AiNodeGroupVO> nodeGroups = adminAiNodeConfigService.listNodeGroups();
+        return Result.success(nodeGroups);
     }
 }

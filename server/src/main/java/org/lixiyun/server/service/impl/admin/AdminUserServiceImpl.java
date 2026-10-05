@@ -2,26 +2,27 @@ package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.constant.RoleConstant;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.pojo.dto.admin.user.AdminQueryDTO;
-import org.lixiyun.pojo.dto.admin.user.AdminStatusDTO;
+import org.lixiyun.pojo.dto.admin.user.AdminUserCreateDTO;
+import org.lixiyun.pojo.dto.admin.user.AdminUserUpdateDTO;
+import org.lixiyun.pojo.dto.admin.user.ResetPasswordDTO;
 import org.lixiyun.pojo.dto.admin.user.UserQueryDTO;
 import org.lixiyun.pojo.dto.admin.user.UserStatusDTO;
-import org.lixiyun.pojo.entity.Admin;
 import org.lixiyun.pojo.entity.User;
 import org.lixiyun.pojo.tool.BasicsUser;
-import org.lixiyun.pojo.vo.admin.user.AdminVO;
 import org.lixiyun.pojo.vo.admin.user.UserVO;
-import org.lixiyun.server.mapper.AdminMapper;
+import org.lixiyun.server.mapper.PersonRoleMapper;
 import org.lixiyun.server.mapper.UserMapper;
 import org.lixiyun.server.service.admin.AdminUserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,7 +32,7 @@ import java.time.LocalDateTime;
 /**
  * 管理员用户管理服务实现类
  * <p>
- * 提供用户和管理员的查询、状态修改等功能
+ * 提供普通用户的分页查询、详情、新增、编辑、状态修改、密码重置、注销等功能
  * </p>
  *
  * @author lixiyun
@@ -43,106 +44,181 @@ import java.time.LocalDateTime;
 public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserMapper userMapper;
-    private final AdminMapper adminMapper;
+    private final PersonRoleMapper personRoleMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public PageResult<UserVO> listUsers(UserQueryDTO queryDTO) {
-        log.debug("开始查询用户列表，查询条件: {}", queryDTO);
+        log.info("用户列表查询，查询条件：{}", queryDTO);
+
+        String loginAccount = queryDTO.getLoginAccount();
+        String username = queryDTO.getUsername();
+        String mobile = queryDTO.getMobile();
+        Integer status = queryDTO.getStatus();
 
         // 构建分页对象
         Page<User> pageParam = new PageQuery(queryDTO.getPageSize(), queryDTO.getPageNum()).build();
 
         // 执行分页查询
         Page<User> userPage = userMapper.selectPage(pageParam, new LambdaQueryWrapper<User>()
-                .eq(User::getDeleted, DeleteConstant.DELETE_FLAG_NO)
-                .eq(queryDTO.getUserId() != null, User::getId, queryDTO.getUserId())
-                .like(StringUtils.hasText(queryDTO.getUsername()), User::getUsername, queryDTO.getUsername())
-                .eq(queryDTO.getStatus() != null, User::getStatus, queryDTO.getStatus())
+                .like(StringUtils.hasText(loginAccount), User::getLoginAccount, loginAccount)
+                .like(StringUtils.hasText(username), User::getUsername, username)
+                .like(StringUtils.hasText(mobile), User::getMobile, mobile)
+                .eq(status != null, User::getStatus, status)
                 .orderByDesc(User::getCreatedTime));
 
-        // 转换为 VO 并返回分页结果
-        PageResult<UserVO> result = PageResult.convert(userPage, UserVO.class);
-
-        log.debug("用户列表查询完成，总数: {}, 当前页记录数: {}", result.getTotal(), result.getRecords().size());
-        return result;
+        log.info("用户列表查询完成，总数：{}", userPage.getTotal());
+        return PageResult.convert(userPage, UserVO.class);
     }
 
     @Override
-    public PageResult<AdminVO> listAdmins(AdminQueryDTO queryDTO) {
-        log.debug("开始查询管理员列表，查询条件: {}", queryDTO);
+    public UserVO getUserDetail(Long id) {
+        log.info("用户详情查询，用户id：{}", id);
 
-        // 构建分页对象
-        Page<Admin> pageParam = new PageQuery(queryDTO.getPageSize(), queryDTO.getPageNum()).build();
+        User user = getUserOrThrow(id);
+        return BeanUtil.copyProperties(user, UserVO.class);
+    }
 
-        // 执行分页查询
-        Page<Admin> adminPage = adminMapper.selectPage(pageParam, new LambdaQueryWrapper<Admin>()
-                .eq(Admin::getDeleted, DeleteConstant.DELETE_FLAG_NO)
-                .eq(queryDTO.getAdminId() != null, Admin::getId, queryDTO.getAdminId())
-                .like(StringUtils.hasText(queryDTO.getUsername()), Admin::getUsername, queryDTO.getUsername())
-                .eq(queryDTO.getStatus() != null, Admin::getStatus, queryDTO.getStatus())
-                .orderByDesc(Admin::getCreatedTime));
+    @Override
+    @Transactional
+    public void createUser(AdminUserCreateDTO createDTO) {
+        log.info("管理端新增用户，账号名：{}", createDTO.getLoginAccount());
 
-        // 转换为 VO 并返回分页结果
-        PageResult<AdminVO> result = PageResult.convert(adminPage, AdminVO.class);
+        // 校验账号名唯一性
+        checkLoginAccountUniqueness(createDTO.getLoginAccount());
 
-        log.debug("管理员列表查询完成，总数: {}, 当前页记录数: {}", result.getTotal(), result.getRecords().size());
-        return result;
+        User user = BeanUtil.copyProperties(createDTO, User.class);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userMapper.insert(user);
+        log.info("管理端新增用户成功，用户id：{}", user.getId());
+
+        // 绑定普通用户角色
+        personRoleMapper.saveUserRole(user.getId(), RoleConstant.USER_ROLE);
+    }
+
+    @Override
+    @Transactional
+    public void updateUser(Long id, AdminUserUpdateDTO updateDTO) {
+        log.info("管理端编辑用户，用户id：{}", id);
+
+        User currentUser = getUserOrThrow(id);
+
+        // 账号名变更：仅在发生变化时校验唯一性并记录账号名修改时间
+        if (StringUtils.hasText(updateDTO.getLoginAccount()) && !updateDTO.getLoginAccount().equals(currentUser.getLoginAccount())) {
+            checkLoginAccountUniqueness(updateDTO.getLoginAccount());
+        }
+
+        User user = BeanUtil.copyProperties(updateDTO, User.class);
+        user.setId(id);
+        if (StringUtils.hasText(updateDTO.getLoginAccount()) && !updateDTO.getLoginAccount().equals(currentUser.getLoginAccount())) {
+            user.setLoginAccountUpdateTime(LocalDateTime.now());
+        }
+        userMapper.updateById(user);
+        log.info("管理端编辑用户成功，用户id：{}", id);
     }
 
     @Override
     @Transactional
     public void updateUserStatus(UserStatusDTO statusDTO) {
-        log.info("开始修改用户状态，用户ID: {}, 状态: {}", statusDTO.getId(), statusDTO.getStatus());
+        log.info("用户状态修改，用户id：{}，状态：{}", statusDTO.getId(), statusDTO.getStatus());
 
-        // 检查用户是否存在
-        User temp = userMapper.selectById(statusDTO.getId());
-        if (temp == null || temp.deletedFlat()) {
-            log.error("用户不存在或已删除，用户ID: {}", statusDTO.getId());
-            throw new BusinessException(AuthenticationExceptionEnum.USER_NOT_EXIST);
-        }
+        getUserOrThrow(statusDTO.getId());
 
-        User user = BeanUtil.copyProperties(statusDTO, User.class);
-        if(user.isBanned()){
-            user.setBanTime(LocalDateTime.now());
+        // 执行更新：封禁时记录封禁时间，其他状态清空封禁字段
+        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(User::getId, statusDTO.getId())
+                .set(User::getStatus, statusDTO.getStatus());
+        if (statusDTO.getStatus() == BasicsUser.USER_STATUS_BAN) {
+            updateWrapper.set(User::getBanTime, LocalDateTime.now());
+            if (StringUtils.hasText(statusDTO.getBanReason())) {
+                updateWrapper.set(User::getBanReason, statusDTO.getBanReason());
+            }
+            if (statusDTO.getBanEndTime() != null) {
+                updateWrapper.set(User::getBanEndTime, statusDTO.getBanEndTime());
+            }
+        } else {
+            clearBanFields(updateWrapper);
         }
-        if(statusDTO.getStatus() == BasicsUser.USER_STATUS_NORMAL){
-            user.setBanTime(null);
-        }
+        userMapper.update(null, updateWrapper);
 
-        // 执行更新
-        int updated = userMapper.updateById(user);
-        if (updated == 0) {
-            log.error("用户状态修改失败，用户ID: {}", statusDTO.getId());
-            throw new BusinessException(AuthenticationExceptionEnum.USER_STATUS_UPDATE_FAILED);
-        }
-
-        log.info("用户状态修改成功，用户ID: {}, 新状态: {}", statusDTO.getId(), statusDTO.getStatus());
+        log.info("用户状态修改成功，用户id：{}", statusDTO.getId());
     }
 
     @Override
     @Transactional
-    public void updateAdminStatus(AdminStatusDTO statusDTO) {
-        log.info("开始修改管理员状态，管理员ID: {}, 状态: {}", statusDTO.getId(), statusDTO.getStatus());
+    public void resetPassword(Long id, ResetPasswordDTO resetPasswordDTO) {
+        log.info("重置用户密码，用户id：{}", id);
 
-        // 检查管理员是否存在
-        Admin temp = adminMapper.selectById(statusDTO.getId());
-        if (temp == null || temp.getDeleted() != null && temp.getDeleted().equals(DeleteConstant.DELETE_FLAG_YES)) {
-            log.error("管理员不存在或已删除，管理员ID: {}", statusDTO.getId());
-            throw new BusinessException(AuthenticationExceptionEnum.ADMIN_NOT_FOUND);
-        }
+        getUserOrThrow(id);
 
-        Admin admin = BeanUtil.copyProperties(statusDTO, Admin.class);
-        if(admin.isBanned()){
-            admin.setBanTime(LocalDateTime.now());
-        }
+        // 新密码加密
+        String encryptedNewPassword = passwordEncoder.encode(resetPasswordDTO.getNewPassword());
 
-        // 执行更新
-        int updated = adminMapper.updateById(admin);
+        // 更新密码
+        int updated = userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, id)
+                .set(User::getPassword, encryptedNewPassword));
         if (updated == 0) {
-            log.error("管理员状态修改失败，管理员ID: {}", statusDTO.getId());
-            throw new BusinessException(AuthenticationExceptionEnum.ADMIN_STATUS_UPDATE_FAILED);
+            log.error("重置用户密码失败，用户id：{}", id);
+            throw new BusinessException(AuthenticationExceptionEnum.PASSWORD_RESET_FAILED);
         }
-
-        log.info("管理员状态修改成功，管理员ID: {}, 新状态: {}", statusDTO.getId(), statusDTO.getStatus());
+        log.info("重置用户密码成功，用户id：{}", id);
     }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        log.info("用户注销，用户id：{}", id);
+
+        getUserOrThrow(id);
+
+        // 置为注销状态并清空封禁字段
+        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(User::getId, id)
+                .set(User::getStatus, BasicsUser.USER_STATUS_LOGOUT);
+        clearBanFields(updateWrapper);
+        userMapper.update(null, updateWrapper);
+        log.info("用户注销成功，用户id：{}", id);
+    }
+
+    /**
+     * 查询用户，不存在则抛出异常
+     *
+     * @param id 用户ID
+     * @return 用户实体
+     */
+    private User getUserOrThrow(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            log.warn("用户不存在，用户id：{}", id);
+            throw new BusinessException(AuthenticationExceptionEnum.USER_NOT_EXIST);
+        }
+        return user;
+    }
+
+    /**
+     * 清空封禁字段
+     *
+     * @param updateWrapper 更新构造器
+     */
+    private void clearBanFields(LambdaUpdateWrapper<User> updateWrapper) {
+        updateWrapper.set(User::getBanTime, null)
+                .set(User::getBanEndTime, null)
+                .set(User::getBanReason, null);
+    }
+
+    /**
+     * 校验账号名是否唯一
+     *
+     * @param loginAccount 账号名
+     */
+    private void checkLoginAccountUniqueness(String loginAccount) {
+        Long count = userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getLoginAccount, loginAccount));
+        if (count > 0) {
+            log.warn("账号名已存在：{}", loginAccount);
+            throw new BusinessException(AuthenticationExceptionEnum.LOGIN_ACCOUNT_EXIST);
+        }
+    }
+
 }

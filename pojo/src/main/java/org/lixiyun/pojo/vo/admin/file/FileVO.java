@@ -24,8 +24,14 @@ public class FileVO implements Serializable {
     @Schema(description = "人员ID")
     private Long personId;
 
+    @Schema(description = "上传人姓名")
+    private String creatorName;
+
     @Schema(description = "分类ID")
     private Long categoryId;
+
+    @Schema(description = "分类名称")
+    private String categoryName;
 
     @Schema(description = "配置编号")
     private Long configId;

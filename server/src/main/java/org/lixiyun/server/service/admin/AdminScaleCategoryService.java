@@ -1,43 +1,68 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.pojo.dto.user.scale.ScaleCategoryDTO;
-import org.lixiyun.pojo.vo.user.scale.ScaleCategoryVO;
-
-import java.util.List;
+import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleCategoryDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleCategoryQueryDTO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleCategoryVO;
 
 /**
+ * 管理员量表类别服务接口
+ *
  * @author lixiyun
- * @since 2026-04-19 14:49
+ * @since 2026-10-05
  */
 public interface AdminScaleCategoryService {
 
     /**
-     * 创建一个新的量表分类。
+     * 分页查询量表类别
      *
-     * @param dto 包含要创建的分类信息的DTO
+     * @param queryDTO 查询条件 {@link AdminScaleCategoryQueryDTO}
+     * @return 类别分页结果
      */
-    void createCategory(ScaleCategoryDTO dto);
+    PageResult<AdminScaleCategoryVO> pageCategory(AdminScaleCategoryQueryDTO queryDTO);
 
     /**
-     * 根据ID删除量表分类。
+     * 获取量表类别详情
      *
-     * @param categoryId 要删除的分类的ID
+     * @param id 类别ID
+     * @return 类别详情
      */
-    void deleteCategory(Long categoryId);
+    AdminScaleCategoryVO getCategoryDetail(Long id);
 
     /**
-     * 更新现有的量表分类。
+     * 新增量表类别
      *
-     * @param categoryId  要更新的分类的ID
-     * @param dto 包含更新的分类信息的DTO
+     * @param dto 类别DTO {@link AdminScaleCategoryDTO}
      */
-    void updateCategory(Long categoryId, ScaleCategoryDTO dto);
+    void createCategory(AdminScaleCategoryDTO dto);
 
     /**
-     * 检索所有量表分类的列表。
+     * 修改量表类别
      *
-     * @return 列表中的ScaleCategoryVO对象
+     * @param id  类别ID
+     * @param dto 类别DTO {@link AdminScaleCategoryDTO}
      */
-    List<ScaleCategoryVO> listCategories();
+    void updateCategory(Long id, AdminScaleCategoryDTO dto);
 
+    /**
+     * 调整量表类别排序
+     *
+     * @param id   类别ID
+     * @param sort 排序值
+     */
+    void updateCategorySort(Long id, Integer sort);
+
+    /**
+     * 逻辑删除量表类别（该类别下存在未删除量表时禁止删除）
+     *
+     * @param id 类别ID
+     */
+    void deleteCategory(Long id);
+
+    /**
+     * 恢复已删除的量表类别
+     *
+     * @param id 类别ID
+     */
+    void restoreCategory(Long id);
 }

@@ -17,7 +17,7 @@ public interface AdminProfileService {
     /**
      * 更新管理员资料
      * <p>
-     * 根据传入的管理员资料信息更新管理员的个人资料
+     * 根据传入的管理员资料信息更新管理员的个人资料（不含账号名，账号名本人不可改）
      * </p>
      *
      * @param adminProfileDTO 管理员资料数据传输对象，包含需要更新的管理员信息 {@link AdminProfileDTO}
@@ -27,7 +27,7 @@ public interface AdminProfileService {
     /**
      * 获取管理员资料
      * <p>
-     * 根据当前登录管理员ID获取管理员的详细个人资料信息
+     * 根据当前登录管理员ID获取管理员的详细个人资料信息（含角色）
      * </p>
      *
      * @return 管理员资料视图对象，包含管理员的详细信息 {@link AdminProfileVO}

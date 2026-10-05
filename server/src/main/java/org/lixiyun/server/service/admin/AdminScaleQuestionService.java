@@ -1,53 +1,77 @@
 package org.lixiyun.server.service.admin;
 
-import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.dto.user.scale.ScaleQuestionDTO;
-import org.lixiyun.pojo.vo.user.scale.ScaleQuestionVO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleQuestionDTO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleQuestionSortItemDTO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleQuestionVO;
+
+import java.util.List;
 
 /**
+ * 管理员量表题目服务接口
+ *
  * @author lixiyun
- * @since 2026-04-19 15:37
+ * @since 2026-10-05
  */
 public interface AdminScaleQuestionService {
 
     /**
-     * 创建一个问题及其选项。
+     * 查询版本题目全量列表（含选项，按 sort 排序）
      *
-     * @param scaleQuestionDTO 包含问题和选项信息的DTO
+     * @param scaleVersionId 量表版本ID
+     * @return 题目列表
      */
-    void createWithOptions(ScaleQuestionDTO scaleQuestionDTO);
+    List<AdminScaleQuestionVO> listQuestions(Long scaleVersionId);
 
     /**
-     * 检索一个问题及其选项。
+     * 获取题目详情（含选项）
      *
-     * @param questionId 要检索的问题的ID
-     * @return 包含问题和选项数据的ScaleQuestionVO {@link ScaleQuestionVO}
+     * @param questionId 题目ID
+     * @return 题目详情
      */
-    ScaleQuestionVO getWithOptions(Long questionId);
+    AdminScaleQuestionVO getQuestionDetail(Long questionId);
 
     /**
-     * 分页查询指定量表下的题目列表及选项。
+     * 新增题目（可内联选项）
      *
-     * @param scaleId  量表ID
-     * @param pageNum  当前页码
-     * @param pageSize 每页数量
-     * @return 包含题目和选项数据的分页结果 {@link ScaleQuestionVO}
+     * @param dto 题目DTO {@link AdminScaleQuestionDTO}
      */
-    PageResult<ScaleQuestionVO> listQuestionsWithOptions(Long scaleId, Integer pageNum, Integer pageSize);
+    void createQuestion(AdminScaleQuestionDTO dto);
 
     /**
-     * 删除一个问题及其选项。
+     * 修改题目（可整体替换选项）
      *
-     * @param questionId 要删除的问题的ID
-     * @param scaleId    问题所属量表的ID
+     * @param questionId 题目ID
+     * @param dto        题目DTO {@link AdminScaleQuestionDTO}
      */
-    void deleteWithOptions(Long questionId, Long scaleId);
+    void updateQuestion(Long questionId, AdminScaleQuestionDTO dto);
 
     /**
-     * 更新问题的元数据。
+     * 批量调整题目顺序
      *
-     * @param questionId       要更新的问题的ID
-     * @param scaleQuestionDTO 包含更新的问题元数据的DTO
+     * @param sortItems 排序项列表 {@link AdminScaleQuestionSortItemDTO}
      */
-    void updateMetadata(Long questionId, ScaleQuestionDTO scaleQuestionDTO);
+    void updateQuestionSort(List<AdminScaleQuestionSortItemDTO> sortItems);
+
+    /**
+     * 调整题目所属维度（dimensionId 为空表示移除维度）
+     *
+     * @param questionId  题目ID
+     * @param dimensionId 目标维度ID，可空
+     */
+    void updateQuestionDimension(Long questionId, Long dimensionId);
+
+    /**
+     * 复制题目到指定版本
+     *
+     * @param questionId          源题目ID
+     * @param targetScaleVersionId 目标量表版本ID
+     */
+    void copyQuestion(Long questionId, Long targetScaleVersionId);
+
+    /**
+     * 逻辑删除题目（级联选项，有跳题规则引用时提示同步清理）
+     *
+     * @param questionId 题目ID
+     */
+    void deleteQuestion(Long questionId);
 }

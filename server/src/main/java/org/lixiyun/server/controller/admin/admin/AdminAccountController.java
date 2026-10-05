@@ -7,11 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.validation.group.UserGroup;
 import org.lixiyun.pojo.dto.admin.admin.LoginAdminDTO;
-import org.lixiyun.pojo.dto.admin.admin.RegisterAdminDTO;
 import org.lixiyun.pojo.dto.user.user.PasswordDTO;
 import org.lixiyun.pojo.vo.user.user.LoginResultVO;
 import org.lixiyun.server.service.admin.AdminAccountService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,22 +18,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/account")
-@Tag(name = "管理员账号相关接口", description = "管理员账号相关接口")
+@Tag(name = "管理员账号相关接口", description = "管理员账号相关接口（登录鉴权）")
 public class AdminAccountController {
 
     private final AdminAccountService adminAccountService;
 
-    @PostMapping("/register")
-    @PreAuthorize("hasAuthority('admin:account:register')")
-    @Operation(summary = "管理员注册", description = "管理员注册")
-    public Result<?> register(@RequestBody @Validated RegisterAdminDTO registerAdminDTO){
-        log.info("管理员注册：{}", registerAdminDTO);
-        adminAccountService.register(registerAdminDTO);
-        return Result.success();
-    }
-
     @PostMapping("/login")
-    @Operation(summary = "管理员登录接口", description = "管理员登录接口")
+    @Operation(summary = "管理员登录接口", description = "管理员通过账号名登录")
     public Result<LoginResultVO> login(@RequestBody @Validated LoginAdminDTO loginAdminDTO) {
         log.info("管理员登录:{}", loginAdminDTO);
         LoginResultVO result = adminAccountService.login(loginAdminDTO);

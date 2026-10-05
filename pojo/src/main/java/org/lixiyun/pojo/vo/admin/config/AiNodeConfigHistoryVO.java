@@ -66,4 +66,7 @@ public class AiNodeConfigHistoryVO implements Serializable {
 
     @Schema(description = "变更操作人用户ID", example = "1")
     private Long createdBy;
+
+    @Schema(description = "变更操作人姓名", example = "admin")
+    private String createdByName;
 }

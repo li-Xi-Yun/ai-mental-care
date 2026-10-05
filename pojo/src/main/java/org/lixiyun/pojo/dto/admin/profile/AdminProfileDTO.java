@@ -26,7 +26,7 @@ public class AdminProfileDTO implements Serializable {
 
     @Schema(description = "手机号码", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号码格式不正确")
-    private String phone;
+    private String mobile;
 
     @Schema(description = "邮箱地址", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @Email(message = "邮箱格式不正确")

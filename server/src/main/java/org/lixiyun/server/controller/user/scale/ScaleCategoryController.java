@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
+ * 量表类别前台接口
+ *
  * @author lixiyun
- * @since 2026-04-15 14:20
+ * @since 2026-10-05
  */
 @Slf4j
 @Validated
@@ -29,8 +31,9 @@ public class ScaleCategoryController {
     private final ScaleCategoryService scaleCategoryService;
 
     @GetMapping
-    @Operation(summary = "展示所有量表类别", description = "展示所有量表类别信息")
+    @Operation(summary = "量表类别列表", description = "返回启用中的量表类别列表，含各类别下可作答量表数量")
     public Result<List<ScaleCategoryVO>> listCategories() {
+        log.info("查询量表类别列表");
         List<ScaleCategoryVO> result = scaleCategoryService.listCategories();
         return Result.success(result);
     }

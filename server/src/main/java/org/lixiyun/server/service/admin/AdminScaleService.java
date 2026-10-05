@@ -1,55 +1,68 @@
 package org.lixiyun.server.service.admin;
 
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleDTO;
 import org.lixiyun.pojo.dto.admin.scale.AdminScaleQueryDTO;
-import org.lixiyun.pojo.dto.user.scale.ScaleDTO;
-import org.lixiyun.pojo.vo.user.scale.ScaleVO;
+import org.lixiyun.pojo.dto.admin.scale.AdminScaleStatusDTO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleDetailVO;
+import org.lixiyun.pojo.vo.admin.scale.AdminScaleVO;
 
 /**
- * 管理员量表服务接口
+ * 管理员量表主表服务接口
  *
  * @author lixiyun
- * @since 2026-04-19 15:04
+ * @since 2026-10-05
  */
 public interface AdminScaleService {
 
     /**
-     * 创建量表
-     * <p>创建量表元数据信息(不包含题目、选项、规则)，如果指定了分类ID，则更新分类的使用数量</p>
+     * 新增量表主表（可同时创建并发布首个版本）
      *
-     * @param scaleDTO 量表DTO {@link ScaleDTO}
+     * @param dto 量表DTO {@link AdminScaleDTO}
      */
-    void createScale(ScaleDTO scaleDTO);
+    void createScale(AdminScaleDTO dto);
 
     /**
-     * 分页查询量表列表（支持多条件查询）
-     * <p>支持删除状态、启用状态、名称模糊匹配等查询条件</p>
+     * 分页查询量表主表
      *
-     * @param queryDTO 查询条件（包含分页参数） {@link AdminScaleQueryDTO}
-     * @return 分页结果
+     * @param queryDTO 查询条件 {@link AdminScaleQueryDTO}
+     * @return 量表分页结果
      */
-    PageResult<ScaleVO> listScales(AdminScaleQueryDTO queryDTO);
+    PageResult<AdminScaleVO> pageScales(AdminScaleQueryDTO queryDTO);
 
     /**
-     * 删除量表
-     * <p>级联删除量表及其题目、选项、规则</p>
+     * 获取量表详情（含当前版本摘要与全部版本列表）
+     *
+     * @param scaleId 量表ID
+     * @return 量表详情
+     */
+    AdminScaleDetailVO getScaleDetail(Long scaleId);
+
+    /**
+     * 修改量表基本元数据
+     *
+     * @param scaleId 量表ID
+     * @param dto     量表DTO {@link AdminScaleDTO}
+     */
+    void updateScale(Long scaleId, AdminScaleDTO dto);
+
+    /**
+     * 启用/禁用量表
+     *
+     * @param scaleId 量表ID
+     * @param dto     状态DTO {@link AdminScaleStatusDTO}
+     */
+    void updateScaleStatus(Long scaleId, AdminScaleStatusDTO dto);
+
+    /**
+     * 逻辑删除量表（级联逻辑删除其全部版本及内容，有测评记录时仅提示）
      *
      * @param scaleId 量表ID
      */
     void deleteScale(Long scaleId);
 
     /**
-     * 修改量表
-     * <p>修改量表的元数据信息</p>
-     *
-     * @param scaleId 量表ID
-     * @param dto 量表DTO {@link ScaleDTO}
-     */
-    void updateScale(Long scaleId, ScaleDTO dto);
-
-    /**
-     * 恢复已删除的量表
-     * <p>级联恢复量表及其题目、选项、规则，将删除状态从1改为0</p>
+     * 级联恢复已删除的量表及其版本与内容
      *
      * @param scaleId 量表ID
      */

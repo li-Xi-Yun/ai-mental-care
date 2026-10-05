@@ -18,6 +18,7 @@ import org.lixiyun.pojo.dto.user.user.RegisterUserDTO;
 import org.lixiyun.pojo.entity.User;
 import org.lixiyun.pojo.tool.LoginUser;
 import org.lixiyun.pojo.vo.user.user.LoginResultVO;
+import org.lixiyun.pojo.vo.user.user.LoginUserInfoVO;
 import org.lixiyun.server.mapper.PermissionMapper;
 import org.lixiyun.server.mapper.PersonRoleMapper;
 import org.lixiyun.server.mapper.RoleMapper;
@@ -51,12 +52,18 @@ public class UserAccountServiceImpl implements UserAccountService {
     @Override
     @Transactional
     public void register(RegisterUserDTO registerUserDTO) {
+        log.info("用户注册，账号名：{}，用户名：{}", registerUserDTO.getLoginAccount(), registerUserDTO.getUsername());
+
         // 校验验证码是否正确
         VerificationCodeUtil.judgmentCode(registerUserDTO.getCode(), registerUserDTO.getKey());
+
+        // 校验账号名唯一性
+        checkLoginAccountUniqueness(registerUserDTO.getLoginAccount());
 
         User user = BeanUtil.copyProperties(registerUserDTO, User.class);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userMapper.insert(user);
+        log.info("用户注册成功，用户id：{}", user.getId());
 
         // 新增该用户普通用户权限
         personRoleMapper.saveUserRole(user.getId(), RoleConstant.USER_ROLE);
@@ -64,50 +71,63 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public LoginResultVO login(LoginUserDTO loginUserDTO) {
-        User user;
+        log.info("用户登录，账号名：{}", loginUserDTO.getLoginAccount());
 
         // 验证验证码是否正确
         VerificationCodeUtil.judgmentCode(loginUserDTO.getCode(), loginUserDTO.getKey());
 
         // 查询数据库中是否存在该账号
-        String encode = passwordEncoder.encode(loginUserDTO.getPassword());
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(User::getUsername, loginUserDTO.getUsername());
-        user = userMapper.selectOne(queryWrapper);
+        queryWrapper.lambda().eq(User::getLoginAccount, loginUserDTO.getLoginAccount());
+        User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
+            log.warn("用户登录失败：账号不存在，账号名：{}", loginUserDTO.getLoginAccount());
             throw new BusinessException(AuthenticationExceptionEnum.PASSWORD_AND_ACCOUNT_ERROR);
         }
 
         // 判断该账号状态是否处于正常状态
-        if(user.isAbnormal()){
-            log.warn("用户登录失败：账号异常，用户名：{}", loginUserDTO.getUsername());
+        if (user.isAbnormal()) {
+            log.warn("用户登录失败：账号异常，账号名：{}", loginUserDTO.getLoginAccount());
             throw new BusinessException(AuthenticationExceptionEnum.USER_STATUS_ABNORMAL);
         }
 
-        if(user.isBanned()){
-            log.warn("用户登录失败：账号被封禁，用户名：{}", loginUserDTO.getUsername());
+        if (user.isBanned()) {
+            log.warn("用户登录失败：账号被封禁，账号名：{}", loginUserDTO.getLoginAccount());
+            throw new BusinessException(AuthenticationExceptionEnum.USER_BANNED);
+        }
+
+        if (user.isLogout()) {
+            log.warn("用户登录失败：账号已注销，账号名：{}", loginUserDTO.getLoginAccount());
             throw new BusinessException(AuthenticationExceptionEnum.USER_BANNED);
         }
 
         // 密码校验
         boolean matches = passwordEncoder.matches(loginUserDTO.getPassword(), user.getPassword());
         if (!matches) {
+            log.warn("用户登录失败：密码错误，账号名：{}", loginUserDTO.getLoginAccount());
             throw new BusinessException(AuthenticationExceptionEnum.PASSWORD_AND_ACCOUNT_ERROR);
         }
 
-        // 查询用户权限
+        // 查询用户权限与角色
         List<String> permissions = permissionMapper.queryPermsByPersonId(user.getId());
-
-        // 查询用户角色
         List<String> roles = roleMapper.queryRoleByPersonId(user.getId());
 
         // 认证成功生成token，根据userId生成token
         LoginUser loginUser = new LoginUser(user, permissions, roles);
         String token = JwtUtil.createJwtWithRedis(loginUser, true, JwtType.USER);
 
+        // 组装登录返回结果：token + 角色 + 用户简要信息
+        LoginUserInfoVO userInfo = LoginUserInfoVO.builder()
+                .id(user.getId())
+                .loginAccount(user.getLoginAccount())
+                .username(user.getUsername())
+                .avatar(user.getAvatar())
+                .build();
+
         return LoginResultVO.builder()
                 .token(token)
                 .roles(roles)
+                .userInfo(userInfo)
                 .build();
     }
 
@@ -120,6 +140,8 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public void pwdUpdate(PasswordDTO passwordDTO) {
+        log.info("用户密码修改");
+
         // 获取当前用户id
         Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
 
@@ -138,5 +160,18 @@ public class UserAccountServiceImpl implements UserAccountService {
         userMapper.update(updateWrapper);
     }
 
+    /**
+     * 校验账号名是否唯一
+     *
+     * @param loginAccount 账号名
+     */
+    private void checkLoginAccountUniqueness(String loginAccount) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(User::getLoginAccount, loginAccount);
+        if (userMapper.selectCount(queryWrapper) > 0) {
+            log.warn("账号名已存在：{}", loginAccount);
+            throw new BusinessException(AuthenticationExceptionEnum.LOGIN_ACCOUNT_EXIST);
+        }
+    }
 
 }

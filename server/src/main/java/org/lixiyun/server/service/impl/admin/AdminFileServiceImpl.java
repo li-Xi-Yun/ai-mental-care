@@ -1,6 +1,8 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -11,12 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.common.core.utils.StreamUtils;
 import org.lixiyun.common.file.storage.FileStorage;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.file.FileQueryDTO;
 import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.file.InfraFileCategory;
+import org.lixiyun.pojo.vo.admin.file.FileDownloadVO;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.RagStore;
@@ -24,11 +28,17 @@ import org.lixiyun.server.mapper.InfraFileCategoryMapper;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.service.admin.AdminFileService;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
+import org.lixiyun.server.service.support.PersonNameHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 文件管理服务实现类
@@ -47,6 +57,7 @@ public class AdminFileServiceImpl implements AdminFileService {
     private final RagStore ragStore;
     private final MilvusUtil milvusUtil;
     private final AdminFileVectorService adminFileVectorService;
+    private final PersonNameHelper personNameHelper;
 
     /**
      * 最大文件大小
@@ -81,8 +92,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         if (existingFile != null) {
             if (existingFile.deleteFlat()) {
                 // 文件已被逻辑删除，恢复文件
-                log.info("文件已存在但已被删除，恢复文件，文件ID：{}", existingFile.getId());
-                infraFileMapper.update(null,
+                log.info("文件已存在但已被删除，恢复文件，文件ID：{}", existingFile.getId());                infraFileMapper.update(null,
                         new LambdaUpdateWrapper<InfraFile>()
                                 .eq(InfraFile::getId, existingFile.getId())
                                 .set(InfraFile::getDeleted, org.lixiyun.pojo.constant.DeleteConstant.DELETE_FLAG_NO)
@@ -102,7 +112,7 @@ public class AdminFileServiceImpl implements AdminFileService {
                 // 文件存在且未删除，直接返回
                 log.info("文件已存在，直接返回，文件ID：{}", existingFile.getId());
             }
-            return BeanUtil.copyProperties(existingFile, FileVO.class);
+            return toFileVO(existingFile);
         }
 
         // 获取当前操作人ID
@@ -146,7 +156,7 @@ public class AdminFileServiceImpl implements AdminFileService {
         log.info("文件分类数量更新完成，分类ID：{}，数量变化：{}", infraFile.getCategoryId(), 1);
 
         // 转换为VO并返回
-        return BeanUtil.copyProperties(infraFile, FileVO.class);
+        return toFileVO(infraFile);
     }
 
     @Override
@@ -160,15 +170,19 @@ public class AdminFileServiceImpl implements AdminFileService {
         Page<InfraFile> resultPage = infraFileMapper.selectPage(page, new LambdaQueryWrapper<InfraFile>()
                 .eq(queryDTO.getCategoryId() != null, InfraFile::getCategoryId, queryDTO.getCategoryId())
                 .like(StrUtil.isNotBlank(queryDTO.getFileName()), InfraFile::getOriginalName, queryDTO.getFileName())
+                .eq(StrUtil.isNotBlank(queryDTO.getFileSuffix()), InfraFile::getFileSuffix, queryDTO.getFileSuffix())
                 .eq(queryDTO.getStatus() != null, InfraFile::getStatus, queryDTO.getStatus())
+                .eq(queryDTO.getVectorStatus() != null, InfraFile::getVectorStatus, queryDTO.getVectorStatus())
                 .ge(queryDTO.getStartTime() != null, InfraFile::getCreatedTime, queryDTO.getStartTime())
                 .le(queryDTO.getEndTime() != null, InfraFile::getCreatedTime, queryDTO.getEndTime())
                 .eq(queryDTO.getKnowledgeType() != null, InfraFile::getKnowledgeType, queryDTO.getKnowledgeType())
                 .orderByDesc(InfraFile::getCreatedTime));
         log.debug("文件分页查询完成，总数：{}，当前页记录数：{}", resultPage.getTotal(), resultPage.getRecords().size());
 
-        // 转换为VO并返回分页结果
-        return PageResult.convert(resultPage, FileVO.class);
+        // 转换为VO并补充分类名称与上传人姓名
+        PageResult<FileVO> pageResult = PageResult.convert(resultPage, FileVO.class);
+        enrichFileVOList(pageResult.getRecords());
+        return pageResult;
     }
 
     @Override
@@ -303,7 +317,110 @@ public class AdminFileServiceImpl implements AdminFileService {
         }
 
         log.info("文件元数据查询成功，文件ID：{}", infraFile.getId());
-        return BeanUtil.copyProperties(infraFile, FileVO.class);
+        return toFileVO(infraFile);
+    }
+
+    @Override
+    public FileVO getFileDetail(Long fileId) {
+        log.info("获取文件详情，文件ID：{}", fileId);
+
+        InfraFile infraFile = infraFileMapper.selectById(fileId);
+        if (infraFile == null || infraFile.deleteFlat()) {
+            log.error("文件详情-文件不存在，文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        }
+
+        log.debug("文件详情查询成功，文件ID：{}，文件名：{}", fileId, infraFile.getOriginalName());
+        return toFileVO(infraFile);
+    }
+
+    @Override
+    public FileDownloadVO downloadFile(Long fileId) {
+        log.info("下载文件内容，文件ID：{}", fileId);
+
+        // 复用详情查询做存在性校验
+        FileVO fileVO = getFileDetail(fileId);
+
+        // 读取本地存储文件（fileUrl 为相对运行目录的路径）
+        Path path = Paths.get(fileVO.getFileUrl());
+        if (!Files.exists(path) || !Files.isRegularFile(path)) {
+            log.error("文件下载-本地文件不存在，路径：{}", fileVO.getFileUrl());
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        }
+        try {
+            byte[] bytes = Files.readAllBytes(path);
+            log.debug("文件下载-读取成功，文件ID：{}，大小：{}字节", fileId, bytes.length);
+            return FileDownloadVO.builder()
+                    .originalName(fileVO.getOriginalName())
+                    .bytes(bytes)
+                    .build();
+        } catch (IOException e) {
+            log.error("文件下载-读取文件失败，文件ID：{}", fileId, e);
+            throw new BusinessException(FileExceptionEnum.FILE_READ_ERROR);
+        }
+    }
+
+    /**
+     * 转换为文件VO并补充分类名称与上传人姓名
+     *
+     * @param infraFile 文件实体 {@link InfraFile}
+     * @return 文件VO {@link FileVO}
+     */
+    private FileVO toFileVO(InfraFile infraFile) {
+        FileVO fileVO = BeanUtil.copyProperties(infraFile, FileVO.class);
+        enrichFileVO(fileVO);
+        return fileVO;
+    }
+
+    /**
+     * 补充单个文件VO的分类名称与上传人姓名
+     *
+     * @param fileVO 文件VO {@link FileVO}
+     */
+    private void enrichFileVO(FileVO fileVO) {
+        fileVO.setCategoryName(resolveCategoryName(fileVO.getCategoryId()));
+        fileVO.setCreatorName(personNameHelper.resolveName(fileVO.getPersonId()));
+    }
+
+    /**
+     * 批量补充文件VO的分类名称与上传人姓名
+     *
+     * @param fileVOList 文件VO列表
+     */
+    private void enrichFileVOList(List<FileVO> fileVOList) {
+        if (CollUtil.isEmpty(fileVOList)) {
+            return;
+        }
+        // 批量查询分类名称
+        List<Long> categoryIds = StreamUtils.toList(fileVOList, FileVO::getCategoryId);
+        Map<Long, String> categoryNameMap = MapUtil.newHashMap();
+        if (CollUtil.isNotEmpty(categoryIds)) {
+            for (InfraFileCategory category : infraFileCategoryMapper.selectBatchIds(categoryIds)) {
+                categoryNameMap.put(category.getId(), category.getCategoryName());
+            }
+        }
+        // 批量查询上传人姓名
+        List<Long> personIds = StreamUtils.toList(fileVOList, FileVO::getPersonId);
+        Map<Long, String> creatorNameMap = personNameHelper.resolveNames(personIds);
+
+        fileVOList.forEach(fileVO -> {
+            fileVO.setCategoryName(categoryNameMap.get(fileVO.getCategoryId()));
+            fileVO.setCreatorName(creatorNameMap.get(fileVO.getPersonId()));
+        });
+    }
+
+    /**
+     * 解析分类名称
+     *
+     * @param categoryId 分类ID
+     * @return 分类名称，未找到返回 null
+     */
+    private String resolveCategoryName(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        InfraFileCategory category = infraFileCategoryMapper.selectById(categoryId);
+        return category == null ? null : category.getCategoryName();
     }
 
 }

@@ -25,8 +25,8 @@ public class UserStatusDTO implements Serializable {
     private Long id;
 
     @NotNull(message = "账号状态不能为空")
-    @NumberOfRanges(min = 0, max = 2)
-    @Schema(description = "账号状态：0=正常，1=异常，2=封禁", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NumberOfRanges(min = 0, max = 3)
+    @Schema(description = "账号状态：0=正常，1=异常，2=封禁，3=注销", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer status;
 
     @Schema(description = "封禁理由（状态为封禁时必填）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

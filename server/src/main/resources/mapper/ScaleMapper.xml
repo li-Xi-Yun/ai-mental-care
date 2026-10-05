@@ -1,32 +1,49 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.lixiyun.server.mapper.ScaleMapper">
-    <select id="selectMyPage" resultType="org.lixiyun.pojo.entity.scale.Scale">
-        SELECT
-        id,
-        scale_name,
-        description,
-        question_count,
-        scale_category_id,
-        status,
-        score_rule,
-        created_time,
-        created_by,
-        updated_time,
-        updated_by,
-        deleted
-        FROM scale
+
+    <!-- 分页查询量表主表（支持已删除数据筛选），附带当前生效版本号、当前版本题目数与维度数 -->
+    <select id="pageScales" resultType="org.lixiyun.pojo.vo.admin.scale.AdminScaleVO">
+        SELECT s.id,
+               s.scale_name,
+               s.scale_category_id,
+               s.current_version_id,
+               s.status,
+               s.allow_repeat,
+               s.cool_minutes,
+               s.time_limit,
+               s.anonymous,
+               s.created_time,
+               s.updated_time,
+               s.deleted                  AS deleted_flag,
+               sc.category_name           AS scale_category_name,
+               sv.version_no              AS current_version_no,
+               (SELECT COUNT(*)
+                FROM scale_question q
+                WHERE q.scale_version_id = s.current_version_id
+                  AND q.deleted = 0)      AS question_count,
+               (SELECT COUNT(*)
+                FROM scale_dimension d
+                WHERE d.scale_version_id = s.current_version_id
+                  AND d.deleted = 0)      AS dimension_count
+        FROM scale s
+        LEFT JOIN scale_category sc ON sc.id = s.scale_category_id AND sc.deleted = 0
+        LEFT JOIN scale_version sv ON sv.id = s.current_version_id AND sv.deleted = 0
         <where>
             <if test="scaleName != null and scaleName != ''">
-                AND scale_name LIKE CONCAT('%', #{scaleName}, '%')
+                AND s.scale_name LIKE CONCAT('%', #{scaleName}, '%')
+            </if>
+            <if test="scaleCategoryId != null">
+                AND s.scale_category_id = #{scaleCategoryId}
             </if>
             <if test="status != null">
-                AND status = #{status}
+                AND s.status = #{status}
             </if>
-            <if test="isDeleted != null">
-                AND deleted = #{isDeleted}
+            <if test="deletedFlag != null">
+                AND s.deleted = #{deletedFlag}
             </if>
         </where>
-        ORDER BY created_time DESC
+        ORDER BY s.created_time DESC, s.id DESC
     </select>
+
 </mapper>

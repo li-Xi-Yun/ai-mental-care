@@ -16,7 +16,10 @@ public class LoginResultVO implements java.io.Serializable{
     @Schema(description = "登录后的token信息")
     private String token;
 
-    @Schema(description = "该管理员的角色信息")
+    @Schema(description = "该登录账号的角色信息")
     private List<String> roles;
+
+    @Schema(description = "登录账号的简要信息")
+    private LoginUserInfoVO userInfo;
 
 }

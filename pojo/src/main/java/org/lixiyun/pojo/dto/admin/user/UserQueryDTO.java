@@ -29,11 +29,14 @@ public class UserQueryDTO implements Serializable {
     @NumberOfRanges
     private Integer pageSize;
 
+    @Schema(description = "账号名（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String loginAccount;
+
     @Schema(description = "用户名（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String username;
 
-    @Schema(description = "用户ID（精确匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Long userId;
+    @Schema(description = "手机号（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String mobile;
 
     @NumberOfRanges(min = 0, max = 3)
     @Schema(description = "账号状态：0=正常，1=异常，2=封禁，3=注销", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

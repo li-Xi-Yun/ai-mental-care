@@ -21,6 +21,9 @@ public class AdminVO implements Serializable {
     @Schema(description = "管理员ID")
     private Long id;
 
+    @Schema(description = "管理员账号名")
+    private String loginAccount;
+
     @Schema(description = "管理员用户名")
     private String username;
 
@@ -30,6 +33,12 @@ public class AdminVO implements Serializable {
     @Schema(description = "手机号码")
     private String mobile;
 
+    @Schema(description = "角色：ADMIN=普通管理员，SUPER_ADMIN=超级管理员")
+    private String role;
+
+    @Schema(description = "创建人用户名")
+    private String createdByName;
+
     @Schema(description = "账号状态：0=正常，1=异常，2=封禁，3=注销")
     private Integer status;
 
@@ -37,7 +46,7 @@ public class AdminVO implements Serializable {
     private LocalDateTime banTime;
 
     @Schema(description = "封禁结束时间，表示到这时进行解封，如果是封禁状态，但这里是null，则是永久封禁")
-    private Integer banEndTime;
+    private LocalDateTime banEndTime;
 
     @Schema(description = "封禁理由")
     private String banReason;

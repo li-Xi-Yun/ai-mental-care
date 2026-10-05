@@ -34,6 +34,23 @@ public enum AuthenticationExceptionEnum implements ErrorCode {
     ADMIN_NOT_FOUND("管理员不存在", 1017),
     ADMIN_STATUS_UPDATE_FAILED("管理员状态修改失败", 1018),
 
+    // 账号名相关
+    LOGIN_ACCOUNT_EXIST("账号名已存在", 1020),
+    LOGIN_ACCOUNT_UPDATE_TOO_FREQUENT("账号名修改过于频繁，180天内仅能修改一次", 1021),
+
+    // 用户/管理员创建与更新
+    USER_CREATE_FAILED("用户创建失败", 1022),
+    USER_UPDATE_FAILED("用户更新失败", 1023),
+    ADMIN_CREATE_FAILED("管理员创建失败", 1024),
+    ADMIN_UPDATE_FAILED("管理员更新失败", 1025),
+    USER_DELETE_FAILED("用户注销失败", 1026),
+    ADMIN_DELETE_FAILED("管理员注销失败", 1027),
+    PASSWORD_RESET_FAILED("密码重置失败", 1028),
+
+    // 角色权限
+    SUPER_ADMIN_ONLY("仅超级管理员可执行该操作", 1029),
+    ROLE_UPDATE_FAILED("角色更新失败", 1030),
+
 
 
     CAN_NOT_MODIFIED_IN_AUDIT_OR_PUBLISH("不能修改审核中的文章或发布中的文章", 5000),
