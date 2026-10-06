@@ -5,40 +5,30 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionGrantDTO;
-import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionQueryDTO;
-import org.lixiyun.pojo.entity.permission.PersonTempPermission;
-import org.lixiyun.pojo.entity.permission.Permission;
-import org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO;
-import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
-import org.lixiyun.server.mapper.PersonTempPermissionMapper;
-import org.lixiyun.server.mapper.PermissionMapper;
-import org.lixiyun.server.service.admin.SysTempPermissionService;
 import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.constant.DeleteConstant;
+import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionGrantDTO;
+import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionQueryDTO;
+import org.lixiyun.pojo.entity.permission.Permission;
+import org.lixiyun.pojo.entity.permission.PersonTempPermission;
+import org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO;
+import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
+import org.lixiyun.server.mapper.PermissionMapper;
+import org.lixiyun.server.mapper.PersonTempPermissionMapper;
+import org.lixiyun.server.service.admin.SysTempPermissionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/**
- * 系统临时权限服务实现类
- * <p>
- * 提供临时权限的授予、作废、分页查询等功能
- * </p>
- *
- * @author lixiyun
- * @since 2026-07-31
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -48,32 +38,48 @@ public class SysTempPermissionServiceImpl implements SysTempPermissionService {
     private final PermissionMapper permissionMapper;
 
     @Override
-    public PageResult<SysTempPermissionPageVO> pageTempPermissionList(SysTempPermissionQueryDTO queryDTO) {
+    public PageResult<SysTempPermissionPageVO> pageUserTempPermissionPersons(SysTempPermissionQueryDTO queryDTO) {
         Integer pageNum = queryDTO.getPageNum();
         Integer pageSize = queryDTO.getPageSize();
         Long personId = queryDTO.getPersonId();
         Integer status = queryDTO.getStatus();
 
-        log.debug("临时权限Service-开始分页查询临时权限记录，页码：{}，每页数量：{}，用户ID：{}，状态：{}",
-                pageNum, pageSize, personId, status);
+        log.info("临时权限Service-分页查询用户临时权限记录参数: {}", queryDTO);
+        PageHelper.startPage(pageNum, pageSize);
+        List<SysTempPermissionPageVO> persons = personTempPermissionMapper.pageUserTempPermissionPersons(personId, status);
+
+        PageInfo<SysTempPermissionPageVO> pageInfo = new PageInfo<>(persons);
+        log.info("临时权限Service-分页查询用户临时权限记录成功: {}", pageInfo.getSize());
+        return PageResult.convert(pageInfo, SysTempPermissionPageVO.class);
+    }
+
+    @Override
+    public PageResult<SysTempPermissionPageVO> pageAdminTempPermissionPersons(SysTempPermissionQueryDTO queryDTO) {
+        Integer pageNum = queryDTO.getPageNum();
+        Integer pageSize = queryDTO.getPageSize();
+        Long personId = queryDTO.getPersonId();
+        Integer status = queryDTO.getStatus();
+        log.info("临时权限Service-分页查询管理员临时权限记录参数: {}", queryDTO);
 
         PageHelper.startPage(pageNum, pageSize);
-        List<TempPermissionVO> resultPage = personTempPermissionMapper.pageTempPermissionList(personId, status);
+        List<SysTempPermissionPageVO> persons = personTempPermissionMapper.pageAdminTempPermissionPersons(personId, status);
 
-        PageInfo<TempPermissionVO> pageInfo = new PageInfo<>(resultPage);
+        PageInfo<SysTempPermissionPageVO> pageInfo = new PageInfo<>(persons);
 
-        Map<Long, List<TempPermissionVO>> collect = resultPage.stream()
-                .collect(Collectors.groupingBy(TempPermissionVO::getPersonId));
+        log.info("临时权限Service-分页查询管理员临时权限记录成功: {}", pageInfo.getSize());
+        return PageResult.convert(pageInfo, SysTempPermissionPageVO.class);
+    }
 
-        List<SysTempPermissionPageVO> result = collect.entrySet().stream().map(item -> SysTempPermissionPageVO.builder()
-                .personId(item.getKey())
-                .itemList(item.getValue())
-                .build()).toList();
+    @Override
+    public List<TempPermissionVO> listUserTempPermissions(Long personId, Integer status) {
+        log.info("临时权限Service-查询用户临时权限记录参数: personId={}, status={}", personId, status);
+        return personTempPermissionMapper.listUserTempPermissionByPersonId(personId, status);
+    }
 
-        log.debug("临时权限Service-查询完成，总记录数：{}，当前页记录数：{}",
-                pageInfo.getTotal(), resultPage.size());
-
-        return new PageResult<>(pageInfo.getTotal(), result);
+    @Override
+    public List<TempPermissionVO> listAdminTempPermissions(Long personId, Integer status) {
+        log.info("临时权限Service-查询管理员临时权限记录参数: personId={}, status={}", personId, status);
+        return personTempPermissionMapper.listAdminTempPermissionByPersonId(personId, status);
     }
 
     @Override

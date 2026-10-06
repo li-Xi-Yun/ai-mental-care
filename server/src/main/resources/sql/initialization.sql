@@ -308,6 +308,11 @@ INSERT INTO `person_role` (`person_id`, `role_id`)
 VALUES (1, 3),  -- 超级管理员账号 -> 超级管理员角色(SUPER_ADMIN)
        (2, 2);  -- 管理员账号 -> 管理员角色(ADMIN)
 
+
+INSERT INTO person_role (person_id, role_id)
+VALUES (4363573734, 1);
+
+
 -- ============================================================
 -- AI 节点配置表 ai_node_config（启动必需）
 -- 说明：AiNodeConfigManager 启动时全量预热加载到内存，conversation / diagnosis 各节点

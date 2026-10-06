@@ -14,8 +14,8 @@ import org.lixiyun.pojo.dto.admin.admin.LoginAdminDTO;
 import org.lixiyun.pojo.dto.user.user.PasswordDTO;
 import org.lixiyun.pojo.entity.Admin;
 import org.lixiyun.pojo.tool.LoginUser;
-import org.lixiyun.pojo.vo.user.user.LoginResultVO;
-import org.lixiyun.pojo.vo.user.user.LoginUserInfoVO;
+import org.lixiyun.pojo.vo.admin.admin.AdminLoginResultVO;
+import org.lixiyun.pojo.vo.admin.admin.AdminLoginUserInfoVO;
 import org.lixiyun.server.mapper.AdminMapper;
 import org.lixiyun.server.mapper.PermissionMapper;
 import org.lixiyun.server.mapper.RoleMapper;
@@ -48,7 +48,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     private final PermissionMapper permissionMapper;
 
     @Override
-    public LoginResultVO login(LoginAdminDTO loginAdminDTO) {
+    public AdminLoginResultVO login(LoginAdminDTO loginAdminDTO) {
         log.info("管理员登录，账号名：{}", loginAdminDTO.getLoginAccount());
 
         // 验证验证码是否正确
@@ -86,7 +86,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         String token = JwtUtil.createJwtWithRedis(loginUser, true, JwtType.ADMIN);
 
         // 组装登录返回结果：token + 角色 + 管理员简要信息（含角色）
-        LoginUserInfoVO userInfo = LoginUserInfoVO.builder()
+        AdminLoginUserInfoVO adminInfo = AdminLoginUserInfoVO.builder()
                 .id(admin.getId())
                 .loginAccount(admin.getLoginAccount())
                 .username(admin.getUsername())
@@ -94,10 +94,10 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
         log.info("管理员登录成功，ID：{}，账号名：{}", admin.getId(), admin.getLoginAccount());
 
-        return LoginResultVO.builder()
+        return AdminLoginResultVO.builder()
                 .token(token)
                 .roles(roles)
-                .userInfo(userInfo)
+                .adminInfo(adminInfo)
                 .build();
     }
 

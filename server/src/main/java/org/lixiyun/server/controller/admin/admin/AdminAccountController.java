@@ -8,7 +8,7 @@ import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.validation.group.UserGroup;
 import org.lixiyun.pojo.dto.admin.admin.LoginAdminDTO;
 import org.lixiyun.pojo.dto.user.user.PasswordDTO;
-import org.lixiyun.pojo.vo.user.user.LoginResultVO;
+import org.lixiyun.pojo.vo.admin.admin.AdminLoginResultVO;
 import org.lixiyun.server.service.admin.AdminAccountService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,9 +25,9 @@ public class AdminAccountController {
 
     @PostMapping("/login")
     @Operation(summary = "管理员登录接口", description = "管理员通过账号名登录")
-    public Result<LoginResultVO> login(@RequestBody @Validated LoginAdminDTO loginAdminDTO) {
+    public Result<AdminLoginResultVO> login(@RequestBody @Validated LoginAdminDTO loginAdminDTO) {
         log.info("管理员登录:{}", loginAdminDTO);
-        LoginResultVO result = adminAccountService.login(loginAdminDTO);
+        AdminLoginResultVO result = adminAccountService.login(loginAdminDTO);
         return Result.success(result);
     }
 

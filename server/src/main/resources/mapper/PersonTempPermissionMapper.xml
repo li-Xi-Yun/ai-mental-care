@@ -1,36 +1,71 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.lixiyun.server.mapper.PersonTempPermissionMapper">
-
-    <select id="pageTempPermissionList" resultType="org.lixiyun.pojo.vo.admin.permission.TempPermissionVO">
-        SELECT
-        ptp.id,
-        ptp.person_id AS personId,
-        person.username AS personUsername,
-        ptp.permission_id AS permissionId,
-        p.perms,
-        p.name AS permissionName,
-        p.group_name AS groupName,
-        ptp.start_time AS startTime,
-        ptp.expire_time AS expireTime,
-        ptp.status,
-        ptp.grant_reason AS grantReason,
-        ptp.grant_user_id AS grantUserId,
-        grant_user.username AS grantUsername,
-        ptp.created_time AS createdTime
-        FROM person_temp_permission ptp
-        LEFT JOIN permission p ON ptp.permission_id = p.id
-        LEFT JOIN user person ON ptp.person_id = person.id
-        LEFT JOIN user grant_user ON ptp.grant_user_id = grant_user.id
+    <select id="pageUserTempPermissionPersons" resultType="org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO">
+        SELECT ptp.person_id AS personId, u.username AS personUsername
+            FROM person_temp_permission ptp
+        INNER JOIN user u ON u.id = ptp.person_id
         <where>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
             <if test="personId != null">
                 AND ptp.person_id = #{personId}
             </if>
+        </where>
+        GROUP BY ptp.person_id, u.username
+        ORDER BY MAX(ptp.updated_time) DESC
+    </select>
+
+    <select id="pageAdminTempPermissionPersons" resultType="org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO">
+        SELECT ptp.person_id AS personId, a.username AS personUsername
+            FROM person_temp_permission ptp
+        INNER JOIN admin a ON a.id = ptp.person_id
+        <where>
             <if test="status != null">
-                AND ptp.status = #{status}
+                AND a.status = #{status}
+            </if>
+            <if test="personId != null">
+                AND ptp.person_id = #{personId}
             </if>
         </where>
+        GROUP BY ptp.person_id, a.username
+        ORDER BY MAX(ptp.updated_time) DESC
+    </select>
+
+    <select id="listUserTempPermissionByPersonId" resultType="org.lixiyun.pojo.vo.admin.permission.TempPermissionVO">
+        SELECT ptp.id, ptp.person_id AS personId, ptp.permission_id AS permissionId,
+        p.perms, p.name AS permissionName, p.group_name AS groupName,
+        ptp.start_time AS startTime, ptp.expire_time AS expireTime, ptp.status,
+        ptp.grant_reason AS grantReason, ptp.grant_user_id AS grantUserId,
+        ptp.created_time AS createdTime,
+        u.username AS personUsername, gu.username AS grantUsername
+        FROM person_temp_permission ptp
+            LEFT JOIN permission p ON p.id = ptp.permission_id
+            LEFT JOIN user u ON u.id = ptp.person_id
+            LEFT JOIN user gu ON gu.id = ptp.grant_user_id
+        WHERE ptp.person_id = #{personId}
+        <if test="status != null">
+            AND ptp.status = #{status}
+        </if>
         ORDER BY ptp.created_time DESC
     </select>
 
+    <select id="listAdminTempPermissionByPersonId" resultType="org.lixiyun.pojo.vo.admin.permission.TempPermissionVO">
+        SELECT ptp.id, ptp.person_id AS personId, ptp.permission_id AS permissionId,
+        p.perms, p.name AS permissionName, p.group_name AS groupName,
+        ptp.start_time AS startTime, ptp.expire_time AS expireTime, ptp.status,
+        ptp.grant_reason AS grantReason, ptp.grant_user_id AS grantUserId,
+        ptp.created_time AS createdTime,
+        a.username AS personUsername, ga.username AS grantUsername
+        FROM person_temp_permission ptp
+            LEFT JOIN permission p ON p.id = ptp.permission_id
+            LEFT JOIN admin a ON a.id = ptp.person_id
+            LEFT JOIN admin ga ON ga.id = ptp.grant_user_id
+        WHERE ptp.person_id = #{personId}
+        <if test="status != null">
+            AND ptp.status = #{status}
+        </if>
+        ORDER BY ptp.created_time DESC
+    </select>
 </mapper>

@@ -193,7 +193,7 @@ public class SysUserServiceImpl implements SysUserService {
     public List<TempPermissionVO> getUserTempPermissions(Long id, Integer status) {
         log.debug("系统用户Service-开始查询用户临时权限记录，用户ID: {},状态: {}", id, status);
 
-        List<TempPermissionVO> tempPermissions = personTempPermissionMapper.pageTempPermissionList(id, status);
+        List<TempPermissionVO> tempPermissions = personTempPermissionMapper.listUserTempPermissionByPersonId(id, status);
 
         log.debug("系统用户Service-用户临时权限记录查询完成，用户ID: {},状态: {}, 记录数量: {}", id, status, tempPermissions.size());
         return tempPermissions;

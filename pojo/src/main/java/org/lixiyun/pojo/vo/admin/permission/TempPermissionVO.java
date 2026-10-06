@@ -27,10 +27,10 @@ public class TempPermissionVO implements Serializable {
     @Schema(description = "临时权限记录ID")
     private Long id;
 
-    @Schema(description = "用户ID")
+    @Schema(description = "人员ID")
     private Long personId;
 
-    @Schema(description = "用户名")
+    @Schema(description = "人员名称")
     private String personUsername;
 
     @Schema(description = "权限ID")
@@ -60,7 +60,7 @@ public class TempPermissionVO implements Serializable {
     @Schema(description = "操作授予人的用户ID")
     private Long grantUserId;
 
-    @Schema(description = "授予人用户名")
+    @Schema(description = "授予人名称")
     private String grantUsername;
 
     @Schema(description = "创建时间")

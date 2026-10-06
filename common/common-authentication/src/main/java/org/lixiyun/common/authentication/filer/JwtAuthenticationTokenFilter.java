@@ -58,7 +58,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         // 进入以下代码，则表示需要进行认证
         String token = JwtUtil.getToken(request);
 
-        JwtType jwtType = request.getServletPath().startsWith("admin") ? JwtType.ADMIN : JwtType.USER;
+        JwtType jwtType = request.getServletPath().startsWith("/admin/") ? JwtType.ADMIN : JwtType.USER;
 
         // 如果是放行接口
         if (isPermitAll) {

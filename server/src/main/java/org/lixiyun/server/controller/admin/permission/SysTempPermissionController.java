@@ -7,13 +7,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.common.validation.annotation.NumberOfRanges;
 import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionGrantDTO;
 import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionQueryDTO;
 import org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO;
+import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
 import org.lixiyun.server.service.admin.SysTempPermissionService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 系统临时权限管理控制器
@@ -34,17 +38,46 @@ public class SysTempPermissionController {
 
     private final SysTempPermissionService sysTempPermissionService;
 
-    @PostMapping("/page")
+    @PostMapping("/user/page")
     @PreAuthorize("hasAuthority('sys:tempPerm:page')")
-    @Operation(summary = "分页查询临时权限记录", description = """
-            全部临时权限记录分页（审计页面，管理员查看所有用户的临时授权记录）
-            这里前端列表展示用户列表，点击列表中的用户时，展示该用户的临时授权记录
-            """)
-    public Result<PageResult<SysTempPermissionPageVO>> pageTempPermissionList(
+    @Operation(summary = "分页查询前台用户临时权限人员", description = "分页查询前台用户临时权限人员列表")
+    public Result<PageResult<SysTempPermissionPageVO>> pageUserTempPermissionPersons(
             @RequestBody @Validated SysTempPermissionQueryDTO queryDTO) {
-        log.info("分页查询临时权限记录：{}", queryDTO);
-        PageResult<SysTempPermissionPageVO> pageResult = sysTempPermissionService.pageTempPermissionList(queryDTO);
+        log.info("分页查询前台用户临时权限人员参数: {}", queryDTO);
+        PageResult<SysTempPermissionPageVO> pageResult = sysTempPermissionService.pageUserTempPermissionPersons(queryDTO);
         return Result.success(pageResult);
+    }
+
+    @PostMapping("/admin/page")
+    @PreAuthorize("hasAuthority('sys:tempPerm:page')")
+    @Operation(summary = "分页查询后台管理员临时权限人员", description = "分页查询后台管理员临时权限人员列表")
+    public Result<PageResult<SysTempPermissionPageVO>> pageAdminTempPermissionPersons(
+            @RequestBody @Validated SysTempPermissionQueryDTO queryDTO) {
+        log.info("分页查询后台管理员临时权限人员参数: {}", queryDTO);
+        PageResult<SysTempPermissionPageVO> pageResult = sysTempPermissionService.pageAdminTempPermissionPersons(queryDTO);
+        return Result.success(pageResult);
+    }
+
+    @GetMapping("/user/{personId}")
+    @PreAuthorize("hasAuthority('sys:tempPerm:page')")
+    @Operation(summary = "查询前台用户全部临时权限", description = "查询指定前台用户的全部临时权限")
+    public Result<List<TempPermissionVO>> listUserTempPermissions(
+            @PathVariable Long personId,
+            @RequestParam(required = false) @Parameter(description = "临时权限状态 0有效 1手动作废 2已过期") @NumberOfRanges(min = 0, max = 2)  Integer status) {
+        log.info("查询前台用户临时权限参数: personId={}, status={}", personId, status);
+        List<TempPermissionVO> tempPermissionVOList = sysTempPermissionService.listUserTempPermissions(personId, status);
+        return Result.success(tempPermissionVOList);
+    }
+
+    @GetMapping("/admin/{personId}")
+    @PreAuthorize("hasAuthority('sys:tempPerm:page')")
+    @Operation(summary = "查询后台管理员全部临时权限", description = "查询指定后台管理员的全部临时权限")
+    public Result<List<TempPermissionVO>> listAdminTempPermissions(
+            @PathVariable Long personId,
+            @RequestParam(required = false) @Parameter(description = "临时权限状态 0有效 1手动作废 2已过期") @NumberOfRanges(min = 0, max = 2) Integer status) {
+        log.info("查询后台管理员临时权限参数: personId={}, status={}", personId, status);
+        List<TempPermissionVO> tempPermissionVOList = sysTempPermissionService.listAdminTempPermissions(personId, status);
+        return Result.success(tempPermissionVOList);
     }
 
     @PostMapping("/grant")

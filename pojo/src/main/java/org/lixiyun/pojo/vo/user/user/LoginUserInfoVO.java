@@ -28,7 +28,6 @@ public class LoginUserInfoVO implements Serializable {
     @Schema(description = "用户名")
     private String username;
 
-    @Schema(description = "头像URL（管理员端无该字段）")
+    @Schema(description = "用户头像URL，仅用户端返回")
     private String avatar;
-
 }

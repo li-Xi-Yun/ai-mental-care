@@ -375,7 +375,7 @@ public class SysAdminServiceImpl implements SysAdminService {
     public List<TempPermissionVO> getAdminTempPermissions(Long id, Integer status) {
         log.debug("系统管理员Service-开始查询管理员临时权限记录，管理员ID: {},状态: {}", id, status);
 
-        List<TempPermissionVO> tempPermissions = personTempPermissionMapper.pageTempPermissionList(id, status);
+        List<TempPermissionVO> tempPermissions = personTempPermissionMapper.listAdminTempPermissionByPersonId(id, status);
 
         log.debug("系统管理员Service-管理员临时权限记录查询完成，管理员ID: {},状态: {}, 记录数量: {}", id, status, tempPermissions.size());
         return tempPermissions;

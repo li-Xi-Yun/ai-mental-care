@@ -24,11 +24,11 @@
             r.created_by,
             r.updated_time,
             r.updated_by,
-            create_user.username as createdByName,
-            update_user.username as updatedByName
+            create_admin.username as createdByName,
+            update_admin.username as updatedByName
         from role r
-                 left join user create_user on r.created_by = create_user.id
-                 left join user update_user on r.updated_by = update_user.id
+                 left join admin create_admin on r.created_by = create_admin.id
+                 left join admin update_admin on r.updated_by = update_admin.id
         where r.id = #{id} and r.status = 0 and r.deleted = 0
     </select>
 </mapper>
