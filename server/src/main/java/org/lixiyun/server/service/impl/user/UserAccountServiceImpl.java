@@ -128,6 +128,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 
         return LoginResultVO.builder()
                 .token(token)
+                .headerName(JwtUtil.getTokenName(JwtType.USER))
                 .roles(roles)
                 .userInfo(userInfo)
                 .build();

@@ -40,11 +40,8 @@ import java.util.List;
 public class AdminAccountServiceImpl implements AdminAccountService {
 
     private final PasswordEncoder passwordEncoder;
-
     private final AdminMapper adminMapper;
-
     private final RoleMapper roleMapper;
-
     private final PermissionMapper permissionMapper;
 
     @Override
@@ -96,6 +93,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
         return AdminLoginResultVO.builder()
                 .token(token)
+                .headerName(JwtUtil.getTokenName(JwtType.ADMIN))
                 .roles(roles)
                 .adminInfo(adminInfo)
                 .build();

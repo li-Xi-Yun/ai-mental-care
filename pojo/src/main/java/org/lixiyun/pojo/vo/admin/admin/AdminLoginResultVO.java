@@ -17,6 +17,9 @@ public class AdminLoginResultVO implements Serializable {
     @Schema(description = "登录后的token信息")
     private String token;
 
+    @Schema(defaultValue = "对应的请求头名称")
+    private String headerName;
+
     @Schema(description = "管理员角色信息")
     private List<String> roles;
 
