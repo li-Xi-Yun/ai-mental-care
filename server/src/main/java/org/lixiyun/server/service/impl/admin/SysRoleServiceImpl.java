@@ -137,6 +137,7 @@ public class SysRoleServiceImpl implements SysRoleService {
         String remark = roleDTO.getRemark();
 
         Role duplicateRole = roleMapper.selectOne(new LambdaQueryWrapper<Role>()
+                .ne(Role::getId, id)
                 .and(wrapper -> wrapper
                         .eq(StrUtil.isNotBlank(roleKey), Role::getRoleKey, roleKey)
                         .or()
@@ -320,8 +321,17 @@ public class SysRoleServiceImpl implements SysRoleService {
         });
     }
 
+    @Transactional
     @Override
     public boolean assignRoles(Long id, List<Long> roleIdList) {
+        List<Role> requestedRoles = roleMapper.selectByIds(roleIdList).stream()
+                .filter(role -> role.getStatus().equals(Role.STATUS_NORMAL)
+                        && role.getDeleted().equals(DeleteConstant.DELETE_FLAG_NO))
+                .toList();
+        if (requestedRoles.size() != roleIdList.stream().distinct().count()) {
+            return false;
+        }
+
         List<Role> currentRoles = roleMapper.queryRoleDetailByPersonId(id);
         List<Long> currentRoleIds = currentRoles.stream()
                 .map(Role::getId)
@@ -334,11 +344,12 @@ public class SysRoleServiceImpl implements SysRoleService {
 
         if (currentRoleIds.equals(newRoleIds)) {
             log.debug("角色Service-角色列表未发生变化，人员ID: {}", id);
-            return false;
+            return true;
         }
 
         int rows = personRoleMapper.delete(new LambdaQueryWrapper<PersonRole>().eq(PersonRole::getPersonId, id));
-        if (rows == 0 || rows != currentRoleIds.size()) {
+        if (rows != currentRoleIds.size()) {
+            log.error("角色Service-删除人员旧角色数量异常，人员ID: {}，预期: {}，实际: {}", id, currentRoleIds.size(), rows);
             return false;
         }
 

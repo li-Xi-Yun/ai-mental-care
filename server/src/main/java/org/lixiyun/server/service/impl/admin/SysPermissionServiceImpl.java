@@ -105,7 +105,7 @@ public class SysPermissionServiceImpl implements SysPermissionService {
                             .eq(Permission::getName, name);
                 })
                 .eq(Permission::getDeleted, DeleteConstant.DELETE_FLAG_NO));
-        if (existPermission != null && (!existPermission.getPerms().equals(perms) || !existPermission.getName().equals(name))) {
+        if (existPermission != null) {
             log.error("权限Service-权限标识符或名称已存在，权限标识符: {}", perms);
             throw new BusinessException(AuthenticationExceptionEnum.PERMISSION_EXIST);
         }
@@ -143,6 +143,7 @@ public class SysPermissionServiceImpl implements SysPermissionService {
         String remark = permissionDTO.getRemark();
 
         Permission duplicatePerms = permissionMapper.selectOne(new LambdaQueryWrapper<Permission>()
+                .ne(Permission::getId, id)
                 .and(wrapper -> {
                     wrapper.eq(StringUtils.isNotBlank(perms), Permission::getPerms, perms)
                             .or()
@@ -151,7 +152,7 @@ public class SysPermissionServiceImpl implements SysPermissionService {
                 .eq(Permission::getDeleted, DeleteConstant.DELETE_FLAG_NO)
         );
 
-        if (duplicatePerms != null && (!duplicatePerms.getPerms().equals(perms) || !duplicatePerms.getName().equals(name))) {
+        if (duplicatePerms != null) {
             log.error("权限Service-权限标识符或名称已存在，权限标识符: {}", perms);
             throw new BusinessException(AuthenticationExceptionEnum.PERMISSION_EXIST);
         }

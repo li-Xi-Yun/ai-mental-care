@@ -10,7 +10,7 @@
         select p.perms from permission as p
                                 join person_temp_permission as ptp on p.id = ptp.permission_id
         where ptp.person_id = #{personId}
-          and ptp.status = 0 and p.deleted = 0
+          and ptp.status = 0 and p.status = 0 and p.deleted = 0
           and ptp.start_time &lt;= now()
           and ptp.expire_time &gt;= now()
     </select>

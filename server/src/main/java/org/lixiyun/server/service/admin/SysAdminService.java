@@ -88,9 +88,9 @@ public interface SysAdminService {
     void resetAdminPassword(Long id);
 
     /**
-     * 逻辑删除管理员
+     * 管理员注销
      * <p>
-     * 将管理员标记为已删除状态（deleted=1）
+     * 将管理员账号状态置为注销(status=3)，不能注销自己
      * </p>
      *
      * @param id 管理员ID

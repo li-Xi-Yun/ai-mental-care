@@ -18,6 +18,7 @@ import org.lixiyun.pojo.dto.admin.symptom.SymptomDictDTO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictOptionVO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictVO;
 import org.lixiyun.server.service.admin.AdminSymptomDictService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +41,7 @@ public class AdminSymptomController {
     private final AdminSymptomDictService adminSymptomDictService;
 
     @PostMapping("/page")
-//    @PreAuthorize("hasAuthority('symptom:dict:list')")
+    @PreAuthorize("hasAuthority('symptom:dict:list')")
     @Operation(summary = "分页查询症状词典", description = "支持症状名称模糊匹配、分类筛选、状态筛选")
     public Result<PageResult<SymptomDictVO>> pageSymptomDict(@RequestBody @Validated AdminSymptomDictQueryDTO queryDTO) {
         log.info("分页查询症状词典：{}", queryDTO);
@@ -49,7 +50,7 @@ public class AdminSymptomController {
     }
 
     @GetMapping("/{id}")
-//    @PreAuthorize("hasAuthority('symptom:dict:list')")
+    @PreAuthorize("hasAuthority('symptom:dict:list')")
     @Operation(summary = "获取症状词典详情", description = "根据ID获取症状词典详细信息")
     public Result<SymptomDictVO> getSymptomDictDetail(
             @PathVariable @NotNull @Parameter(description = "标准术语ID", required = true, in = ParameterIn.PATH) Long id) {
@@ -59,7 +60,7 @@ public class AdminSymptomController {
     }
 
     @PostMapping
-//    @PreAuthorize("hasAuthority('symptom:dict:create')")
+    @PreAuthorize("hasAuthority('symptom:dict:create')")
     @Operation(summary = "新增症状词典", description = "新增一条症状标准术语记录")
     public Result<Void> createSymptomDict(@RequestBody @Validated(AddGroup.class) SymptomDictDTO dto) {
         log.info("新增症状词典：{}", dto);
@@ -68,7 +69,7 @@ public class AdminSymptomController {
     }
 
     @PutMapping("/{id}")
-//    @PreAuthorize("hasAuthority('symptom:dict:update')")
+    @PreAuthorize("hasAuthority('symptom:dict:update')")
     @Operation(summary = "修改症状词典", description = "修改症状标准术语记录")
     public Result<Void> updateSymptomDict(
             @PathVariable @NotNull @Parameter(description = "标准术语ID", required = true, in = ParameterIn.PATH) Long id,
@@ -79,7 +80,7 @@ public class AdminSymptomController {
     }
 
     @PutMapping("/{id}/status")
-//    @PreAuthorize("hasAuthority('symptom:dict:update')")
+    @PreAuthorize("hasAuthority('symptom:dict:update')")
     @Operation(summary = "启用/禁用症状词典", description = "只更新状态字段，0=禁用，1=启用")
     public Result<Void> updateSymptomDictStatus(
             @PathVariable @NotNull @Parameter(description = "标准术语ID", required = true, in = ParameterIn.PATH) Long id,
@@ -91,7 +92,7 @@ public class AdminSymptomController {
     }
 
     @DeleteMapping("/batch")
-//    @PreAuthorize("hasAuthority('symptom:dict:delete')")
+    @PreAuthorize("hasAuthority('symptom:dict:delete')")
     @Operation(summary = "批量删除症状词典", description = "根据ID数组批量删除症状标准术语记录")
     public Result<Void> batchDeleteSymptomDict(@RequestBody @NotEmpty List<Long> ids) {
         log.info("批量删除症状词典，ids：{}", ids);
@@ -100,7 +101,7 @@ public class AdminSymptomController {
     }
 
     @GetMapping("/options")
-//    @PreAuthorize("hasAuthority('symptom:dict:list')")
+    @PreAuthorize("hasAuthority('symptom:dict:list')")
     @Operation(summary = "获取症状词典下拉选项（分组）", description = "只返回启用的数据，按症状大类分组，用于前端选择框")
     public Result<List<SymptomDictOptionVO>> getSymptomDictOptions() {
         log.info("获取症状词典下拉选项");

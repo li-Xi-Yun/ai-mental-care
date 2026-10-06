@@ -17,6 +17,7 @@ import org.lixiyun.server.service.admin.AdminFileService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,6 +42,7 @@ public class AdminFileController {
     private final AdminFileService adminFileService;
 
     @PostMapping("/upload")
+    @PreAuthorize("hasAuthority('admin:file:upload')")
     @Operation(summary = "文件上传", description = "上传文件到本地存储，并保存文件元数据信息")
     public Result<FileVO> uploadFile(
             @RequestPart @Parameter(description = "文件数据", required = true) MultipartFile file,
@@ -51,6 +53,7 @@ public class AdminFileController {
     }
 
     @PostMapping("/page")
+    @PreAuthorize("hasAuthority('admin:file:query')")
     @Operation(summary = "文件分页查询", description = "根据分类ID、文件名模糊查询、文件状态等条件分页查询文件")
     public Result<PageResult<FileVO>> queryFilePage(@RequestBody @Validated FileQueryDTO queryDTO) {
         log.info("文件分页查询请求接口：{}", queryDTO);
@@ -59,6 +62,7 @@ public class AdminFileController {
     }
 
     @DeleteMapping("/{fileId}")
+    @PreAuthorize("hasAuthority('admin:file:delete')")
     @Operation(summary = "文件删除", description = "根据文件ID删除文件元数据信息")
     public Result<Void> deleteFile(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
@@ -68,6 +72,7 @@ public class AdminFileController {
     }
 
     @PutMapping("/{fileId}")
+    @PreAuthorize("hasAuthority('admin:file:update')")
     @Operation(summary = "文件元数据信息修改", description = "修改文件的文件名和分类ID等信息")
     public Result<FileVO> updateFileInfo(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId,
@@ -80,6 +85,7 @@ public class AdminFileController {
     }
 
     @GetMapping("/{fileId}")
+    @PreAuthorize("hasAuthority('admin:file:query')")
     @Operation(summary = "获取文件详情", description = "根据文件ID查询单个文件元数据详情（含分类名称与上传人姓名）")
     public Result<FileVO> getFileDetail(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
@@ -89,6 +95,7 @@ public class AdminFileController {
     }
 
     @GetMapping("/{fileId}/download")
+    @PreAuthorize("hasAuthority('admin:file:download')")
     @Operation(summary = "文件下载", description = "根据文件ID以附件形式下载文件")
     public ResponseEntity<byte[]> downloadFile(
             @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {

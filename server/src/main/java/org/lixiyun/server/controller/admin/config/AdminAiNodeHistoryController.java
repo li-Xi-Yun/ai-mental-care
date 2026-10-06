@@ -12,6 +12,7 @@ import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.config.AiNodeHistoryQueryDTO;
 import org.lixiyun.pojo.vo.admin.config.AiNodeConfigHistoryVO;
 import org.lixiyun.server.service.admin.AdminAiNodeHistoryService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,7 @@ public class AdminAiNodeHistoryController {
     private final AdminAiNodeHistoryService adminAiNodeHistoryService;
 
     @PostMapping("/{id}/page")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
     @Operation(summary = "分页查询AI节点配置变更历史", description = "按时间倒序查询某节点的配置变更记录，支持变更摘要模糊匹配")
     public Result<PageResult<AiNodeConfigHistoryVO>> pageHistory(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id,
@@ -43,7 +44,7 @@ public class AdminAiNodeHistoryController {
     }
 
     @GetMapping("/detail/{historyId}")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
     @Operation(summary = "获取变更历史详情", description = "查询单条变更记录的完整快照（含old/new对比）")
     public Result<AiNodeConfigHistoryVO> getHistoryDetail(
             @PathVariable @NotNull @Parameter(description = "历史记录ID", required = true, in = ParameterIn.PATH) Long historyId) {
@@ -53,7 +54,7 @@ public class AdminAiNodeHistoryController {
     }
 
     @PostMapping("/{id}/rollback")
-//    @PreAuthorize("hasAuthority('ai:node:config:update')")
+    @PreAuthorize("hasAuthority('ai:node:config:update')")
     @Operation(summary = "回滚到指定历史版本", description = "将节点配置回滚到指定历史版本，自动记录回滚历史并刷新缓存")
     public Result<Void> rollback(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id,

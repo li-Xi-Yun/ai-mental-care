@@ -6,6 +6,6 @@
     <file url="file://$PROJECT_DIR$/server/src/main/resources/mapper/PermissionMapper.xml" value="5802c98a-0f84-463f-b0d8-e7b853c20fcd" />
     <file url="file://$PROJECT_DIR$/server/src/main/resources/mapper/PersonRoleMapper.xml" value="5802c98a-0f84-463f-b0d8-e7b853c20fcd" />
     <file url="file://$PROJECT_DIR$/server/src/main/resources/mapper/RoleMapper.xml" value="5802c98a-0f84-463f-b0d8-e7b853c20fcd" />
-    <file url="file://$PROJECT_DIR$/server/src/main/resources/sql/ai_node_config_init.sql" value="5802c98a-0f84-463f-b0d8-e7b853c20fcd" />
+    <file url="file://$PROJECT_DIR$/server/src/main/resources/sql/initialization.sql" value="5802c98a-0f84-463f-b0d8-e7b853c20fcd" />
   </component>
 </project>

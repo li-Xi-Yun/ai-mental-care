@@ -3,6 +3,7 @@ package org.lixiyun.server.service.impl.admin;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
@@ -72,10 +73,9 @@ public class SysAdminServiceImpl implements SysAdminService {
         Integer pageSize = queryDTO.getPageSize();
         String keyword = queryDTO.getKeyword();
         Integer status = queryDTO.getStatus();
-        Integer deleted = queryDTO.getDeleted();
 
         PageHelper.startPage(pageNum, pageSize);
-        List<AdminPageVO> adminPage = adminMapper.pageAdminListWithDeleted(keyword, status, deleted);
+        List<AdminPageVO> adminPage = adminMapper.pageAdminList(keyword, status);
 
         PageInfo<AdminPageVO> page = new PageInfo<>(adminPage);
 
@@ -251,10 +251,10 @@ public class SysAdminServiceImpl implements SysAdminService {
                 }
             }
             admin.setBanReason(banReason);
-        } else if (Objects.equals(status, BasicsUser.USER_STATUS_NORMAL)) {
+        } else {
             admin.setBanTime(null);
             admin.setBanEndTime(null);
-            admin.setBanReason("");
+            admin.setBanReason(null);
         }
 
         int updated = adminMapper.updateById(admin);
@@ -301,23 +301,33 @@ public class SysAdminServiceImpl implements SysAdminService {
     public void deleteAdmin(Long id) {
         log.debug("系统管理员Service-开始删除管理员，管理员ID: {}", id);
 
+        // 注销管理员使用status=3，不执行物理删除
+        Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        if (currentId.equals(id)) {
+            log.warn("系统管理员Service-不能注销自己的账号，管理员ID: {}", id);
+            throw new BusinessException(AuthenticationExceptionEnum.CAN_NOT_BAN_SELF);
+        }
+
         Admin existAdmin = adminMapper.selectOne(new LambdaQueryWrapper<Admin>()
                 .eq(Admin::getId, id));
-
         if (existAdmin == null) {
-            log.error("系统管理员Service-管理员不存在或已删除，管理员ID: {}", id);
+            log.error("系统管理员Service-管理员不存在，管理员ID: {}", id);
             throw new BusinessException(AuthenticationExceptionEnum.ADMIN_NOT_FOUND);
         }
 
-        int updated = adminMapper.deleteById(id);
+        int updated = adminMapper.update(null, new LambdaUpdateWrapper<Admin>()
+                .eq(Admin::getId, id)
+                .set(Admin::getStatus, BasicsUser.USER_STATUS_LOGOUT)
+                .set(Admin::getBanTime, null)
+                .set(Admin::getBanEndTime, null)
+                .set(Admin::getBanReason, null));
         if (updated == 0) {
-            log.error("系统管理员Service-管理员删除失败，管理员ID: {}", id);
+            log.error("系统管理员Service-管理员注销失败，管理员ID: {}", id);
             throw new BusinessException(AuthenticationExceptionEnum.ADMIN_DELETE_FAILED);
         }
 
         JwtUtil.deleteJwtWithRedis(id, JwtType.ADMIN);
-
-        log.info("系统管理员Service-管理员删除成功，管理员ID: {}", id);
+        log.info("系统管理员Service-管理员注销成功，管理员ID: {}", id);
     }
 
     @Override
@@ -348,6 +358,10 @@ public class SysAdminServiceImpl implements SysAdminService {
             throw new BusinessException(AuthenticationExceptionEnum.ADMIN_ROLE_ASSIGN_FAILED);
         }
 
+        if (!isSuperAdmin()) {
+            throw new BusinessException(AuthenticationExceptionEnum.SUPER_ADMIN_ONLY);
+        }
+
         if (!sysRoleService.assignRoles(id, roleIdList)) {
             throw new BusinessException(AuthenticationExceptionEnum.ADMIN_ROLE_ASSIGN_FAILED);
         }
@@ -365,6 +379,12 @@ public class SysAdminServiceImpl implements SysAdminService {
 
         log.debug("系统管理员Service-管理员临时权限记录查询完成，管理员ID: {},状态: {}, 记录数量: {}", id, status, tempPermissions.size());
         return tempPermissions;
+    }
+
+    private boolean isSuperAdmin() {
+        return UserInfoThreadLocalUtil.getUserRolesThrow().stream()
+                .anyMatch(role -> RoleConstant.SUPER_ADMIN_ROLE.equals(role)
+                        || ("ROLE_" + RoleConstant.SUPER_ADMIN_ROLE).equals(role));
     }
 
     private String generateUniqueLoginAccount() {

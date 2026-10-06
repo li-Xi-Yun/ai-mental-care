@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.lixiyun.server.mapper.AdminMapper">
 
-    <select id="pageAdminListWithDeleted" resultType="org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO">
+    <select id="pageAdminList" resultType="org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO">
         SELECT
         a.id,
         a.login_account AS loginAccount,
@@ -24,9 +24,6 @@
             </if>
             <if test="status != null">
                 AND a.status = #{status}
-            </if>
-            <if test="deleted != null">
-                AND a.deleted = #{deleted}
             </if>
         </where>
         ORDER BY a.created_time DESC

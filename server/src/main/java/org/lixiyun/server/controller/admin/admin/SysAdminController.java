@@ -101,7 +101,7 @@ public class SysAdminController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('admin:sysAdmin:delete')")
-    @Operation(summary = "逻辑删除管理员", description = "将管理员标记为已删除状态（deleted=1）")
+    @Operation(summary = "管理员注销", description = "将管理员账号状态置为注销（status=3），不能注销自己")
     public Result<Void> deleteAdmin(
             @PathVariable @Parameter(description = "管理员ID") Long id) {
         log.info("删除管理员，管理员ID：{}", id);

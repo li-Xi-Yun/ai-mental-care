@@ -5,12 +5,15 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionGrantDTO;
 import org.lixiyun.pojo.dto.admin.permission.SysTempPermissionQueryDTO;
 import org.lixiyun.pojo.entity.permission.PersonTempPermission;
+import org.lixiyun.pojo.entity.permission.Permission;
 import org.lixiyun.pojo.vo.admin.permission.SysTempPermissionPageVO;
 import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
 import org.lixiyun.server.mapper.PersonTempPermissionMapper;
+import org.lixiyun.server.mapper.PermissionMapper;
 import org.lixiyun.server.service.admin.SysTempPermissionService;
 import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
@@ -19,10 +22,12 @@ import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +45,7 @@ import java.util.stream.Collectors;
 public class SysTempPermissionServiceImpl implements SysTempPermissionService {
 
     private final PersonTempPermissionMapper personTempPermissionMapper;
+    private final PermissionMapper permissionMapper;
 
     @Override
     public PageResult<SysTempPermissionPageVO> pageTempPermissionList(SysTempPermissionQueryDTO queryDTO) {
@@ -71,6 +77,7 @@ public class SysTempPermissionServiceImpl implements SysTempPermissionService {
     }
 
     @Override
+    @Transactional
     public void grantTempPermission(SysTempPermissionGrantDTO grantDTO) {
         Long personId = grantDTO.getPersonId();
         List<Long> permissionIdList = grantDTO.getPermissionIdList();
@@ -78,12 +85,28 @@ public class SysTempPermissionServiceImpl implements SysTempPermissionService {
         LocalDateTime expireTime = grantDTO.getExpireTime();
         String grantReason = grantDTO.getGrantReason();
 
+        if (!expireTime.isAfter(startTime) || expireTime.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(AuthenticationExceptionEnum.TEMP_PERMISSION_GRANT_FAILED);
+        }
+
+        List<Permission> permissions = permissionMapper.selectByIds(permissionIdList);
+        long validPermissionCount = permissions.stream()
+                .filter(permission -> Objects.equals(permission.getStatus(), Permission.STATUS_NORMAL)
+                        && permission.getDeleted() == DeleteConstant.DELETE_FLAG_NO)
+                .map(Permission::getId)
+                .distinct()
+                .count();
+        if (validPermissionCount != permissionIdList.stream().distinct().count()) {
+            throw new BusinessException(AuthenticationExceptionEnum.TEMP_PERMISSION_GRANT_FAILED);
+        }
+
         log.info("临时权限Service-开始授予临时权限，用户ID：{}，权限ID列表：{}，生效时间：{}，过期时间：{}",
                 personId, permissionIdList, startTime, expireTime);
 
         Long currentUserId = UserInfoThreadLocalUtil.getCurrentIdThrow();
 
         List<PersonTempPermission> tempPermissionList = permissionIdList.stream()
+                .distinct()
                 .map(permissionId -> PersonTempPermission.builder()
                         .personId(personId)
                         .permissionId(permissionId)

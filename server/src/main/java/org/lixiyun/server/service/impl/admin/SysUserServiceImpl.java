@@ -116,13 +116,13 @@ public class SysUserServiceImpl implements SysUserService {
 
         if (Objects.equals(status, BasicsUser.USER_STATUS_BAN)) {
             LocalDateTime now = LocalDateTime.now();
-            if(banEndTime != null){
-                if(banEndTime.isBefore(now)){
+            if (banEndTime != null) {
+                if (banEndTime.isBefore(now)) {
                     throw new BusinessException(AuthenticationExceptionEnum.USER_BAN_END_TIME_INVALID);
                 }
                 // banTime为空则自动赋值now；不为空则校验时间顺序
                 LocalDateTime realBanTime = banTime != null ? banTime : now;
-                if(realBanTime.isAfter(banEndTime)){
+                if (realBanTime.isAfter(banEndTime)) {
                     throw new BusinessException(AuthenticationExceptionEnum.USER_BAN_END_TIME_INVALID);
                 }
             }
@@ -130,11 +130,15 @@ public class SysUserServiceImpl implements SysUserService {
                     .set(User::getBanReason, banReason)
                     .set(User::getBanTime, banTime != null ? banTime : now)
                     .set(User::getBanEndTime, banEndTime);
-        } else if (Objects.equals(status, BasicsUser.USER_STATUS_NORMAL)) {
+        } else if (Objects.equals(status, BasicsUser.USER_STATUS_NORMAL)
+                || Objects.equals(status, BasicsUser.USER_STATUS_ABNORMAL)
+                || Objects.equals(status, BasicsUser.USER_STATUS_LOGOUT)) {
             updateWrapper.set(User::getStatus, status)
                     .set(User::getBanReason, null)
                     .set(User::getBanTime, null)
                     .set(User::getBanEndTime, null);
+        } else {
+            throw new BusinessException(AuthenticationExceptionEnum.USER_STATUS_UPDATE_FAILED);
         }
 
         int updated = userMapper.update(null, updateWrapper);

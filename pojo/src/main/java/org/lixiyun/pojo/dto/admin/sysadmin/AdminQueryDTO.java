@@ -26,7 +26,4 @@ public class AdminQueryDTO extends PageBaseDTO implements Serializable {
     @Schema(description = "账号状态：0=正常，1=异常，2=封禁，3=注销", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Integer status;
 
-    @NumberOfRanges(min = 0, max = 1)
-    @Schema(description = "是否删除：0=未删除，1=已删除", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Integer deleted;
 }

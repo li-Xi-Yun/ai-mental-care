@@ -11,6 +11,7 @@ import org.lixiyun.common.core.result.Result;
 import org.lixiyun.pojo.dto.admin.config.AiNodePromptDTO;
 import org.lixiyun.pojo.vo.admin.config.AiNodePromptVO;
 import org.lixiyun.server.service.admin.AdminAiNodePromptService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,7 @@ public class AdminAiNodePromptController {
     private final AdminAiNodePromptService adminAiNodePromptService;
 
     @GetMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ai:node:config:list')")
+    @PreAuthorize("hasAuthority('ai:node:config:list')")
     @Operation(summary = "获取AI节点提示词", description = "单独获取节点的系统提示词，用于提示词编辑器加载")
     public Result<AiNodePromptVO> getPrompt(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id) {
@@ -41,7 +42,7 @@ public class AdminAiNodePromptController {
     }
 
     @PutMapping("/{id}")
-//    @PreAuthorize("hasAuthority('ai:node:config:update')")
+    @PreAuthorize("hasAuthority('ai:node:config:update')")
     @Operation(summary = "修改AI节点提示词", description = "单独修改节点的系统提示词，需传version乐观锁校验，自动记录变更历史")
     public Result<Void> updatePrompt(
             @PathVariable @NotNull @Parameter(description = "节点配置ID", required = true, in = ParameterIn.PATH) Long id,

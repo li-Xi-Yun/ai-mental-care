@@ -14,16 +14,8 @@ import java.util.List;
  */
 public interface AdminMapper extends BaseMapper<Admin> {
 
-    /**
-     * 分页查询管理员列表（包含删除状态查询）
-     *
-     * @param keyword 查询关键词
-     * @param status 状态
-     * @return 管理员列表
-     */
-    List<AdminPageVO> pageAdminListWithDeleted(@Param("keyword") String keyword,
-                                               @Param("status") Integer status,
-                                               @Param("deleted") Integer deleted);
+    List<AdminPageVO> pageAdminList(@Param("keyword") String keyword,
+                                    @Param("status") Integer status);
 
     /**
      * 查询管理员详情（外联查获取创建人与更新人的名称）
