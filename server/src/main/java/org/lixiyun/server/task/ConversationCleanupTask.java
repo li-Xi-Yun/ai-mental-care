@@ -87,7 +87,7 @@ public class ConversationCleanupTask {
     private Set<Long> scanExpiredConversationsFromZSet() {
 //        log.debug("开始通过Lua脚本扫描ZSet集合，数量限制：{}", ConversationCleanupTask.SCAN_BATCH_SIZE);
 
-        // 1. 获取当前东八区LocalDateTime
+        // 1. 获取当前UTC时区LocalDateTime（与写入ZSet的转换逻辑统一）
         LocalDateTime nowLocal = LocalDateTime.now();
         // 2. 转成UTC毫秒戳（和写入ZSet的转换逻辑完全统一）
         long currentUtcMilli = dateUtils.toUtcZoned(nowLocal).toInstant().toEpochMilli();

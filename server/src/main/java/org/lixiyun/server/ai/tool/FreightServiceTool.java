@@ -1,5 +1,6 @@
 package org.lixiyun.server.ai.tool;
 
+import org.lixiyun.common.agent.tool.Tools;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
 
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Component;
  * @since 2026-01-22 11:15
  */
 @Component(FreightServiceTool.NAME)
-public class FreightServiceTool implements org.lixiyun.common.agent.skill.tools.Tools {
+public class FreightServiceTool implements Tools {
 
     public static final String NAME = "FreightServiceTool";
 

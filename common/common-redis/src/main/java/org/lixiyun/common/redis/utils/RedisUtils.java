@@ -658,7 +658,7 @@ public class RedisUtils {
     /**
      * 向有序集合添加元素（自动时区转换：本地业务LocalDateTime → UTC毫秒score）
      * @param key ZSet键
-     * @param localDateTime 本地时区业务时间（东八区，yml配置时区）
+     * @param localDateTime 本地时区业务时间（UTC，yml配置时区）
      * @param value 存储值（会话ID）
      */
     public static void addToScoredSortedSet(String key, LocalDateTime localDateTime, String value) {

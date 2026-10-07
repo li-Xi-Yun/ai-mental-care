@@ -8,7 +8,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.MysqlSaver;
-import org.lixiyun.common.agent.skill.tools.Tools;
+import org.lixiyun.common.agent.tool.Tools;
 import org.lixiyun.server.ai.hook.AgentHook.MessageProcessedAgentHook;
 import org.lixiyun.server.ai.hook.ModelHook.MessageProcessedModelHook;
 import org.lixiyun.server.ai.interceptor.ToolInterceptor.MessageToolInterceptor;

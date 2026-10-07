@@ -65,7 +65,7 @@ spring:
         master:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://${db.host:localhost}:${db.port:3306}/${db.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT
+          url: jdbc:mysql://${db.host:localhost}:${db.port:3306}/${db.database}?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&useSSL=false
           username: ${db.username}
           password: ${db.password}
       hikari:
@@ -124,7 +124,9 @@ spring:
           github:
             client-id: ${oauth2.client.registration.github.client-id}
             client-secret: ${oauth2.client.registration.github.client-secret}
-            scope: ${oauth2.client.registration.github.scope}
+            scope:
+              - read:user
+              - user:email
             redirect-uri: ${oauth2.client.registration.github.redirect-uri}
   ai:
     chat:

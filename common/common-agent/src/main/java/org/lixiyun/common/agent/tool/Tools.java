@@ -1,4 +1,4 @@
-package org.lixiyun.common.agent.skill.tools;
+package org.lixiyun.common.agent.tool;
 
 /**
  * @author lixiyun
