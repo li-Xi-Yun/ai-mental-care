@@ -2,7 +2,7 @@ package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.pojo.vo.user.conversation.DiagnosisConversationVO;
 
 import java.util.List;

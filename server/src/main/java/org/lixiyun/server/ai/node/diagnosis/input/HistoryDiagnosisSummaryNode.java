@@ -14,8 +14,8 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionBas
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionDimensionTrend;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPADStat;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
-import org.lixiyun.pojo.entity.conversation.AssessmentFeedback;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.AssessmentFeedback;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.mapper.AssessmentFeedbackMapper;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;

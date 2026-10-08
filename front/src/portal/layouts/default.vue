@@ -46,6 +46,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
 import LoginDialog from "@/portal/components/LoginDialog.vue";
 import { PLATFORM_NAME, PORTAL_HEADER_HEIGHT, PORTAL_NAV_ITEMS } from "@/shared/api/config";
+import { clearTokenInfo } from "@/shared/api/auth";
 
 const route = useRoute();
 const router = useRouter();
@@ -58,6 +59,7 @@ const avatarText = computed(() => {
 
 function handleLogout() {
   userStore.clearUser();
+  clearTokenInfo("user");
   router.push("/");
 }
 </script>

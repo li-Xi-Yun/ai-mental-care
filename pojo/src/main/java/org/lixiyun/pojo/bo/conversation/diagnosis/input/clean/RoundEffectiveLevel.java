@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 
 import java.io.Serializable;
 import java.util.List;

@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
-import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
+import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;

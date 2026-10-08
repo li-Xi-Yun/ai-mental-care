@@ -125,7 +125,7 @@ export const HOME_ANNOUNCEMENTS = [
 
 /* ==================== 量表测评配置 ==================== */
 
-/** 量表分类标签 */
+/** 量表分类标签（静态兜底，页面已改为从接口获取动态分类） */
 export const SCALE_CATEGORIES = [
   { label: "全部", value: "all" },
   { label: "焦虑评估", value: "anxiety" },
@@ -133,6 +133,13 @@ export const SCALE_CATEGORIES = [
   { label: "压力评估", value: "stress" },
   { label: "睡眠评估", value: "sleep" },
 ] as const;
+
+/* ==================== 量表分页默认值 ==================== */
+
+/** 量表列表页默认每页条数 */
+export const SCALE_DEFAULT_PAGE_SIZE = 12;
+/** 量表列表页分页器布局 */
+export const SCALE_PAGINATION_LAYOUT = "total, prev, pager, next";
 
 /* ==================== 心理诊断配置 ==================== */
 
@@ -170,11 +177,13 @@ export const PORTAL_NAV_ITEMS = [
 export const ADMIN_NAV_ITEMS = [
   { label: "用户管理", route: "/admin/user", icon: "User" },
   { label: "管理员管理", route: "/admin/admin", icon: "UserFilled" },
+  { label: "权限管理", route: "/admin/permission", icon: "Lock" },
+  { label: "角色管理", route: "/admin/role", icon: "Avatar" },
+  { label: "临时权限", route: "/admin/temp-permission", icon: "Timer" },
   { label: "文件管理", route: "/admin/file", icon: "Document" },
   { label: "量表管理", route: "/admin/scale", icon: "DataAnalysis" },
   { label: "症状字典", route: "/admin/symptom", icon: "FirstAidKit" },
   { label: "AI节点配置", route: "/admin/ai-node", icon: "SetUp" },
-  { label: "Skill管理", route: "/admin/skill", icon: "MagicStick" },
   { label: "个人资料", route: "/admin/profile", icon: "User" },
 ] as const;
 

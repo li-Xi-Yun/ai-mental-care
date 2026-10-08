@@ -100,4 +100,67 @@ public class ScaleUserRecord implements Serializable {
     public boolean deleteFlat() {
         return deleted != null && deleted == DeleteConstant.DELETE_FLAG_YES;
     }
+
+    /**
+     * 判断当前作答状态是否为"未完成"
+     *
+     * @return true 表示作答状态为未完成，false 表示不是
+     */
+    public boolean isUnfinished() {
+        return finishStatus != null && finishStatus == FINISH_STATUS_UNFINISHED;
+    }
+
+    /**
+     * 判断当前作答状态是否为"已完成"
+     *
+     * @return true 表示作答状态为已完成，false 表示不是
+     */
+    public boolean isFinished() {
+        return finishStatus != null && finishStatus == FINISH_STATUS_FINISHED;
+    }
+
+    /**
+     * 判断当前作答状态是否为"中途终止"
+     *
+     * @return true 表示作答状态为中途终止，false 表示不是
+     */
+    public boolean isTerminated() {
+        return finishStatus != null && finishStatus == FINISH_STATUS_TERMINATED;
+    }
+
+    /**
+     * 判断当前风险等级是否为"无风险"
+     *
+     * @return true 表示风险等级为无风险，false 表示不是
+     */
+    public boolean isRiskNone() {
+        return riskLevel != null && riskLevel == RISK_LEVEL_NONE;
+    }
+
+    /**
+     * 判断当前风险等级是否为"低"
+     *
+     * @return true 表示风险等级为低，false 表示不是
+     */
+    public boolean isRiskLow() {
+        return riskLevel != null && riskLevel == RISK_LEVEL_LOW;
+    }
+
+    /**
+     * 判断当前风险等级是否为"中"
+     *
+     * @return true 表示风险等级为中，false 表示不是
+     */
+    public boolean isRiskMedium() {
+        return riskLevel != null && riskLevel == RISK_LEVEL_MEDIUM;
+    }
+
+    /**
+     * 判断当前风险等级是否为"高（预警）"
+     *
+     * @return true 表示风险等级为高（预警），false 表示不是
+     */
+    public boolean isRiskHigh() {
+        return riskLevel != null && riskLevel == RISK_LEVEL_HIGH;
+    }
 }

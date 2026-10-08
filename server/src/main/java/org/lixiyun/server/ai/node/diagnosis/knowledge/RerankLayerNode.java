@@ -12,7 +12,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeSliceItem;
-import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
+import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.server.ai.model.diagnosis.knowlegde.RerankLayerModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;

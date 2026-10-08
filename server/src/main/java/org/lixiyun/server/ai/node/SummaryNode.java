@@ -18,6 +18,7 @@ import java.util.Optional;
  */
 @Slf4j
 @Builder
+@Deprecated
 public class SummaryNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "summaryNode";

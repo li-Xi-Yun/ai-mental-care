@@ -67,6 +67,24 @@ const adminRoutes: RouteRecordRaw[] = [
         meta: { title: "AI节点详情" },
       },
       {
+        path: "permission",
+        name: "AdminPermission",
+        component: () => import("@/admin/views/permission/index.vue"),
+        meta: { title: "权限管理" },
+      },
+      {
+        path: "role",
+        name: "AdminRole",
+        component: () => import("@/admin/views/role/index.vue"),
+        meta: { title: "角色管理" },
+      },
+      {
+        path: "temp-permission",
+        name: "AdminTempPermission",
+        component: () => import("@/admin/views/temp-permission/index.vue"),
+        meta: { title: "临时权限管理" },
+      },
+      {
         path: "skill",
         name: "AdminSkill",
         component: () => import("@/admin/views/skill/index.vue"),

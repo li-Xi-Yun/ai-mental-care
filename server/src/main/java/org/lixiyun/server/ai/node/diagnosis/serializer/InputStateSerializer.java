@@ -40,8 +40,8 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionPAD
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.summary.trend.EmotionRatioStat;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 
 /**
  * InputGraph 专用状态序列化器。

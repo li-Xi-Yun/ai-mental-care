@@ -1,7 +1,7 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.lixiyun.pojo.entity.conversation.SymptomDict;
+import org.lixiyun.pojo.entity.knowledge.SymptomDict;
 
 /**
  * 症状标准术语字典 数据访问层

@@ -1,4 +1,4 @@
-package org.lixiyun.common.core.properties;
+package org.lixiyun.common.agent.tool.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

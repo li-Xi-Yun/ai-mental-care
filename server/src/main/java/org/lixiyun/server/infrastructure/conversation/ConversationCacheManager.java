@@ -7,8 +7,8 @@ import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.springframework.stereotype.Component;
 

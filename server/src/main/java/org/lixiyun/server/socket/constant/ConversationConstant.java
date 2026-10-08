@@ -18,4 +18,7 @@ public interface ConversationConstant {
     /** ASR实时中间识别结果弹幕推送，需要在后面路径中添加/{conversationId} */
     String ASR_INTERMEDIATE_RESULT = "/audio/asr/intermediate";
 
+    /** 待处理交互推送，需要在后面路径中添加/{conversationId} */
+    String PENDING_ACTION = "/pending-action";
+
 }

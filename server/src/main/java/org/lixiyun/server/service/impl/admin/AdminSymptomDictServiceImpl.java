@@ -13,7 +13,7 @@ import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.admin.symptom.AdminSymptomDictQueryDTO;
 import org.lixiyun.pojo.dto.admin.symptom.SymptomDictDTO;
-import org.lixiyun.pojo.entity.conversation.SymptomDict;
+import org.lixiyun.pojo.entity.knowledge.SymptomDict;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictOptionItemVO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictOptionVO;
 import org.lixiyun.pojo.vo.admin.symptom.SymptomDictVO;

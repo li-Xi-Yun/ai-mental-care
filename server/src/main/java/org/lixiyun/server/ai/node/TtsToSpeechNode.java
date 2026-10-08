@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Builder
+@Deprecated
 public class TtsToSpeechNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "ttsToSpeechNode";

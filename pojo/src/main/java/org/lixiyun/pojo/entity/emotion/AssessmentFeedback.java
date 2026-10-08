@@ -1,4 +1,4 @@
-package org.lixiyun.pojo.entity.conversation;
+package org.lixiyun.pojo.entity.emotion;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

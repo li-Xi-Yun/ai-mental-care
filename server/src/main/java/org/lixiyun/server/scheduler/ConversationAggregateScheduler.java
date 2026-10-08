@@ -75,6 +75,7 @@ public class ConversationAggregateScheduler {
      * <p>原子操作：同一会话并发调用也不会出现任务泄漏</p>
      *
      * @param conversationId 会话ID
+     * @param delaySeconds   延迟秒数
      */
     public void addTask(Long conversationId, long delaySeconds) {
         resetAggregateTimer(conversationId, delaySeconds);

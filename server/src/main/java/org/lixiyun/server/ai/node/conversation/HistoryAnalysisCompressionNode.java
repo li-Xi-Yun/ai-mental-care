@@ -12,7 +12,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.conversation.Conversation;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 import org.lixiyun.server.ai.model.conversation.HistoryAnalysisCompressionModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;

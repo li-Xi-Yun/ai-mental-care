@@ -12,7 +12,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisDataRequest;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.InputResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeRetrieveResult;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.ai.model.diagnosis.process.ComprehensiveDiagnosisProcessModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;

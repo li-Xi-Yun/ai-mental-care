@@ -10,7 +10,7 @@ import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
-import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
+import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;

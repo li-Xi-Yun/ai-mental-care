@@ -19,7 +19,7 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.SpringUtils;
 import org.lixiyun.common.json.utils.JsonUtils;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.ai.rag.graph.RagGraph;
 import org.lixiyun.server.constant.GraphConstant;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;

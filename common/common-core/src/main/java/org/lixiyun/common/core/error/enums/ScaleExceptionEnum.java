@@ -103,6 +103,10 @@ public enum ScaleExceptionEnum implements ErrorCode {
     SCALE_REPEAT_LIMITED("该量表不允许重复作答", 1710),
     SCALE_REQUIRED_UNANSWERED("存在必答题未作答，请完成全部必答题后提交", 1711),
 
+    /* ==================== 量表工具（AI对话） ==================== */
+    SCALE_TOOL_PENDING_ACTION_INVALID("量表工具待处理记录不存在或无权访问", 1713),
+    SCALE_TOOL_RECORD_UNFINISHED("该量表尚未完成作答提交，无法生成分析结果", 1714),
+
     ;
 
     @Getter

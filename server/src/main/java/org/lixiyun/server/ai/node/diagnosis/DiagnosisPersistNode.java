@@ -10,7 +10,7 @@ import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.stereotype.Component;

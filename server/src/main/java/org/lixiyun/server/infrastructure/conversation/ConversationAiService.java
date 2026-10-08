@@ -6,7 +6,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.HistoryCompressionBO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 import org.lixiyun.server.ai.node.conversation.EmotionRecognitionNode;
 import org.lixiyun.server.ai.node.conversation.HistoryAnalysisCompressionNode;
 import org.lixiyun.server.ai.node.conversation.HistoryMessageCompressionNode;

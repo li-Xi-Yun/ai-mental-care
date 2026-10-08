@@ -16,7 +16,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomOri
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.normalization.SymptomTerm;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.CoreInfoExtractResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.structure.SymptomRawItem;
-import org.lixiyun.pojo.entity.conversation.SymptomDict;
+import org.lixiyun.pojo.entity.knowledge.SymptomDict;
 import org.lixiyun.server.ai.model.diagnosis.input.SymptomNormalizeModel;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;

@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
  */
 @Slf4j
 @Builder
+@Deprecated
 public class AsrToTextNode implements NodeActionWithConfig {
 
     public static final String NODE_NAME = "asrToTextNode";

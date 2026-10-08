@@ -21,14 +21,14 @@ export function updateSymptomDict(id: string, data: any) {
   return httpClient.put<Result<void>>(`/admin/symptom-dict/${id}`, data);
 }
 
-/** 更新症状字典状态 */
-export function updateSymptomDictStatus(id: string, data: any) {
-  return httpClient.put<Result<void>>(`/admin/symptom-dict/${id}/status`, data);
+/** 更新症状字典状态（后端为 @RequestParam status：0=禁用 1=启用） */
+export function updateSymptomDictStatus(id: string, status: number) {
+  return httpClient.put<Result<void>>(`/admin/symptom-dict/${id}/status`, null, { params: { status } });
 }
 
-/** 批量删除症状字典 */
-export function batchDeleteSymptomDict(ids: string[]) {
-  return httpClient.delete<Result<void>>("/admin/symptom-dict/batch", { data: { ids } });
+/** 批量删除症状字典（向后端传 List<Long> 作为请求体） */
+export function batchDeleteSymptomDict(ids: number[]) {
+  return httpClient.delete<Result<void>>("/admin/symptom-dict/batch", { data: ids });
 }
 
 /** 获取症状字典选项 */

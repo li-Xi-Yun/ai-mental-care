@@ -2,7 +2,9 @@
   <el-container class="admin-layout">
     <el-aside :width="ADMIN_SIDEBAR_WIDTH + 'px'" class="admin-aside">
       <div class="as-header">
-        <div class="as-logo">✏️</div>
+        <div class="as-logo">
+          <el-icon :size="20"><MagicStick /></el-icon>
+        </div>
         <div class="as-logo-text">{{ PLATFORM_NAME }}</div>
         <div class="as-logo-sub">心理健康管理平台</div>
       </div>
@@ -14,7 +16,7 @@
           :class="{ active: route.path === item.route || (item.route === '/admin/user' && route.path === '/admin') }"
           @click="router.push(item.route)"
         >
-          <span class="nav-icon">{{ iconMap[item.icon] }}</span>
+          <span class="nav-icon"><el-icon :size="16"><component :is="item.icon" /></el-icon></span>
           <span class="nav-label">{{ item.label }}</span>
         </div>
       </div>
@@ -24,7 +26,9 @@
           <div class="as-user-name">Admin</div>
           <div class="as-user-role">超级管理员</div>
         </div>
-        <div class="as-logout" @click="handleLogout">🚪</div>
+        <div class="as-logout" @click="handleLogout">
+          <el-icon :size="16"><SwitchButton /></el-icon>
+        </div>
       </div>
     </el-aside>
     <el-container>
@@ -43,22 +47,19 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
+import { MagicStick, SwitchButton } from "@element-plus/icons-vue";
 import { PLATFORM_NAME, ADMIN_PLATFORM_TITLE, ADMIN_SIDEBAR_WIDTH, ADMIN_HEADER_HEIGHT, ADMIN_NAV_ITEMS } from "@/shared/api/config";
+import { useAdminStore } from "@/admin/stores/admin";
+import { clearTokenInfo, clearAllTokenInfo } from "@/shared/api/auth";
 
 const route = useRoute();
 const router = useRouter();
-
-const iconMap: Record<string, string> = {
-  User: "👥",
-  UserFilled: "🛡️",
-  Document: "📁",
-  DataAnalysis: "📊",
-  FirstAidKit: "🏥",
-  SetUp: "🤖",
-  MagicStick: "⚡",
-};
+const adminStore = useAdminStore();
 
 function handleLogout() {
+  adminStore.clearAdmin();
+  clearTokenInfo("admin");
+  clearAllTokenInfo();
   router.push("/admin/login");
 }
 </script>
@@ -69,7 +70,7 @@ function handleLogout() {
 }
 
 .admin-aside {
-  background: linear-gradient(180deg, #1a1a2e 0%, #2d1b69 50%, #1a1a2e 100%);
+  background: linear-gradient(180deg, #111827 0%, #312e81 60%, #111827 100%);
   border-right: none;
   overflow: hidden;
   display: flex;
@@ -86,13 +87,13 @@ function handleLogout() {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  color: #fff;
   margin: 0 auto 10px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .as-logo-text {
@@ -135,9 +136,9 @@ function handleLogout() {
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.05));
-  color: #ff6b6b;
-  border-left: 3px solid #ff6b6b;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.28), rgba(99, 102, 241, 0.06));
+  color: #a5b4fc;
+  border-left: 3px solid #818cf8;
 }
 
 .nav-icon {
@@ -162,7 +163,7 @@ function handleLogout() {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   display: flex;
   align-items: center;
   justify-content: center;

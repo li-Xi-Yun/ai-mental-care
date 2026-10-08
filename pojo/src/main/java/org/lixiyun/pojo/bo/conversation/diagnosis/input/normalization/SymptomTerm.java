@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.lixiyun.pojo.entity.conversation.SymptomDict;
+import org.lixiyun.pojo.entity.knowledge.SymptomDict;
 
 import java.io.Serializable;
 import java.math.BigDecimal;

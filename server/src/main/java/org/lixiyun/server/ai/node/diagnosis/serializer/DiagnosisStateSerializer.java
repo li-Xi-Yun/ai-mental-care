@@ -43,8 +43,8 @@ import org.lixiyun.pojo.bo.conversation.state.KnowledgeGraphState;
 import org.lixiyun.pojo.bo.conversation.state.ProcessGraphState;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 
 /**
  * DiagnosisGraph（外层主图）专用状态序列化器。

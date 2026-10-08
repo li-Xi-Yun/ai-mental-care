@@ -3,6 +3,7 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import portalRoutes from "./portal";
 import adminRoutes from "./admin";
+import { getToken } from "@/shared/api/auth";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,15 +14,14 @@ NProgress.configure({ showSpinner: false });
 
 router.beforeEach((to, _from, next) => {
   NProgress.start();
-  const token = localStorage.getItem("token");
+  const isAdminPage = to.path.startsWith("/admin");
+  const token = isAdminPage ? getToken("admin") : getToken("user");
   if (to.meta.noAuth || token) {
     next();
+  } else if (isAdminPage) {
+    next({ name: "AdminLogin" });
   } else {
-    if (to.path.startsWith("/admin")) {
-      next({ name: "AdminLogin" });
-    } else {
-      next();
-    }
+    next();
   }
 });
 

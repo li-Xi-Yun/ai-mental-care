@@ -22,3 +22,8 @@ export function deleteFile(fileId: string) {
 export function updateFile(fileId: string, data: any) {
   return httpClient.put<Result<void>>(`/admin/file/${fileId}`, data);
 }
+
+/** 获取文件详情 */
+export function getFileDetail(fileId: string) {
+  return httpClient.get<Result<any>>(`/admin/file/${fileId}`);
+}

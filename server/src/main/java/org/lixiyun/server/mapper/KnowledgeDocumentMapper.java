@@ -1,7 +1,7 @@
 package org.lixiyun.server.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.lixiyun.pojo.entity.conversation.KnowledgeDocument;
+import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 
 /**
  * @author lixiyun

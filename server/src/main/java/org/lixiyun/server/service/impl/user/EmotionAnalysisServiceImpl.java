@@ -10,7 +10,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 import org.lixiyun.pojo.vo.user.conversation.EmotionAnalysisDetailVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionAnalysisVO;
 import org.lixiyun.server.ai.message.enums.MessageType;

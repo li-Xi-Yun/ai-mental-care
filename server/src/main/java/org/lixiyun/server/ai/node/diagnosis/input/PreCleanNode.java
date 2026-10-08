@@ -13,7 +13,7 @@ import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.MessageEffectiveLe
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.stereotype.Component;
 

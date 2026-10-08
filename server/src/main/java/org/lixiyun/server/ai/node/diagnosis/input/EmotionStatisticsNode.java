@@ -12,7 +12,7 @@ import org.lixiyun.pojo.bo.conversation.state.InputGraphState;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.RoundEffectiveLevel;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.clean.SessionCleanResult;
 import org.lixiyun.pojo.bo.conversation.diagnosis.input.statistics.*;
-import org.lixiyun.pojo.entity.conversation.EmotionAnalysis;
+import org.lixiyun.pojo.entity.emotion.EmotionAnalysis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

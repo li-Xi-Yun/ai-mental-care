@@ -14,7 +14,7 @@ import org.lixiyun.common.sql.core.page.PageQuery;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.user.conversation.EmotionDiagnosisQueryDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
-import org.lixiyun.pojo.entity.conversation.EmotionDiagnosis;
+import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.pojo.vo.user.conversation.DiagnosisConversationVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisListVO;
 import org.lixiyun.pojo.vo.user.conversation.EmotionDiagnosisVO;

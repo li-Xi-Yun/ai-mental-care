@@ -11,6 +11,7 @@ import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ScaleExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.dto.user.scale.ScaleAnswerItemDTO;
+import org.lixiyun.pojo.dto.user.scale.ScaleResumeDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleStartDTO;
 import org.lixiyun.pojo.dto.user.scale.ScaleSubmitDTO;
 import org.lixiyun.pojo.entity.User;
@@ -34,6 +35,7 @@ import org.lixiyun.pojo.vo.user.scale.ScaleOptionPayloadVO;
 import org.lixiyun.pojo.vo.user.scale.ScaleQuestionPayloadVO;
 import org.lixiyun.pojo.vo.user.scale.ScaleStartVO;
 import org.lixiyun.pojo.vo.user.scale.ScaleSubmitResultVO;
+import org.lixiyun.pojo.vo.user.scale.ScaleUnfinishedVO;
 import org.lixiyun.server.mapper.ScaleBranchRuleMapper;
 import org.lixiyun.server.mapper.ScaleDimensionMapper;
 import org.lixiyun.server.mapper.ScaleMapper;
@@ -158,9 +160,81 @@ public class ScaleAssessmentServiceImpl implements ScaleAssessmentService {
         scaleUserRecordMapper.insert(record);
         log.info("[测评-开始]，测评记录创建成功，recordId={}", record.getId());
 
+        // 按记录锁定版本装配整卷下发
+        ScaleStartVO vo = buildStartVO(record, scale);
+        log.debug("[测评-开始]，下发题目数：{}，跳题规则数：{}", vo.getTotalQuestionCount(),
+                vo.getBranchRules() == null ? 0 : vo.getBranchRules().size());
+        return vo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ScaleUnfinishedVO getUnfinished(Long scaleId) {
+        Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[测评-查询未完成]，参数：scaleId={}，userId={}", scaleId, userId);
+
+        ScaleUserRecord record = scaleUserRecordMapper.selectOne(new LambdaQueryWrapper<ScaleUserRecord>()
+                .eq(ScaleUserRecord::getUserId, userId)
+                .eq(ScaleUserRecord::getScaleId, scaleId)
+                .eq(ScaleUserRecord::getFinishStatus, ScaleUserRecord.FINISH_STATUS_UNFINISHED)
+                .orderByDesc(ScaleUserRecord::getId)
+                .last("LIMIT 1"));
+        if (record == null) {
+            return ScaleUnfinishedVO.builder().hasUnfinished(false).build();
+        }
+        return ScaleUnfinishedVO.builder()
+                .hasUnfinished(true)
+                .recordId(record.getId())
+                .questionCount(scaleQuestionMapper.selectCount(new LambdaQueryWrapper<ScaleQuestion>()
+                        .eq(ScaleQuestion::getScaleVersionId, record.getScaleVersionId())).intValue())
+                .startTime(record.getStartTime())
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ScaleStartVO resume(ScaleResumeDTO dto) {
+        Long recordId = dto.getRecordId();
+        Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[测评-续答]，参数：recordId={}，userId={}", recordId, userId);
+
+        ScaleUserRecord record = getOwnedRecord(recordId, userId);
+        Integer finishStatus = record.getFinishStatus();
+        if (finishStatus == null || finishStatus.intValue() != ScaleUserRecord.FINISH_STATUS_UNFINISHED) {
+            if (finishStatus != null && finishStatus.intValue() == ScaleUserRecord.FINISH_STATUS_FINISHED) {
+                throw new BusinessException(ScaleExceptionEnum.SCALE_RECORD_FINISHED);
+            }
+            throw new BusinessException(ScaleExceptionEnum.SCALE_RECORD_TERMINATED);
+        }
+
+        Scale scale = scaleMapper.selectById(record.getScaleId());
+        if (scale == null) {
+            throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
+        }
+        if (scale.getStatus() == null || scale.getStatus().intValue() != Scale.STATUS_ENABLE) {
+            throw new BusinessException(ScaleExceptionEnum.SCALE_DISABLED);
+        }
+
+        ScaleStartVO vo = buildStartVO(record, scale);
+        log.info("[测评-续答]，下发整卷，recordId={}，题目数：{}", recordId, vo.getTotalQuestionCount());
+        return vo;
+    }
+
+    /**
+     * 按测评记录锁定的版本装配整卷下发 VO（不新建记录、不修改任何数据）
+     * <p>开始测评与续答共用：start 在建记录后调用，resume 直接对已有记录调用。</p>
+     *
+     * @param record 测评记录（需已设置 scaleVersionId / scaleName）
+     * @param scale  量表主表实体
+     * @return 整卷下发 VO
+     */
+    private ScaleStartVO buildStartVO(ScaleUserRecord record, Scale scale) {
+        Long versionId = record.getScaleVersionId();
+        ScaleVersion version = versionId == null ? null : scaleVersionMapper.selectById(versionId);
+
         // 加载整卷题目与选项
         List<ScaleQuestion> questions = scaleQuestionMapper.selectList(new LambdaQueryWrapper<ScaleQuestion>()
-                .eq(ScaleQuestion::getScaleVersionId, version.getId())
+                .eq(ScaleQuestion::getScaleVersionId, versionId)
                 .orderByAsc(ScaleQuestion::getSort)
                 .orderByAsc(ScaleQuestion::getId));
         List<Long> questionIds = questions.stream().map(ScaleQuestion::getId).toList();
@@ -177,7 +251,7 @@ public class ScaleAssessmentServiceImpl implements ScaleAssessmentService {
 
         // 精简跳题规则
         List<ScaleBranchRule> branchRules = scaleBranchRuleMapper.selectList(new LambdaQueryWrapper<ScaleBranchRule>()
-                .eq(ScaleBranchRule::getScaleVersionId, version.getId())
+                .eq(ScaleBranchRule::getScaleVersionId, versionId)
                 .orderByAsc(ScaleBranchRule::getId));
 
         List<ScaleQuestionPayloadVO> questionPayloads = new ArrayList<>();
@@ -208,22 +282,20 @@ public class ScaleAssessmentServiceImpl implements ScaleAssessmentService {
                         .build())
                 .toList();
 
-        ScaleStartVO vo = ScaleStartVO.builder()
+        return ScaleStartVO.builder()
                 .recordId(record.getId())
-                .scaleId(scaleId)
-                .scaleVersionId(version.getId())
-                .scaleName(scale.getScaleName())
-                .versionNo(version.getVersionNo())
-                .description(version.getDescription())
-                .copyrightInfo(version.getCopyrightInfo())
+                .scaleId(scale.getId())
+                .scaleVersionId(versionId)
+                .scaleName(record.getScaleName())
+                .versionNo(version == null ? null : version.getVersionNo())
+                .description(version == null ? null : version.getDescription())
+                .copyrightInfo(version == null ? null : version.getCopyrightInfo())
                 .timeLimit(scale.getTimeLimit())
                 .anonymous(scale.getAnonymous())
                 .totalQuestionCount(questions.size())
                 .questions(questionPayloads)
                 .branchRules(branchRulePayloads)
                 .build();
-        log.debug("[测评-开始]，下发题目数：{}，跳题规则数：{}", questionPayloads.size(), branchRulePayloads.size());
-        return vo;
     }
 
     @Override
