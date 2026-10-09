@@ -2,6 +2,7 @@ package org.lixiyun.server.infrastructure.conversation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
+import org.lixiyun.pojo.entity.conversation.ConversationPendingAction;
 import org.lixiyun.server.socket.constant.AudioConstant;
 import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.stereotype.Component;
@@ -105,4 +106,14 @@ public class ConversationWebSocketManager {
         WebSocketUtils.sendToUserBySubDestination(userId.toString(), webSocketId + "/" + conversationId, payload);
     }
 
+    /**
+     * 发送待处理交互推送
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param pendingAction  待处理交互记录
+     */
+    public void sendPendingAction(Long userId, Long conversationId, ConversationPendingAction pendingAction) {
+        sendViaWebSocket(userId, ConversationConstant.PENDING_ACTION, conversationId, pendingAction);
+    }
 }

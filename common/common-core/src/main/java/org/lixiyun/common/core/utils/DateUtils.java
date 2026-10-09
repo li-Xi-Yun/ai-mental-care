@@ -5,6 +5,7 @@ import org.lixiyun.common.core.properties.WebProperties;
 import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -126,6 +127,101 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     public ZonedDateTime fromUtcZoned(LocalDateTime utcDateTime) {
         return utcDateTime.atZone(ZoneOffset.UTC)
                 .withZoneSameInstant(getLocalZoneId());
+    }
+
+    // ==================== 相对时间文本 ====================
+
+    /**
+     * 计算指定时间相对于当前时间的相对时间文本
+     *
+     * @param dateTime 指定时间
+     * @return 相对时间文本，如"刚刚"、"3分钟前"、"2小时前"、"5天前"等；null或未来时间返回空字符串
+     */
+    public static String toRelativeTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        long seconds = Duration.between(dateTime, LocalDateTime.now()).getSeconds();
+        if (seconds < 0) {
+            return "";
+        }
+        if (seconds < 60) {
+            return toSecondsAgo(seconds);
+        }
+        if (seconds < 3600) {
+            return toMinutesAgo(seconds);
+        }
+        if (seconds < 86400) {
+            return toHoursAgo(seconds);
+        }
+        if (seconds < 2592000L) {
+            return toDaysAgo(seconds);
+        }
+        int months = (int) (seconds / 2592000L);
+        if (months < 12) {
+            return toMonthsAgo(months);
+        }
+        return toYearsAgo(months / 12);
+    }
+
+    /**
+     * 秒级相对时间文本
+     *
+     * @param seconds 时间差（秒）
+     * @return "刚刚"
+     */
+    private static String toSecondsAgo(long seconds) {
+        return "刚刚";
+    }
+
+    /**
+     * 分钟级相对时间文本
+     *
+     * @param seconds 时间差（秒）
+     * @return 如"3分钟前"
+     */
+    private static String toMinutesAgo(long seconds) {
+        return (seconds / 60) + "分钟前";
+    }
+
+    /**
+     * 小时级相对时间文本
+     *
+     * @param seconds 时间差（秒）
+     * @return 如"2小时前"
+     */
+    private static String toHoursAgo(long seconds) {
+        return (seconds / 3600) + "小时前";
+    }
+
+    /**
+     * 天级相对时间文本
+     *
+     * @param seconds 时间差（秒）
+     * @return 如"5天前"
+     */
+    private static String toDaysAgo(long seconds) {
+        return (seconds / 86400) + "天前";
+    }
+
+    /**
+     * 月级相对时间文本
+     *
+     * @param months 月数
+     * @return 如"3个月前"
+     */
+    private static String toMonthsAgo(int months) {
+        return months + "个月前";
+    }
+
+    /**
+     * 年级相对时间文本
+     *
+     * @param years 年数
+     * @return 如"2年前"
+     */
+    private static String toYearsAgo(int years) {
+        return years + "年前";
     }
 
 }

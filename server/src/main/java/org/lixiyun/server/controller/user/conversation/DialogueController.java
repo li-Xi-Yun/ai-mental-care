@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.dto.base.PageBaseDTO;
-import org.lixiyun.pojo.vo.user.conversation.ConversationMemoryVO;
+import org.lixiyun.pojo.vo.user.conversation.ConversationRoundVO;
 import org.lixiyun.server.service.user.DialogueService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -28,13 +28,13 @@ public class DialogueController {
     private final DialogueService dialogueService;
 
     @PostMapping(value = "/{conversationId}/memory")
-    @Operation(summary = "对话记录分页展示", description = "按创建时间逆序排列，一共有三个类型，user、thinking、assistant，如果轮次相同，表明为同一个对话内容")
-    public Result<PageResult<ConversationMemoryVO>> listMemory(
+    @Operation(summary = "对话记录分页展示", description = "按轮次聚合返回：每条记录为一个轮次（含该轮全部消息与关联的待处理人工交互卡片），轮次按创建时间逆序排列")
+    public Result<PageResult<ConversationRoundVO>> listMemory(
             @PathVariable @Parameter(description = "会话ID") Long conversationId,
             @RequestBody @Validated PageBaseDTO pageBaseDTO
     ) {
         log.info("分页查询对话记录: {}, {}, {}", pageBaseDTO.getPageNum(), pageBaseDTO.getPageSize(), conversationId);
-        PageResult<ConversationMemoryVO> result = dialogueService.listMemory(conversationId, pageBaseDTO.getPageNum(), pageBaseDTO.getPageSize());
+        PageResult<ConversationRoundVO> result = dialogueService.listMemory(conversationId, pageBaseDTO.getPageNum(), pageBaseDTO.getPageSize());
         return Result.success(result);
     }
 

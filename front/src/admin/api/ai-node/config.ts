@@ -83,6 +83,14 @@ export interface AiNodeGroupVO {
   count?: number | null;
 }
 
+/** AI节点标识 VO（下拉选项使用，对应后端 AiNodeKeyVO） */
+export interface AiNodeKeyVO {
+  id?: number | null;
+  nodeKey?: string | null;
+  nodeName?: string | null;
+  nodeGroup?: string;
+}
+
 /** AI节点配置分页查询入参（对应后端 AdminAiNodeConfigQueryDTO，keyword 同时映射到 nodeKey/nodeName 模糊搜索） */
 export interface AdminAiNodeConfigQueryDTO {
   pageNum: number;
@@ -204,4 +212,9 @@ export function batchUpdateAiNodeConfigEnabled(data: AiNodeConfigBatchEnabledDTO
 /** 获取节点分组列表（去重分组及数量） */
 export function getAiNodeGroups() {
   return httpClient.get<Result<AiNodeGroupVO[]>>("/admin/ai-node-config/groups");
+}
+
+/** 获取AI节点标识列表（下拉选项使用） */
+export function getAiNodeKeys() {
+  return httpClient.get<Result<AiNodeKeyVO[]>>("/admin/ai-node-config/node-keys");
 }

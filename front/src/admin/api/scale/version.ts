@@ -36,3 +36,8 @@ export function publishScaleVersion(versionId: number | string) {
 export function deleteScaleVersion(versionId: number | string) {
   return httpClient.delete<Result<void>>(`/admin/scale/version/${versionId}`);
 }
+
+/** 恢复已删除的版本 */
+export function restoreScaleVersion(versionId: number | string) {
+  return httpClient.put<Result<void>>(`/admin/scale/version/${versionId}/restore`);
+}

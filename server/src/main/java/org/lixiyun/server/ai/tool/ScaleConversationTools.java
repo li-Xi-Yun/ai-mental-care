@@ -7,16 +7,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.tool.Tools;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.constant.DeleteConstant;
+import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationPendingAction;
 import org.lixiyun.pojo.entity.scale.Scale;
 import org.lixiyun.pojo.entity.scale.ScaleQuestion;
 import org.lixiyun.pojo.entity.scale.ScaleVersion;
 import org.lixiyun.pojo.vo.user.tool.ScaleActionDataVO;
-import org.lixiyun.server.mapper.ConversationPendingActionMapper;
-import org.lixiyun.server.mapper.ScaleMapper;
-import org.lixiyun.server.mapper.ScaleQuestionMapper;
-import org.lixiyun.server.mapper.ScaleVersionMapper;
+import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
+import org.lixiyun.server.mapper.*;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -43,7 +44,9 @@ public class ScaleConversationTools implements Tools {
     private final ScaleMapper scaleMapper;
     private final ScaleVersionMapper scaleVersionMapper;
     private final ScaleQuestionMapper scaleQuestionMapper;
+    private final ConversationMapper conversationMapper;
     private final ConversationPendingActionMapper pendingActionMapper;
+    private final ConversationWebSocketManager conversationWebSocketManager;
 
     @Tool(name = LIST_AVAILABLE_SCALES,
             description = "获取所有可用的心理测评量表列表，包含量表名称、题目数和简要描述，用于根据用户症状选择合适的量表进行推荐")
@@ -94,6 +97,7 @@ public class ScaleConversationTools implements Tools {
     @Tool(name = CREATE_SCALE_PENDING_ACTION,
             description = "为用户创建量表测评任务。传入模型选择的量表ID和推荐理由，系统会生成待处理记录并通过WebSocket实时推送到前端展示量表卡片。返回工具ID供后续查询")
     public String createScalePendingAction(
+            ToolContext toolContext,
             @ToolParam(description = "量表ID（从 listAvailableScales 返回的 scaleId 中选择）") Long scaleId,
             @ToolParam(description = "推荐此量表的理由（基于用户描述的症状）") String recommendReason) {
 
@@ -121,14 +125,34 @@ public class ScaleConversationTools implements Tools {
                 .totalQuestions(totalQuestions)
                 .build();
 
+        ConversationMetadata conversationMetadata = (ConversationMetadata) toolContext.getContext().get(ConversationMetadata.NAME);
+        if (conversationMetadata == null) {
+            log.error("[量表工具] 会话元数据不存在，无法创建测评任务。");
+            return "错误：会话元数据不存在，请无法创建测评任务，跳过该操作。";
+        }
+        Long conversationId = conversationMetadata.getConversationId();
+
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        if (conversation == null || conversation.isDeleted()) {
+            log.warn("[量表工具] 会话不存在，conversationId={}", conversationId);
+            return "错误：会话不存在，请无法创建测评任务。";
+        }
+        Long userId = conversationMetadata.getUserId();
+        Integer currentRound = conversationMetadata.getCurrentRound();
+
         ConversationPendingAction pendingAction = ConversationPendingAction.builder()
-                .actionType(ConversationPendingAction.STATUS_PENDING_INJECT)
+                .conversationId(conversationId)
+                .userId(userId)
+                .roundNum(currentRound)
+                .actionType(ConversationPendingAction.ACTION_TYPE_SCALE)
                 .callReason(recommendReason)
                 .actionData(JsonUtils.toJsonString(actionData))
                 .status(ConversationPendingAction.STATUS_WAITING)
                 .build();
 
         pendingActionMapper.insert(pendingAction);
+
+        conversationWebSocketManager.sendPendingAction(userId, conversationId, pendingAction);
         log.info("[量表工具] 待处理记录已创建，id={}", pendingAction.getId());
 
         return "已为用户创建量表测评任务。工具ID：" + pendingAction.getId()
@@ -149,20 +173,16 @@ public class ScaleConversationTools implements Tools {
             return "错误：该工具记录不存在，请检查工具ID是否正确。";
         }
 
-        String statusText = switch (pendingAction.getStatus()) {
-            case ConversationPendingAction.STATUS_WAITING -> "等待处理中";
-            case ConversationPendingAction.STATUS_RESPONDED -> "已完成";
-            case ConversationPendingAction.STATUS_CANCELLED -> "已取消";
-            case ConversationPendingAction.STATUS_EXPIRED -> "已过期";
-            default -> "未知状态(" + pendingAction.getStatus() + ")";
-        };
-
         StringBuilder sb = new StringBuilder();
         sb.append("工具ID：").append(toolId)
-                .append("，当前状态：").append(statusText);
+                .append("\n调用轮次：").append(pendingAction.getRoundNum())
+                .append("\n创建时间：").append(pendingAction.getCreatedTime().toString())
+                .append("\n调用理由：").append(pendingAction.getCallReason())
+                .append("\n类型：").append(pendingAction.getActionTypeText())
+                .append("\n当前状态：").append(pendingAction.getStatusText());
 
         if (pendingAction.getToolResult() != null) {
-            sb.append("，测评结果：").append(pendingAction.getToolResult());
+            sb.append("\n测评结果：").append(pendingAction.getToolResult());
         }
 
         log.info("[量表工具] 查询完成，toolId={}，status={}", toolId, pendingAction.getStatus());

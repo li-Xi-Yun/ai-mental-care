@@ -76,6 +76,31 @@ export interface SimpleRole {
   name: string;
 }
 
+/** 临时权限记录 VO */
+export interface TempPermissionVO {
+  id: number;
+  personId?: number;
+  personUsername?: string;
+  permissionId?: number;
+  /** 权限标识符 */
+  perms?: string;
+  /** 权限名称 */
+  permissionName?: string;
+  /** 权限分组名称 */
+  groupName?: string;
+  /** 生效时间 */
+  startTime?: string;
+  /** 过期时间 */
+  expireTime?: string;
+  /** 状态：0=有效，1=手动作废，2=已过期 */
+  status?: number;
+  /** 授予原因 */
+  grantReason?: string;
+  grantUserId?: number;
+  grantUsername?: string;
+  createdTime?: string;
+}
+
 /** 分页查询管理员列表 */
 export function getAdminPage(data: AdminPageParams) {
   return httpClient.post<ListResult<AdminPageVO>>("/admin/sysAdmin/page", data);
@@ -106,6 +131,11 @@ export function deleteAdmin(id: number) {
   return httpClient.delete<Result<void>>(`/admin/sysAdmin/${id}`);
 }
 
+/** 查询管理员详情 */
+export function getAdminDetail(id: number) {
+  return httpClient.get<Result<AdminDetailVO>>(`/admin/sysAdmin/${id}`);
+}
+
 /** 查询管理员已分配的角色列表 */
 export function getAdminRoles(id: number) {
   return httpClient.get<Result<RoleVO[]>>(`/admin/sysAdmin/${id}/roles`);
@@ -114,6 +144,13 @@ export function getAdminRoles(id: number) {
 /** 给管理员分配角色（全量覆盖） */
 export function assignAdminRoles(id: number, roleIdList: number[]) {
   return httpClient.put<Result<void>>(`/admin/sysAdmin/${id}/assignRoles`, roleIdList);
+}
+
+/** 查询管理员临时权限记录（status 不传默认查询所有状态） */
+export function getAdminTempPermissions(id: number, status?: number) {
+  return httpClient.get<Result<TempPermissionVO[]>>(`/admin/sysAdmin/${id}/tempPerms`, {
+    params: { status },
+  });
 }
 
 /** 获取可选角色列表（下拉选择） */

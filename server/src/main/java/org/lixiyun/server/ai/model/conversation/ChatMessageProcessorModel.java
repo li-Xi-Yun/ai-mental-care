@@ -8,6 +8,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.ai.model.BaseModel;
+import org.lixiyun.server.ai.tool.ScaleConversationTools;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -15,6 +16,7 @@ import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -112,6 +114,17 @@ public class ChatMessageProcessorModel extends BaseModel {
         return "专业心理健康陪伴助手";
     }
 
+    @Autowired(required = false)
+    private ScaleConversationTools scaleConversationTools;
+
+    /**
+     * 对话模型注册量表对话工具：模型可调用 listAvailableScales / createScalePendingAction / queryToolResult
+     */
+    @Override
+    protected List<Object> getAgentTools() {
+        return scaleConversationTools != null ? List.of(scaleConversationTools) : List.of();
+    }
+
     @Override
     protected ChatOptions buildOllamaCompanionOptions(AiNodeConfig config) {
         String modelName = config != null && config.getOllamaModelName() != null ? config.getOllamaModelName() : defaultOllamaModelName;
@@ -185,10 +198,6 @@ public class ChatMessageProcessorModel extends BaseModel {
                 .incrementalOutput(true)
                 .multiModel(false)
                 .vlHighResolutionImages(false)
-                .tools(null)
-                .toolChoice("none")
-                .internalToolExecutionEnabled(false)
-                .toolContext(java.util.Map.of())
                 .build();
     }
 
@@ -215,11 +224,6 @@ public class ChatMessageProcessorModel extends BaseModel {
                 .stop(stopSequences)
                 .logprobs(false)
                 .topLogprobs(null)
-                .tools(null)
-                .toolChoice("none")
-                .internalToolExecutionEnabled(false)
-                .toolContext(java.util.Map.of())
-                .toolCallbacks(java.util.List.of())
                 .build();
     }
 

@@ -119,7 +119,12 @@ export function getDiagnosisFeedback(diagnosisId: string) {
   return httpClient.get<Result<AssessmentFeedbackVO>>(`/user/conversation/assessment-feedback/${diagnosisId}`);
 }
 
-/** 提交情绪诊断反馈 */
+/** 提交或更新情绪诊断反馈（后端 PUT /user/conversation/assessment-feedback/{id}） */
 export function submitDiagnosisFeedback(diagnosisId: string, data: Partial<AssessmentFeedbackVO>) {
-  return httpClient.put<Result<void>>(`/user/conversation/emotion-diagnosis/${diagnosisId}/feedback`, data);
+  return httpClient.put<Result<void>>(`/user/conversation/assessment-feedback/${diagnosisId}`, data);
+}
+
+/** 删除诊断反馈（可选，后端已提供） */
+export function deleteDiagnosisFeedback(diagnosisId: string) {
+  return httpClient.delete<Result<void>>(`/user/conversation/assessment-feedback/${diagnosisId}`);
 }

@@ -1,10 +1,10 @@
 import httpClient from "@shared/api/instance";
 import type { ListResult, Result } from "@shared/api/types";
 
-/** 提交量表答案 */
-export function submitScaleAnswer(data: any) {
-  return httpClient.post<Result<any>>("/user/scale/user", data);
-}
+/**
+ * @deprecated 后端不存在 POST /user/scale/user 接口；
+ * 提交测评请使用 POST /user/scale/assessment/submit（submitAssessment）。
+ */
 
 /** 我的测评记录查询参数 */
 export interface ScaleRecordQuery {
@@ -158,4 +158,16 @@ export function submitAssessment(data: ScaleSubmitPayload) {
 /** 主动终止测评（放弃作答 / 超时退出） */
 export function terminateAssessment(recordId: number) {
   return httpClient.post<Result<null>>(`/user/scale/assessment/${recordId}/terminate`);
+}
+
+/* ==================== AI对话量表工具（tool）相关 ==================== */
+
+/** 保存用户测评记录ID：从对话卡片进入答题页后回写，保证刷新后仍可恢复作答上下文 */
+export function bindToolRecord(data: { toolId: number; conversationId: number; recordId: number }) {
+  return httpClient.post<Result<null>>("/user/scale/tool/bind-record", data);
+}
+
+/** 用户作答完成提交：answered=1 已作答（触发分析），answered=0 未作答（取消卡片） */
+export function completeToolAnswer(data: { toolId: number; conversationId: number; answered: number; recordId?: number }) {
+  return httpClient.post<Result<null>>("/user/scale/tool/complete", data);
 }

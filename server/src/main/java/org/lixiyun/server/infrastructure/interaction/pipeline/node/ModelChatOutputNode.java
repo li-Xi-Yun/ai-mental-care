@@ -103,6 +103,10 @@ public class ModelChatOutputNode implements OutputNode {
                 NodeEndpoint.builder()
                         .description("会话名称，客户端订阅时，需要在后面路径中添加/{conversationId}")
                         .path(ConversationConstant.CONVERSATION_NAME)
+                        .build(),
+                NodeEndpoint.builder()
+                        .description("待处理交互推送，需要在后面路径中添加/{conversationId}")
+                        .path(ConversationConstant.PENDING_ACTION)
                         .build()
         );
     }

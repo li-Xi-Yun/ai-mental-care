@@ -12,7 +12,7 @@
  * 开发环境使用空字符串（相对路径），由 Vite 代理转发到 http://localhost:8088。
  * 生产环境按实际部署地址配置（如 `https://api.example.com`，由 NGINX 转发到后端）。
  */
-export const API_BASE_URL = "";
+export const API_BASE_URL = "/api";
 
 /** 前台用户接口统一前缀 */
 export const USER_API_PREFIX = "";
@@ -34,13 +34,13 @@ export const SUCCESS_CODE = 200;
 /* ==================== 品牌与平台信息 ==================== */
 
 /** 平台名称 */
-export const PLATFORM_NAME = "AI Mental Care";
+export const PLATFORM_NAME = "心聆";
 /** 平台副标题 */
 export const PLATFORM_SUBTITLE = "AI 心理健康关怀平台";
 /** 平台标语 */
 export const PLATFORM_SLOGAN = "倾听你的心声，守护你的心灵";
 /** 管理端名称 */
-export const ADMIN_PLATFORM_NAME = "AI Mental Care 管理系统";
+export const ADMIN_PLATFORM_NAME = "心聆 管理系统";
 /** 管理端标题 */
 export const ADMIN_PLATFORM_TITLE = "管理后台";
 
@@ -182,6 +182,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: "临时权限", route: "/admin/temp-permission", icon: "Timer" },
   { label: "文件管理", route: "/admin/file", icon: "Document" },
   { label: "量表管理", route: "/admin/scale", icon: "DataAnalysis" },
+  { label: "测评记录", route: "/admin/scale/records", icon: "DataLine" },
   { label: "症状字典", route: "/admin/symptom", icon: "FirstAidKit" },
   { label: "AI节点配置", route: "/admin/ai-node", icon: "SetUp" },
   { label: "个人资料", route: "/admin/profile", icon: "User" },

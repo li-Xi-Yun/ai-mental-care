@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.json.utils.JsonUtils;
+import org.lixiyun.pojo.bo.conversation.ConversationMetadata;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.server.infrastructure.log.RecordingModelInterceptor;
 import org.lixiyun.server.infrastructure.log.RecordingToolInterceptor;
@@ -34,6 +35,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -195,6 +197,20 @@ public abstract class BaseModel implements Model {
         return null;
     }
 
+    /**
+     * 获取当前模型需要注册的工具对象列表（钩子方法）
+     * <p>
+     * 默认返回空列表，表示不注册任何工具。
+     * 子类可通过覆写此方法返回包含 {@code @Tool} 注解方法的对象（如 {@code ScaleConversationTools}），
+     * {@link #buildAgent} 会将其注册为 Agent 的工具供模型调用。
+     * </p>
+     *
+     * @return 包含 @Tool 注解方法的工具对象列表；为空表示不注册工具
+     */
+    protected List<Object> getAgentTools() {
+        return java.util.List.of();
+    }
+
     // ==================== protected 模板方法：实际执行逻辑 ====================
 
     /**
@@ -223,13 +239,13 @@ public abstract class BaseModel implements Model {
      * doCall的底层实现（不含重试），供 {@link #doCall} 和 {@link #doCallForResult} 复用
      */
     private AssistantMessage doCallInternal(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
-        ReactAgent agent = buildAgent(chatModel, config);
+        ReactAgent agent = buildAgent(chatModel, config, runnableConfig);
         AssistantMessage message;
         if (runnableConfig != null) {
             // 注意：不能直接 RunnableConfig.builder(runnableConfig) 复制 threadId
             // 否则 React Agent 内部子图检测到 threadId 会尝试恢复检查点，但 Agent 没有 SaverConfig → 报错
             // 因此：只复制 metadata（给拦截器提供会话上下文），不复制 threadId
-            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
+            RunnableConfig.Builder builder = RunnableConfig.builder();
             if (runnableConfig.metadata().isPresent()) {
                 runnableConfig.metadata().get().forEach(builder::addMetadata);
             }
@@ -288,10 +304,10 @@ public abstract class BaseModel implements Model {
      * doStream的底层实现（不含重试），在 Flux 管道中检测最终 AssistantMessage 是否为空
      */
     private Flux<NodeOutput> doStreamInternal(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
-        ReactAgent agent = buildAgent(chatModel, config);
+        ReactAgent agent = buildAgent(chatModel, config, runnableConfig);
         Flux<NodeOutput> flux;
         if (runnableConfig != null) {
-            com.alibaba.cloud.ai.graph.RunnableConfig.Builder builder = RunnableConfig.builder();
+            RunnableConfig.Builder builder = RunnableConfig.builder();
             if (runnableConfig.metadata().isPresent()) {
                 runnableConfig.metadata().get().forEach(builder::addMetadata);
             }
@@ -419,14 +435,28 @@ public abstract class BaseModel implements Model {
      *
      * @param chatModel 具体的ChatModel实例
      * @param config    节点配置，可为null（使用默认值）
+     * @param runnableConfig 运行时配置，可为null
      * @return 构建完成的ReactAgent实例
      */
-    private ReactAgent buildAgent(ChatModel chatModel, AiNodeConfig config) {
+    private ReactAgent buildAgent(ChatModel chatModel, AiNodeConfig config, RunnableConfig runnableConfig) {
         com.alibaba.cloud.ai.graph.agent.Builder builder = reactAgentBuilder(chatModel, config)
                 .systemPrompt(getSystemPrompt(config));
         Class<?> outputType = getOutputType();
         if (outputType != null) {
             builder.outputType(outputType);
+        }
+        if (runnableConfig != null) {
+            Optional<Object> conversationMetadataOpl = runnableConfig.metadata(ConversationMetadata.NAME);
+            if(conversationMetadataOpl.isPresent()) {
+                ConversationMetadata conversationMetadata = (ConversationMetadata) conversationMetadataOpl.get();
+                builder.toolContext(Map.of(ConversationMetadata.NAME, conversationMetadata));
+            }
+        }
+        // 注册子类通过 getAgentTools() 指定的工具（如量表对话工具），供模型调用
+        List<Object> agentTools = getAgentTools();
+        if (agentTools != null && !agentTools.isEmpty()) {
+            builder.methodTools(agentTools.toArray());
+            log.debug("[模型抽象类] 注册工具，节点：{}，工具对象数：{}", getAgentName(), agentTools.size());
         }
         return builder.build();
     }

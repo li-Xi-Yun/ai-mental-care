@@ -172,8 +172,10 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
 import { Check, Loading } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { startAssessment, resumeAssessment, submitAssessment, terminateAssessment } from "@/portal/api/scale/user-scale";
+import { startAssessment, resumeAssessment, submitAssessment, terminateAssessment, bindToolRecord } from "@/portal/api/scale/user-scale";
 import type { ScaleStartData, ScaleStartQuestion } from "@/portal/api/scale/user-scale";
+import { getScalePrecheck } from "@/portal/api/scale/precheck";
+import type { ScalePrecheckVO } from "@/portal/api/scale/precheck";
 import { getSession, setSession, removeSession } from "@/shared/utils/storage";
 
 /* ==================== 常量 ==================== */
@@ -195,6 +197,9 @@ const router = useRouter();
 const scaleId = Number(route.params.scaleId as string);
 /** 路由携带的测评记录ID（续答时存在）。续答场景复用原记录，不新建。 */
 const routeRecordId = Number(route.query.recordId as string) || 0;
+/** 对话卡片场景：工具ID（conversation_pending_action.id）与会话ID */
+const routeToolId = Number(route.query.toolId as string) || 0;
+const routeConversationId = Number(route.query.conversationId as string) || 0;
 
 /* ==================== 基础状态 ==================== */
 const loading = ref(true);
@@ -437,12 +442,63 @@ function navCellClass(q: ScaleStartQuestion, index: number): Record<string, bool
 
 /* ==================== 加载 ==================== */
 
+/**
+ * 作答前检查（非续答场景）：
+ * 冷却 / 重复限次 / 已存在未完成记录 时阻止进入作答。
+ * 返回 true 表示放行继续，false 表示已提示并阻止。
+ */
+async function checkBeforeStart(scaleId: number): Promise<boolean> {
+  let precheck: ScalePrecheckVO | null = null;
+  try {
+    const precheckRes = await getScalePrecheck(scaleId);
+    precheck = precheckRes.data?.data ?? null;
+  } catch (e) {
+    // precheck 接口失败不阻塞作答，降级放行
+    console.warn("[scale-answer] precheck 失败，跳过作答前检查：", e);
+    return true;
+  }
+  if (precheck?.allowed) return true;
+
+  const reason = precheck?.reason ?? "";
+  if (reason === "COOLING" || reason === "REPEAT_LIMITED") {
+    const minutes = precheck?.coolRemainMinutes ?? 0;
+    ElMessage.warning(minutes > 0 ? `该量表正在进行冷却中，剩余约 ${minutes} 分钟` : "该量表正在进行冷却中，请稍后重试");
+    return false;
+  }
+  if (reason === "UNFINISHED_EXISTS") {
+    try {
+      await ElMessageBox.confirm(
+        "存在未完成的测评记录，请先完成或终止后重测",
+        "提示",
+        {
+          confirmButtonText: "去测评记录",
+          cancelButtonText: "取消",
+          type: "warning",
+        },
+      );
+    } catch {
+      return false; // 用户取消
+    }
+    router.push("/scale/records");
+    return false;
+  }
+  ElMessage.warning(reason || "当前不允许开始本量表测评");
+  return false;
+}
+
 /** 开始测评 / 续答：拉取整卷 */
 async function init() {
   loading.value = true;
   error.value = "";
   try {
     // 续答场景：携带 recordId 时复用原未完成记录，不新建
+    if (routeRecordId <= 0) {
+      // 非续答场景：先做作答前检查（冷却/未完成记录等），不通过则不进入作答
+      const allowedToStart = await checkBeforeStart(scaleId);
+      if (!allowedToStart) {
+        return;
+      }
+    }
     const res = routeRecordId > 0
       ? await resumeAssessment(routeRecordId)
       : await startAssessment({ scaleId });
@@ -450,6 +506,18 @@ async function init() {
     if (!startData.value) {
       error.value = "未获取到测评数据，请稍后重试";
       return;
+    }
+    // 对话卡片场景：进入答题页拿到 recordId 后立即回写，保证刷新后可恢复作答上下文
+    if (routeToolId > 0 && routeConversationId > 0) {
+      try {
+        await bindToolRecord({
+          toolId: routeToolId,
+          conversationId: routeConversationId,
+          recordId: startData.value.recordId,
+        });
+      } catch {
+        // 回写失败不阻塞作答
+      }
     }
     restoreDraft();
     // 填充当前题填空文本（restoreDraft 后 currentIndex 已恢复）
@@ -505,6 +573,7 @@ function validateBeforeSubmit(): boolean {
 function handleBackToList() {
   router.replace("/scale");
 }
+
 /** 提交测评 */
 async function handleSubmit() {
   if (!validateBeforeSubmit()) return;
@@ -519,7 +588,8 @@ async function handleSubmit() {
     stopTimer();
     removeSession(ANSWER_STORAGE_KEY);
     ElMessage.success("测评提交成功");
-    router.replace(`/scale/records/${res.data.data.recordId}`);
+    // 对话卡片场景：评测已提交，需回到对话页由用户点击"已完成"触发 AI 分析解读
+    router.replace(routeConversationId > 0 ? `/conversation` : `/scale/records/${res.data.data.recordId}`);
   } catch (e) {
     ElMessage.error((e as Error)?.message || "提交失败，请稍后重试");
   } finally {

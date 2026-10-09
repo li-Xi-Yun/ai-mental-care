@@ -1,12 +1,6 @@
-import httpClient from "@shared/api/instance";
-import type { Result } from "@shared/api/types";
-
-/** 初始化音频会话 */
-export function initAudioSession(data: any) {
-  return httpClient.post<Result<any>>("/user/conversation/audio/init", data);
-}
-
-/** 结束音频会话 */
-export function endAudioSession(conversationId: string) {
-  return httpClient.delete<Result<void>>(`/user/conversation/audio/${conversationId}/end`);
-}
+/**
+ * @deprecated 音频输入走 WebSocket（STOMP /user/conversation/adapter/audio/frame），
+ * 后端不存在 /user/conversation/audio/* HTTP 接口，本文件不再使用。
+ * 如需接入语音，请对接 AdapterController 的 @MessageMapping("/audio/frame")。
+ */
+export {};

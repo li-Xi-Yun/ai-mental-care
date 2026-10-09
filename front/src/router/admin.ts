@@ -49,6 +49,12 @@ const adminRoutes: RouteRecordRaw[] = [
         meta: { title: "量表详情" },
       },
       {
+        path: "scale/records",
+        name: "AdminScaleRecords",
+        component: () => import("@/admin/views/scale-record/index.vue"),
+        meta: { title: "测评记录" },
+      },
+      {
         path: "symptom",
         name: "AdminSymptom",
         component: () => import("@/admin/views/symptom/index.vue"),

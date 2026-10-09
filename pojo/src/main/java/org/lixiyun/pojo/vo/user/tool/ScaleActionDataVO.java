@@ -1,5 +1,6 @@
 package org.lixiyun.pojo.vo.user.tool;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,25 +25,16 @@ import java.io.Serializable;
 public class ScaleActionDataVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 量表主表ID
-     */
+    @Schema(description = "量表主表ID")
     private Long scaleId;
 
-    /**
-     * 量表名称
-     */
+    @Schema(description = "量表名称")
     private String scaleName;
 
-    /**
-     * 题目总数
-     */
+    @Schema(description = "题目总数")
     private Integer totalQuestions;
 
-    /**
-     * 用户本次测评记录ID（scale_user_record.id）
-     * <p>用户进入答题页后由前端回写保存，默认 null；用于刷新页面后恢复作答上下文</p>
-     */
+    @Schema(description = "用户本次测评记录ID（scale_user_record.id）")
     private Long recordId;
 
 }

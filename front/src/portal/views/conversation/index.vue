@@ -137,6 +137,36 @@
             <span class="typing-dots"><i></i><i></i><i></i></span>
           </div>
         </div>
+
+        <!-- 待处理人工交互卡片（量表推荐卡片，按轮次定位展示） -->
+        <div v-for="act in displayPendingActions" :key="act.id" class="pending-card" :class="`status-${act.status}`">
+          <template v-if="act.actionType === 1">
+            <div class="pc-head">
+              <span class="pc-badge">量表推荐</span>
+              <span class="pc-status">{{ pendingStatusText(act.status) }}</span>
+            </div>
+            <div class="pc-title">{{ act.actionData?.scaleName || "心理测评量表" }}</div>
+            <div class="pc-meta">
+              <span v-if="act.actionData?.totalQuestions">共 {{ act.actionData.totalQuestions }} 题</span>
+              <span v-if="act.actionData?.recommendReason" class="pc-reason">推荐理由：{{ act.actionData.recommendReason }}</span>
+            </div>
+
+            <!-- 等待作答：可进入答题 / 保存记录 / 提交完成 -->
+            <div v-if="act.status === 0" class="pc-actions">
+              <el-button size="small" type="primary" :loading="act.status === 0 && pendingActActions[act.id] === 'start'" @click="handleScaleStart(act)">开始作答</el-button>
+              <el-button size="small" plain :loading="pendingActActions[act.id] === 'done'" @click="handleScaleAnswered(act, 1)">已完成</el-button>
+              <el-button size="small" text type="info" @click="handleScaleAnswered(act, 0)">放弃</el-button>
+            </div>
+
+            <!-- 已响应：展示分析结论（如有） -->
+            <div v-else-if="act.status === 2" class="pc-result">
+              <span>测评已完成，AI 已回复解读结果</span>
+            </div>
+            <div v-else class="pc-result">
+              <span>{{ pendingStatusText(act.status) }}</span>
+            </div>
+          </template>
+        </div>
       </div>
 
       <!-- 输入区 -->
@@ -327,14 +357,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Operation, DataAnalysis, Close, Delete, EditPen, More, ChatDotRound, Promotion } from "@element-plus/icons-vue";
 import { EMOTION_COLORS, CONVERSATION_LIST_WIDTH, EMOTION_PANEL_WIDTH } from "@/shared/api/config";
 import { getConversationList, updateConversationName, deleteConversation } from "@/portal/api/conversation/conversation";
 import { getConversationMemory } from "@/portal/api/conversation/dialogue";
 import { getEmotionAnalysisList } from "@/portal/api/conversation/emotion-analysis";
+import { initConversationLifecycle, deleteConversationLifecycle } from "@/portal/api/conversation/lifecycle";
 import { sendUserMessage } from "@/portal/api/conversation/ai-chat";
+import { completeToolAnswer } from "@/portal/api/scale/user-scale";
 import { useConversationStore } from "@/portal/stores/conversation";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
 
@@ -346,6 +379,8 @@ interface ConversationItem {
   currentRound: number;
   lastActiveTime: string;
   draft?: boolean;
+  /** 会话生命周期（后端 adapter/管道）是否已初始化 */
+  initialized?: boolean;
 }
 
 interface MemoryMessage {
@@ -354,6 +389,27 @@ interface MemoryMessage {
   type: string;
   roundNum: number;
   createdTime: string;
+}
+
+/** 量表卡片 actionData（后端已解析为对象） */
+interface ScaleCardActionData {
+  scaleId?: number;
+  scaleName?: string;
+  totalQuestions?: number;
+  recommendReason?: string;
+  recordId?: number;
+}
+
+/** 待处理人工交互（卡片） */
+interface PendingActionItem {
+  id: string;
+  actionType: number;
+  roundNum: number;
+  actionData?: ScaleCardActionData;
+  status: number;
+  expireTime?: string;
+  completedTime?: string;
+  createdTime?: string;
 }
 
 interface EmotionAnalysisItem {
@@ -452,11 +508,14 @@ const emotionPanelStyle = computed(() => ({
 /* ==================== 数据状态 ==================== */
 
 const conversationStore = useConversationStore();
+const router = useRouter();
 
 const conversationList = ref<ConversationItem[]>([]);
 const currentConversationId = ref("");
 const allMessages = ref<MemoryMessage[]>([]);
 const emotionList = ref<EmotionAnalysisItem[]>([]);
+const pendingActions = ref<PendingActionItem[]>([]);
+const pendingActActions = reactive<Record<string, "start" | "done" | undefined>>({});
 const expandedAnalysisId = ref<string | null>(null);
 
 const inputMessage = ref("");
@@ -470,6 +529,9 @@ const inputBoxRef = ref<HTMLElement | null>(null);
 let pollTimer: number | null = null;
 let pollAttempts = 0;
 
+/** 正在初始化生命周期（allocating）的会话ID集合，用于防并发与幂等 */
+const allocatingIdSet = new Set<string>();
+
 /* ==================== 派生数据 ==================== */
 
 const currentConversation = computed(() => conversationList.value.find((c) => c.id === currentConversationId.value));
@@ -480,6 +542,11 @@ const displayMessages = computed(() => {
   return allMessages.value
     .filter((m) => m.type === "user" || m.type === "assistant")
     .sort(cmpByTime);
+});
+
+/** 当前展示的待处理卡片：按 roundNum 逆序 */
+const displayPendingActions = computed(() => {
+  return [...pendingActions.value].sort((a, b) => b.roundNum - a.roundNum);
 });
 
 const ringSegments = computed(() => {
@@ -665,6 +732,72 @@ function extractKeywords(texts: string[], limit = 8): string[] {
     .map((entry) => entry[0]);
 }
 
+/* ==================== 会话生命周期 ==================== */
+
+/**
+ * 初始化会话生命周期（后端 adapter/管道），使该会话可用于发送文本消息。
+ * - conversationId 为空 → 服务端自动创建新会话；
+ * - 非空 → 幂等校验归属并重建资源。
+ * 返回真实 conversationId（字符串）。并发场景下同一会话的 init 会被去重。
+ */
+async function ensureConversationLifecycle(conversationId: string): Promise<string> {
+  if (allocatingIdSet.has(conversationId)) {
+    await new Promise<void>((resolve) => {
+      const tick = setInterval(() => {
+        if (!allocatingIdSet.has(conversationId)) {
+          clearInterval(tick);
+          resolve();
+        }
+      }, 50);
+    });
+  }
+  allocatingIdSet.add(conversationId);
+  try {
+    const res = await initConversationLifecycle({
+      conversationId: conversationId ? Number(conversationId) : undefined,
+      inputTypes: ["TEXT"],
+      outputTypes: ["TEXT"],
+    });
+    const vo = res?.data?.data;
+    if (vo) logEndpoints(`init conv=${conversationId || "(new)"}`, vo);
+    return String(vo?.conversationId ?? conversationId);
+  } finally {
+    allocatingIdSet.delete(conversationId);
+  }
+}
+
+/**
+ * 切换/进入已有会话前，确保该会话生命周期已初始化（幂等，后端仅校验归属并重建资源）。
+ * 失败时提示但允许用户继续浏览，发送消息前会自动补一次 init。
+ */
+async function ensureConversationReady(conversationId: string) {
+  const conv = conversationList.value.find((c) => c.id === conversationId);
+  if (!conv || conv.draft || conv.initialized) return;
+  try {
+    await ensureConversationLifecycle(conversationId);
+    conv.initialized = true;
+  } catch {
+    ElMessage.warning("会话资源初始化失败，发送消息前将自动重试");
+  }
+}
+
+/** 销毁会话生命周期（释放后端 adapter/管道资源，失败不阻塞 UI） */
+function releaseConversationLifecycle(conversationId: string) {
+  deleteConversationLifecycle(conversationId).catch((e) => {
+    console.warn(`销毁会话生命周期失败 conversationId=${conversationId}`, e);
+  });
+}
+
+/** 从生命周期 VO 解析端点信息（仅日志用） */
+function logEndpoints(label: string, vo: any) {
+  if (!vo) return;
+  const inputPaths = (vo.inputEndpoints ?? []).map((e: any) => e?.path ?? "").filter(Boolean);
+  const outputPaths = (vo.outputEndpoints ?? []).map((e: any) => e?.path ?? "").filter(Boolean);
+  if (inputPaths.length || outputPaths.length) {
+    console.log(`[lifecycle] ${label} input=${inputPaths.join(",")} output=${outputPaths.join(",")}`);
+  }
+}
+
 /* ==================== API 数据加载 ==================== */
 
 function unwrapList(res: any): any[] {
@@ -674,15 +807,36 @@ function unwrapList(res: any): any[] {
   return [];
 }
 
-async function fetchMemory(conversationId: string): Promise<MemoryMessage[]> {
+async function fetchMemory(conversationId: string) {
   const res = await getConversationMemory(conversationId, { pageNum: 1, pageSize: 200 });
-  return unwrapList(res).map((m: any) => ({
-    id: String(m.id),
-    content: String(m.content ?? ""),
-    type: String(m.type ?? "").toLowerCase(),
-    roundNum: Number(m.roundNum ?? 0),
-    createdTime: m.createdTime ?? "",
-  }));
+  // 后端按轮次聚合返回：records 为轮次单元（含 messages + pendingActions），这里展平为消息列表
+  const rounds = unwrapList(res);
+  const msgs: MemoryMessage[] = [];
+  const acts: PendingActionItem[] = [];
+  for (const round of rounds) {
+    for (const m of round.messages ?? []) {
+      msgs.push({
+        id: String(m.id),
+        content: String(m.content ?? ""),
+        type: String(m.type ?? "").toLowerCase(),
+        roundNum: Number(m.roundNum ?? round.roundNum ?? 0),
+        createdTime: m.createdTime ?? "",
+      });
+    }
+    for (const p of round.pendingActions ?? []) {
+      acts.push({
+        id: String(p.id),
+        actionType: Number(p.actionType ?? 0),
+        roundNum: Number(p.roundNum ?? round.roundNum ?? 0),
+        actionData: p.actionData ?? undefined,
+        status: Number(p.status ?? 0),
+        expireTime: p.expireTime ?? "",
+        completedTime: p.completedTime ?? "",
+        createdTime: p.createdTime ?? "",
+      });
+    }
+  }
+  return { messages: msgs, pendingActions: acts };
 }
 
 async function fetchEmotions(conversationId: string): Promise<EmotionAnalysisItem[]> {
@@ -726,6 +880,7 @@ async function loadConversationList(selectFirst: boolean) {
       }
       if (target) {
         currentConversationId.value = target;
+        await ensureConversationReady(target);
         await loadChat(target);
       } else {
         currentConversationId.value = "";
@@ -735,8 +890,10 @@ async function loadConversationList(selectFirst: boolean) {
     } else if (currentConversationId.value && !conversationList.value.some((c) => c.id === currentConversationId.value)) {
       const nextId = conversationList.value[0]?.id ?? "";
       currentConversationId.value = nextId;
-      if (nextId) await loadChat(nextId);
-      else {
+      if (nextId) {
+        await ensureConversationReady(nextId);
+        await loadChat(nextId);
+      } else {
         allMessages.value = [];
         emotionList.value = [];
       }
@@ -751,10 +908,12 @@ async function loadConversationList(selectFirst: boolean) {
 async function loadChat(conversationId: string) {
   loadingChat.value = true;
   try {
-    allMessages.value = await fetchMemory(conversationId);
-    await refreshEmotionList(conversationId);
+    const { messages, pendingActions: acts } = await fetchMemory(conversationId);
+    allMessages.value = messages;
+    pendingActions.value = acts;
   } catch {
     allMessages.value = [];
+    pendingActions.value = [];
     ElMessage.error("对话记录加载失败");
   } finally {
     loadingChat.value = false;
@@ -778,21 +937,37 @@ async function selectConversation(id: string) {
   cancelPending();
   currentConversationId.value = id;
   conversationStore.setCurrentConversation(id);
+  await ensureConversationReady(id);
   await loadChat(id);
 }
 
-function handleNewConversation() {
+/* ==================== 会话管理 ==================== */
+
+async function handleNewConversation() {
   cancelPending();
+  let realId = "";
+  try {
+    // 新建会话：先初始化生命周期（不传 conversationId，服务端自动创建新会话）
+    realId = await ensureConversationLifecycle("");
+  } catch {
+    ElMessage.error("新建会话初始化失败，请稍后重试");
+    return;
+  }
+  if (!realId) {
+    ElMessage.error("新建会话初始化失败，请稍后重试");
+    return;
+  }
   const draft: ConversationItem = {
-    id: `local-${Date.now()}`,
+    id: realId,
     name: NEW_CONV_NAME,
     currentRound: 0,
     lastActiveTime: dayjs().format(FORMAT_DATETIME),
     draft: true,
+    initialized: true,
   };
   conversationList.value.unshift(draft);
-  currentConversationId.value = draft.id;
-  conversationStore.setCurrentConversation(draft.id);
+  currentConversationId.value = realId;
+  conversationStore.setCurrentConversation(realId);
   allMessages.value = [];
   emotionList.value = [];
   expandedAnalysisId.value = null;
@@ -806,6 +981,16 @@ async function handleSend() {
   if (!conv) {
     ElMessage.info("请先新建会话");
     return;
+  }
+
+  // 确保后端 adapter/管道已初始化（新建/切换时已 init；这里兜底补一次）
+  if (!conv.initialized) {
+    try {
+      await ensureConversationReady(conv.id);
+    } catch {
+      ElMessage.error("会话初始化失败，请稍后再试");
+      return;
+    }
   }
 
   const optimistic: MemoryMessage = {
@@ -823,16 +1008,14 @@ async function handleSend() {
   const prevAssistantCount = allMessages.value.filter((m) => m.type === "assistant").length;
 
   try {
-    const res = await sendUserMessage({
-      message: text,
-      ...(conv.draft ? {} : { conversationId: conv.id }),
-    });
+    const res = await doSend(conv.id, text);
     const vo = (res?.data?.data ?? {}) as UserMessageSendVO;
     const realId = String(vo.conversationId ?? "");
 
     if (conv.draft && realId) {
       conv.id = realId;
       conv.draft = false;
+      conv.initialized = true;
       conv.currentRound = Number(vo.currentRound ?? 0);
       if (conv.name === NEW_CONV_NAME) {
         conv.name = text.length > 12 ? `${text.slice(0, 12)}…` : text;
@@ -858,6 +1041,19 @@ async function handleSend() {
   }
 }
 
+/**
+ * 发送用户消息：若发送失败（如 adapter 抛 SESSION_NOT_FOUND），补一次生命周期 init 后再重发。
+ * 保持 sendUserMessage 语义不变（message + conversationId）。
+ */
+async function doSend(conversationId: string, message: string) {
+  try {
+    return await sendUserMessage({ message, conversationId });
+  } catch (e) {
+    await ensureConversationLifecycle(conversationId);
+    return await sendUserMessage({ message, conversationId });
+  }
+}
+
 function waitForAssistant(conversationId: string, prevAssistantCount: number) {
   pollAttempts = 0;
   if (pollTimer !== null) window.clearTimeout(pollTimer);
@@ -869,10 +1065,11 @@ function waitForAssistant(conversationId: string, prevAssistantCount: number) {
       return;
     }
     try {
-      const mem = await fetchMemory(conversationId);
-      const assistantCount = mem.filter((m) => m.type === "assistant").length;
+      const { messages, pendingActions: acts } = await fetchMemory(conversationId);
+      const assistantCount = messages.filter((m) => m.type === "assistant").length;
       if (assistantCount > prevAssistantCount) {
-        allMessages.value = mem;
+        allMessages.value = messages;
+        pendingActions.value = acts;
         thinking.value = false;
         scrollToBottom();
         await Promise.allSettled([refreshEmotionList(conversationId), loadConversationList(false)]);
@@ -917,6 +1114,66 @@ function showComingSoon() {
   ElMessage.info("该功能即将上线，敬请期待");
 }
 
+/* ==================== 量表卡片交互 ==================== */
+
+/** 待处理卡片状态文案 */
+function pendingStatusText(status: number): string {
+  switch (status) {
+    case 0: return "等待作答";
+    case 1: return "分析中…";
+    case 2: return "已解读";
+    case 3: return "已取消";
+    case 4: return "已过期";
+    default: return "未知";
+  }
+}
+
+/** 开始作答：跳转到量表答题页，携带 toolId 与 conversationId 供答题页回写记录ID与提交完成 */
+function handleScaleStart(act: PendingActionItem) {
+  const data = act.actionData;
+  if (!data?.scaleId) {
+    ElMessage.warning("量表信息缺失，无法开始作答");
+    return;
+  }
+  pendingActActions[act.id] = "start";
+  router.push(`/scale/${data.scaleId}/answer?toolId=${act.id}&conversationId=${currentConversationId.value}`);
+}
+
+/** 用户上报作答完成 / 放弃，触发后端分析与状态流转 */
+async function handleScaleAnswered(act: PendingActionItem, answered: number) {
+  if (answered === 1) {
+    try {
+      await ElMessageBox.confirm("确认已完成该量表全部作答？提交后 AI 将分析结果并回复你。", "提交测评", {
+        confirmButtonText: "已全部答完",
+        cancelButtonText: "再检查一下",
+        type: "info",
+      });
+    } catch {
+      return;
+    }
+  } else {
+    try {
+      await ElMessageBox.confirm("确定放弃本次量表吗？", "放弃测评", { type: "warning" });
+    } catch {
+      return;
+    }
+  }
+  try {
+    pendingActActions[act.id] = "done";
+    await completeToolAnswer({
+      toolId: Number(act.id),
+      conversationId: Number(currentConversationId.value),
+      answered,
+      recordId: act.actionData?.recordId,
+    });
+    ElMessage.success(answered === 1 ? "测评已提交，AI 正在分析…" : "已取消本次测评");
+  } catch (e: any) {
+    ElMessage.error(e?.message || "提交失败，请稍后重试");
+  } finally {
+    delete pendingActActions[act.id];
+  }
+}
+
 /* ==================== 会话管理 ==================== */
 
 async function handleItemCommand(item: ConversationItem, cmd: string) {
@@ -949,7 +1206,19 @@ async function handleRename(item: ConversationItem) {
 
 async function handleDelete(item: ConversationItem) {
   if (item.draft) {
-    removeConversationLocally(item.id);
+    // 本地占位（旧逻辑兜底）：仅本地移除，无需操作服务端
+    if (item.id.startsWith("local-")) {
+      removeConversationLocally(item.id);
+      return;
+    }
+    // 新建会话已通过 lifecycle init 创建了后端会话，删除时同步移除服务端会话并释放生命周期
+    try {
+      await deleteConversation(item.id);
+      releaseConversationLifecycle(item.id);
+      removeConversationLocally(item.id);
+    } catch {
+      ElMessage.error("删除失败，请稍后重试");
+    }
     return;
   }
   try {
@@ -963,6 +1232,7 @@ async function handleDelete(item: ConversationItem) {
   }
   try {
     await deleteConversation(item.id);
+    releaseConversationLifecycle(item.id);
     removeConversationLocally(item.id);
     ElMessage.success("会话已删除");
   } catch {
@@ -978,6 +1248,7 @@ async function removeConversationLocally(id: string) {
     currentConversationId.value = nextId;
     if (nextId) {
       conversationStore.setCurrentConversation(nextId);
+      await ensureConversationReady(nextId);
       await loadChat(nextId);
     } else {
       conversationStore.setCurrentConversation("");
@@ -995,6 +1266,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelPending();
+  // 会话切走/离开本页时释放当前会话的后端 adapter/管道资源（失败仅 warn，不阻塞）。
+  const current = currentConversationId.value;
+  if (current && !current.startsWith("local-")) {
+    releaseConversationLifecycle(current);
+  }
 });
 </script>
 
@@ -1004,6 +1280,75 @@ onBeforeUnmount(() => {
   display: flex;
   overflow: hidden;
   background: #f8f9fc;
+}
+
+/* ==================== 待处理人工交互卡片 ==================== */
+
+.pending-card {
+  background: #fff;
+  border: 1px solid #e5e7f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 12px 0 4px 4px;
+  box-shadow: 0 2px 10px rgba(108, 99, 255, 0.08);
+}
+
+.pc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pc-badge {
+  font-size: 11px;
+  color: #6c63ff;
+  background: #f0eeff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.pc-status {
+  font-size: 12px;
+  color: #999;
+}
+
+.pc-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 6px;
+}
+
+.pc-meta {
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.pc-reason {
+  color: #6c63ff;
+}
+
+.pc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pc-result {
+  font-size: 13px;
+  color: #52c41a;
+  padding: 8px 0 2px;
+}
+
+.pending-card.status-3 .pc-result,
+.pending-card.status-4 .pc-result {
+  color: #999;
 }
 
 /* ==================== 会话列表 ==================== */

@@ -164,4 +164,26 @@ public class ConversationPendingAction implements Serializable {
         return this.actionType != null && this.actionType == ACTION_TYPE_SCALE;
     }
 
+    /**
+     * 获取当前交互类型的文本描述
+     *
+     * @return 交互类型的文本描述
+     */
+    public String getActionTypeText() {
+        return switch (actionType) {
+            case ACTION_TYPE_SCALE -> "量表测评";
+            default -> "未知交互类型(" + actionType + ")";
+        };
+    }
+
+    public String getStatusText() {
+        return switch (status) {
+            case STATUS_WAITING -> "等待处理中";
+            case STATUS_RESPONDED -> "已完成";
+            case STATUS_CANCELLED -> "已取消";
+            case STATUS_EXPIRED -> "已过期";
+            default -> "未知状态(" + status + ")";
+        };
+    }
+
 }

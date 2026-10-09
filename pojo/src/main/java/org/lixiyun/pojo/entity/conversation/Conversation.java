@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.lixiyun.pojo.constant.DeleteConstant;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -29,25 +30,17 @@ public class Conversation implements Serializable {
     
     private static final long serialVersionUID = 409226948168857358L;
     
-    /**
-     * 会话的唯一标识符
-     */ 
+    /** 会话的唯一标识符 */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     
-    /**
-     * 用户ID，关联用户表
-     */
+    /** 用户ID，关联用户表 */
     private Long userId;
     
-    /**
-     * 该会话的名称
-     */
+    /** 该会话的名称 */
     private String name;
     
-    /**
-     * 上下文概括
-     */
+    /** 上下文概括 */
     private String contextSummary;
 
     /** 情绪分析上下文语义压缩 */
@@ -60,35 +53,30 @@ public class Conversation implements Serializable {
     private LocalDateTime lastActiveTime;
     
     /**
-     * 会话模式
-     */
+    /** 会话模式 */
     private String chatMode;
     
     /**
-     * 会话映射表
-     */
+     * 会话映射表 */
     @com.baomidou.mybatisplus.annotation.TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, String> sessionMapping;
     
-    /**
-     * 当前轮次，执行中是当前轮次，执行后是下一轮次
-     */
+    /** 当前轮次，执行中是当前轮次，执行后是下一轮次 */
     private Integer currentRound;
     
-    /**
-     * 记录创建时间
-     */
+    /** 记录创建时间 */
     private LocalDateTime createdTime;
     
-    /**
-     * 最后更新时间
-     */
+    /** 最后更新时间 */
     private LocalDateTime updatedTime;
     
-    /**
-     * 是否删除，0-否，1-是
-     */
+    /** 是否删除，0-否，1-是 */
     @TableLogic
     private Integer deleted;
+
+    /** 已删除 */
+    public boolean isDeleted() {
+        return deleted == DeleteConstant.DELETE_FLAG_YES;
+    }
 
 }

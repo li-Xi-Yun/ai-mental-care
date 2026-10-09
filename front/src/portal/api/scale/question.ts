@@ -1,7 +1,5 @@
-import httpClient from "@shared/api/instance";
-import type { Result } from "@shared/api/types";
-
-/** 获取量表题目列表 */
-export function getScaleQuestionList(data: any) {
-  return httpClient.get<Result<any[]>>("/user/scale/questions/list", { params: data });
-}
+/**
+ * @deprecated 后端不存在 GET /user/scale/questions/list 接口；
+ * 量表题目由 POST /user/scale/assessment/start（ScaleStartVO.questions）下发，本文件不再使用。
+ */
+export {};
