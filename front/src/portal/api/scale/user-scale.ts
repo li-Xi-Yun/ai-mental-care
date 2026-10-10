@@ -162,12 +162,20 @@ export function terminateAssessment(recordId: number) {
 
 /* ==================== AI对话量表工具（tool）相关 ==================== */
 
-/** 保存用户测评记录ID：从对话卡片进入答题页后回写，保证刷新后仍可恢复作答上下文 */
-export function bindToolRecord(data: { toolId: number; conversationId: number; recordId: number }) {
+/**
+ * 保存用户测评记录ID：从对话卡片进入答题页后回写，保证刷新后仍可恢复作答上下文。
+ * toolId/conversationId/recordId 均为雪花 ID，按字符串直传（禁止 Number()，会丢精度）。
+ */
+export function bindToolRecord(data: { toolId: number | string; conversationId: number | string; recordId: number | string }) {
   return httpClient.post<Result<null>>("/user/scale/tool/bind-record", data);
 }
 
-/** 用户作答完成提交：answered=1 已作答（触发分析），answered=0 未作答（取消卡片） */
-export function completeToolAnswer(data: { toolId: number; conversationId: number; answered: number; recordId?: number }) {
+/** 用户作答完成提交：answered=1 已作答（触发分析），answered=0 未作答（取消卡片）；ID 一律字符串直传 */
+export function completeToolAnswer(data: {
+  toolId: number | string;
+  conversationId: number | string;
+  answered: number;
+  recordId?: number | string;
+}) {
   return httpClient.post<Result<null>>("/user/scale/tool/complete", data);
 }

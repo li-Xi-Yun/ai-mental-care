@@ -155,6 +155,7 @@ import { getProfile, updateProfile } from "@/admin/api/admin/profile";
 import type { AdminProfileVO } from "@/admin/api/admin/profile";
 import { pwdUpdate } from "@/admin/api/admin/account";
 import { uploadImage } from "@shared/api/common/upload";
+import { resolveResourceUrl } from "@shared/utils/resource";
 import dayjs from "@/shared/utils/dayjs";
 
 /* ==================== 状态元数据（0 正常 / 1 异常 / 2 封禁 / 3 注销） ==================== */
@@ -187,7 +188,9 @@ const avatarText = computed(() => {
   return (u.trim().charAt(0) || profile.value.loginAccount?.trim().charAt(0) || "A").toUpperCase();
 });
 
-const avatarUrl = ref("");
+/** 头像原始路径（后端返回相对路径，展示时经 resolveResourceUrl 拼接 /api 前缀） */
+const avatarPath = ref("");
+const avatarUrl = computed(() => resolveResourceUrl(avatarPath.value));
 
 function formatTime(v?: string): string {
   return v ? dayjs(v).format("YYYY-MM-DD HH:mm") : "—";
@@ -237,7 +240,7 @@ async function handleAvatarUpload(options: { file: File }) {
     const res = await uploadImage(options.file);
     const url = res.data?.data;
     if (!url) throw new Error("empty url");
-    avatarUrl.value = url;
+    avatarPath.value = url;
     ElMessage.success("头像上传成功");
   } catch {
     ElMessage.error("头像上传失败，请稍后重试");

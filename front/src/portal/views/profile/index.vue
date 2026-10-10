@@ -216,6 +216,7 @@ import { getProfile, updateProfile } from "@/portal/api/user/profile";
 import type { UserProfileUpdateDTO, UserProfileVO } from "@/portal/api/user/profile";
 import { logout, pwdUpdate } from "@/portal/api/user/account";
 import { uploadImage } from "@/shared/api/common/upload";
+import { resolveResourceUrl } from "@/shared/utils/resource";
 import { clearTokenInfo } from "@/shared/api/auth";
 import dayjs, { FORMAT_DATE } from "@/shared/utils/dayjs";
 
@@ -253,7 +254,8 @@ const profileForm = reactive<UserProfileUpdateDTO>({
   gender: 2,
 });
 
-const avatarUrl = computed(() => profileForm.avatar);
+// 后端返回的是相对路径（static-resources/...），需拼接 /api 前缀才能在浏览器中加载
+const avatarUrl = computed(() => resolveResourceUrl(profileForm.avatar));
 const displayName = computed(() => profileForm.username || userStore.userInfo?.username || "");
 const loginAccount = computed(() => profileForm.loginAccount || userStore.userInfo?.loginAccount || "");
 const introduction = computed(() => profileForm.introduction || "");
@@ -278,6 +280,17 @@ function syncProfile(data: UserProfileVO) {
   profileForm.email = data.email ?? "";
   profileForm.introduction = data.introduction ?? "";
   profileForm.gender = data.gender ?? 2;
+}
+
+/**
+ * 构造资料更新请求体：后端对 mobile 有 @Pattern 校验、不接受空串
+ * （留空提交会返回"手机号码格式不正确"导致整个更新失败，头像随资料一起提交时同样受影响），
+ * 因此未填写时不提交该字段（保持服务端原值，与后台个人中心同一处理）。
+ */
+function buildProfilePayload(): UserProfileUpdateDTO {
+  const payload: UserProfileUpdateDTO = { ...profileForm };
+  if (!payload.mobile) delete payload.mobile;
+  return payload;
 }
 
 async function loadProfile() {
@@ -329,7 +342,7 @@ async function handleAvatarUpload(options: { file: File }) {
     if (!url) throw new Error("empty url");
     profileForm.avatar = url;
     // 上传成功后立即持久化头像并同步全局用户信息
-    await updateProfile({ ...profileForm });
+    await updateProfile(buildProfilePayload());
     profile.value = { ...profile.value, avatar: url };
     userStore.setUserInfo({ ...userStore.userInfo, ...profile.value });
     ElMessage.success("头像已更新");
@@ -365,7 +378,7 @@ async function handleSaveProfile() {
   if (!valid) return;
   profileSaving.value = true;
   try {
-    await updateProfile({ ...profileForm });
+    await updateProfile(buildProfilePayload());
     profile.value = { ...profile.value, ...profileForm };
     userStore.setUserInfo({ ...userStore.userInfo, ...profile.value });
     ElMessage.success("个人资料已保存");

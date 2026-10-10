@@ -50,6 +50,11 @@ server/logs/*
 **/*-secret.yml
 **/*.env
 
+# 测试相关
+e2e-tests
+
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

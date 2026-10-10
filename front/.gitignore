@@ -5,3 +5,4 @@ dist
 .env.*.local
 *.log
 .DS_Store
+e2e-tests

@@ -3,8 +3,8 @@ import type { Result } from "@shared/api/types";
 
 /** 对话生命周期初始化请求 DTO（与后端 ConversationLifecycleInitDTO 对齐） */
 export interface ConversationLifecycleInitDTO {
-  /** 会话ID（可选），为空时自动创建新会话 */
-  conversationId?: number;
+  /** 会话ID（可选），为空时自动创建新会话；19 位雪花 ID 请按字符串直传，禁止 Number()（会丢精度） */
+  conversationId?: number | string;
   /** 输入数据类型集合，如 TEXT、AUDIO */
   inputTypes: string[];
   /** 输出数据类型集合，如 TEXT、AUDIO */

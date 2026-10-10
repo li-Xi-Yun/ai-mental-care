@@ -1,5 +1,5 @@
 <template>
-  <div class="conversation-page">
+  <div class="conversation-page" :style="{ '--portal-header-height': PORTAL_HEADER_HEIGHT + 'px' }">
     <!-- 左侧：会话列表 -->
     <aside class="conversation-list-panel" :style="listPanelStyle">
       <div class="sl-header">
@@ -129,8 +129,16 @@
           </template>
         </div>
 
-        <!-- 思考动画 -->
-        <div v-if="thinking" class="msg ai">
+        <!-- 流式回复气泡（STOMP 逐字上屏，结束后由 memory 权威数据整体替换） -->
+        <div v-if="streamingReply && streamingReply.content" class="msg ai">
+          <div class="msg-avatar ai">AI</div>
+          <div class="msg-content">
+            <div class="msg-bubble ai">{{ streamingReply.content }}</div>
+          </div>
+        </div>
+
+        <!-- 思考动画（等待首字 / 轮询等待中） -->
+        <div v-if="thinking && !(streamingReply && streamingReply.content)" class="msg ai">
           <div class="msg-avatar ai">AI</div>
           <div class="typing-indicator">
             <span class="typing-text">正在思考</span>
@@ -138,35 +146,15 @@
           </div>
         </div>
 
-        <!-- 待处理人工交互卡片（量表推荐卡片，按轮次定位展示） -->
-        <div v-for="act in displayPendingActions" :key="act.id" class="pending-card" :class="`status-${act.status}`">
-          <template v-if="act.actionType === 1">
-            <div class="pc-head">
-              <span class="pc-badge">量表推荐</span>
-              <span class="pc-status">{{ pendingStatusText(act.status) }}</span>
-            </div>
-            <div class="pc-title">{{ act.actionData?.scaleName || "心理测评量表" }}</div>
-            <div class="pc-meta">
-              <span v-if="act.actionData?.totalQuestions">共 {{ act.actionData.totalQuestions }} 题</span>
-              <span v-if="act.actionData?.recommendReason" class="pc-reason">推荐理由：{{ act.actionData.recommendReason }}</span>
-            </div>
-
-            <!-- 等待作答：可进入答题 / 保存记录 / 提交完成 -->
-            <div v-if="act.status === 0" class="pc-actions">
-              <el-button size="small" type="primary" :loading="act.status === 0 && pendingActActions[act.id] === 'start'" @click="handleScaleStart(act)">开始作答</el-button>
-              <el-button size="small" plain :loading="pendingActActions[act.id] === 'done'" @click="handleScaleAnswered(act, 1)">已完成</el-button>
-              <el-button size="small" text type="info" @click="handleScaleAnswered(act, 0)">放弃</el-button>
-            </div>
-
-            <!-- 已响应：展示分析结论（如有） -->
-            <div v-else-if="act.status === 2" class="pc-result">
-              <span>测评已完成，AI 已回复解读结果</span>
-            </div>
-            <div v-else class="pc-result">
-              <span>{{ pendingStatusText(act.status) }}</span>
-            </div>
-          </template>
-        </div>
+        <!-- 待处理人工交互卡片（量表推荐卡片，按轮次定位展示；文本页/语音页共用组件） -->
+        <PendingActionCard
+          v-for="act in displayPendingActions"
+          :key="act.id"
+          :act="act"
+          :busy="pendingActActions[act.id]"
+          @start="handleScaleStart"
+          @answered="handleScaleAnswered"
+        />
       </div>
 
       <!-- 输入区 -->
@@ -184,7 +172,7 @@
             />
           </div>
           <div class="input-lower">
-            <button class="func-btn" title="语音对话（开发中）" @click="showComingSoon">语音对话</button>
+            <button class="func-btn" title="语音对话" @click="handleVoiceConversation">语音对话</button>
             <button class="func-btn" title="视频对话（开发中）" @click="showComingSoon">视频对话</button>
             <span class="spacer"></span>
             <button class="send-btn" :disabled="!inputMessage.trim() || thinking" title="发送" @click="handleSend">
@@ -357,61 +345,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Operation, DataAnalysis, Close, Delete, EditPen, More, ChatDotRound, Promotion } from "@element-plus/icons-vue";
-import { EMOTION_COLORS, CONVERSATION_LIST_WIDTH, EMOTION_PANEL_WIDTH } from "@/shared/api/config";
+import { EMOTION_COLORS, CONVERSATION_LIST_WIDTH, EMOTION_PANEL_WIDTH, PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
 import { getConversationList, updateConversationName, deleteConversation } from "@/portal/api/conversation/conversation";
-import { getConversationMemory } from "@/portal/api/conversation/dialogue";
+import { fetchRoundMemory, parsePendingActionPush } from "@/portal/api/conversation/dialogue";
 import { getEmotionAnalysisList } from "@/portal/api/conversation/emotion-analysis";
 import { initConversationLifecycle, deleteConversationLifecycle } from "@/portal/api/conversation/lifecycle";
 import { sendUserMessage } from "@/portal/api/conversation/ai-chat";
-import { completeToolAnswer } from "@/portal/api/scale/user-scale";
+import type { ConversationItem, MemoryMessage, PendingActionItem, UserMessageSendVO } from "@/portal/api/conversation/types";
+import { useStompConversation } from "@/portal/composables/useStompConversation";
+import type { ConversationStreamHandlers } from "@shared/ws/stomp-client";
+import PendingActionCard from "@/portal/components/conversation/PendingActionCard.vue";
+import { useScaleCardActions } from "@/portal/composables/useScaleCardActions";
 import { useConversationStore } from "@/portal/stores/conversation";
 import { useUserStore } from "@/portal/stores/user";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
+import { getStorage, setStorage } from "@/shared/utils/storage";
 
 /* ==================== 类型 ==================== */
 
-interface ConversationItem {
-  id: string;
-  name: string;
-  currentRound: number;
-  lastActiveTime: string;
-  draft?: boolean;
-  /** 会话生命周期（后端 adapter/管道）是否已初始化 */
-  initialized?: boolean;
-}
-
-interface MemoryMessage {
-  id: string;
-  content: string;
-  type: string;
-  roundNum: number;
-  createdTime: string;
-}
-
-/** 量表卡片 actionData（后端已解析为对象） */
-interface ScaleCardActionData {
-  scaleId?: number;
-  scaleName?: string;
-  totalQuestions?: number;
-  recommendReason?: string;
-  recordId?: number;
-}
-
-/** 待处理人工交互（卡片） */
-interface PendingActionItem {
-  id: string;
-  actionType: number;
-  roundNum: number;
-  actionData?: ScaleCardActionData;
-  status: number;
-  expireTime?: string;
-  completedTime?: string;
-  createdTime?: string;
-}
+/* 会话/消息/待处理卡片等共享类型统一见 @/portal/api/conversation/types（文本页与语音页共用） */
 
 interface EmotionAnalysisItem {
   id: string;
@@ -447,16 +403,20 @@ interface PadBar {
   text: string;
 }
 
-interface UserMessageSendVO {
-  conversationId?: number;
-  currentRound?: number;
-}
-
 /* ==================== 常量 ==================== */
 
 const NEW_CONV_NAME = "新对话";
 const MAX_POLL_TIMES = 40;
 const POLL_INTERVAL = 1600;
+/** 文本流空闲判定：最后一个 chunk 到达后超过该时长视为本轮回复结束 */
+const STREAM_IDLE_MS = 1500;
+/** 流式首字超时：发送成功后该时长内无任何 chunk 则降级轮询 */
+const FIRST_TOKEN_TIMEOUT_MS = 10000;
+/** memory 对账重试间隔与最大次数（AI 消息落库可能滞后于流结束） */
+const RECONCILE_RETRY_MS = 800;
+const RECONCILE_MAX_RETRY = 3;
+/** 文本页 WS 连接超时（超时则本轮走既有轮询链路） */
+const WS_CONNECT_TIMEOUT_MS = 3000;
 const RING_C = 2 * Math.PI * 40;
 const FALLBACK_PALETTE = ["#6c63ff", "#ff6b6b", "#fa8c16", "#52c41a", "#1890ff", "#13c2c2", "#722ed1", "#eb2f96"];
 
@@ -493,8 +453,19 @@ const STOPWORDS = new Set([
 
 /* ==================== 布局状态 ==================== */
 
-const showConversationList = ref(true);
-const showEmotionPanel = ref(true);
+/** 面板展示状态本地持久化（刷新不重置；情绪分析面板默认收起，点击后才展开） */
+const PANEL_STATE_KEY = "portal-conversation-panels";
+const savedPanelState = getStorage<{ showConversationList?: boolean; showEmotionPanel?: boolean }>(PANEL_STATE_KEY, null);
+
+const showConversationList = ref(savedPanelState?.showConversationList ?? true);
+const showEmotionPanel = ref(savedPanelState?.showEmotionPanel ?? false);
+
+watch([showConversationList, showEmotionPanel], () => {
+  setStorage(PANEL_STATE_KEY, {
+    showConversationList: showConversationList.value,
+    showEmotionPanel: showEmotionPanel.value,
+  });
+});
 
 const listPanelStyle = computed(() => ({
   width: showConversationList.value ? `${CONVERSATION_LIST_WIDTH}px` : "0px",
@@ -517,7 +488,8 @@ const currentConversationId = ref("");
 const allMessages = ref<MemoryMessage[]>([]);
 const emotionList = ref<EmotionAnalysisItem[]>([]);
 const pendingActions = ref<PendingActionItem[]>([]);
-const pendingActActions = reactive<Record<string, "start" | "done" | undefined>>({});
+/** 量表卡片动作（与语音对话页共用同一实现） */
+const { pendingActActions, handleScaleStart, handleScaleAnswered } = useScaleCardActions(() => currentConversationId.value);
 const expandedAnalysisId = ref<string | null>(null);
 
 const inputMessage = ref("");
@@ -531,8 +503,29 @@ const inputBoxRef = ref<HTMLElement | null>(null);
 let pollTimer: number | null = null;
 let pollAttempts = 0;
 
+/** 流式回复气泡（STOMP 逐字上屏；结束后由 memory 对账结果替换，不写入 allMessages 以免整列表重建） */
+const streamingReply = ref<{ conversationId: string; content: string } | null>(null);
+/** 本轮发送前已有 assistant 消息数（提交判定与轮询兜底共用口径） */
+let baselineAssistantCount = 0;
+let streamIdleTimer: number | null = null;
+let firstTokenTimer: number | null = null;
+let reconcileTimer: number | null = null;
+let reconcileAttempts = 0;
+/** 本轮是否已降级为轮询（WS 不可用 / 传输断开 / 首字超时 / 对账失败） */
+let degradedThisRound = false;
+
 /** 正在初始化生命周期（allocating）的会话ID集合，用于防并发与幂等 */
 const allocatingIdSet = new Set<string>();
+
+/** STOMP 连接（页面级实例）：流式回复 / 会话名推送 / 量表卡片推送 */
+const stomp = useStompConversation({
+  onTransportClose: () => {
+    // 传输层被动断开：若本轮仍在等待 AI 回复，转既有轮询链路兜底
+    if (thinking.value && !degradedThisRound) {
+      startPollingFallback(streamingReply.value?.conversationId ?? currentConversationId.value);
+    }
+  },
+});
 
 /* ==================== 派生数据 ==================== */
 
@@ -755,8 +748,9 @@ async function ensureConversationLifecycle(conversationId: string): Promise<stri
   }
   allocatingIdSet.add(conversationId);
   try {
+    // 注意：conversationId 为 19 位雪花 ID，必须按字符串直传（Number() 会丢精度导致定位错会话）
     const res = await initConversationLifecycle({
-      conversationId: conversationId ? Number(conversationId) : undefined,
+      conversationId: conversationId || undefined,
       inputTypes: ["TEXT"],
       outputTypes: ["TEXT"],
     });
@@ -769,22 +763,38 @@ async function ensureConversationLifecycle(conversationId: string): Promise<stri
 }
 
 /**
- * 切换/进入已有会话前，确保该会话生命周期已初始化（幂等，后端仅校验归属并重建资源）。
- * 失败时提示但允许用户继续浏览，发送消息前会自动补一次 init。
+ * 确保会话已完成服务端初始化（首次发送前调用）：
+ * - 本地新会话（local-*）：调用 init 创建服务端会话并回填真实 ID；
+ * - 已有会话：init 绑定/重建 adapter 与管道（幂等）。
+ * 返回真实会话 ID。
  */
-async function ensureConversationReady(conversationId: string) {
-  const conv = conversationList.value.find((c) => c.id === conversationId);
-  if (!conv || conv.draft || conv.initialized) return;
-  try {
-    await ensureConversationLifecycle(conversationId);
-    conv.initialized = true;
-  } catch {
-    ElMessage.warning("会话资源初始化失败，发送消息前将自动重试");
+async function ensureConversationInitialized(conv: ConversationItem): Promise<string> {
+  const isLocal = conv.id.startsWith("local-");
+  if (!isLocal && conv.initialized) return conv.id;
+  const oldId = conv.id;
+  const realId = await ensureConversationLifecycle(isLocal ? "" : oldId);
+  conv.id = realId;
+  conv.draft = false;
+  conv.initialized = true;
+  if (currentConversationId.value === oldId) {
+    // 触发订阅迁移（watch currentConversationId）并保持 store 同步
+    currentConversationId.value = realId;
   }
+  conversationStore.setCurrentConversation(realId);
+  return realId;
 }
 
-/** 销毁会话生命周期（释放后端 adapter/管道资源，失败不阻塞 UI） */
+/**
+ * 销毁会话生命周期（释放后端 adapter/管道资源；失败不阻塞 UI）。
+ * 本地新会话（local-*）与从未初始化的会话无需调用；调用后该会话标记为未初始化，
+ * 下次发送时会重新 init。
+ */
 function releaseConversationLifecycle(conversationId: string) {
+  if (!conversationId || conversationId.startsWith("local-")) return;
+  const conv = conversationList.value.find((c) => c.id === conversationId);
+  const wasInitialized = conv?.initialized ?? false;
+  if (conv) conv.initialized = false;
+  if (!wasInitialized) return;
   deleteConversationLifecycle(conversationId).catch((e) => {
     console.warn(`销毁会话生命周期失败 conversationId=${conversationId}`, e);
   });
@@ -800,6 +810,157 @@ function logEndpoints(label: string, vo: any) {
   }
 }
 
+/* ==================== STOMP 流式（文本） ==================== */
+
+/** 会话级流处理器：逐字回复 / 会话名推送 / 待处理卡片推送 */
+const streamHandlers: ConversationStreamHandlers = {
+  onTextReply: (chunk) => handleTextChunk(chunk),
+  onConversationName: (name) => handleConversationName(name),
+  onPendingAction: (raw) => handlePendingAction(raw),
+};
+
+/** 确保 STOMP 已连接（幂等）；返回 false 表示本轮应降级轮询 */
+async function ensureStompConnected(timeoutMs = WS_CONNECT_TIMEOUT_MS): Promise<boolean> {
+  if (stomp.state.value === "connected") return true;
+  return await stomp.connect(timeoutMs);
+}
+
+/** 连接成功后为当前会话绑定订阅（页面加载/登录后调用，不阻塞首屏） */
+async function connectAndBind() {
+  const ok = await ensureStompConnected(8000);
+  if (ok) bindCurrentConversation();
+}
+
+/** 为当前会话绑定订阅（未连接/本地草稿时静默跳过，发送前会再尝试连接并绑定） */
+function bindCurrentConversation() {
+  const id = currentConversationId.value;
+  if (!id || id.startsWith("local-") || stomp.state.value !== "connected") return;
+  stomp.bind(id, streamHandlers);
+}
+
+// 切换/新建/删除后自动迁移订阅（连接未就绪时跳过，handleSend 前会补连）
+watch(currentConversationId, () => {
+  if (stomp.state.value === "connected") bindCurrentConversation();
+});
+
+/** 收到回复增量：追加到流式气泡并重置空闲计时（空闲后走 memory 对账） */
+function handleTextChunk(chunk: string) {
+  if (!chunk) return;
+  // 非本轮/已提交的迟到 chunk 直接丢弃（切换会话等场景）
+  if (!thinking.value && !streamingReply.value) return;
+  clearFirstTokenTimer();
+  if (!streamingReply.value) {
+    streamingReply.value = { conversationId: currentConversationId.value, content: "" };
+  }
+  streamingReply.value.content += chunk;
+  resetStreamIdleTimer();
+  scrollToBottom();
+}
+
+function resetStreamIdleTimer() {
+  if (streamIdleTimer !== null) window.clearTimeout(streamIdleTimer);
+  streamIdleTimer = window.setTimeout(() => {
+    streamIdleTimer = null;
+    void commitStreamedReply();
+  }, STREAM_IDLE_MS);
+}
+
+function clearFirstTokenTimer() {
+  if (firstTokenTimer !== null) {
+    window.clearTimeout(firstTokenTimer);
+    firstTokenTimer = null;
+  }
+}
+
+function startFirstTokenTimer(conversationId: string) {
+  clearFirstTokenTimer();
+  firstTokenTimer = window.setTimeout(() => {
+    firstTokenTimer = null;
+    // 首字超时且没有任何内容：降级轮询（thinking 保持，输入框仍锁定）
+    if (streamingReply.value && !streamingReply.value.content) {
+      startPollingFallback(conversationId);
+    }
+  }, FIRST_TOKEN_TIMEOUT_MS);
+}
+
+/**
+ * 流空闲结束 → memory 对账：
+ * 以「assistant 消息数增加」为提交判定（与轮询链路同口径），整体替换为服务端权威数据；
+ * 落库滞后则短暂重试，仍失败转轮询兜底。
+ */
+async function commitStreamedReply() {
+  const stream = streamingReply.value;
+  if (!stream || !stream.content) return;
+  if (reconcileTimer !== null) {
+    window.clearTimeout(reconcileTimer);
+    reconcileTimer = null;
+  }
+  try {
+    const { messages, pendingActions: acts } = await fetchRoundMemory(stream.conversationId);
+    const assistantCount = messages.filter((m) => m.type === "assistant").length;
+    if (assistantCount > baselineAssistantCount) {
+      allMessages.value = messages;
+      pendingActions.value = acts;
+      streamingReply.value = null;
+      thinking.value = false;
+      scrollToBottom();
+      await Promise.allSettled([refreshEmotionList(stream.conversationId), loadConversationList(false)]);
+      return;
+    }
+    scheduleReconcileRetry(stream.conversationId);
+  } catch {
+    scheduleReconcileRetry(stream.conversationId);
+  }
+}
+
+function scheduleReconcileRetry(conversationId: string) {
+  if (reconcileAttempts < RECONCILE_MAX_RETRY) {
+    reconcileAttempts += 1;
+    reconcileTimer = window.setTimeout(() => {
+      reconcileTimer = null;
+      void commitStreamedReply();
+    }, RECONCILE_RETRY_MS);
+    return;
+  }
+  startPollingFallback(conversationId);
+}
+
+/** 降级到既有轮询链路（丢弃流式气泡，待轮询到权威数据后整体替换） */
+function startPollingFallback(conversationId: string) {
+  degradedThisRound = true;
+  streamingReply.value = null;
+  if (!conversationId) {
+    thinking.value = false;
+    return;
+  }
+  waitForAssistant(conversationId, baselineAssistantCount);
+}
+
+/** 会话名推送：更新本地列表并刷新（AI 已生成标题） */
+function handleConversationName(name: string) {
+  if (!name) return;
+  const conv = conversationList.value.find((c) => c.id === currentConversationId.value);
+  if (conv) {
+    conv.name = name;
+    conv.draft = false;
+  }
+  conversationStore.setConversationList(conversationList.value as any);
+  void loadConversationList(false);
+}
+
+/** 待处理卡片推送：按 id upsert（memory 对账仍为最终权威） */
+function handlePendingAction(rawJson: string) {
+  const item = parsePendingActionPush(rawJson);
+  if (!item) return;
+  if (!item.roundNum) item.roundNum = currentConversation.value?.currentRound ?? 0;
+  const idx = pendingActions.value.findIndex((p) => p.id === item.id);
+  if (idx >= 0) {
+    pendingActions.value[idx] = { ...pendingActions.value[idx], ...item };
+  } else {
+    pendingActions.value = [...pendingActions.value, item];
+  }
+}
+
 /* ==================== API 数据加载 ==================== */
 
 function unwrapList(res: any): any[] {
@@ -807,38 +968,6 @@ function unwrapList(res: any): any[] {
   if (Array.isArray(body)) return body;
   if (body && Array.isArray(body.records)) return body.records;
   return [];
-}
-
-async function fetchMemory(conversationId: string) {
-  const res = await getConversationMemory(conversationId, { pageNum: 1, pageSize: 200 });
-  // 后端按轮次聚合返回：records 为轮次单元（含 messages + pendingActions），这里展平为消息列表
-  const rounds = unwrapList(res);
-  const msgs: MemoryMessage[] = [];
-  const acts: PendingActionItem[] = [];
-  for (const round of rounds) {
-    for (const m of round.messages ?? []) {
-      msgs.push({
-        id: String(m.id),
-        content: String(m.content ?? ""),
-        type: String(m.type ?? "").toLowerCase(),
-        roundNum: Number(m.roundNum ?? round.roundNum ?? 0),
-        createdTime: m.createdTime ?? "",
-      });
-    }
-    for (const p of round.pendingActions ?? []) {
-      acts.push({
-        id: String(p.id),
-        actionType: Number(p.actionType ?? 0),
-        roundNum: Number(p.roundNum ?? round.roundNum ?? 0),
-        actionData: p.actionData ?? undefined,
-        status: Number(p.status ?? 0),
-        expireTime: p.expireTime ?? "",
-        completedTime: p.completedTime ?? "",
-        createdTime: p.createdTime ?? "",
-      });
-    }
-  }
-  return { messages: msgs, pendingActions: acts };
 }
 
 async function fetchEmotions(conversationId: string): Promise<EmotionAnalysisItem[]> {
@@ -866,13 +995,22 @@ async function loadConversationList(selectFirst: boolean) {
   loadingConversations.value = true;
   try {
     const res = await getConversationList({ pageNum: 1, pageSize: 100 });
-    conversationList.value = unwrapList(res).map((c: any) => ({
-      id: String(c.id),
-      name: String(c.name ?? NEW_CONV_NAME),
-      currentRound: Number(c.currentRound ?? 0),
-      lastActiveTime: c.lastActiveTime ?? c.createdTime ?? "",
-      draft: false,
-    }));
+    const prevById = new Map(conversationList.value.map((c) => [c.id, c]));
+    const serverItems: ConversationItem[] = unwrapList(res).map((c: any) => {
+      const id = String(c.id);
+      return {
+        id,
+        name: String(c.name ?? NEW_CONV_NAME),
+        currentRound: Number(c.currentRound ?? 0),
+        lastActiveTime: c.lastActiveTime ?? c.createdTime ?? "",
+        draft: false,
+        // 保留本页面已初始化的生命周期标记（列表刷新不应导致重复 init / 丢失会话状态）
+        initialized: prevById.get(id)?.initialized ?? false,
+      };
+    });
+    // 尚未发送的本地新会话不在服务端列表中，但需要在页面上保留展示
+    const localDrafts = conversationList.value.filter((c) => c.id.startsWith("local-"));
+    conversationList.value = [...localDrafts, ...serverItems];
     conversationStore.setConversationList(conversationList.value as any);
 
     if (selectFirst) {
@@ -882,8 +1020,8 @@ async function loadConversationList(selectFirst: boolean) {
       }
       if (target) {
         currentConversationId.value = target;
-        await ensureConversationReady(target);
-        await loadChat(target);
+        conversationStore.setCurrentConversation(target);
+        await loadChatIfReal(target);
       } else {
         currentConversationId.value = "";
         allMessages.value = [];
@@ -893,8 +1031,8 @@ async function loadConversationList(selectFirst: boolean) {
       const nextId = conversationList.value[0]?.id ?? "";
       currentConversationId.value = nextId;
       if (nextId) {
-        await ensureConversationReady(nextId);
-        await loadChat(nextId);
+        conversationStore.setCurrentConversation(nextId);
+        await loadChatIfReal(nextId);
       } else {
         allMessages.value = [];
         emotionList.value = [];
@@ -907,10 +1045,22 @@ async function loadConversationList(selectFirst: boolean) {
   }
 }
 
+/** 加载会话历史；本地新会话（尚未发送、无服务端记录）直接清空展示 */
+async function loadChatIfReal(conversationId: string) {
+  if (conversationId.startsWith("local-")) {
+    allMessages.value = [];
+    pendingActions.value = [];
+    emotionList.value = [];
+    expandedAnalysisId.value = null;
+    return;
+  }
+  await loadChat(conversationId);
+}
+
 async function loadChat(conversationId: string) {
   loadingChat.value = true;
   try {
-    const { messages, pendingActions: acts } = await fetchMemory(conversationId);
+    const { messages, pendingActions: acts } = await fetchRoundMemory(conversationId);
     allMessages.value = messages;
     pendingActions.value = acts;
   } catch {
@@ -937,47 +1087,62 @@ async function refreshEmotionList(conversationId: string) {
 async function selectConversation(id: string) {
   if (id === currentConversationId.value) return;
   cancelPending();
+  // 切换会话：销毁上一个会话的后端资源（目标会话在首次发送时再 init）
+  releaseConversationLifecycle(currentConversationId.value);
   currentConversationId.value = id;
   conversationStore.setCurrentConversation(id);
-  await ensureConversationReady(id);
-  await loadChat(id);
+  await loadChatIfReal(id);
 }
 
 /* ==================== 会话管理 ==================== */
 
-async function handleNewConversation() {
+/**
+ * 创建一个本地新会话（local-*）：此时不调用后端 init，
+ * 待用户在该会话中首次发送文本时再创建服务端会话（/lifecycle/init）。
+ */
+function createLocalDraft(): ConversationItem {
+  // 已有未使用的本地新会话先移除，避免堆积（均为空会话，无数据丢失）
+  conversationList.value = conversationList.value.filter((c) => !c.id.startsWith("local-"));
+  const draft: ConversationItem = {
+    id: `local-${Date.now()}`,
+    name: NEW_CONV_NAME,
+    currentRound: 0,
+    lastActiveTime: dayjs().format(FORMAT_DATETIME),
+    draft: true,
+    initialized: false,
+  };
+  conversationList.value.unshift(draft);
+  conversationStore.setConversationList(conversationList.value as any);
+  currentConversationId.value = draft.id;
+  conversationStore.setCurrentConversation(draft.id);
+  allMessages.value = [];
+  emotionList.value = [];
+  pendingActions.value = [];
+  expandedAnalysisId.value = null;
+  return draft;
+}
+
+/** 当前是否已是"新会话"（本地草稿或尚无任何轮次的会话） */
+function isBlankConversation(conv: ConversationItem | undefined): boolean {
+  return !!conv && (!!conv.draft || conv.currentRound <= 0);
+}
+
+function handleNewConversation() {
   // 游客不能新建会话（会话是个人数据）：当前页面弹登录窗
   if (!userStore.token) {
     userStore.openLoginDialog("login");
     return;
   }
+  const conv = currentConversation.value;
+  // 当前已经是新会话：不重复创建
+  if (isBlankConversation(conv)) {
+    focusInput();
+    return;
+  }
   cancelPending();
-  let realId = "";
-  try {
-    // 新建会话：先初始化生命周期（不传 conversationId，服务端自动创建新会话）
-    realId = await ensureConversationLifecycle("");
-  } catch {
-    ElMessage.error("新建会话初始化失败，请稍后重试");
-    return;
-  }
-  if (!realId) {
-    ElMessage.error("新建会话初始化失败，请稍后重试");
-    return;
-  }
-  const draft: ConversationItem = {
-    id: realId,
-    name: NEW_CONV_NAME,
-    currentRound: 0,
-    lastActiveTime: dayjs().format(FORMAT_DATETIME),
-    draft: true,
-    initialized: true,
-  };
-  conversationList.value.unshift(draft);
-  currentConversationId.value = realId;
-  conversationStore.setCurrentConversation(realId);
-  allMessages.value = [];
-  emotionList.value = [];
-  expandedAnalysisId.value = null;
+  // 从已有会话进入新会话：先销毁其生命周期资源；新会话不调用 init，待首次发送时创建
+  if (conv) releaseConversationLifecycle(conv.id);
+  createLocalDraft();
   focusInput();
 }
 
@@ -991,27 +1156,31 @@ async function handleSend() {
     return;
   }
 
-  const conv = currentConversation.value;
+  // 无当前会话：直接创建新会话（本地草稿），由下面的初始化自动创建服务端会话
+  let conv = currentConversation.value;
   if (!conv) {
-    ElMessage.info("请先新建会话");
-    return;
+    conv = createLocalDraft();
   }
 
-  // 确保后端 adapter/管道已初始化（新建/切换时已 init；这里兜底补一次）
-  if (!conv.initialized) {
+  // 首次发送前初始化：本地草稿 → 创建服务端会话；已有会话 → 绑定/重建 adapter 与管道
+  if (!conv.initialized || conv.id.startsWith("local-")) {
     try {
-      await ensureConversationReady(conv.id);
+      await ensureConversationInitialized(conv);
     } catch {
       ElMessage.error("会话初始化失败，请稍后再试");
       return;
     }
   }
 
+  // 清理上一轮残留（定时器 / 流式气泡），并复位本轮状态
+  cancelPending();
+
+  const convId = conv.id;
   const optimistic: MemoryMessage = {
     id: `local-${Date.now()}`,
     content: text,
     type: "user",
-    roundNum: conv.draft ? 0 : conv.currentRound,
+    roundNum: conv.currentRound,
     createdTime: dayjs().format(FORMAT_DATETIME),
   };
   allMessages.value = [...allMessages.value, optimistic];
@@ -1019,37 +1188,49 @@ async function handleSend() {
   scrollToBottom();
 
   thinking.value = true;
-  const prevAssistantCount = allMessages.value.filter((m) => m.type === "assistant").length;
+  baselineAssistantCount = allMessages.value.filter((m) => m.type === "assistant").length;
+  reconcileAttempts = 0;
+  degradedThisRound = false;
+
+  // 先订阅后发送：AI 回复流可能早于 send 的 HTTP 响应到达，否则首段会被丢弃
+  const wsReady = await ensureStompConnected(WS_CONNECT_TIMEOUT_MS);
+  if (wsReady) {
+    stomp.bind(convId, streamHandlers);
+    streamingReply.value = { conversationId: convId, content: "" };
+  } else {
+    degradedThisRound = true;
+  }
 
   try {
-    const res = await doSend(conv.id, text);
+    const res = await doSend(convId, text);
     const vo = (res?.data?.data ?? {}) as UserMessageSendVO;
-    const realId = String(vo.conversationId ?? "");
+    const realId = String(vo.conversationId ?? convId);
 
-    if (conv.draft && realId) {
-      conv.id = realId;
-      conv.draft = false;
-      conv.initialized = true;
-      conv.currentRound = Number(vo.currentRound ?? 0);
-      if (conv.name === NEW_CONV_NAME) {
-        conv.name = text.length > 12 ? `${text.slice(0, 12)}…` : text;
-      }
-      conversationStore.setCurrentConversation(realId);
-    } else if (vo.currentRound != null && !conv.draft) {
-      conv.currentRound = Number(vo.currentRound);
+    if (vo.currentRound != null) conv.currentRound = Number(vo.currentRound);
+    // 新会话标题：按首句生成（服务端 /conversation/name 推送到达后会覆盖）
+    if (conv.name === NEW_CONV_NAME && text) {
+      conv.name = text.length > 12 ? `${text.slice(0, 12)}…` : text;
     }
 
-    if (conv.draft && !realId) {
-      thinking.value = false;
-      ElMessage.info("已发送，稍后可在会话列表查看");
-      await loadConversationList(true);
+    // 兜底：后端返回的会话 ID 与本地不一致时迁移（当前会话 / 订阅 / 流式气泡）
+    if (realId && realId !== convId) {
+      conv.id = realId;
+      if (currentConversationId.value === convId) currentConversationId.value = realId;
+      conversationStore.setCurrentConversation(realId);
+      if (streamingReply.value) streamingReply.value.conversationId = realId;
+      if (wsReady && stomp.state.value === "connected") stomp.bind(realId, streamHandlers);
+    }
+
+    if (degradedThisRound) {
+      // WS 不可用：沿用既有轮询链路（行为与升级前一致）
+      waitForAssistant(conv.id, baselineAssistantCount);
       return;
     }
-
-    waitForAssistant(realId || conv.id, prevAssistantCount);
+    // 流式链路：等待 chunk；首字超时 / 传输断开 / 对账失败会各自降级轮询
+    startFirstTokenTimer(realId || convId);
   } catch {
     allMessages.value = allMessages.value.filter((m) => m.id !== optimistic.id);
-    thinking.value = false;
+    cancelPending();
     inputMessage.value = text;
     ElMessage.error("消息发送失败，请稍后再试");
   }
@@ -1079,7 +1260,7 @@ function waitForAssistant(conversationId: string, prevAssistantCount: number) {
       return;
     }
     try {
-      const { messages, pendingActions: acts } = await fetchMemory(conversationId);
+      const { messages, pendingActions: acts } = await fetchRoundMemory(conversationId);
       const assistantCount = messages.filter((m) => m.type === "assistant").length;
       if (assistantCount > prevAssistantCount) {
         allMessages.value = messages;
@@ -1105,6 +1286,17 @@ function cancelPending() {
     window.clearTimeout(pollTimer);
     pollTimer = null;
   }
+  if (streamIdleTimer !== null) {
+    window.clearTimeout(streamIdleTimer);
+    streamIdleTimer = null;
+  }
+  if (reconcileTimer !== null) {
+    window.clearTimeout(reconcileTimer);
+    reconcileTimer = null;
+  }
+  clearFirstTokenTimer();
+  streamingReply.value = null;
+  degradedThisRound = false;
 }
 
 function toggleAnalysis(id: string) {
@@ -1128,64 +1320,26 @@ function showComingSoon() {
   ElMessage.info("该功能即将上线，敬请期待");
 }
 
-/* ==================== 量表卡片交互 ==================== */
-
-/** 待处理卡片状态文案 */
-function pendingStatusText(status: number): string {
-  switch (status) {
-    case 0: return "等待作答";
-    case 1: return "分析中…";
-    case 2: return "已解读";
-    case 3: return "已取消";
-    case 4: return "已过期";
-    default: return "未知";
-  }
-}
-
-/** 开始作答：跳转到量表答题页，携带 toolId 与 conversationId 供答题页回写记录ID与提交完成 */
-function handleScaleStart(act: PendingActionItem) {
-  const data = act.actionData;
-  if (!data?.scaleId) {
-    ElMessage.warning("量表信息缺失，无法开始作答");
+/**
+ * 进入语音对话页：游客先登录。
+ * - 已有会话：携带 ID（语音页会先 DELETE 释放文本生命周期，再按 AUDIO 重新 init）；
+ * - 本地新会话（尚未发送）：没有服务端会话，直接进入语音页新建。
+ */
+function handleVoiceConversation() {
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
     return;
   }
-  pendingActActions[act.id] = "start";
-  router.push(`/scale/${data.scaleId}/answer?toolId=${act.id}&conversationId=${currentConversationId.value}`);
-}
-
-/** 用户上报作答完成 / 放弃，触发后端分析与状态流转 */
-async function handleScaleAnswered(act: PendingActionItem, answered: number) {
-  if (answered === 1) {
-    try {
-      await ElMessageBox.confirm("确认已完成该量表全部作答？提交后 AI 将分析结果并回复你。", "提交测评", {
-        confirmButtonText: "已全部答完",
-        cancelButtonText: "再检查一下",
-        type: "info",
-      });
-    } catch {
-      return;
-    }
-  } else {
-    try {
-      await ElMessageBox.confirm("确定放弃本次量表吗？", "放弃测评", { type: "warning" });
-    } catch {
-      return;
-    }
-  }
-  try {
-    pendingActActions[act.id] = "done";
-    await completeToolAnswer({
-      toolId: Number(act.id),
-      conversationId: Number(currentConversationId.value),
-      answered,
-      recordId: act.actionData?.recordId,
-    });
-    ElMessage.success(answered === 1 ? "测评已提交，AI 正在分析…" : "已取消本次测评");
-  } catch (e: any) {
-    ElMessage.error(e?.message || "提交失败，请稍后重试");
-  } finally {
-    delete pendingActActions[act.id];
-  }
+  const conv = currentConversation.value;
+  const realId = conv && !conv.id.startsWith("local-") ? conv.id : "";
+  router.push({
+    name: "PortalConversationAudio",
+    query: {
+      ...(realId ? { conversationId: realId, lifecycleBound: "1" } : {}),
+      input: "AUDIO",
+      output: "TEXT,AUDIO",
+    },
+  });
 }
 
 /* ==================== 会话管理 ==================== */
@@ -1219,20 +1373,9 @@ async function handleRename(item: ConversationItem) {
 }
 
 async function handleDelete(item: ConversationItem) {
-  if (item.draft) {
-    // 本地占位（旧逻辑兜底）：仅本地移除，无需操作服务端
-    if (item.id.startsWith("local-")) {
-      removeConversationLocally(item.id);
-      return;
-    }
-    // 新建会话已通过 lifecycle init 创建了后端会话，删除时同步移除服务端会话并释放生命周期
-    try {
-      await deleteConversation(item.id);
-      releaseConversationLifecycle(item.id);
-      removeConversationLocally(item.id);
-    } catch {
-      ElMessage.error("删除失败，请稍后重试");
-    }
+  // 本地新会话（尚未发送、无服务端记录）：仅本地移除即可
+  if (item.id.startsWith("local-")) {
+    removeConversationLocally(item.id);
     return;
   }
   try {
@@ -1245,8 +1388,8 @@ async function handleDelete(item: ConversationItem) {
     return;
   }
   try {
-    await deleteConversation(item.id);
     releaseConversationLifecycle(item.id);
+    await deleteConversation(item.id);
     removeConversationLocally(item.id);
     ElMessage.success("会话已删除");
   } catch {
@@ -1262,112 +1405,75 @@ async function removeConversationLocally(id: string) {
     currentConversationId.value = nextId;
     if (nextId) {
       conversationStore.setCurrentConversation(nextId);
-      await ensureConversationReady(nextId);
-      await loadChat(nextId);
+      await loadChatIfReal(nextId);
     } else {
       conversationStore.setCurrentConversation("");
       allMessages.value = [];
       emotionList.value = [];
+      pendingActions.value = [];
     }
   }
 }
 
 /* ==================== 生命周期 ==================== */
 
-onMounted(() => {
+onMounted(async () => {
   // 游客可看页面框架与欢迎语，但会话列表/历史是个人数据，未登录不请求（避免 401）
   if (userStore.token) {
-    loadConversationList(true);
+    await loadConversationList(true);
+    // 空闲建立 STOMP 连接（不阻塞首屏；失败时发送前会重试并自动降级轮询）
+    void connectAndBind();
   } else {
     loadingConversations.value = false;
   }
 });
 
-onBeforeUnmount(() => {
+/** 登录态变化：登录后自动加载会话并连接；退出时断开连接并清空本地数据 */
+watch(
+  () => userStore.token,
+  (token, prev) => {
+    if (token && !prev) {
+      void loadConversationList(true).then(() => connectAndBind());
+    } else if (!token && prev) {
+      cancelPending();
+      void stomp.dispose();
+      conversationList.value = [];
+      allMessages.value = [];
+      emotionList.value = [];
+      pendingActions.value = [];
+      currentConversationId.value = "";
+    }
+  },
+);
+
+/**
+ * 离开页面：
+ * - 目标是语音对话页时【不】释放 lifecycle（由语音页自行「先 end 再按 AUDIO init」，
+ *   否则本页 fire-and-forget 的 DELETE 可能晚于语音页的 init 到达，误删刚建好的管道）；
+ * - 其他路由维持原有释放行为。
+ */
+onBeforeRouteLeave((to) => {
   cancelPending();
-  // 会话切走/离开本页时释放当前会话的后端 adapter/管道资源（失败仅 warn，不阻塞）。
+  void stomp.dispose();
   const current = currentConversationId.value;
-  if (current && !current.startsWith("local-")) {
+  if (to.name !== "PortalConversationAudio" && current && !current.startsWith("local-")) {
     releaseConversationLifecycle(current);
   }
+  return true;
+});
+
+onBeforeUnmount(() => {
+  cancelPending();
+  void stomp.dispose();
 });
 </script>
 
 <style scoped>
 .conversation-page {
-  height: calc(100vh - v-bind(PORTAL_HEADER_HEIGHT + 'px'));
+  height: calc(100vh - var(--portal-header-height));
   display: flex;
   overflow: hidden;
   background: #f8f9fc;
-}
-
-/* ==================== 待处理人工交互卡片 ==================== */
-
-.pending-card {
-  background: #fff;
-  border: 1px solid #e5e7f0;
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin: 12px 0 4px 4px;
-  box-shadow: 0 2px 10px rgba(108, 99, 255, 0.08);
-}
-
-.pc-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.pc-badge {
-  font-size: 11px;
-  color: #6c63ff;
-  background: #f0eeff;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.pc-status {
-  font-size: 12px;
-  color: #999;
-}
-
-.pc-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 6px;
-}
-
-.pc-meta {
-  font-size: 12px;
-  color: #888;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.pc-reason {
-  color: #6c63ff;
-}
-
-.pc-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pc-result {
-  font-size: 13px;
-  color: #52c41a;
-  padding: 8px 0 2px;
-}
-
-.pending-card.status-3 .pc-result,
-.pending-card.status-4 .pc-result {
-  color: #999;
 }
 
 /* ==================== 会话列表 ==================== */

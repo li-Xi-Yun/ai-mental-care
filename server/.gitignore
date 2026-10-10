@@ -31,6 +31,10 @@ src/main/resources/application-prod.yml
 ./prompts/**
 ./conversations/**
 
+./static-resources/**
+static-resources/**
+NUL
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

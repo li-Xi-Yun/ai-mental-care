@@ -15,11 +15,11 @@ export interface AdminProfileVO {
   createdTime?: string;
 }
 
-/** 管理员资料更新请求体 */
+/** 管理员资料更新请求体（mobile/email 为空时不提交，保持原值） */
 export interface AdminProfileDTO {
   username: string;
-  mobile: string;
-  email: string;
+  mobile?: string;
+  email?: string;
 }
 
 /** 获取管理员资料 */
