@@ -214,8 +214,9 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
 import { getProfile, updateProfile } from "@/portal/api/user/profile";
 import type { UserProfileUpdateDTO, UserProfileVO } from "@/portal/api/user/profile";
-import { pwdUpdate } from "@/portal/api/user/account";
+import { logout, pwdUpdate } from "@/portal/api/user/account";
 import { uploadImage } from "@/shared/api/common/upload";
+import { clearTokenInfo } from "@/shared/api/auth";
 import dayjs, { FORMAT_DATE } from "@/shared/utils/dayjs";
 
 /* ==================== 菜单与字典 ==================== */
@@ -430,9 +431,18 @@ async function handleChangePassword() {
 
 /* ==================== 退出登录 ==================== */
 
-function handleLogout() {
-  userStore.clearUser();
-  router.push("/");
+async function handleLogout() {
+  try {
+    // 先调用后端登出接口（清理 Redis 中的登录态），再清理本地凭证
+    await logout();
+  } catch {
+    // 后端登出失败不阻断本地退出（本地凭证仍会被清除）
+  } finally {
+    userStore.clearUser();
+    // 退出必须同步清除 localStorage 凭证（含 legacy 'token'），否则请求仍会携带旧 token
+    clearTokenInfo("user");
+    router.push("/");
+  }
 }
 </script>
 

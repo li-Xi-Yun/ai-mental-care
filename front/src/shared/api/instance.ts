@@ -8,6 +8,9 @@ const httpClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // 保留原始响应文本：统一由响应拦截器用 parseJSONWithBigInt 解析，
+  // 避免 axios 默认 JSON.parse 把后端 Long（雪花 ID）舍入丢精度（>2^53 的 ID 会损坏）
+  transformResponse: [(data) => data],
 });
 
 setupRequestInterceptors(httpClient);

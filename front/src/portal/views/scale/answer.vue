@@ -8,6 +8,12 @@
       <p class="loading-text">正在准备测评…</p>
     </div>
 
+    <!-- 游客态：未登录不可作答（登录后自动加载） -->
+    <div v-else-if="!userStore.token" class="answer-error">
+      <el-empty description="登录后即可开始测评" />
+      <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+    </div>
+
     <!-- 空态/错误态 -->
     <div v-else-if="error || !startData" class="answer-error">
       <el-empty :description="error || '测评数据加载失败'" />
@@ -176,6 +182,7 @@ import { startAssessment, resumeAssessment, submitAssessment, terminateAssessmen
 import type { ScaleStartData, ScaleStartQuestion } from "@/portal/api/scale/user-scale";
 import { getScalePrecheck } from "@/portal/api/scale/precheck";
 import type { ScalePrecheckVO } from "@/portal/api/scale/precheck";
+import { useUserStore } from "@/portal/stores/user";
 import { getSession, setSession, removeSession } from "@/shared/utils/storage";
 
 /* ==================== 常量 ==================== */
@@ -194,6 +201,7 @@ const REQUIRED_YES = 1;
 /* ==================== 路由 ==================== */
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 const scaleId = Number(route.params.scaleId as string);
 /** 路由携带的测评记录ID（续答时存在）。续答场景复用原记录，不新建。 */
 const routeRecordId = Number(route.query.recordId as string) || 0;
@@ -486,8 +494,22 @@ async function checkBeforeStart(scaleId: number): Promise<boolean> {
   return false;
 }
 
+// 游客态经弹窗登录成功后自动重新拉取测评，避免停留在游客空态需手动刷新
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && !startData.value && !loading.value) void init();
+  },
+);
+
 /** 开始测评 / 续答：拉取整卷 */
 async function init() {
+  // 游客不能作答（题目内容只对登录用户下发）：未登录时在当前页面弹登录窗，不发请求、不跳转
+  if (!userStore.token) {
+    loading.value = false;
+    userStore.openLoginDialog("login");
+    return;
+  }
   loading.value = true;
   error.value = "";
   try {

@@ -129,11 +129,11 @@ public class AiNodeConfig implements Serializable {
     @TableLogic
     private Integer deleted;
 
-    public boolean isEnabled() {
+    public boolean isEnabledFlag() {
         return enabled != null && enabled == ENABLED_YES;
     }
 
-    public boolean isDeleted() {
+    public boolean isDeletedFlag() {
         return deleted != null && deleted == DeleteConstant.DELETE_FLAG_YES;
     }
 }

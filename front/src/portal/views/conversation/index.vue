@@ -369,6 +369,7 @@ import { initConversationLifecycle, deleteConversationLifecycle } from "@/portal
 import { sendUserMessage } from "@/portal/api/conversation/ai-chat";
 import { completeToolAnswer } from "@/portal/api/scale/user-scale";
 import { useConversationStore } from "@/portal/stores/conversation";
+import { useUserStore } from "@/portal/stores/user";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
 
 /* ==================== 类型 ==================== */
@@ -508,6 +509,7 @@ const emotionPanelStyle = computed(() => ({
 /* ==================== 数据状态 ==================== */
 
 const conversationStore = useConversationStore();
+const userStore = useUserStore();
 const router = useRouter();
 
 const conversationList = ref<ConversationItem[]>([]);
@@ -944,6 +946,11 @@ async function selectConversation(id: string) {
 /* ==================== 会话管理 ==================== */
 
 async function handleNewConversation() {
+  // 游客不能新建会话（会话是个人数据）：当前页面弹登录窗
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
   cancelPending();
   let realId = "";
   try {
@@ -977,6 +984,13 @@ async function handleNewConversation() {
 async function handleSend() {
   const text = inputMessage.value.trim();
   if (!text || thinking.value) return;
+
+  // 游客不能发送：直接在当前页面弹出登录弹窗，不发送请求、不跳转
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
+
   const conv = currentConversation.value;
   if (!conv) {
     ElMessage.info("请先新建会话");
@@ -1261,7 +1275,12 @@ async function removeConversationLocally(id: string) {
 /* ==================== 生命周期 ==================== */
 
 onMounted(() => {
-  loadConversationList(true);
+  // 游客可看页面框架与欢迎语，但会话列表/历史是个人数据，未登录不请求（避免 401）
+  if (userStore.token) {
+    loadConversationList(true);
+  } else {
+    loadingConversations.value = false;
+  }
 });
 
 onBeforeUnmount(() => {

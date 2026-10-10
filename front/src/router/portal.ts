@@ -13,6 +13,12 @@ const portalRoutes: RouteRecordRaw[] = [
         meta: { title: "首页" },
       },
       {
+        path: "login",
+        name: "PortalLogin",
+        component: () => import("@/portal/views/login/index.vue"),
+        meta: { title: "登录" },
+      },
+      {
         path: "conversation",
         name: "PortalConversation",
         component: () => import("@/portal/views/conversation/index.vue"),

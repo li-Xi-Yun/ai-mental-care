@@ -123,9 +123,7 @@ public class AdminScaleVersionServiceImpl implements AdminScaleVersionService {
         log.info("新增量表版本，量表ID：{}，版本号：{}", dto.getScaleId(), dto.getVersionNo());
         Long scaleId = dto.getScaleId();
         String versionNo = dto.getVersionNo();
-        Long count = scaleVersionMapper.selectCount(new LambdaQueryWrapper<ScaleVersion>()
-                .eq(ScaleVersion::getScaleId, scaleId)
-                .eq(ScaleVersion::getVersionNo, versionNo));
+        Long count = scaleVersionMapper.countByScaleIdAndVersionNoIncludingDeleted(scaleId, versionNo);
         if (count > 0) {
             log.warn("该量表下版本号已存在，量表ID：{}，版本号：{}", scaleId, versionNo);
             throw new BusinessException(ScaleExceptionEnum.SCALE_VERSION_NO_EXISTS);
@@ -163,9 +161,7 @@ public class AdminScaleVersionServiceImpl implements AdminScaleVersionService {
             log.warn("目标量表不存在，量表ID：{}", targetScaleId);
             throw new BusinessException(ScaleExceptionEnum.SCALE_NOT_FOUND);
         }
-        Long dupCount = scaleVersionMapper.selectCount(new LambdaQueryWrapper<ScaleVersion>()
-                .eq(ScaleVersion::getScaleId, targetScaleId)
-                .eq(ScaleVersion::getVersionNo, versionNo));
+        Long dupCount = scaleVersionMapper.countByScaleIdAndVersionNoIncludingDeleted(targetScaleId, versionNo);
         if (dupCount > 0) {
             log.warn("目标量表下版本号已存在，量表ID：{}，版本号：{}", targetScaleId, versionNo);
             throw new BusinessException(ScaleExceptionEnum.SCALE_VERSION_NO_EXISTS);
@@ -212,11 +208,10 @@ public class AdminScaleVersionServiceImpl implements AdminScaleVersionService {
             }
             scaleId = existing.getScaleId();
         }
-        Long count = scaleVersionMapper.selectCount(new LambdaQueryWrapper<ScaleVersion>()
-                .eq(ScaleVersion::getScaleId, scaleId)
-                .eq(ScaleVersion::getVersionNo, dto.getVersionNo())
-                .ne(ScaleVersion::getId, versionId));
-        if (count > 0) {
+        List<ScaleVersion> existingVersions = scaleVersionMapper.selectByScaleIdAndVersionNoIncludingDeleted(
+                scaleId, dto.getVersionNo());
+        boolean hasConflict = existingVersions.stream().anyMatch(v -> !Objects.equals(v.getId(), versionId));
+        if (hasConflict) {
             log.warn("该量表下版本号已存在，量表ID：{}，版本号：{}", scaleId, dto.getVersionNo());
             throw new BusinessException(ScaleExceptionEnum.SCALE_VERSION_NO_EXISTS);
         }

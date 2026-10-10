@@ -404,9 +404,15 @@ function formatScore(v?: number | null): string {
   return v === undefined || v === null ? "—" : String(v);
 }
 
-function formatTime(v?: string): string {
-  if (!v) return "—";
-  return v.replace("T", " ").slice(0, 16);
+function formatTime(v?: string | number): string {
+  if (v === undefined || v === null || v === "") return "—";
+  // 后端可能返回时间戳（number）或 ISO 字符串；number 转 Date，字符串沿用原格式
+  if (typeof v === "number") {
+    const d = new Date(v);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  return String(v).replace("T", " ").slice(0, 16);
 }
 
 /** 维度得分归一化为百分比进度条（按 100 分制展示） */

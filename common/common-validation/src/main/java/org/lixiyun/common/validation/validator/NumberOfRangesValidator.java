@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.lixiyun.common.validation.annotation.NumberOfRanges;
 
-public class NumberOfRangesValidator implements ConstraintValidator<NumberOfRanges, Integer> {
+public class NumberOfRangesValidator implements ConstraintValidator<NumberOfRanges, Number> {
 
     private int minValue;
     private int maxValue;
@@ -16,12 +16,13 @@ public class NumberOfRangesValidator implements ConstraintValidator<NumberOfRang
     }
     
     @Override
-    public boolean isValid(Integer value, ConstraintValidatorContext context) {
+    public boolean isValid(Number value, ConstraintValidatorContext context) {
         if (value == null) {
             return true; // Let @NotBlank handle null validation
         }
-        
+
+        long v = value.longValue();
         // Case-insensitive check
-        return value >= minValue && value <= maxValue;
+        return v >= minValue && v <= maxValue;
     }
 }

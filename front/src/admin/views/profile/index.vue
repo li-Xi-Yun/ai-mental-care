@@ -266,11 +266,11 @@ const profileRules: FormRules = {
     { min: 2, max: 12, message: "用户名长度为 2~12 个字符", trigger: "blur" },
   ],
   mobile: [
-    { required: true, message: "请输入手机号", trigger: "blur" },
+    // 后端 AdminProfileDTO.mobile 为可选字段：不强制填写，填写时才校验格式
     { pattern: /^1[3-9]\d{9}$/, message: "手机号码格式不正确", trigger: "blur" },
   ],
   email: [
-    { required: true, message: "请输入邮箱", trigger: "blur" },
+    // 后端 AdminProfileDTO.email 为可选字段：不强制填写，填写时才校验格式
     { type: "email", message: "邮箱格式不正确", trigger: "blur" },
   ],
 };
@@ -289,8 +289,9 @@ async function handleSaveProfile() {
   try {
     await updateProfile({
       username: profileForm.username,
-      mobile: profileForm.mobile,
-      email: profileForm.email,
+      // 空值不提交：后端 @Pattern/@Email 不接受空串，字段留空时应保持原值
+      mobile: profileForm.mobile || undefined,
+      email: profileForm.email || undefined,
     });
     ElMessage.success("个人资料已保存");
     await loadProfile();

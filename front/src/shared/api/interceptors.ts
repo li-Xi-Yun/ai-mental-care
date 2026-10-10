@@ -3,7 +3,7 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { SUCCESS_CODE } from "./config";
 import type { Result } from "./types";
-import { getToken, getHeaderName, clearTokenInfo } from "./auth";
+import { getToken, getHeaderName, clearTokenInfo, promptUserLogin } from "./auth";
 import { parseJSONWithBigInt, processBigIntFields } from "@/shared/utils/bigint";
 import { processTimeFields } from "@/shared/utils/time";
 
@@ -35,6 +35,18 @@ function looksLikeResult(data: unknown): boolean {
   return !!data && typeof data === "object" && "code" in (data as Record<string, unknown>);
 }
 
+/**
+ * 仅对普通对象/数组做请求体字段处理。
+ * FormData / Blob / URLSearchParams 等非普通对象会被 processBigIntFields（按可枚举自有键遍历）
+ * 破坏（如 FormData 的 entries 不是可枚举自有键 → multipart 内容丢失），必须原样透传。
+ */
+function isPlainBody(v: unknown): boolean {
+  if (!v || typeof v !== "object") return false;
+  if (Array.isArray(v)) return true;
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+}
+
 export function setupRequestInterceptors(instance: AxiosInstance) {
   instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
@@ -42,7 +54,8 @@ export function setupRequestInterceptors(instance: AxiosInstance) {
       attachAuthHeader(config);
 
       // 发送前：本地时间字符串 → UTC 时间字符串；安全范围数字字符串还原为 number（配合响应保护）
-      if (config.data && typeof config.data === "object") {
+      // 仅处理普通对象/数组：FormData/Blob 等透传，避免 multipart 等请求体被破坏
+      if (isPlainBody(config.data)) {
         config.data = processTimeFields(processBigIntFields(config.data, "restore"), "toUtc");
       }
       return config;
@@ -96,15 +109,17 @@ export function setupResponseInterceptors(instance: AxiosInstance) {
     (error) => {
       NProgress.done();
       if (error.response?.status === 401) {
-        // 401 时按请求来源清除对应模块 token，并跳转到对应登录页
+        // 401 时按请求来源清除对应模块 token
         const url: string | undefined = error.config?.url;
         const isAdmin = !!url && url.startsWith(ADMIN_PATH_PREFIX);
         if (isAdmin) {
+          // 后台有独立登录页：硬跳转 /admin/login
           clearTokenInfo("admin");
           window.location.href = "/admin/login";
         } else {
+          // 前台登录是弹窗：清除凭证并在当前页面触发登录弹窗，不刷新、不跳转
           clearTokenInfo("user");
-          window.location.href = "/login";
+          promptUserLogin();
         }
       }
       return Promise.reject(error);

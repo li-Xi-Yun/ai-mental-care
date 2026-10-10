@@ -52,8 +52,13 @@
       </div>
     </div>
 
+    <!-- 游客态：记录是个人数据，登录后自动加载 -->
+    <el-empty v-if="!loading && !userStore.token" description="登录后即可查看测评记录">
+      <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+    </el-empty>
+
     <!-- 记录卡片列表 -->
-    <el-empty v-if="!loading && records.length === 0" description="暂无测评记录" />
+    <el-empty v-else-if="!loading && records.length === 0" description="暂无测评记录" />
     <div v-else class="record-list">
       <div
         v-for="record in records"
@@ -122,8 +127,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useUserStore } from "@/portal/stores/user";
 import { getScaleList } from "@/portal/api/scale";
 import { getScaleRecords as fetchRecordsApi } from "@/portal/api/scale";
 import type { ScaleVO } from "@/portal/api/scale/scale";
@@ -134,6 +140,7 @@ import { dayjs, FORMAT_DATETIME } from "@/shared/utils";
 
 /* ==================== 页面数据 ==================== */
 const router = useRouter();
+const userStore = useUserStore();
 
 const loading = ref(false);
 const records = ref<ScaleRecordVO[]>([]);
@@ -329,7 +336,20 @@ function handleViewDetail(record: ScaleRecordVO) {
 
 /* ==================== 初始化：并行拉取量表列表与记录 ==================== */
 
+// 游客态经弹窗登录成功后自动加载记录
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && records.value.length === 0 && !loading.value) void init();
+  },
+);
+
 async function init() {
+  // 测评记录是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
   // 拉取记录（量表下拉从记录快照提取）
   await fetchRecords(true);
 

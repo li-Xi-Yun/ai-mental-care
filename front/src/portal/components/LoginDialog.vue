@@ -167,6 +167,7 @@ import type { LoginResultVO } from "@/portal/api/user/account";
 import { useUserStore } from "@/portal/stores/user";
 import { setTokenInfo } from "@/shared/api/auth";
 import { getCode } from "@shared/api/common/verification";
+import { SUCCESS_CODE } from "@/shared/api/config";
 import { getStorage, removeStorage, setStorage } from "@/shared/utils/storage";
 
 const REMEMBER_ACCOUNT_KEY = "portal-login-remember";
@@ -261,6 +262,9 @@ watch(
       void refreshCaptcha();
     }
   },
+  // immediate：页面 setup 阶段（如量表记录/详情页的游客登录门）就打开弹窗时，
+  // LoginDialog 挂载晚于弹窗置位，非 immediate 的 watch 会漏掉首次打开 → 验证码不加载
+  { immediate: true },
 );
 
 function restoreRememberedAccount() {
@@ -312,7 +316,14 @@ async function handleLogin() {
       key: captchaKey.value,
       code: loginForm.code,
     });
-    const data: LoginResultVO | undefined = response.data?.data;
+    const result = response.data;
+    // 业务失败（如验证码错误）时拦截器不会 reject（既有行为），这里显式按顶层 code 判定并展示后端 msg
+    if (result?.code !== SUCCESS_CODE) {
+      ElMessage.error(result?.msg || "登录失败，请重试");
+      void refreshCaptcha();
+      return;
+    }
+    const data: LoginResultVO | undefined = result.data;
 
     if (!data?.token) {
       ElMessage.error("登录失败：未返回有效凭证，请重试");
@@ -346,7 +357,7 @@ async function handleRegister() {
 
   registerLoading.value = true;
   try {
-    await register({
+    const response = await register({
       loginAccount: registerForm.loginAccount,
       username: registerForm.username,
       password: registerForm.password,
@@ -355,6 +366,12 @@ async function handleRegister() {
       key: captchaKey.value,
       code: registerForm.code,
     });
+    // 业务失败时拦截器不会 reject（既有行为），显式按顶层 code 判定，避免误报「注册成功」
+    if (response.data?.code !== SUCCESS_CODE) {
+      ElMessage.error(response.data?.msg || "注册失败，请稍后重试");
+      void refreshCaptcha();
+      return;
+    }
 
     loginForm.loginAccount = registerForm.loginAccount;
     loginForm.password = registerForm.password;

@@ -7,7 +7,7 @@
             c.id AS conversationId,
             c.name AS conversationName,
             MAX(ed.round_num) AS latestRoundNum,
-            count(ed) as diagnosisCount,
+            count(*) as diagnosisCount,
             MAX(ed.updated_time) AS diagnosisUpdatedTime,
             c.created_time AS conversationCreatedTime
         FROM conversation c

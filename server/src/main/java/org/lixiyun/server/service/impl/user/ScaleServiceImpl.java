@@ -168,6 +168,9 @@ public class ScaleServiceImpl implements ScaleService {
         vo.setDescription(version.getDescription());
         vo.setDimensions(dimNames);
         vo.setQuestionTypes(questionTypeStats);
+        int totalCount = questions != null ? questions.size() : 0;
+        vo.setQuestionCount(totalCount);
+        vo.setEstimatedMinutes(Math.max(1, (totalCount + 1) / 2));
         return vo;
     }
 

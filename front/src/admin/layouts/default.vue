@@ -51,16 +51,24 @@ import { MagicStick, SwitchButton } from "@element-plus/icons-vue";
 import { PLATFORM_NAME, ADMIN_PLATFORM_TITLE, ADMIN_SIDEBAR_WIDTH, ADMIN_HEADER_HEIGHT, ADMIN_NAV_ITEMS } from "@/shared/api/config";
 import { useAdminStore } from "@/admin/stores/admin";
 import { clearTokenInfo, clearAllTokenInfo } from "@/shared/api/auth";
+import { logout } from "@/admin/api/admin/account";
 
 const route = useRoute();
 const router = useRouter();
 const adminStore = useAdminStore();
 
-function handleLogout() {
-  adminStore.clearAdmin();
-  clearTokenInfo("admin");
-  clearAllTokenInfo();
-  router.push("/admin/login");
+async function handleLogout() {
+  try {
+    // 先调用后端登出接口（清理 Redis 中的登录态），再清理本地凭证
+    await logout();
+  } catch {
+    // 后端登出失败不阻断本地退出（本地凭证仍会被清理）
+  } finally {
+    adminStore.clearAdmin();
+    clearTokenInfo("admin");
+    clearAllTokenInfo();
+    router.push("/admin/login");
+  }
 }
 </script>
 

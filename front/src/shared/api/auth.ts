@@ -10,6 +10,26 @@
  * 并在发送请求时能根据「请求属于前台接口还是后台接口」取到对应模块的凭证。
  */
 
+/* ==================== 前台「需要登录」弹窗桥接 ====================
+ * shared 层不依赖 portal store。前端布局（default.vue）初始化时通过
+ * setPromptLoginHandler 注册一个回调（实际是 userStore.openLoginDialog），
+ * 401 拦截器在会话过期/游客触发需登录接口时调用 promptUserLogin()，
+ * 在当前页面内直接弹出登录弹窗，避免 window.location 硬跳转到不存在的 /login 页面。
+ */
+
+/** 全局“需要登录”回调（portal 布局注册；admin 不注册） */
+let promptLoginHandler: (() => void) | null = null;
+
+/** 注册/注销「需要登录」时的弹窗回调（由 portal 布局调用） */
+export function setPromptLoginHandler(fn: (() => void) | null) {
+  promptLoginHandler = fn;
+}
+
+/** 触发前台登录弹窗（供 401 拦截器在需要登录时调用） */
+export function promptUserLogin() {
+  promptLoginHandler?.();
+}
+
 /** 前台用户凭证存储 key */
 export const STORAGE_KEY_USER_TOKEN = "user_token_info";
 /** 后台管理员凭证存储 key */
@@ -92,10 +112,17 @@ export function getHeaderName(kind: "user" | "admin", fallback = "Authorization"
   return getTokenInfo(kind)?.headerName || fallback;
 }
 
-/** 清除模块 token（含 legacy） */
+/** 清除模块 token（含同源的 legacy 键） */
 export function clearTokenInfo(kind: "user" | "admin") {
   const key = kind === "admin" ? STORAGE_KEY_ADMIN_TOKEN : STORAGE_KEY_USER_TOKEN;
+  const info = parseTokenInfo(safeGetKey(key));
   safeRemoveKey(key);
+  // legacy 'token' 键由 setTokenInfo 与模块凭证一并写入，必须同步移除：
+  // 否则 getTokenInfo 会回退读到已「退出」的旧凭证，导致退出后请求仍携带旧 token。
+  const legacy = safeGetKey(LEGACY_TOKEN_KEY);
+  if (legacy && (!info?.token || legacy === info.token)) {
+    safeRemoveKey(LEGACY_TOKEN_KEY);
+  }
 }
 
 /** 清除所有 token */

@@ -75,7 +75,7 @@ public class Conversation implements Serializable {
     private Integer deleted;
 
     /** 已删除 */
-    public boolean isDeleted() {
+    public boolean isDeletedFlag() {
         return deleted == DeleteConstant.DELETE_FLAG_YES;
     }
 

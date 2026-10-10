@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessageBox } from "element-plus";
+import { useUserStore } from "@/portal/stores/user";
 import { getScaleCategoryList } from "@/portal/api/scale/category";
 import {
   getScaleDetail,
@@ -46,6 +47,7 @@ interface ScaleCard extends ScaleVO {
 /* ==================== 状态 ==================== */
 
 const router = useRouter();
+const userStore = useUserStore();
 
 /** 分类筛选（number = 分类 ID，"all" = 全部） */
 const activeCategory = ref<number | "all">("all");
@@ -257,8 +259,13 @@ function handleStart(scale: ScaleVO) {
 /**
  * 开始测评入口：先查询该量表最近一条未完成记录。
  * 存在未完成记录 → 弹窗让用户选择「继续作答」或「重新开始」；否则直接进入答题页新建。
+ * 游客不可作答：未登录时在当前页面弹出登录弹窗，不发送请求、不跳转。
  */
 async function guardAndStart(scale: ScaleVO) {
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
   let unfinished: { hasUnfinished: boolean; recordId?: number; startTime?: string } | undefined;
   try {
     const res = await getUnfinishedAssessment(scale.id);
@@ -340,7 +347,8 @@ function formatRecordTime(time?: string): string {
 /* ==================== 初始化 ==================== */
 
 async function init() {
-  await Promise.all([loadCategories(), fetchScales(), loadRecentRecords()]);
+  // 游客可浏览量表列表/分类/详情（后端已放行只读接口）；「我的测评记录」是个人数据，仅登录后加载
+  await Promise.all([loadCategories(), fetchScales(), userStore.token ? loadRecentRecords() : Promise.resolve()]);
 }
 
 void init();

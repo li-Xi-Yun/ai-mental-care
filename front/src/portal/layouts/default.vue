@@ -46,21 +46,36 @@ import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
 import LoginDialog from "@/portal/components/LoginDialog.vue";
 import { PLATFORM_NAME, PORTAL_HEADER_HEIGHT, PORTAL_NAV_ITEMS } from "@/shared/api/config";
-import { clearTokenInfo } from "@/shared/api/auth";
+import { clearTokenInfo, setPromptLoginHandler } from "@/shared/api/auth";
+import { logout } from "@/portal/api/user/account";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+
+// 注册「需要登录」弹窗回调：401 / 游客触发需登录接口时，先清掉内存中的登录态
+// （storage 已由 401 拦截器清除），再在当前页面直接弹出登录弹窗（不跳转、不刷新）
+setPromptLoginHandler(() => {
+  userStore.clearUser();
+  userStore.openLoginDialog("login");
+});
 
 const avatarText = computed(() => {
   const name = userStore.userInfo?.nickname || userStore.userInfo?.username || "U";
   return name.charAt(0).toUpperCase();
 });
 
-function handleLogout() {
-  userStore.clearUser();
-  clearTokenInfo("user");
-  router.push("/");
+async function handleLogout() {
+  try {
+    // 先调用后端登出接口（清理 Redis 中的登录态），再清理本地凭证
+    await logout();
+  } catch {
+    // 后端登出失败不阻断本地退出（本地凭证仍会被清除）
+  } finally {
+    userStore.clearUser();
+    clearTokenInfo("user");
+    router.push("/");
+  }
 }
 </script>
 

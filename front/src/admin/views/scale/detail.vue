@@ -1526,8 +1526,15 @@ function buildTemplateItemPayload(): AdminScaleOptionTemplateItemDTO[] {
 const categoryList = ref<AdminScaleCategoryVO[]>([]);
 
 /* ==================== 工具函数 ==================== */
-function formatTime(v?: string): string {
-  return v ? v.replace("T", " ").slice(0, 16) : "—";
+function formatTime(v?: string | number): string {
+  if (v === undefined || v === null || v === "") return "—";
+  // 后端可能返回时间戳（number）或 ISO 字符串；number 转 Date，字符串沿用原格式
+  if (typeof v === "number") {
+    const d = new Date(v);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  return String(v).replace("T", " ").slice(0, 16);
 }
 
 function questionTypeText(type?: number): string {

@@ -329,6 +329,10 @@ url:
     - /admin/account/login
     - /user/account/forgetPassword
     - /common/**
+    # 前台量表只读接口放行（游客可浏览量表列表/分类/详情，作答与记录仍需登录）
+    - /user/scale/list
+    - /user/scale/category
+    - /user/scale/*
     - /v3/**
     - /webjars/**
     - /doc.html

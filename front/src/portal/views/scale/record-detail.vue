@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useUserStore } from "@/portal/stores/user";
 import { Loading } from "@element-plus/icons-vue";
 import type { TagProps } from "element-plus";
 import { getScaleRecordAnswers, getScaleRecordDetail } from "@/portal/api/scale";
@@ -69,6 +70,7 @@ interface DimensionView {
 /* ==================== 基础状态 ==================== */
 
 const route = useRoute();
+const userStore = useUserStore();
 const recordId = route.params.recordId as string;
 
 const loading = ref(true);
@@ -214,7 +216,21 @@ async function loadAnswers() {
   }
 }
 
+// 游客态经弹窗登录成功后自动加载详情
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && !detail.value && !loading.value) void init();
+  },
+);
+
 async function init() {
+  // 测评详情/答题明细是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
+  if (!userStore.token) {
+    loading.value = false;
+    userStore.openLoginDialog("login");
+    return;
+  }
   loading.value = true;
   error.value = "";
   await Promise.all([loadDetail(), loadAnswers()]);
@@ -241,6 +257,13 @@ void init();
         <Loading />
       </el-icon>
       <p class="state-text">正在加载测评详情…</p>
+    </div>
+
+    <!-- 游客态：详情是个人数据，登录后自动加载 -->
+    <div v-else-if="!userStore.token" class="page-state">
+      <el-empty description="登录后即可查看测评详情">
+        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+      </el-empty>
     </div>
 
     <!-- 加载失败 / 记录不存在 -->

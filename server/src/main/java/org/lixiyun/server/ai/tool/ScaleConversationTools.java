@@ -133,7 +133,7 @@ public class ScaleConversationTools implements Tools {
         Long conversationId = conversationMetadata.getConversationId();
 
         Conversation conversation = conversationMapper.selectById(conversationId);
-        if (conversation == null || conversation.isDeleted()) {
+        if (conversation == null || conversation.isDeletedFlag()) {
             log.warn("[量表工具] 会话不存在，conversationId={}", conversationId);
             return "错误：会话不存在，请无法创建测评任务。";
         }

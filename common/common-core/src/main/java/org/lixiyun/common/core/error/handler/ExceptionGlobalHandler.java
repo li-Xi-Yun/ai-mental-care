@@ -8,16 +8,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.result.Result;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -27,12 +31,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Hidden
 @RestControllerAdvice
-public class ExceptionGlobalHandler {
+public class ExceptionGlobalHandler extends ResponseEntityExceptionHandler {
 
     private static final int MAX_STACK_TRACE_LINES = 50;
 
     /**
-     * 业务异常处理器
+     * 业务异常处理器（保持 HTTP 200，业务错误通过 body.code 区分）
      */
     @ExceptionHandler(BusinessException.class)
     public Result<?> handleBusinessException(BusinessException e, HttpServletRequest request) {
@@ -42,71 +46,87 @@ public class ExceptionGlobalHandler {
     }
 
     /**
-     * 兜底异常处理器
+     * 兜底异常处理器 → HTTP 500
+     * 所有未被其他处理器捕获的异常（含框架内部错误等）统一返回 500
      */
     @ExceptionHandler(Throwable.class)
-    public Result<?> handleException(Throwable e, HttpServletRequest request) {
-        log.error("请求路径：{}，请求方法：{}，异常信息：{}", request.getRequestURI(), request.getMethod(), getTruncatedStackTrace(e));
-        return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
+    public ResponseEntity<Result<?>> handleException(Throwable e, HttpServletRequest request) {
+        log.error("请求路径：{}，请求方法：{}，未捕获异常：{}",
+                request.getRequestURI(), request.getMethod(), getTruncatedStackTrace(e));
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Result.error(SystemExceptionEnum.SYSTEM_ERROR));
     }
 
     /**
-     * 参数为空处理器
+     * 参数验证失败（@Validated 在 Controller 类级别触发，非请求体校验） → HTTP 400
+     * 注意：ConstraintViolationException 不在 ResponseEntityExceptionHandler 的默认处理范围内
      */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public Result<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
-        log.error("请求路径：{}，请求方法：{}，参数为空：{}，异常信息：{}",
-                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
-        return Result.error(SystemExceptionEnum.PARAM_ILLEGAL);
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Result<?>> handleConstraintViolationException(
+            ConstraintViolationException e, HttpServletRequest request) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("请求路径：{}，请求方法：{}，参数校验失败：{}",
+                request.getRequestURI(), request.getMethod(), message);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.error(400, message));
+    }
+
+    // ======================== 覆盖父类方法，统一返回 Result 格式 ========================
+
+    /**
+     * HTTP 方法不支持 → 405
+     */
+    @Override
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.warn("不支持的请求方法：{}，支持的：{}", ex.getMethod(), ex.getSupportedHttpMethods());
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Result.error(405, "请求方法不允许，支持的：" + ex.getSupportedHttpMethods()));
     }
 
     /**
-     * 数据绑定失败处理器
+     * 缺少请求参数 → 400
      */
-    @ExceptionHandler(BindException.class)
-    public Result<?> handleConstraintViolationException(BindException e, HttpServletRequest request) {
-        log.error("请求路径：{}，请求方法：{}，数据绑定失败：{}，异常信息：{}",
-                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
-        return Result.error(SystemExceptionEnum.PARAM_ERROR);
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.warn("缺少请求参数：{}", ex.getParameterName());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.error(400, "缺少参数：" + ex.getParameterName()));
     }
 
     /**
-     * 参数验证失败处理器（处理JSR-303约束验证和Spring MVC参数验证）
+     * 请求体参数校验失败（@Valid 在 DTO 上） → 400
      */
-    @ExceptionHandler({ConstraintViolationException.class, MethodArgumentNotValidException.class})
-    public Result<?> handleValidationException(Exception e, HttpServletRequest request) {
-        log.error("请求路径：{}，请求方法：{}，参数验证失败：{}，异常信息：{}",
-                request.getRequestURI(), request.getMethod(), e.toString() + ":" + e.getMessage(), getTruncatedStackTrace(e));
-
-        // 忽略视频播放时的客户端断开/超时异常
-//        if (e instanceof ClientAbortException
-//                || e.getCause() instanceof SocketTimeoutException) {
-//            // 只打印简单日志，不返回错误
-//            return null;
-//        }
-
-        String message;
-        if (e instanceof ConstraintViolationException constraintViolationException) {
-            message = constraintViolationException.getConstraintViolations().stream()
-                    .map(ConstraintViolation::getMessage)
-                    .collect(Collectors.joining("; "));
-        } else if (e instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
-            message = methodArgumentNotValidException.getBindingResult().getFieldErrors().stream()
-                    .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                    .collect(Collectors.joining("; "));
-        } else {
-            message = e.getMessage();
-        }
-
-        return Result.error(SystemExceptionEnum.PARAM_ILLEGAL.getCode(), message);
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        log.warn("参数校验失败：{}", message);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.error(400, message));
     }
+
+    // ======================== WebSocket 异常处理（不受 HTTP 影响，保持不变） ========================
 
     /**
      * 全局捕获所有 WebSocket 接口异常
-      */
+     */
     @MessageExceptionHandler(BusinessException.class)
     @SendToUser(value = "/queue/error", broadcast = false)
-    public Result<?> handleException(BusinessException e, Message<?> message) {
+    public Result<?> handleWebSocketBusinessException(BusinessException e, Message<?> message) {
         // 获取 STOMP 消息头访问器
         SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
 
@@ -123,16 +143,15 @@ public class ExceptionGlobalHandler {
                 e.getMessage(),
                 getTruncatedStackTrace(e)
         );
-
         return Result.error(e.getCode(), e.getMsg());
     }
 
     /**
      * WebSocket兜底异常处理器
-      */
+     */
     @MessageExceptionHandler(Throwable.class)
     @SendToUser(value = "/queue/error", broadcast = false)
-    public Result<?> handleException(Throwable e, Message<?> message) {
+    public Result<?> handleWebSocketException(Throwable e, Message<?> message) {
         // 获取 STOMP 消息头访问器
         SimpMessageHeaderAccessor headers = SimpMessageHeaderAccessor.wrap(message);
 
@@ -152,6 +171,8 @@ public class ExceptionGlobalHandler {
 
         return Result.error(SystemExceptionEnum.SYSTEM_ERROR);
     }
+
+    // ======================== 工具方法 ========================
 
     private String getTruncatedStackTrace(Throwable throwable) {
         StringWriter sw = new StringWriter();

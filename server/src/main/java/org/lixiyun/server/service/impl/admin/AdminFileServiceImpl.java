@@ -92,7 +92,8 @@ public class AdminFileServiceImpl implements AdminFileService {
         if (existingFile != null) {
             if (existingFile.deleteFlat()) {
                 // 文件已被逻辑删除，恢复文件
-                log.info("文件已存在但已被删除，恢复文件，文件ID：{}", existingFile.getId());                infraFileMapper.update(null,
+                log.info("文件已存在但已被删除，恢复文件，文件ID：{}", existingFile.getId());
+                infraFileMapper.update(null,
                         new LambdaUpdateWrapper<InfraFile>()
                                 .eq(InfraFile::getId, existingFile.getId())
                                 .set(InfraFile::getDeleted, org.lixiyun.pojo.constant.DeleteConstant.DELETE_FLAG_NO)
@@ -101,6 +102,9 @@ public class AdminFileServiceImpl implements AdminFileService {
                 infraFileCategoryMapper.updateMyFileCount(existingFile.getCategoryId(), 1);
                 log.info("文件分类数量更新完成，分类ID：{}，数量变化：{}", existingFile.getCategoryId(), 1);
                 
+                // 重新查询恢复后的文件最新状态，避免使用内存中 deleted=1 的旧对象
+                existingFile = infraFileMapper.selectById(existingFile.getId());
+
                 // 根据文件ID，向量恢复删除元数据信息
                 try {
                     ragStore.restoreVectorDeletedMetadata(existingFile.getId());
