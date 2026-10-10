@@ -30,8 +30,13 @@
     </div>
 
     <template v-else>
+      <!-- 游客态：诊断记录是个人数据，登录后自动加载 -->
+      <el-empty v-if="!userStore.token" class="empty-wrap" description="登录后即可查看诊断记录">
+        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+      </el-empty>
+
       <!-- 加载失败 -->
-      <div v-if="loadError" class="empty-wrap">
+      <div v-else-if="loadError" class="empty-wrap">
         <el-empty description="诊断列表加载失败，请稍后重试">
           <el-button type="primary" @click="fetchList">重新加载</el-button>
         </el-empty>
@@ -191,8 +196,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useUserStore } from "@/portal/stores/user";
 import { ArrowDown, ArrowRight, Search } from "@element-plus/icons-vue";
 import { dayjs } from "@/shared/utils";
 import { DEFAULT_PAGE_SIZE, PAGINATION_LAYOUT } from "@/shared/api/config";
@@ -204,6 +210,7 @@ import {
 } from "@/portal/api/conversation/emotion-diagnosis";
 
 const router = useRouter();
+const userStore = useUserStore();
 
 /* ==================== 状态 ==================== */
 
@@ -368,8 +375,25 @@ function tintFor(conversationId?: number): Tint {
 
 /* ==================== 初始化 ==================== */
 
+async function init() {
+  // 诊断记录是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
+  await fetchList();
+}
+
+// 游客态经弹窗登录成功后自动加载
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && sessions.value.length === 0 && !loading.value) void init();
+  },
+);
+
 onMounted(() => {
-  void fetchList();
+  void init();
 });
 </script>
 

@@ -9,6 +9,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.mail.utils.SendSimpleEmailUtil;
 import org.lixiyun.common.redis.utils.RedisUtils;
 import org.lixiyun.common.verification.code.properties.VerificationCodeProperties;
+import org.redisson.api.RBucket;
 
 import java.awt.*;
 import java.io.IOException;
@@ -29,15 +30,15 @@ public class VerificationCodeUtil {
      * @param key 验证码对应存放在Redis中的键
      */
     public static void judgmentCode(String code, String key){
-        // 获取Redis中的验证码答案
-        String value = RedisUtils.getCacheObject(VERIFICATION_CODE_KEY + key);
+        // 原子「取即删」核销：读取与删除必须使用同一个带前缀的存储键
+        // （历史缺陷：原实现读取用 VERIFICATION_CODE_KEY + key、删除却用裸 key，验证码从未被核销，TTL 内可重放登录）
+        RBucket<String> bucket = RedisUtils.getClient().getBucket(VERIFICATION_CODE_KEY + key);
+        String value = bucket.getAndDelete();
 
-        // 验证码校验
+        // 验证码校验（取删后无论对错该验证码都已作废；前端在校验失败时会自动刷新验证码）
         if (value == null || !value.equals(code)) {
             throw new BusinessException(AuthenticationExceptionEnum.CODE_ERROR);
         }
-
-        RedisUtils.deleteObject(key);
     }
 
     /**

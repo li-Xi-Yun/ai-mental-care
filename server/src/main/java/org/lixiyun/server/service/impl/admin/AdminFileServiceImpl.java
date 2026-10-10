@@ -6,7 +6,6 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,17 +92,24 @@ public class AdminFileServiceImpl implements AdminFileService {
             if (existingFile.deleteFlat()) {
                 // 文件已被逻辑删除，恢复文件
                 log.info("文件已存在但已被删除，恢复文件，文件ID：{}", existingFile.getId());
-                infraFileMapper.update(null,
-                        new LambdaUpdateWrapper<InfraFile>()
-                                .eq(InfraFile::getId, existingFile.getId())
-                                .set(InfraFile::getDeleted, org.lixiyun.pojo.constant.DeleteConstant.DELETE_FLAG_NO)
-                );
-                log.info("文件恢复成功，文件ID：{}", existingFile.getId());
+                // 注意：不能用 wrapper 更新把 deleted 改回 0 —— @TableLogic 会自动在 WHERE 追加 deleted=0，
+                // 更新将匹配 0 行并静默失效（历史缺陷：复传返回 200 但文件不可见）；必须用自定义 SQL 绕过过滤。
+                Long fileId = existingFile.getId();
+                int restored = infraFileMapper.restoreFile(fileId);
+                if (restored == 0) {
+                    log.error("文件恢复失败，影响行数为 0，文件ID：{}", fileId);
+                    throw new BusinessException(FileExceptionEnum.FILE_RESTORE_FAILED);
+                }
+                log.info("文件恢复成功，文件ID：{}", fileId);
                 infraFileCategoryMapper.updateMyFileCount(existingFile.getCategoryId(), 1);
                 log.info("文件分类数量更新完成，分类ID：{}，数量变化：{}", existingFile.getCategoryId(), 1);
-                
+
                 // 重新查询恢复后的文件最新状态，避免使用内存中 deleted=1 的旧对象
-                existingFile = infraFileMapper.selectById(existingFile.getId());
+                existingFile = infraFileMapper.selectById(fileId);
+                if (existingFile == null) {
+                    log.error("文件恢复后重新查询为空，文件ID：{}", fileId);
+                    throw new BusinessException(FileExceptionEnum.FILE_RESTORE_FAILED);
+                }
 
                 // 根据文件ID，向量恢复删除元数据信息
                 try {

@@ -21,11 +21,11 @@ import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 /**
@@ -45,7 +45,9 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
     private final MilvusUtil milvusUtil;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    // 注意：此处不可加 @Transactional —— 异步任务在本方法内提交，若状态更新（下方 CAS）尚未提交，
+    // 异步失败回写（UPDATE ... WHERE status=解析中）在其他连接上看不到该状态，会静默 0 行
+    //（历史缺陷：失败后状态卡在解析中、fail_reason 为空）。本方法 DB 写仅一条原子 CAS UPDATE，无需事务包裹。
     public void loadFileVector(Long fileId) {
         log.info("开始文件向量加载，文件ID：{}", fileId);
 
@@ -65,7 +67,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         // 3. 校验文件状态
         if (infraFile.isParsing() || infraFile.isParseCompleted()) {
             log.error("文件向量加载-文件状态不允许加载，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
-            throw new BusinessException(FileExceptionEnum.FILE_PARAMS_ERROR);
+            throw new BusinessException(FileExceptionEnum.FILE_STATUS_NOT_ALLOWED_LOAD);
         }
 
         if (infraFile.getKnowledgeType().equals(InfraFile.KNOWLEDGE_TYPE_NONE)) {
@@ -85,8 +87,8 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
                         .in(InfraFile::getStatus, InfraFile.STATUS_PENDING, InfraFile.STATUS_PARSE_FAILED)
                         .set(InfraFile::getStatus, InfraFile.STATUS_PARSING));
         if (updateCount == 0) {
-            log.error("文件向量加载-更新文件状态失败，文件ID：{}", fileId);
-            throw new BusinessException(FileExceptionEnum.FILE_PARAMS_ERROR);
+            log.error("文件向量加载-更新文件状态失败（当前状态不允许加载），文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_STATUS_NOT_ALLOWED_LOAD);
         }
         log.debug("文件状态已更新为解析中，文件ID：{}", fileId);
 
@@ -120,7 +122,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
             log.debug("文件状态已更新为解析完成，文件ID：{}", fileId);
         }).exceptionally(ex -> {
             log.error("文件向量加载异步任务异常，文件ID：{}", fileId, ex);
-            handleVectorLoadException(fileId, (Exception) ex);
+            handleVectorLoadException(fileId, ex);
             return null;
         }).whenComplete((result, throwable) -> {
             // 无论成功还是失败，都会清除中断标识
@@ -149,7 +151,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         // 3. 校验文件状态
         if (!infraFile.isParseCompleted()) {
             log.error("文件向量删除-文件状态不允许删除，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
-            throw new BusinessException(FileExceptionEnum.FILE_PARAMS_ERROR);
+            throw new BusinessException(FileExceptionEnum.FILE_STATUS_NOT_ALLOWED_DELETE);
         }
 
         // 物理删除向量数据
@@ -159,10 +161,11 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         knowledgeDocumentMapper.delete(new LambdaUpdateWrapper<KnowledgeDocument>()
                 .eq(KnowledgeDocument::getFileId, fileId));
 
-        // 更新文件状态为待解析
+        // 更新文件状态为待解析，并同步向量状态为未启用（与加载成功路径对称）
         infraFileMapper.update(null, new LambdaUpdateWrapper<InfraFile>()
                         .eq(InfraFile::getId, fileId)
-                        .set(InfraFile::getStatus, InfraFile.STATUS_PENDING));
+                        .set(InfraFile::getStatus, InfraFile.STATUS_PENDING)
+                        .set(InfraFile::getVectorStatus, InfraFile.VECTOR_STATUS_DISABLE));
         log.info("文件向量删除完成，文件状态已重置为待解析，文件ID：{}", fileId);
     }
 
@@ -254,15 +257,25 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
      * @param fileId 文件ID
      * @param exception 异常信息
      */
-    private void handleVectorLoadException(Long fileId, Exception exception) {
+    private void handleVectorLoadException(Long fileId, Throwable exception) {
         log.error("文件向量加载异常，文件ID：{}", fileId, exception);
 
         try {
+            // 解包异步链抛出的 CompletionException，拿到真实原因（否则 instanceof/业务消息判断永远不成立）
+            Throwable cause = exception;
+            while (cause instanceof CompletionException && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+
             // 更新文件状态为解析失败，并存储异常信息
-            String failReason = exception.getMessage();
-            if (exception instanceof BusinessException businessException){
+            String failReason = cause.getMessage();
+            if (cause instanceof BusinessException businessException) {
                 failReason = businessException.getMsg();
-            } else if (failReason != null && failReason.length() > 500) {
+            }
+            if (failReason == null || failReason.isBlank()) {
+                failReason = cause.getClass().getSimpleName();
+            }
+            if (failReason.length() > 500) {
                 failReason = failReason.substring(0, 500);
             }
 
@@ -270,14 +283,17 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
             knowledgeDocumentMapper.delete(new LambdaUpdateWrapper<KnowledgeDocument>()
                     .eq(KnowledgeDocument::getFileId, fileId));
 
-            infraFileMapper.update(null,
+            int updated = infraFileMapper.update(null,
                     new LambdaUpdateWrapper<InfraFile>()
                             .eq(InfraFile::getId, fileId)
                             .eq(InfraFile::getStatus, InfraFile.STATUS_PARSING)
                             .set(InfraFile::getStatus, InfraFile.STATUS_PARSE_FAILED)
                             .set(InfraFile::getFailReason, failReason));
-
-            log.debug("文件状态已更新为解析失败，文件ID：{}", fileId);
+            if (updated == 0) {
+                log.error("文件失败状态回写未生效（状态已被变更/文件已完成），文件ID：{}，失败原因：{}", fileId, failReason);
+            } else {
+                log.debug("文件状态已更新为解析失败，文件ID：{}，失败原因：{}", fileId, failReason);
+            }
         } catch (Exception e) {
             log.error("更新文件失败状态异常，文件ID：{}", fileId, e);
         }

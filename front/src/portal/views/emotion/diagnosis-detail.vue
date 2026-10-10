@@ -8,7 +8,14 @@
       <span class="breadcrumb-current">诊断详情</span>
     </div>
 
-    <template v-if="loading">
+    <!-- 游客态：诊断详情是个人数据，登录后自动加载 -->
+    <template v-if="!userStore.token">
+      <el-empty description="登录后即可查看诊断详情">
+        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+      </el-empty>
+    </template>
+
+    <template v-else-if="loading">
       <div class="skeleton">
         <div class="sk-line" style="width: 60%"></div>
         <div class="sk-line" style="width: 100%"></div>
@@ -403,9 +410,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { CSSProperties } from "vue";
 import { useRoute } from "vue-router";
+import { useUserStore } from "@/portal/stores/user";
 import { ElMessage } from "element-plus";
 import dayjs from "@/shared/utils/dayjs";
 import { EMOTION_COLORS } from "@/shared/api/config";
@@ -417,6 +425,7 @@ import {
 import type { AssessmentFeedbackVO, EmotionDiagnosisVO } from "@/portal/api/conversation/emotion-diagnosis";
 
 const route = useRoute();
+const userStore = useUserStore();
 const sessionId = route.params.sessionId as string;
 const diagnosisId = route.params.diagnosisId as string;
 
@@ -455,9 +464,28 @@ async function loadFeedback() {
   }
 }
 
+/* ==================== 初始化 ==================== */
+
+async function init() {
+  // 诊断详情是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
+  if (!userStore.token) {
+    loading.value = false; // 游客态不使用骨架
+    userStore.openLoginDialog("login");
+    return;
+  }
+  await Promise.all([loadDiagnosis(), loadFeedback()]);
+}
+
+// 游客态经弹窗登录成功后自动加载
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && !diagnosis.value && !loading.value) void init();
+  },
+);
+
 onMounted(() => {
-  loadDiagnosis();
-  loadFeedback();
+  void init();
 });
 
 /* ==================== 格式化工具 ==================== */

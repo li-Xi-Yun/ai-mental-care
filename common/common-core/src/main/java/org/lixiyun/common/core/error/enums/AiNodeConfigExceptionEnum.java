@@ -23,6 +23,7 @@ public enum AiNodeConfigExceptionEnum implements ErrorCode {
     AI_NODE_CONFIG_BATCH_ENABLED_FAIL("批量启用/禁用失败", 2607),
     AI_NODE_PROMPT_UPDATE_FAIL("AI节点提示词更新失败", 2608),
     AI_NODE_CONFIG_ROLLBACK_FAIL("AI节点配置回滚失败", 2609),
+    AI_NODE_CONFIG_NODE_NAME_EXISTS("节点名称已存在", 2610),
 
     ;
 

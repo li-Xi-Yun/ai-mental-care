@@ -105,6 +105,15 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
             throw new BusinessException(AiNodeConfigExceptionEnum.AI_NODE_CONFIG_NODE_KEY_EXISTS);
         }
 
+        // 节点名称唯一性预检：数据库 node_name 为单列唯一索引且覆盖软删行（@TableLogic 会过滤软删行），
+        // 必须用自定义 SQL 查含已删除记录，避免重复名插入直接抛 DuplicateKeyException（500/10000）
+        String nodeName = dto.getNodeName();
+        if (nodeName != null && !nodeName.isBlank()
+                && aiNodeConfigMapper.countByNodeNameIncludingDeleted(nodeName) > 0) {
+            log.error("AI节点配置-节点名称已存在（含已删除记录占用唯一索引），nodeName：{}", nodeName);
+            throw new BusinessException(AiNodeConfigExceptionEnum.AI_NODE_CONFIG_NODE_NAME_EXISTS);
+        }
+
         AiNodeConfig config = BeanUtil.copyProperties(dto, AiNodeConfig.class);
 
         int insert = aiNodeConfigMapper.insert(config);
@@ -129,6 +138,14 @@ public class AdminAiNodeConfigServiceImpl implements AdminAiNodeConfigService {
         }
 
         log.debug("AI节点配置-修改前，nodeKey：{}，version：{}", oldConfig.getNodeKey(), oldConfig.getVersion());
+
+        // 改名唯一性预检（排除自身；含软删行占用唯一索引，理由同 createAiNodeConfig）
+        String newNodeName = dto.getNodeName();
+        if (newNodeName != null && !newNodeName.isBlank()
+                && aiNodeConfigMapper.countByNodeNameIncludingDeletedExcludeId(newNodeName, id) > 0) {
+            log.error("AI节点配置-节点名称已存在（含已删除记录占用唯一索引），nodeName：{}，id：{}", newNodeName, id);
+            throw new BusinessException(AiNodeConfigExceptionEnum.AI_NODE_CONFIG_NODE_NAME_EXISTS);
+        }
 
         AiNodeConfig newConfig = BeanUtil.copyProperties(dto, AiNodeConfig.class);
         newConfig.setId(id);

@@ -28,8 +28,13 @@
 
     <!-- 列表主体 -->
     <div class="list-body">
+      <!-- 游客态：诊断记录是个人数据，登录后自动加载 -->
+      <el-empty v-if="!userStore.token" class="empty-wrap" description="登录后即可查看诊断记录">
+        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+      </el-empty>
+
       <!-- 加载骨架 -->
-      <div v-if="loading" class="timeline">
+      <div v-else-if="loading" class="timeline">
         <div v-for="i in 3" :key="i" class="timeline-item">
           <div class="timeline-rail">
             <span class="timeline-dot skeleton-dot"></span>
@@ -111,8 +116,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/portal/stores/user";
 import { ArrowRight, Clock, Refresh } from "@element-plus/icons-vue";
 import { DEFAULT_PAGE_SIZE, PAGINATION_LAYOUT } from "@/shared/api/config";
 import { dayjs } from "@/shared/utils";
@@ -124,6 +130,7 @@ import { getConversationDetail } from "@/portal/api/conversation/conversation";
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 const sessionId = String(route.params.sessionId ?? "");
 
@@ -231,9 +238,25 @@ function badgeStyle(index: number) {
 
 /* ==================== 初始化 ==================== */
 
+async function init() {
+  // 诊断记录是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
+  await Promise.all([fetchSessionName(), fetchList()]);
+}
+
+// 游客态经弹窗登录成功后自动加载
+watch(
+  () => userStore.token,
+  (t) => {
+    if (t && records.value.length === 0 && !loading.value) void init();
+  },
+);
+
 onMounted(() => {
-  void fetchSessionName();
-  void fetchList();
+  void init();
 });
 </script>
 

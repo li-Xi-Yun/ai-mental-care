@@ -23,12 +23,15 @@ public enum FileExceptionEnum implements ErrorCode {
     FILE_CATEGORY_NOT_ALLOWED_CHILD("文件分类下不允许存在子分类", 1810),
     FILE_CATEGORY_NOT_ALLOWED_UPDATE("文件分类下不允许更新", 1811),
     FILE_PARAMS_ERROR("RAG参数错误", 1812),
+    FILE_RESTORE_FAILED("文件恢复失败", 1813),
     FILE_VECTOR_UPDATE_ERROR("文件向量更新错误", 1814),
     FILE_NAME_INVALID("文件名错误", 1815),
     FOLDER_NAME_INVALID("文件夹名称错误", 1816),
     FILE_WRITE_ERROR("文件写入错误", 1817),
     FILE_KNOWLEDGE_TYPE_NONE("向量加载时，文件知识类型不允许为空", 1818),
     FILE_KNOWLEDGE_TYPE_UPDATE_NEED_DELETE_VECTOR("请先删除文件向量，才能更新知识类型", 1819),
+    FILE_STATUS_NOT_ALLOWED_DELETE("当前文件状态不允许删除向量", 1820),
+    FILE_STATUS_NOT_ALLOWED_LOAD("当前文件状态不允许加载向量", 1821),
 
 
 

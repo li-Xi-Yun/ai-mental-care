@@ -29,6 +29,6 @@
         from role r
                  left join admin create_admin on r.created_by = create_admin.id
                  left join admin update_admin on r.updated_by = update_admin.id
-        where r.id = #{id} and r.status = 0 and r.deleted = 0
+        where r.id = #{id} and r.deleted = 0
     </select>
 </mapper>

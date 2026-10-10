@@ -395,11 +395,17 @@ async function loadGroups() {
 }
 
 function buildParams() {
+  // 单输入框需同时支持「节点标识 / 名称」搜索，但后端对 nodeKey 与 nodeName 为 AND 语义，
+  // 同一关键词同时下发两个条件会互相过滤导致恒为 0 条（历史缺陷：搜索不可用）。
+  // 前端按输入特征选择更匹配的字段下发：纯 ASCII 无空格（节点标识形态）→ nodeKey，其余（中文名称）→ nodeName。
+  // 根治建议：后端提供关键字 OR 查询（已在第五轮报告中登记）。
+  const keyword = searchForm.keyword.trim();
+  const keyLikely = /^[\x21-\x7E]+$/.test(keyword);
   return {
     pageNum: currentPage.value,
     pageSize,
-    nodeKey: searchForm.keyword || undefined,
-    nodeName: searchForm.keyword || undefined,
+    nodeKey: keyword && keyLikely ? keyword : undefined,
+    nodeName: keyword && !keyLikely ? keyword : undefined,
     nodeGroup: searchForm.nodeGroup || undefined,
     modelType: searchForm.modelType,
     enabled: searchForm.enabled,
@@ -412,8 +418,8 @@ async function loadData() {
     const res = await pageAiNodeConfig(buildParams());
     tableData.value = res.data.data?.records ?? [];
     total.value = res.data.data?.total ?? 0;
-  } catch {
-    ElMessage.error("节点列表加载失败，请稍后重试");
+  } catch (e) {
+    ElMessage.error((e as Error)?.message || "节点列表加载失败，请稍后重试");
   } finally {
     loading.value = false;
   }
@@ -448,8 +454,8 @@ async function handleStatusToggle(row: AiNodeConfigSimpleVO, val: string | numbe
     ElMessage.success(next === 1 ? `「${row.nodeName}」已启用` : `「${row.nodeName}」已禁用`);
     // 列表数据可能跨页，整体刷新以同步状态与统计
     await loadData();
-  } catch {
-    ElMessage.error("状态更新失败，请稍后重试");
+  } catch (e) {
+    ElMessage.error((e as Error)?.message || "状态更新失败，请稍后重试");
   }
 }
 
@@ -473,8 +479,8 @@ async function handleBatchToggle(enabled: boolean) {
     ElMessage.success(`已${text} ${num} 个节点`);
     selectedRows.value = [];
     await Promise.all([loadData(), loadGroups()]);
-  } catch {
-    ElMessage.error(`批量${text}失败，请稍后重试`);
+  } catch (e) {
+    ElMessage.error((e as Error)?.message || `批量${text}失败，请稍后重试`);
   }
 }
 
@@ -573,8 +579,8 @@ async function handleSubmit() {
     }
     dialogVisible.value = false;
     await Promise.all([loadData(), loadGroups()]);
-  } catch {
-    ElMessage.error(`保存失败，请稍后重试`);
+  } catch (e) {
+    ElMessage.error((e as Error)?.message || "保存失败，请稍后重试");
   } finally {
     submitting.value = false;
   }
@@ -605,8 +611,8 @@ async function handleDelete(row: AiNodeConfigSimpleVO) {
       currentPage.value -= 1;
     }
     await Promise.all([loadData(), loadGroups()]);
-  } catch {
-    ElMessage.error("删除失败，请稍后重试");
+  } catch (e) {
+    ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
 
