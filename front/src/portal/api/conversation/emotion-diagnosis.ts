@@ -92,6 +92,8 @@ export interface EmotionDiagnosisListVO {
   id?: number;
   conversationId?: number;
   roundNum?: number;
+  emotionRisk?: number;
+  coreEmotionLabel?: string;
   createdTime?: string;
   updatedTime?: string;
 }

@@ -55,6 +55,12 @@ const portalRoutes: RouteRecordRaw[] = [
         meta: { title: "量表测评" },
       },
       {
+        path: "scale/:scaleId",
+        name: "PortalScaleDetail",
+        component: () => import("@/portal/views/scale/detail.vue"),
+        meta: { title: "量表详情" },
+      },
+      {
         path: "scale/:scaleId/answer",
         name: "PortalScaleAnswer",
         component: () => import("@/portal/views/scale/answer.vue"),

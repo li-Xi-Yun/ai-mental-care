@@ -4,7 +4,8 @@
  * 与 temp 参考实现一致：
  * - 无 push-to-talk：start() 后一直采集，说话自动判定、静音自动结束一句；
  * - WebAudio ScriptProcessorNode(4096,1,1) 取帧，重采样到 16kHz Int16；
- * - RMS 能量阈值判定是否说话；说话结束后继续补发 N 帧全零静音（约 1.3s，覆盖服务端
+ * - RMS 能量阈值判定是否说话（默认自适应：启动先采样 500ms 环境噪声底，阈值 = clamp(噪声底×2.5, 0.005, 0.02)）；
+ *   说话结束后继续补发 N 帧全零静音（约 1.3s，覆盖服务端
  *   VAD 的 end_window_size=600ms），由服务端自动判停并返回 definite 结果；
  * - 后端没有 /audio/vad-stop 处理器（文档提及但代码不存在），因此不发送"负包"。
  */
@@ -21,8 +22,15 @@ export interface VadRecorderOptions {
   targetSampleRate?: number;
   /** 采集帧大小（采样数，默认 4096） */
   frameSize?: number;
-  /** RMS 能量阈值，高于视为说话（默认 0.012，同参考实现） */
+  /**
+   * RMS 能量阈值下限（默认 0.005）。
+   * 开启自适应时作为地板值；关闭自适应时直接作为判定阈值（旧行为传 0.012）。
+   */
   energyThreshold?: number;
+  /** 自适应噪声底阈值（默认 true）：启动后先采样环境噪声，阈值 = clamp(噪声底×2.5, 下限, 0.02) */
+  adaptiveThreshold?: boolean;
+  /** 噪声采样时长（毫秒，默认 500） */
+  calibrationMs?: number;
   /** 说话结束后补发的静音帧数（默认 15，约 1.3s） */
   trailingSilenceFrames?: number;
   /** 每一帧回调（说话中的真实帧 + 结束后的静音补帧） */
@@ -33,6 +41,8 @@ export interface VadRecorderOptions {
   onSpeechEnd?: () => void;
   /** 音量 0-100（用于音量条） */
   onVolume?: (volume: number) => void;
+  /** 校准完成后的生效阈值（诊断用） */
+  onThreshold?: (threshold: number) => void;
   /** 采集/设备错误（采集过程中） */
   onError?: (err: unknown) => void;
 }
@@ -41,7 +51,9 @@ export class VadRecorder {
   private readonly options: VadRecorderOptions;
   private readonly frameSize: number;
   private readonly sampleRate: number;
-  private readonly energyThreshold: number;
+  private readonly minThreshold: number;
+  private readonly adaptive: boolean;
+  private readonly calibrationMs: number;
   private readonly trailingSilenceFrames: number;
 
   private stream: MediaStream | null = null;
@@ -55,12 +67,26 @@ export class VadRecorder {
   /** 最近一帧 16kHz PCM 采样数（补发静音时复用） */
   private frameSamples = 0;
 
+  /* 自适应阈值：启动后采样环境噪声底，阈值 = clamp(噪声底×2.5, 下限, 0.02) */
+  private threshold: number;
+  private calibrating = false;
+  private calibSamples: number[] = [];
+  private calibElapsedMs = 0;
+
   constructor(options: VadRecorderOptions) {
     this.options = options;
     this.frameSize = options.frameSize ?? 4096;
     this.sampleRate = options.targetSampleRate ?? 16000;
-    this.energyThreshold = options.energyThreshold ?? 0.012;
+    this.minThreshold = options.energyThreshold ?? 0.005;
+    this.adaptive = options.adaptiveThreshold ?? true;
+    this.calibrationMs = options.calibrationMs ?? 500;
     this.trailingSilenceFrames = options.trailingSilenceFrames ?? 15;
+    this.threshold = this.minThreshold;
+  }
+
+  /** 当前生效阈值（校准前为下限值） */
+  get currentThreshold(): number {
+    return this.threshold;
   }
 
   get active(): boolean {
@@ -78,6 +104,12 @@ export class VadRecorder {
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
     this.stream = stream;
+
+    // 重置自适应校准（每次启动重新采样环境噪声）
+    this.calibrating = this.adaptive;
+    this.calibSamples = [];
+    this.calibElapsedMs = 0;
+    this.threshold = this.minThreshold;
 
     const ctx = new AudioContext();
     this.audioContext = ctx;
@@ -107,7 +139,15 @@ export class VadRecorder {
       this.frameSamples = pcm.length;
       this.options.onVolume?.(Math.min(100, Math.round(energy * 600)));
 
-      if (energy >= this.energyThreshold) {
+      // 校准期：只采样环境噪声底，不做起停判定（避免把环境噪声当成说话）
+      if (this.calibrating) {
+        this.calibElapsedMs += (pcm.length / this.sampleRate) * 1000;
+        this.calibSamples.push(energy);
+        if (this.calibElapsedMs >= this.calibrationMs) this.finishCalibration();
+        return;
+      }
+
+      if (energy >= this.threshold) {
         this.silenceFrames = 0;
         if (!this.inSpeech) {
           this.inSpeech = true;
@@ -131,6 +171,16 @@ export class VadRecorder {
     }
   };
 
+  /** 校准结束：取噪声样本 80 分位（抗瞬时尖峰）×2.5 作为阈值，并夹在 [下限, 0.02] 内 */
+  private finishCalibration(): void {
+    this.calibrating = false;
+    const samples = this.calibSamples.slice().sort((a, b) => a - b);
+    const noise = samples.length ? samples[Math.floor(samples.length * 0.8)] : 0;
+    this.threshold = Math.min(0.02, Math.max(this.minThreshold, noise * 2.5));
+    this.calibSamples = [];
+    this.options.onThreshold?.(this.threshold);
+  }
+
   /**
    * 停止采集。
    * @param options.trailingSilence 为 true 且当前处于说话中时，先补发 15 帧全零静音
@@ -145,6 +195,9 @@ export class VadRecorder {
     }
     this.inSpeech = false;
     this.silenceFrames = 0;
+    this.calibrating = false;
+    this.calibSamples = [];
+    this.calibElapsedMs = 0;
 
     const processor = this.processor;
     if (processor) {

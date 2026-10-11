@@ -8,10 +8,15 @@
         <div class="ap-title">{{ conversationName || "语音对话" }}</div>
         <div class="ap-sub">{{ statusText }}</div>
       </div>
+      <button class="ap-mode" title="修改输入/输出方式" @click="modeDialogVisible = true">
+        <el-icon :size="14"><Setting /></el-icon>
+        <span>模式</span>
+      </button>
       <div class="ap-badge" :class="badgeClass">{{ badgeText }}</div>
     </header>
 
-    <div class="ap-body" ref="bodyRef">
+    <!-- 舞台：上方渐进文本 + 中央语音球 -->
+    <div class="ap-stage">
       <!-- 未登录占位 -->
       <div v-if="!userStore.token" class="ap-empty">
         <p>登录后即可开始语音对话</p>
@@ -19,63 +24,42 @@
       </div>
 
       <template v-else>
-        <!-- 历史消息 -->
-        <div v-for="msg in displayMessages" :key="msg.id" class="msg" :class="msg.type === 'user' ? 'user' : 'ai'">
-          <template v-if="msg.type === 'assistant'">
-            <div class="msg-avatar ai">AI</div>
-            <div class="msg-content">
-              <div class="msg-bubble ai">{{ msg.content }}</div>
-              <div class="msg-time">{{ msgTime(msg.createdTime) }}</div>
+        <!-- 渐进文本区（上方） -->
+        <div class="ap-text-zone">
+          <p v-if="userText" class="ap-user-text" :class="{ 'is-final': userTextFinal }">{{ userText }}</p>
+          <p v-if="aiStream" class="ap-ai-text">{{ aiStream }}<span class="stream-cursor"></span></p>
+          <p v-if="!userText && !aiStream" class="ap-idle-hint">{{ idleHint }}</p>
+
+          <!-- 量表推荐卡片（可操作，不属于历史消息） -->
+          <div v-if="displayPendingActions.length" class="ap-cards">
+            <PendingActionCard
+              v-for="act in displayPendingActions"
+              :key="act.id"
+              :act="act"
+              :busy="pendingActActions[act.id]"
+              @start="handleScaleStart"
+              @answered="handleScaleAnswered"
+            />
+          </div>
+        </div>
+
+        <!-- 中央语音球 -->
+        <div class="ap-orb-zone">
+          <div class="ap-orb" :class="orbClass" :style="orbStyle">
+            <span class="ap-ring"></span>
+            <span class="ap-ring ap-ring-2"></span>
+            <div class="ap-orb-core">
+              <el-icon :size="30">
+                <Microphone v-if="isAudioInput" />
+                <ChatDotRound v-else />
+              </el-icon>
             </div>
-          </template>
-          <template v-else>
-            <div class="msg-content right">
-              <div class="msg-bubble user">{{ msg.content }}</div>
-              <div class="msg-time">{{ msgTime(msg.createdTime) }}</div>
-            </div>
-          </template>
-        </div>
-
-        <!-- 已定型的用户话（ASR 结果，等待 memory 对账替换） -->
-        <div v-if="asrFinal" class="msg user">
-          <div class="msg-content right">
-            <div class="msg-bubble user">{{ asrFinal }}</div>
           </div>
+          <div class="ap-status-text">{{ statusText }}</div>
+          <transition name="fade">
+            <div v-if="notice" class="ap-notice">{{ notice }}</div>
+          </transition>
         </div>
-
-        <!-- 当前识别中的用户话（临时气泡） -->
-        <div v-if="asrDraft" class="msg user">
-          <div class="msg-content right">
-            <div class="msg-bubble user pending">{{ asrDraft }}</div>
-          </div>
-        </div>
-
-        <!-- AI 流式回复 -->
-        <div v-if="aiStream" class="msg ai">
-          <div class="msg-avatar ai">AI</div>
-          <div class="msg-content">
-            <div class="msg-bubble ai">{{ aiStream }}</div>
-          </div>
-        </div>
-
-        <!-- AI 思考动画 -->
-        <div v-if="phase === 'replying' && !aiStream" class="msg ai">
-          <div class="msg-avatar ai">AI</div>
-          <div class="typing-indicator">
-            <span class="typing-text">AI 正在回应</span>
-            <span class="typing-dots"><i></i><i></i><i></i></span>
-          </div>
-        </div>
-
-        <!-- 量表推荐卡片（与文本页共用组件） -->
-        <PendingActionCard
-          v-for="act in displayPendingActions"
-          :key="act.id"
-          :act="act"
-          :busy="pendingActActions[act.id]"
-          @start="handleScaleStart"
-          @answered="handleScaleAnswered"
-        />
 
         <!-- 错误态（权限/设备/连接失败） -->
         <div v-if="phase === 'error'" class="ap-error">
@@ -90,7 +74,21 @@
 
     <footer class="ap-footer">
       <template v-if="userStore.token && phase !== 'error'">
-        <div class="ap-volume">
+        <!-- 文本输入模式：输入框发送 -->
+        <div v-if="hasTextInput" class="ap-text-row">
+          <el-input
+            v-model="textInput"
+            placeholder="输入你想说的话…"
+            :disabled="phase === 'initializing'"
+            @keyup.enter="handleSendText"
+          />
+          <el-button
+            type="primary"
+            :disabled="!textInput.trim() || phase === 'initializing'"
+            @click="handleSendText"
+          >发送</el-button>
+        </div>
+        <div v-if="isAudioInput" class="ap-volume">
           <span class="ap-volume-fill" :class="{ active: volume > 4 }" :style="{ width: `${volume}%` }"></span>
         </div>
         <div class="ap-status">
@@ -107,60 +105,117 @@
         <el-button type="primary" round>点击继续</el-button>
       </div>
     </div>
+
+    <!-- 页内修改输入/输出方式 -->
+    <VoiceModeDialog
+      v-model="modeDialogVisible"
+      title="对话模式"
+      confirm-text="应用"
+      :input-types="currentInputTypes"
+      :output-types="currentOutputTypes"
+      @confirm="handleModeConfirm"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
-import { ArrowLeft } from "@element-plus/icons-vue";
+import { ArrowLeft, ChatDotRound, Microphone, Setting } from "@element-plus/icons-vue";
 import { PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
 import PendingActionCard from "@/portal/components/conversation/PendingActionCard.vue";
+import VoiceModeDialog from "@/portal/components/conversation/VoiceModeDialog.vue";
 import { useAudioConversation } from "@/portal/composables/useAudioConversation";
 import { useScaleCardActions } from "@/portal/composables/useScaleCardActions";
 import { useUserStore } from "@/portal/stores/user";
-import dayjs from "@/shared/utils/dayjs";
-import type { MemoryMessage } from "@/portal/api/conversation/types";
+import { useConversationStore } from "@/portal/stores/conversation";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const conversationStore = useConversationStore();
+
+/** 输入/输出模式（来自模式选择弹窗；直接访问时缺省为 语音输入 + 语音&文本输出） */
+function parseTypes(raw: unknown, fallback: string[]): string[] {
+  const list = String(raw ?? "")
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  return list.length ? list : fallback;
+}
+const inputTypes = parseTypes(route.query.inputTypes, ["AUDIO"]);
+const outputTypes = parseTypes(route.query.outputTypes, ["TEXT", "AUDIO"]);
+/** 从文本页进入：进入时释放旧 TEXT 生命周期（仅消费一次，消费后从 URL 移除，刷新不再重复释放） */
+const fromText = String(route.query.fromText ?? "") === "1";
 
 const {
   phase,
   errorText,
+  notice,
   needResume,
   volume,
-  messages,
   pendingActions,
-  asrDraft,
-  asrFinal,
+  userText,
+  userTextFinal,
   aiStream,
   conversationId,
   conversationName,
+  isAudioInput,
   boot,
   retry,
   teardown,
   resumeAudio,
+  sendText,
+  setModes,
 } = useAudioConversation({
   initialConversationId: String(route.query.conversationId ?? ""),
-  lifecycleBound: String(route.query.lifecycleBound ?? "") === "1",
+  inputTypes,
+  outputTypes,
+  releaseOnBoot: fromText,
   onConversationIdChange: (id) => {
-    // 新会话在 init 时才拿到真实 ID：回写 URL，刷新/返回不丢上下文（store 未持久化）
-    void router.replace({ query: { ...route.query, conversationId: id } });
+    // 新会话在 init 时才拿到真实 ID：回写 URL，刷新/返回不丢上下文
+    const { fromText: _ft, ...rest } = route.query;
+    void router.replace({ query: { ...rest, conversationId: id } });
   },
 });
+
+/* ==================== 页内修改对话模式 ==================== */
+
+/** 当前模式（可页内修改；与 composable 运行态保持同步） */
+const currentInputTypes = ref<string[]>([...inputTypes]);
+const currentOutputTypes = ref<string[]>([...outputTypes]);
+const hasTextInput = computed(() => currentInputTypes.value.includes("TEXT"));
+
+const modeDialogVisible = ref(false);
+
+async function handleModeConfirm(inputs: string[], outputs: string[]) {
+  conversationStore.setVoiceModes(inputs, outputs);
+  currentInputTypes.value = [...inputs];
+  currentOutputTypes.value = [...outputs];
+  const { fromText: _ft, ...rest } = route.query;
+  await router.replace({
+    query: { ...rest, inputTypes: inputs.join(","), outputTypes: outputs.join(",") },
+  });
+  await setModes(inputs, outputs);
+}
+
+/* ==================== 文本输入 ==================== */
+
+const textInput = ref("");
+
+async function handleSendText() {
+  const value = textInput.value.trim();
+  if (!value) return;
+  textInput.value = "";
+  await sendText(value);
+}
 
 /** 量表卡片动作（与文本对话页共用同一实现） */
 const { pendingActActions, handleScaleStart, handleScaleAnswered } = useScaleCardActions(() => conversationId.value);
 
-const bodyRef = ref<HTMLElement | null>(null);
-
-const displayMessages = computed(() =>
-  [...messages.value].filter((m) => m.type === "user" || m.type === "assistant").sort(cmpByTime),
-);
-
 const displayPendingActions = computed(() => [...pendingActions.value].sort((a, b) => b.roundNum - a.roundNum));
+
+/* ==================== 状态文案与语音球 ==================== */
 
 const statusText = computed(() => {
   switch (phase.value) {
@@ -168,6 +223,8 @@ const statusText = computed(() => {
       return "正在连接…";
     case "initializing":
       return "正在准备会话…";
+    case "ready":
+      return "等待输入";
     case "requesting-mic":
       return "正在开启麦克风…";
     case "listening":
@@ -185,6 +242,8 @@ const statusText = computed(() => {
 
 const badgeText = computed(() => {
   switch (phase.value) {
+    case "ready":
+      return "待输入";
     case "listening":
       return "聆听中";
     case "speech":
@@ -200,32 +259,20 @@ const badgeText = computed(() => {
   }
 });
 
-/** 徽标/状态点样式类（与 phase 同名） */
+/** 徽标/语音球样式类（与 phase 同名） */
 const badgeClass = computed(() => phase.value);
+const orbClass = computed(() => `phase-${phase.value}`);
+/** 语音球随实时音量律动（--ap-level: 0-100） */
+const orbStyle = computed(() => ({ "--ap-level": String(volume.value) }));
 
-function cmpByTime(a: MemoryMessage, b: MemoryMessage): number {
-  const ta = dayjs(a.createdTime);
-  const tb = dayjs(b.createdTime);
-  return (ta.isValid() ? ta.valueOf() : 0) - (tb.isValid() ? tb.valueOf() : 0);
-}
-
-function msgTime(v?: string): string {
-  if (!v) return "";
-  const d = dayjs(v);
-  if (!d.isValid()) return String(v);
-  const now = dayjs();
-  if (d.isSame(now, "day")) return d.format("HH:mm");
-  if (d.isSame(now.subtract(1, "day"), "day")) return `昨天 ${d.format("HH:mm")}`;
-  return d.format("M月D日 HH:mm");
-}
-
-// 消息/识别文本变化后自动滚到底部
-watch([displayMessages, asrDraft, asrFinal, aiStream], () => {
-  nextTick(() => {
-    const el = bodyRef.value;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
+const idleHint = computed(() => {
+  if (phase.value === "error") return "";
+  if (phase.value === "connecting" || phase.value === "initializing" || phase.value === "requesting-mic") return "";
+  if (isAudioInput.value) return "直接开口说话，我会一直在这里倾听";
+  return "在上方输入框写下你的心事";
 });
+
+/* ==================== 生命周期 ==================== */
 
 function handleBack() {
   router.push({ name: "PortalConversation" });
@@ -239,8 +286,13 @@ async function handleResume() {
   await resumeAudio();
 }
 
-onMounted(() => {
-  // 进入页面即启动（连接 → 初始化 → 持续收音），无"开始语音输入"按钮
+onMounted(async () => {
+  // 消费 fromText 后立即从 URL 移除：刷新/前进后退不再重复释放旧生命周期
+  if (fromText) {
+    const { fromText: _ft, ...rest } = route.query;
+    await router.replace({ query: rest });
+  }
+  // 进入页面即启动（连接 → 释放旧资源 → 准备输入），但不 init；首次输入才初始化
   if (userStore.token) void boot();
 });
 
@@ -261,26 +313,36 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ==================== 页面与背景（暖橙奶油） ==================== */
+
 .audio-page {
   height: calc(100vh - var(--portal-header-height));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #f8f9fc;
   position: relative;
+  background:
+    radial-gradient(58% 46% at 18% 8%, rgba(255, 214, 184, 0.55), transparent 72%),
+    radial-gradient(52% 44% at 86% 18%, rgba(255, 232, 214, 0.75), transparent 72%),
+    radial-gradient(70% 50% at 50% 108%, rgba(255, 196, 158, 0.5), transparent 70%),
+    linear-gradient(180deg, #fff9f3 0%, #ffebdc 55%, #ffe0cc 100%);
+  color: #5c4a3d;
 }
 
 /* ==================== 页头 ==================== */
 
 .ap-header {
   height: 64px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7f0;
+  background: rgba(255, 252, 248, 0.72);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 180, 140, 0.22);
   display: flex;
   align-items: center;
   padding: 0 16px;
   flex-shrink: 0;
   gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .ap-back {
@@ -289,7 +351,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: #5a5a72;
+  color: #8a7566;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -299,8 +361,30 @@ onBeforeUnmount(() => {
 }
 
 .ap-back:hover {
-  background: #f0eeff;
-  color: #6c63ff;
+  background: rgba(255, 176, 124, 0.16);
+  color: #ff8a5c;
+}
+
+.ap-mode {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 176, 124, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #8a7566;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ap-mode:hover {
+  border-color: #ffb07c;
+  color: #ff8a5c;
+  background: #fff4ea;
 }
 
 .ap-header-center {
@@ -312,7 +396,7 @@ onBeforeUnmount(() => {
 .ap-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1e1e2e;
+  color: #5c4a3d;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -320,7 +404,7 @@ onBeforeUnmount(() => {
 
 .ap-sub {
   font-size: 11px;
-  color: #9a9ab0;
+  color: #9a8578;
   margin-top: 2px;
 }
 
@@ -332,65 +416,108 @@ onBeforeUnmount(() => {
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  color: #6c63ff;
-  background: #f0eeff;
+  color: #ff8a5c;
+  background: rgba(255, 176, 124, 0.18);
 }
 
 .ap-badge.listening {
-  color: #52c41a;
-  background: #f0fdf4;
+  color: #d97a3a;
+  background: rgba(255, 196, 130, 0.28);
 }
 
 .ap-badge.speech,
 .ap-badge.replying {
-  color: #fa8c16;
-  background: #fff7e6;
+  color: #c96a2e;
+  background: rgba(255, 168, 110, 0.3);
 }
 
 .ap-badge.error {
-  color: #ff4d4f;
-  background: #fef2f2;
+  color: #d0503f;
+  background: rgba(255, 130, 110, 0.2);
 }
 
-/* ==================== 消息区 ==================== */
+/* ==================== 舞台 ==================== */
 
-.ap-body {
+.ap-stage {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px 28px;
-  scroll-behavior: smooth;
-}
-
-.ap-body::-webkit-scrollbar {
-  width: 5px;
-}
-
-.ap-body::-webkit-scrollbar-thumb {
-  background: #d8dae6;
-  border-radius: 5px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 26px 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .ap-empty {
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: #9a9ab0;
+  color: #9a8578;
   font-size: 13px;
 }
 
-.msg {
+/* ==================== 渐进文本区（上方） ==================== */
+
+.ap-text-zone {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  margin-bottom: 20px;
-  animation: msgIn 0.3s ease;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 4px 2px 10px;
 }
 
-@keyframes msgIn {
+.ap-text-zone::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ap-text-zone::-webkit-scrollbar-thumb {
+  background: rgba(255, 176, 124, 0.35);
+  border-radius: 4px;
+}
+
+.ap-user-text {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.7;
+  font-weight: 600;
+  color: #5c4a3d;
+  animation: text-in 0.28s ease both;
+}
+
+/* 识别中的中间结果：略淡 + 呼吸感，表示尚未定型 */
+.ap-user-text:not(.is-final) {
+  color: #9a8578;
+  animation: text-in 0.28s ease both, draft-breathe 1.6s ease-in-out infinite;
+}
+
+.ap-ai-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #7a6558;
+  white-space: pre-wrap;
+  word-break: break-word;
+  animation: text-in 0.28s ease both;
+}
+
+.ap-idle-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #b8a598;
+}
+
+@keyframes text-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -398,148 +525,213 @@ onBeforeUnmount(() => {
   }
 }
 
-.msg.user {
-  justify-content: flex-end;
+@keyframes draft-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.62;
+  }
 }
 
-.msg-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+/* 流式输出光标 */
+.stream-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 15px;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: #ff8a5c;
+  border-radius: 1px;
+  animation: cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.ap-cards {
+  margin-top: 4px;
+}
+
+/* ==================== 语音球 ==================== */
+
+.ap-orb-zone {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0 20px;
+}
+
+.ap-orb {
+  position: relative;
+  width: 186px;
+  height: 186px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
+  /* 随实时音量缩放（--ap-level: 0-100） */
+  transform: scale(calc(1 + var(--ap-level, 0) * 0.0022));
+  transition: transform 0.12s ease-out;
 }
 
-.msg-avatar.ai {
-  background: linear-gradient(135deg, #818cf8, #6c63ff);
-  color: #fff;
-  margin-right: 10px;
-  box-shadow: 0 2px 8px rgba(108, 99, 255, 0.25);
-}
-
-.msg-content {
-  max-width: 68%;
-  min-width: 0;
-}
-
-.msg-content.right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.msg-bubble {
-  display: inline-block;
-  padding: 12px 18px;
-  font-size: 14px;
-  line-height: 1.72;
-  word-break: break-word;
-  text-align: left;
-  white-space: pre-wrap;
-}
-
-.msg-bubble.ai {
-  background: #fff;
-  border: 1px solid #e5e7f0;
-  border-radius: 18px 18px 18px 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  color: #1e1e2e;
-}
-
-.msg-bubble.user {
-  background: linear-gradient(135deg, #6c63ff, #4338ca);
-  border-radius: 18px 18px 6px 18px;
-  box-shadow: 0 4px 14px rgba(108, 99, 255, 0.22);
-  color: #fff;
-}
-
-/* 识别中的临时气泡：半透明表示尚未定型 */
-.msg-bubble.user.pending {
-  opacity: 0.62;
-}
-
-.msg-time {
-  font-size: 11px;
-  color: #9a9ab0;
-  margin-top: 5px;
-  padding: 0 6px;
-}
-
-.msg-content.right .msg-time {
-  text-align: right;
-}
-
-/* 思考动画 */
-
-.typing-indicator {
+.ap-orb-core {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb07c, #ff8a5c);
+  box-shadow:
+    0 18px 40px rgba(255, 138, 92, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #fff;
-  border: 1px solid #e5e7f0;
-  border-radius: 18px 18px 18px 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  padding: 12px 18px;
-  animation: msgIn 0.3s ease;
+  justify-content: center;
+  color: #fff;
+  position: relative;
+  z-index: 2;
 }
 
-.typing-text {
-  font-size: 13px;
-  color: #6c63ff;
-  font-weight: 500;
-}
-
-.typing-dots {
-  display: flex;
-  gap: 4px;
-}
-
-.typing-dots i {
-  width: 7px;
-  height: 7px;
+.ap-ring {
+  position: absolute;
+  inset: 12px;
   border-radius: 50%;
-  background: #6c63ff;
-  animation: dotBounce 1.4s infinite ease-in-out both;
+  border: 2px solid rgba(255, 160, 110, 0.45);
+  animation: ring-pulse 2.6s ease-out infinite;
 }
 
-.typing-dots i:nth-child(2) {
-  animation-delay: 0.16s;
+.ap-ring-2 {
+  inset: 0;
+  animation-delay: 1.3s;
 }
 
-.typing-dots i:nth-child(3) {
-  animation-delay: 0.32s;
-}
-
-@keyframes dotBounce {
-  0%,
-  80%,
+@keyframes ring-pulse {
+  0% {
+    transform: scale(0.82);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.75;
+  }
   100% {
-    transform: scale(0.55);
-    opacity: 0.35;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(1.12);
+    opacity: 0;
   }
 }
 
-/* 错误态 */
+/* 各阶段：聆听缓慢呼吸 / 说话活跃 / 回复流光 / 初始化转圈 / 异常降饱和 */
+.phase-listening .ap-orb-core {
+  animation: core-breathe 3s ease-in-out infinite;
+}
+
+.phase-speech .ap-orb-core {
+  animation: core-breathe 1.1s ease-in-out infinite;
+  box-shadow:
+    0 22px 52px rgba(255, 138, 92, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.phase-speech .ap-ring {
+  animation-duration: 1.2s;
+}
+
+.phase-replying .ap-orb-core {
+  background: linear-gradient(120deg, #ffb07c, #ff9a62, #ffc79a, #ff8a5c);
+  background-size: 220% 220%;
+  animation: core-flow 2.6s ease-in-out infinite;
+}
+
+.phase-initializing .ap-orb-core {
+  filter: saturate(0.85);
+}
+
+.phase-initializing .ap-ring {
+  border-style: dashed;
+  animation-duration: 1s;
+}
+
+.phase-error .ap-orb-core {
+  background: linear-gradient(135deg, #e08b7a, #d0503f);
+  animation: none;
+}
+
+.phase-error .ap-ring {
+  border-color: rgba(208, 80, 63, 0.35);
+  animation: none;
+  opacity: 0.4;
+}
+
+@keyframes core-breathe {
+  0%,
+  100% {
+    box-shadow: 0 18px 40px rgba(255, 138, 92, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+  50% {
+    box-shadow: 0 22px 54px rgba(255, 138, 92, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes core-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.ap-status-text {
+  font-size: 13px;
+  color: #9a8578;
+}
+
+/* 轻提示（非阻塞） */
+.ap-notice {
+  max-width: 80vw;
+  text-align: center;
+  font-size: 12.5px;
+  color: #b25c28;
+  background: rgba(255, 236, 214, 0.92);
+  border: 1px solid rgba(255, 176, 124, 0.45);
+  border-radius: 999px;
+  padding: 6px 16px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ==================== 错误态 ==================== */
 
 .ap-error {
-  background: #fff;
-  border: 1px solid #fecaca;
+  margin: 0 auto 10px;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(208, 80, 63, 0.35);
   border-radius: 14px;
-  padding: 18px;
+  padding: 16px 18px;
   text-align: center;
-  margin: 12px 0;
 }
 
 .ap-error-text {
-  color: #dc2626;
+  color: #b4442f;
   font-size: 13px;
   margin: 0 0 12px;
 }
@@ -550,19 +742,28 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-/* ==================== 底部状态 ==================== */
+/* ==================== 底部 ==================== */
 
 .ap-footer {
   flex-shrink: 0;
-  background: #fff;
-  border-top: 1px solid #e5e7f0;
+  background: rgba(255, 252, 248, 0.78);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 180, 140, 0.22);
   padding: 14px 28px 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.ap-text-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .ap-volume {
   height: 6px;
   border-radius: 3px;
-  background: #eef0f6;
+  background: rgba(255, 214, 184, 0.55);
   overflow: hidden;
 }
 
@@ -571,18 +772,18 @@ onBeforeUnmount(() => {
   height: 100%;
   width: 0;
   border-radius: 3px;
-  background: #c4c6d4;
+  background: #e6c3ac;
   transition: width 0.12s linear, background 0.2s ease;
 }
 
 .ap-volume-fill.active {
-  background: linear-gradient(90deg, #6c63ff, #818cf8);
+  background: linear-gradient(90deg, #ffb07c, #ff8a5c);
 }
 
 .ap-status {
   margin-top: 10px;
   font-size: 12px;
-  color: #9a9ab0;
+  color: #9a8578;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -593,25 +794,25 @@ onBeforeUnmount(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #c4c6d4;
+  background: #e6c3ac;
 }
 
 .ap-dot.listening {
-  background: #52c41a;
-  animation: dotPulse 1.6s infinite;
+  background: #ff9a62;
+  animation: dot-pulse 1.6s infinite;
 }
 
 .ap-dot.speech,
 .ap-dot.replying {
-  background: #fa8c16;
-  animation: dotPulse 1.6s infinite;
+  background: #ff8a5c;
+  animation: dot-pulse 1.6s infinite;
 }
 
 .ap-dot.error {
-  background: #ff4d4f;
+  background: #d0503f;
 }
 
-@keyframes dotPulse {
+@keyframes dot-pulse {
   0%,
   100% {
     opacity: 1;
@@ -621,12 +822,12 @@ onBeforeUnmount(() => {
   }
 }
 
-/* AudioContext 挂起兜底遮罩 */
+/* ==================== 遮罩 ==================== */
 
 .ap-mask {
   position: absolute;
   inset: 0;
-  background: rgba(20, 20, 40, 0.42);
+  background: rgba(90, 60, 40, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -635,16 +836,16 @@ onBeforeUnmount(() => {
 }
 
 .ap-mask-card {
-  background: #fff;
+  background: #fffaf5;
   border-radius: 16px;
   padding: 24px 28px;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 40px rgba(120, 80, 50, 0.22);
 }
 
 .ap-mask-card p {
   font-size: 13px;
-  color: #5a5a72;
+  color: #7a6558;
   margin: 0 0 14px;
 }
 </style>

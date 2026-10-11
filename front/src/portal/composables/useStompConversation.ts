@@ -47,7 +47,10 @@ export function useStompConversation(options: UseStompConversationOptions = {}):
     },
     onTransportClose: options.onTransportClose,
     onStompError: options.onStompError,
-    debug: import.meta.env.DEV ? (msg) => console.debug("[STOMP]", msg) : undefined,
+    // DEV 调试日志：脱敏 CONNECT 帧中的 token，避免凭证落到控制台
+    debug: import.meta.env.DEV
+      ? (msg) => console.debug("[STOMP]", msg.replace(/(token:\s*)\S+/gi, "$1***"))
+      : undefined,
   });
 
   async function connect(timeoutMs = DEFAULT_CONNECT_TIMEOUT): Promise<boolean> {

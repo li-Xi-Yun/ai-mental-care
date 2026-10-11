@@ -1,41 +1,114 @@
 <template>
   <el-container class="admin-layout">
-    <el-aside :width="ADMIN_SIDEBAR_WIDTH + 'px'" class="admin-aside">
+    <el-aside
+      :width="(sidebarCollapsed ? 64 : ADMIN_SIDEBAR_WIDTH) + 'px'"
+      class="admin-aside"
+      :class="{ collapsed: sidebarCollapsed }"
+    >
+      <div class="as-stars" aria-hidden="true">
+        <span v-for="star in stars" :key="star.id" class="as-star" :style="star.style" />
+      </div>
       <div class="as-header">
         <div class="as-logo">
-          <el-icon :size="20"><MagicStick /></el-icon>
+          <el-icon :size="16"><MagicStick /></el-icon>
         </div>
-        <div class="as-logo-text">{{ PLATFORM_NAME }}</div>
-        <div class="as-logo-sub">心理健康管理平台</div>
+        <div class="as-logo-textwrap">
+          <div class="as-logo-text">{{ PLATFORM_NAME }}</div>
+          <div class="as-logo-sub">心理健康管理平台</div>
+        </div>
       </div>
       <div class="as-nav">
+        <!-- 分组导航（可折叠） -->
         <div
-          v-for="item in ADMIN_NAV_ITEMS"
-          :key="item.route"
-          class="nav-item"
-          :class="{ active: route.path === item.route || (item.route === '/admin/user' && route.path === '/admin') }"
-          @click="router.push(item.route)"
+          v-for="group in groups"
+          :key="group.key"
+          class="nav-group"
+          :class="{ 'is-collapsed': !isGroupExpanded(group.key), 'has-active': activeGroupKey === group.key }"
         >
-          <span class="nav-icon"><el-icon :size="16"><component :is="item.icon" /></el-icon></span>
-          <span class="nav-label">{{ item.label }}</span>
+          <div
+            class="nav-group-toggle"
+            role="button"
+            tabindex="0"
+            :aria-expanded="isGroupExpanded(group.key)"
+            :title="sidebarCollapsed ? group.label : undefined"
+            @click="handleGroupClick(group)"
+            @keydown.enter.prevent="handleGroupClick(group)"
+            @keydown.space.prevent="handleGroupClick(group)"
+          >
+            <span class="nav-icon"><el-icon :size="18"><component :is="group.icon" /></el-icon></span>
+            <span class="nav-group-label">{{ group.label }}</span>
+            <el-icon class="nav-group-arrow" :size="14"><ArrowRight /></el-icon>
+          </div>
+          <div class="nav-sub">
+            <div class="nav-sub-inner">
+              <div
+                v-for="leaf in group.children"
+                :key="leaf.key"
+                class="nav-item"
+                :class="{ active: activeLeafKey === leaf.key }"
+                :title="sidebarCollapsed ? leaf.label : undefined"
+                @click="router.push(leaf.route)"
+              >
+                <span class="nav-icon"><el-icon :size="16"><component :is="leaf.icon" /></el-icon></span>
+                <span class="nav-label">{{ leaf.label }}</span>
+                <el-icon v-if="activeLeafKey === leaf.key" class="nav-chevron" :size="14"><ArrowRight /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 平铺项（个人资料） -->
+        <div
+          v-for="leaf in leaves"
+          :key="leaf.key"
+          class="nav-item"
+          :class="{ active: activeLeafKey === leaf.key }"
+          :title="sidebarCollapsed ? leaf.label : undefined"
+          @click="router.push(leaf.route)"
+        >
+          <span class="nav-icon"><el-icon :size="18"><component :is="leaf.icon" /></el-icon></span>
+          <span class="nav-label">{{ leaf.label }}</span>
+          <el-icon v-if="activeLeafKey === leaf.key" class="nav-chevron" :size="14"><ArrowRight /></el-icon>
         </div>
       </div>
       <div class="as-user">
-        <div class="as-user-avatar">👤</div>
-        <div class="as-user-info">
-          <div class="as-user-name">Admin</div>
-          <div class="as-user-role">超级管理员</div>
+        <div
+          class="as-user-profile"
+          role="button"
+          tabindex="0"
+          title="个人资料"
+          @click="router.push('/admin/profile')"
+          @keydown.enter.prevent="router.push('/admin/profile')"
+        >
+          <div class="as-user-avatar">👤</div>
+          <div class="as-user-info">
+            <div class="as-user-name">{{ displayName }}</div>
+            <div class="as-user-role">超级管理员</div>
+          </div>
         </div>
-        <div class="as-logout" @click="handleLogout">
-          <el-icon :size="16"><SwitchButton /></el-icon>
+        <div class="as-logout" title="退出登录" @click.stop="handleLogout">
+          <el-icon :size="15"><SwitchButton /></el-icon>
         </div>
       </div>
     </el-aside>
-    <el-container>
+    <el-container class="admin-body">
       <el-header class="admin-header" :style="{ height: ADMIN_HEADER_HEIGHT + 'px' }">
-        <span class="header-title">{{ route.meta.title || ADMIN_PLATFORM_TITLE }}</span>
+        <div class="header-left">
+          <button type="button" class="header-toggle" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" @click="toggleSidebar">
+            <el-icon :size="16"><component :is="sidebarCollapsed ? Expand : Fold" /></el-icon>
+          </button>
+          <nav class="header-breadcrumb" aria-label="面包屑">
+            <template v-for="(crumb, index) in breadcrumbs" :key="crumb.key">
+              <span v-if="index > 0" class="header-breadcrumb-sep" aria-hidden="true">›</span>
+              <router-link v-if="!crumb.current && crumb.route" class="header-breadcrumb-link" :to="crumb.route">
+                {{ crumb.label }}
+              </router-link>
+              <span v-else-if="crumb.current" class="header-title">{{ crumb.label }}</span>
+              <span v-else class="header-breadcrumb-text">{{ crumb.label }}</span>
+            </template>
+          </nav>
+        </div>
         <div class="header-right">
-          <span class="admin-name">管理员：admin</span>
+          <span class="admin-name">管理员：{{ displayName }}</span>
         </div>
       </el-header>
       <el-main class="admin-main">
@@ -46,16 +119,63 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
-import { MagicStick, SwitchButton } from "@element-plus/icons-vue";
-import { PLATFORM_NAME, ADMIN_PLATFORM_TITLE, ADMIN_SIDEBAR_WIDTH, ADMIN_HEADER_HEIGHT, ADMIN_NAV_ITEMS } from "@/shared/api/config";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ArrowRight, Expand, Fold, MagicStick, SwitchButton } from "@element-plus/icons-vue";
+import { PLATFORM_NAME, ADMIN_SIDEBAR_WIDTH, ADMIN_HEADER_HEIGHT } from "@/shared/api/config";
+import type { AdminNavGroup } from "@/shared/api/config";
+import { useAdminNav } from "@/admin/composables/useAdminNav";
 import { useAdminStore } from "@/admin/stores/admin";
 import { clearTokenInfo, clearAllTokenInfo } from "@/shared/api/auth";
 import { logout } from "@/admin/api/admin/account";
+import "@/admin/styles/index.css";
 
-const route = useRoute();
 const router = useRouter();
 const adminStore = useAdminStore();
+
+/** 侧栏星空：70 颗随机星点（对齐 Blog-Front StarField，仅在初始化时生成一次） */
+const stars = Array.from({ length: 70 }, (_, i) => {
+  const rand = Math.random();
+  const size = rand < 0.12 ? 2.5 : rand < 0.5 ? 1.5 : 1;
+  return {
+    id: i,
+    style: {
+      left: `${(Math.random() * 100).toFixed(2)}%`,
+      top: `${(Math.random() * 100).toFixed(2)}%`,
+      width: `${size}px`,
+      height: `${size}px`,
+      opacity: (0.35 + Math.random() * 0.6).toFixed(2),
+      animationDelay: `${(Math.random() * 6).toFixed(2)}s`,
+      animationDuration: `${(2.4 + Math.random() * 4).toFixed(2)}s`,
+    } as Record<string, string>,
+  };
+});
+
+const { groups, leaves, activeLeafKey, activeGroupKey, isGroupExpanded, toggleGroup, expandGroup, breadcrumbs } =
+  useAdminNav();
+
+const sidebarCollapsed = ref(false);
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+};
+
+/** 收起态点击分组：先展开侧栏，同时展开该分组；展开态点击则为折叠/展开切换 */
+function handleGroupClick(group: AdminNavGroup) {
+  if (sidebarCollapsed.value) {
+    sidebarCollapsed.value = false;
+    expandGroup(group.key);
+    return;
+  }
+  toggleGroup(group.key);
+}
+
+/** 管理员展示名：username → loginAccount → 'admin' 三级兜底 */
+const displayName = computed(() => {
+  const info = adminStore.adminInfo ?? {};
+  const name = typeof info.username === "string" ? info.username.trim() : "";
+  const account = typeof info.loginAccount === "string" ? info.loginAccount.trim() : "";
+  return name || account || "admin";
+});
 
 async function handleLogout() {
   try {
@@ -71,176 +191,3 @@ async function handleLogout() {
   }
 }
 </script>
-
-<style scoped>
-.admin-layout {
-  min-height: 100vh;
-}
-
-.admin-aside {
-  background: linear-gradient(180deg, #111827 0%, #312e81 60%, #111827 100%);
-  border-right: none;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.as-header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
-}
-
-.as-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  margin: 0 auto 10px;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-}
-
-.as-logo-text {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.5px;
-}
-
-.as-logo-sub {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 2px;
-}
-
-.as-nav {
-  flex: 1;
-  padding: 12px 8px;
-  overflow-y: auto;
-}
-
-.nav-item {
-  padding: 12px 16px;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  border-radius: 8px;
-  margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.75);
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  transform: translateX(2px);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.28), rgba(99, 102, 241, 0.06));
-  color: #a5b4fc;
-  border-left: 3px solid #818cf8;
-}
-
-.nav-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  flex: 1;
-}
-
-.as-user {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.as-user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.as-user-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.as-user-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.as-user-role {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.as-logout {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.6);
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-.as-logout:hover {
-  background: rgba(255, 77, 79, 0.2);
-  color: #ff4d4f;
-}
-
-.admin-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-  padding: 0 20px;
-}
-
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.admin-name {
-  font-size: 13px;
-  color: #999;
-}
-
-.admin-main {
-  background: #f5f5f7;
-  padding: 20px;
-}
-</style>

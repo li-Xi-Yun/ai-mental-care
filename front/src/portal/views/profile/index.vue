@@ -212,6 +212,8 @@ import type { FormInstance, FormRules } from "element-plus";
 import { Calendar, Camera, Lock, Setting, SwitchButton, User } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
+import { useConversationStore } from "@/portal/stores/conversation";
+import { clearLifecycleState } from "@/portal/composables/useConversationLifecycle";
 import { getProfile, updateProfile } from "@/portal/api/user/profile";
 import type { UserProfileUpdateDTO, UserProfileVO } from "@/portal/api/user/profile";
 import { logout, pwdUpdate } from "@/portal/api/user/account";
@@ -237,6 +239,7 @@ const GENDER_MAP: Record<number, string> = { 0: "女", 1: "男", 2: "保密" };
 
 const router = useRouter();
 const userStore = useUserStore();
+const conversationStore = useConversationStore();
 
 const activeMenu = ref<MenuKey>("info");
 const loading = ref(false);
@@ -454,6 +457,9 @@ async function handleLogout() {
     userStore.clearUser();
     // 退出必须同步清除 localStorage 凭证（含 legacy 'token'），否则请求仍会携带旧 token
     clearTokenInfo("user");
+    // 清理会话生命周期内存态与持久化的选中会话，避免换账号后残留
+    clearLifecycleState();
+    conversationStore.setCurrentConversation("");
     router.push("/");
   }
 }

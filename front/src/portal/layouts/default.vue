@@ -44,7 +44,9 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
-import LoginDialog from "@/portal/components/LoginDialog.vue";
+import { useConversationStore } from "@/portal/stores/conversation";
+import { clearLifecycleState } from "@/portal/composables/useConversationLifecycle";
+import LoginDialog from "@/portal/components/login/LoginDialog.vue";
 import { PLATFORM_NAME, PORTAL_HEADER_HEIGHT, PORTAL_NAV_ITEMS } from "@/shared/api/config";
 import { clearTokenInfo, setPromptLoginHandler } from "@/shared/api/auth";
 import { logout } from "@/portal/api/user/account";
@@ -52,6 +54,7 @@ import { logout } from "@/portal/api/user/account";
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const conversationStore = useConversationStore();
 
 // 注册「需要登录」弹窗回调：401 / 游客触发需登录接口时，先清掉内存中的登录态
 // （storage 已由 401 拦截器清除），再在当前页面直接弹出登录弹窗（不跳转、不刷新）
@@ -74,6 +77,9 @@ async function handleLogout() {
   } finally {
     userStore.clearUser();
     clearTokenInfo("user");
+    // 清理会话生命周期内存态与持久化的选中会话，避免换账号后残留
+    clearLifecycleState();
+    conversationStore.setCurrentConversation("");
     router.push("/");
   }
 }

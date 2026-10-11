@@ -28,6 +28,8 @@ router.beforeEach((to, _from, next) => {
 router.afterEach((to) => {
   NProgress.done();
   document.title = to.meta.title ? `${to.meta.title} - AI Mental Care` : "AI Mental Care";
+  // 后台路由挂上 admin-mode：使主题 token（含传送到 body 的弹层）仅作用于后台，不影响 Portal
+  document.body.classList.toggle("admin-mode", to.path.startsWith("/admin"));
 });
 
 export default router;

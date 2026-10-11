@@ -28,6 +28,12 @@ export const audioBinaryTopic = (conversationId: string) => userQueueTopic("/aud
 /** ASR 中间识别结果（实时弹幕，最终以 memory 落库文本为准） */
 export const asrIntermediateTopic = (conversationId: string) => userQueueTopic("/audio/asr/intermediate", conversationId);
 
+/**
+ * 用户级错误队列（无会话后缀；后端异常处理器 @SendToUser("/queue/error") 下发业务/管道异常，
+ * 例如 ASR 会话失效、适配器不存在 2802）。前端订阅后可在界面提示，避免"静默无反应"。
+ */
+export const USER_ERROR_TOPIC = "/user/queue/error";
+
 /** 一次性 wsTicket 接口路径（后端真实路径带 /api 前缀，前端 vite 代理会 strip，故必须直连后端 origin） */
 export const WS_TICKET_PATH = "/api/get-ws-ticket";
 /** 原生 WebSocket 端点（必须原生才能接收 TTS 二进制帧；SockJS 端点 /ws/ai-mental-care 无法承载二进制） */

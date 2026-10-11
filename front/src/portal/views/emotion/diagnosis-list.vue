@@ -1,168 +1,116 @@
 <template>
   <div class="diagnosis-list-page">
-    <!-- 面包屑 -->
-    <nav class="breadcrumb">
-      <router-link to="/diagnosis" class="breadcrumb-link">心理诊断</router-link>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">{{ sessionName || "会话诊断" }}</span>
-    </nav>
-
-    <!-- 页头 -->
     <header class="page-header">
-      <div class="header-copy">
-        <div class="header-eyebrow">AI 心理健康 · 情绪诊断</div>
-        <h2 class="page-title">{{ sessionName || "会话诊断" }} <span class="title-slash">—</span> 诊断记录</h2>
-        <p class="page-subtitle">AI 根据对话生成的诊断书沉淀于此，按轮次由新到旧排列</p>
+      <div class="header-bar">
+        <el-button text class="back-btn" @click="goBack">
+          <el-icon><ArrowLeft /></el-icon> 返回
+        </el-button>
       </div>
-      <div v-if="total > 0" class="header-stats">
-        <div class="stat-chip">
-          <span class="stat-num">{{ total }}</span>
-          <span class="stat-text">份诊断书</span>
-        </div>
-        <div class="stat-chip">
-          <span class="stat-num">{{ latestRoundText }}</span>
-          <span class="stat-text">最新轮次</span>
-        </div>
-      </div>
+      <h2 class="page-title">诊断记录列表</h2>
+      <p class="page-sub">会话 {{ conversationName || `#${conversationId}` }} 的全部历史诊断书</p>
     </header>
 
-    <!-- 列表主体 -->
-    <div class="list-body">
-      <!-- 游客态：诊断记录是个人数据，登录后自动加载 -->
-      <el-empty v-if="!userStore.token" class="empty-wrap" description="登录后即可查看诊断记录">
-        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
-      </el-empty>
-
-      <!-- 加载骨架 -->
-      <div v-else-if="loading" class="timeline">
-        <div v-for="i in 3" :key="i" class="timeline-item">
-          <div class="timeline-rail">
-            <span class="timeline-dot skeleton-dot"></span>
-            <span class="timeline-line"></span>
-          </div>
-          <div class="timeline-card skeleton-card">
-            <div class="sk-line sk-round"></div>
-            <div class="sk-line sk-time"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 加载失败 -->
-      <div v-else-if="loadError" class="empty-wrap">
-        <el-empty description="诊断记录加载失败，请稍后重试">
-          <el-button type="primary" @click="fetchList">重新加载</el-button>
-        </el-empty>
-      </div>
-
-      <!-- 空态 -->
-      <el-empty
-        v-else-if="records.length === 0"
-        class="empty-wrap"
-        description="该会话暂无诊断记录，快去 AI 对话中聊聊吧"
-      >
-        <el-button type="primary" @click="goChat">去 AI 对话</el-button>
-        <el-button @click="backToDiagnosis">返回诊断列表</el-button>
-      </el-empty>
-
-      <!-- 时间线列表 -->
-      <div v-else class="timeline">
-        <div v-for="(item, index) in records" :key="item.id ?? index" class="timeline-item">
-          <div class="timeline-rail">
-            <span class="timeline-dot" :class="{ latest: index === 0 }" :style="dotStyle(index)">
-              {{ item.roundNum ?? "·" }}
-            </span>
-            <span v-if="index < records.length - 1" class="timeline-line"></span>
-          </div>
-
-          <div class="timeline-card" @click="goDetail(item)">
-            <div class="card-head">
-              <div class="card-title-row">
-                <span class="round-badge" :style="badgeStyle(index)">{{ roundText(item) }}</span>
-                <span v-if="index === 0" class="latest-tag">最新</span>
-              </div>
-              <div class="card-time">
-                <el-icon :size="13"><Clock /></el-icon>
-                <span>{{ formatDateTime(item.createdTime) }}</span>
-              </div>
-            </div>
-            <div class="card-foot">
-              <span v-if="item.updatedTime && item.updatedTime !== item.createdTime" class="updated-time">
-                <el-icon :size="12"><Refresh /></el-icon>
-                更新于 {{ formatDateTime(item.updatedTime) }}
-              </span>
-              <span v-else class="updated-time placeholder">创建即生成</span>
-              <span class="detail-link">
-                查看详情
-                <el-icon :size="14"><ArrowRight /></el-icon>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div v-if="loading" class="list-loading">
+      <div v-for="i in 3" :key="i" class="sk-row"></div>
     </div>
 
-    <!-- 分页 -->
-    <div v-if="total > 0 && !loading" class="pagination-bar">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="DEFAULT_PAGE_SIZE"
-        :total="total"
-        :layout="PAGINATION_LAYOUT"
-        background
-        @current-change="fetchList"
-      />
-    </div>
+    <el-empty v-else-if="loadError" class="empty-wrap" description="诊断记录加载失败，请稍后重试">
+      <el-button type="primary" @click="fetchList">重新加载</el-button>
+    </el-empty>
+
+    <el-empty v-else-if="records.length === 0" class="empty-wrap" description="该会话暂无诊断书" />
+
+    <template v-else>
+      <div class="record-list">
+        <div
+          v-for="record in records"
+          :key="record.id"
+          class="record-card"
+          @click="goDetail(record.id)"
+        >
+          <span class="record-strip"></span>
+          <div class="record-main">
+            <div class="record-title-row">
+              <span class="record-round">{{ record.roundNum ? `第${record.roundNum}轮诊断` : "诊断书" }}</span>
+              <el-tag :type="riskTagType(record.emotionRisk)" size="small" effect="light">
+                {{ riskLabel(record.emotionRisk) }}
+              </el-tag>
+            </div>
+            <div class="record-meta">
+              <span>创建 {{ formatDateTime(record.createdTime) }}</span>
+              <span class="dot">·</span>
+              <span>更新 {{ formatDateTime(record.updatedTime) }}</span>
+            </div>
+            <div v-if="record.coreEmotionLabel" class="record-brief">
+              核心情绪：{{ record.coreEmotionLabel }}
+            </div>
+          </div>
+          <el-icon class="record-arrow"><ArrowRight /></el-icon>
+        </div>
+      </div>
+      <div v-if="total > pageSize" class="pagination-bar">
+        <el-pagination
+          v-model:current-page="pageNum"
+          :page-size="pageSize"
+          :total="total"
+          :layout="PAGINATION_LAYOUT"
+          background
+          @current-change="fetchList"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useUserStore } from "@/portal/stores/user";
-import { ArrowRight, Clock, Refresh } from "@element-plus/icons-vue";
-import { DEFAULT_PAGE_SIZE, PAGINATION_LAYOUT } from "@/shared/api/config";
+import { ArrowLeft, ArrowRight } from "@element-plus/icons-vue";
+import { getEmotionDiagnosisListByConversation } from "@/portal/api/conversation/emotion-diagnosis";
+import type { EmotionDiagnosisListVO } from "@/portal/api/conversation/emotion-diagnosis";
 import { dayjs } from "@/shared/utils";
-import {
-  getEmotionDiagnosisListByConversation,
-  type EmotionDiagnosisListVO,
-} from "@/portal/api/conversation/emotion-diagnosis";
-import { getConversationDetail } from "@/portal/api/conversation/conversation";
+import { DEFAULT_PAGE_SIZE, PAGINATION_LAYOUT } from "@/shared/api/config";
+import { EMOTION_RISK_META } from "@/portal/composables/useDiagnosisFormatters";
 
 const route = useRoute();
 const router = useRouter();
-const userStore = useUserStore();
+// 路由 /diagnosis/:sessionId；会话ID为 19 位雪花ID，按字符串直传避免 Number() 丢精度
+const conversationId = String(route.params.sessionId ?? "");
+const conversationName = ref(route.query.name ?? "");
 
-const sessionId = String(route.params.sessionId ?? "");
-
-const sessionName = ref("");
-const currentPage = ref(1);
-const total = ref(0);
 const records = ref<EmotionDiagnosisListVO[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
+const pageNum = ref(1);
+const pageSize = DEFAULT_PAGE_SIZE;
+const total = ref(0);
 
-/* ==================== 数据请求 ==================== */
+function formatDateTime(v?: string): string {
+  if (!v) return "--";
+  const d = dayjs(v);
+  return d.isValid() ? d.format("YYYY-MM-DD HH:mm") : String(v);
+}
 
-async function fetchSessionName() {
-  if (!sessionId) {
-    sessionName.value = "会话";
-    return;
-  }
-  try {
-    const res = await getConversationDetail(sessionId);
-    sessionName.value = res.data?.data?.name?.trim() || `会话 #${sessionId}`;
-  } catch {
-    sessionName.value = `会话 #${sessionId}`;
-  }
+function riskTagType(level?: number): "danger" | "warning" | "info" {
+  if (level == null) return "info";
+  if (level >= 4) return "danger";
+  if (level >= 2) return "warning";
+  return "info";
+}
+
+function riskLabel(level?: number): string {
+  if (level == null) return "暂无";
+  const meta = EMOTION_RISK_META[level];
+  return meta?.text ?? `等级${level}`;
 }
 
 async function fetchList() {
   loading.value = true;
   loadError.value = false;
   try {
-    const res = await getEmotionDiagnosisListByConversation(sessionId, {
-      pageNum: currentPage.value,
-      pageSize: DEFAULT_PAGE_SIZE,
+    const res = await getEmotionDiagnosisListByConversation(conversationId, {
+      pageNum: pageNum.value,
+      pageSize: pageSize,
     });
     const page = res.data?.data;
     records.value = page?.records ?? [];
@@ -176,430 +124,151 @@ async function fetchList() {
   }
 }
 
-/* ==================== 交互 ==================== */
-
-function goDetail(item: EmotionDiagnosisListVO) {
-  if (item.id == null) return;
-  router.push(`/diagnosis/${sessionId}/${item.id}`);
+function goDetail(recordId?: number) {
+  if (recordId == null) return;
+  router.push(`/diagnosis/${conversationId}/${recordId}`);
 }
 
-function goChat() {
-  router.push("/conversation");
+function goBack() {
+  router.back();
 }
-
-function backToDiagnosis() {
-  router.push("/diagnosis");
-}
-
-/* ==================== 派生展示 ==================== */
-
-function formatDateTime(value?: string): string {
-  if (!value) return "--";
-  const d = dayjs(value);
-  return d.isValid() ? d.format("YYYY-MM-DD HH:mm") : String(value);
-}
-
-function roundText(item: EmotionDiagnosisListVO): string {
-  return item.roundNum != null ? `第 ${item.roundNum} 轮` : "--";
-}
-
-const latestRoundText = computed(() => {
-  const first = records.value[0];
-  return first?.roundNum != null ? String(first.roundNum) : "--";
-});
-
-/* ==================== 视觉着色 ==================== */
-
-interface Tint {
-  gradient: string;
-  soft: string;
-  fg: string;
-}
-
-const TINTS: Tint[] = [
-  { gradient: "linear-gradient(135deg,#6c63ff,#9a93ff)", soft: "#f0eeff", fg: "#6c63ff" },
-  { gradient: "linear-gradient(135deg,#fa8c16,#ffb54d)", soft: "#fff7e6", fg: "#fa8c16" },
-  { gradient: "linear-gradient(135deg,#52c41a,#7ed357)", soft: "#f6ffed", fg: "#52c41a" },
-  { gradient: "linear-gradient(135deg,#1890ff,#5cb0ff)", soft: "#e6f7ff", fg: "#1890ff" },
-];
-
-function tintFor(index: number): Tint {
-  return TINTS[index % TINTS.length];
-}
-
-function dotStyle(index: number) {
-  return { background: tintFor(index).gradient };
-}
-
-function badgeStyle(index: number) {
-  const t = tintFor(index);
-  return { background: t.soft, color: t.fg };
-}
-
-/* ==================== 初始化 ==================== */
-
-async function init() {
-  // 诊断记录是个人数据：游客不可查看，未登录时在当前页面弹登录窗，不发请求
-  if (!userStore.token) {
-    userStore.openLoginDialog("login");
-    return;
-  }
-  await Promise.all([fetchSessionName(), fetchList()]);
-}
-
-// 游客态经弹窗登录成功后自动加载
-watch(
-  () => userStore.token,
-  (t) => {
-    if (t && records.value.length === 0 && !loading.value) void init();
-  },
-);
 
 onMounted(() => {
-  void init();
+  void fetchList();
 });
 </script>
 
 <style scoped>
 .diagnosis-list-page {
-  max-width: 920px;
+  max-width: 760px;
   margin: 0 auto;
   padding: 24px 20px 48px;
 }
 
-/* ==================== 面包屑 ==================== */
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #999;
-  margin-bottom: 14px;
-}
-
-.breadcrumb-link {
-  color: #6c63ff;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.breadcrumb-link:hover {
-  color: #3f3d9e;
-}
-
-.breadcrumb-sep {
-  color: #d6d9e4;
-}
-
-.breadcrumb-current {
-  color: #333;
-  font-weight: 500;
-}
-
-/* ==================== 页头 ==================== */
-
 .page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
   margin-bottom: 24px;
 }
 
-.header-eyebrow {
-  font-size: 12px;
-  font-weight: 600;
+.header-bar {
+  margin-bottom: 12px;
+}
+
+.back-btn {
   color: #6c63ff;
-  letter-spacing: 2px;
-  margin-bottom: 8px;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 22px;
+  font-weight: 700;
   color: #1a1a2e;
-  letter-spacing: -0.5px;
   margin: 0;
 }
 
-.title-slash {
-  color: #c5bdff;
-  font-weight: 400;
-}
-
-.page-subtitle {
-  margin: 8px 0 0;
+.page-sub {
   font-size: 13px;
-  color: #9aa0b5;
+  color: #888;
+  margin: 6px 0 0;
 }
 
-.header-stats {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.stat-chip {
-  background: #fff;
-  border: 1px solid #ececf2;
-  border-radius: 12px;
-  padding: 8px 14px;
+.list-loading {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  min-width: 72px;
+  gap: 12px;
 }
 
-.stat-num {
-  font-size: 20px;
-  font-weight: 700;
-  color: #6c63ff;
-  line-height: 1.2;
+.sk-row {
+  height: 80px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f0f0f5 25%, #e8e8f0 50%, #f0f0f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }
 
-.stat-text {
-  font-size: 11px;
-  color: #9aa0b5;
-  margin-top: 2px;
-}
-
-/* ==================== 列表主体 ==================== */
-
-.list-body {
-  min-height: 260px;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .empty-wrap {
-  background: #fff;
-  border: 1px solid #eef0f4;
-  border-radius: 14px;
-  padding: 48px 0;
+  margin-top: 60px;
 }
 
-/* ==================== 时间线 ==================== */
-
-.timeline {
+.record-list {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-.timeline-item {
-  display: flex;
-  gap: 16px;
-}
-
-.timeline-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 42px;
-  flex-shrink: 0;
-}
-
-.timeline-dot {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+.record-card {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(108, 99, 255, 0.28);
-  z-index: 1;
-  flex-shrink: 0;
-}
-
-.timeline-dot.latest {
-  box-shadow: 0 0 0 5px #f0eeff, 0 4px 12px rgba(108, 99, 255, 0.35);
-}
-
-.timeline-line {
-  flex: 1;
-  width: 2px;
-  min-height: 26px;
-  background: linear-gradient(to bottom, #e3e0ff, #f3f2ff);
-  margin-top: 4px;
-}
-
-/* ==================== 诊断卡片 ==================== */
-
-.timeline-card {
-  flex: 1;
-  min-width: 0;
   background: #fff;
   border: 1px solid #ececf2;
   border-radius: 14px;
-  padding: 14px 18px;
-  margin-bottom: 18px;
+  overflow: hidden;
   cursor: pointer;
-  transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
+  transition: box-shadow 0.2s;
 }
 
-.timeline-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(108, 99, 255, 0.12);
-  border-color: #d9d2ff;
+.record-card:hover {
+  box-shadow: 0 4px 16px rgba(26, 26, 46, 0.06);
 }
 
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.record-strip {
+  display: block;
+  width: 4px;
+  height: 72px;
+  background: linear-gradient(180deg, #6c63ff, #a29bfe);
+  flex-shrink: 0;
 }
 
-.card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.record-main {
+  flex: 1;
+  padding: 14px 16px;
   min-width: 0;
 }
 
-.round-badge {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1a1a2e;
-  padding: 3px 10px;
-  border-radius: 8px;
-}
-
-.latest-tag {
-  font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #6c63ff, #9a93ff);
-  padding: 2px 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.card-time {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #9aa0b5;
-  flex-shrink: 0;
-}
-
-.card-foot {
+.record-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed #eef0f5;
+  gap: 8px;
 }
 
-.updated-time {
+.record-round {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.record-meta {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 12px;
-  color: #b0b6c4;
+  color: #999;
+  margin-top: 4px;
 }
 
-.updated-time.placeholder {
-  color: #d6d9e4;
+.dot {
+  color: #d0d0d0;
 }
 
-.detail-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 600;
+.record-brief {
+  font-size: 12px;
   color: #6c63ff;
+  margin-top: 4px;
+}
+
+.record-arrow {
+  color: #ccc;
+  margin-right: 16px;
   flex-shrink: 0;
-  transition: gap 0.2s;
 }
-
-.timeline-card:hover .detail-link {
-  gap: 7px;
-}
-
-/* ==================== 骨架 ==================== */
-
-.skeleton-dot {
-  background: linear-gradient(90deg, #f0f0f6 25%, #fafafd 50%, #f0f0f6 75%);
-  background-size: 200% 100%;
-  animation: sk 1.2s infinite;
-}
-
-.skeleton-card {
-  cursor: default;
-}
-
-.skeleton-card:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: #ececf2;
-}
-
-.sk-line {
-  height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #f0f0f6 25%, #fafafd 50%, #f0f0f6 75%);
-  background-size: 200% 100%;
-  animation: sk 1.2s infinite;
-}
-
-.sk-round {
-  width: 40%;
-  margin-bottom: 10px;
-}
-
-.sk-time {
-  width: 60%;
-}
-
-@keyframes sk {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: -100% 0;
-  }
-}
-
-/* ==================== 分页 ==================== */
 
 .pagination-bar {
+  margin-top: 24px;
   display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-/* ==================== 响应式 ==================== */
-
-@media (max-width: 640px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .timeline-item {
-    gap: 12px;
-  }
-
-  .timeline-rail {
-    width: 36px;
-  }
-
-  .card-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
-  .card-foot {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  justify-content: center;
 }
 </style>

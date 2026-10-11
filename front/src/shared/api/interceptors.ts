@@ -36,6 +36,16 @@ function looksLikeResult(data: unknown): boolean {
 }
 
 /**
+ * 构造业务错误：把后端业务码挂到 Error 上（如 2802 会话未初始化），
+ * 供调用方按码做条件重试；仅靠 msg 文本无法可靠识别。
+ */
+function businessError(msg: unknown, code: unknown): Error {
+  const err = new Error(String(msg || "请求失败")) as Error & { code?: unknown };
+  err.code = code;
+  return err;
+}
+
+/**
  * 仅对普通对象/数组做请求体字段处理。
  * FormData / Blob / URLSearchParams 等非普通对象会被 processBigIntFields（按可枚举自有键遍历）
  * 破坏（如 FormData 的 entries 不是可枚举自有键 → multipart 内容丢失），必须原样透传。
@@ -81,7 +91,7 @@ export function setupResponseInterceptors(instance: AxiosInstance) {
         response.data = protectedData;
         const { data } = protectedData;
         if (data?.code !== undefined && data.code !== SUCCESS_CODE) {
-          return Promise.reject(new Error((data as Result).msg || "请求失败"));
+          return Promise.reject(businessError((data as Result).msg, (data as Result).code));
         }
         return response;
       }
@@ -93,7 +103,7 @@ export function setupResponseInterceptors(instance: AxiosInstance) {
           const asResult = parsed as Result;
           if (asResult.code !== undefined) {
             if (asResult.code !== SUCCESS_CODE) {
-              return Promise.reject(new Error(asResult.msg || "请求失败"));
+              return Promise.reject(businessError(asResult.msg, asResult.code));
             }
             response.data = processTimeFields(
               processBigIntFields(parsed, "stringify"),

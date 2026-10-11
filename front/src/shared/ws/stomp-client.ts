@@ -16,6 +16,7 @@ import {
   conversationNameTopic,
   pendingActionTopic,
   textReplyTopic,
+  USER_ERROR_TOPIC,
   STOMP_AUDIO_FRAME_DEST,
   WS_HEARTBEAT_INCOMING,
   WS_HEARTBEAT_OUTGOING,
@@ -36,6 +37,8 @@ export interface ConversationStreamHandlers {
   onAudioBinary?: (pcm: Uint8Array) => void;
   /** ASR 中间识别结果 */
   onAsrIntermediate?: (text: string) => void;
+  /** 服务端业务/管道异常（/user/queue/error，如 ASR 会话失效、适配器不存在） */
+  onPipelineError?: (message: string) => void;
 }
 
 export interface ConversationStompClientOptions {
@@ -178,6 +181,10 @@ export class ConversationStompClient {
     }
     if (handlers.onAsrIntermediate) {
       add(asrIntermediateTopic(conversationId), (m) => handlers.onAsrIntermediate?.(m.body));
+    }
+    if (handlers.onPipelineError) {
+      // 用户级错误队列：无会话后缀
+      add(USER_ERROR_TOPIC, (m) => handlers.onPipelineError?.(m.body ?? ""));
     }
   }
 

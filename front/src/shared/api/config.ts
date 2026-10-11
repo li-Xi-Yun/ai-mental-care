@@ -173,20 +173,67 @@ export const PORTAL_NAV_ITEMS = [
   { label: "个人中心", route: "/profile" },
 ] as const;
 
-/** Admin 侧边栏菜单 */
-export const ADMIN_NAV_ITEMS = [
-  { label: "用户管理", route: "/admin/user", icon: "User" },
-  { label: "管理员管理", route: "/admin/admin", icon: "UserFilled" },
-  { label: "权限管理", route: "/admin/permission", icon: "Lock" },
-  { label: "角色管理", route: "/admin/role", icon: "Avatar" },
-  { label: "临时权限", route: "/admin/temp-permission", icon: "Timer" },
-  { label: "文件管理", route: "/admin/file", icon: "Document" },
-  { label: "量表管理", route: "/admin/scale", icon: "DataAnalysis" },
-  { label: "测评记录", route: "/admin/scale/records", icon: "DataLine" },
-  { label: "症状字典", route: "/admin/symptom", icon: "FirstAidKit" },
-  { label: "AI节点配置", route: "/admin/ai-node", icon: "SetUp" },
-  { label: "个人资料", route: "/admin/profile", icon: "User" },
-] as const;
+/** Admin 侧边栏导航叶子项（可点击跳转） */
+export interface AdminNavLeaf {
+  /** 唯一 key：用于激活匹配、列表渲染与面包屑 */
+  key: string;
+  label: string;
+  /** 路由 path，必须与 src/router/admin.ts 一致 */
+  route: string;
+  /** 全局注册的 Element Plus 图标组件名 */
+  icon: string;
+}
+
+/** Admin 侧边栏导航分组（可折叠） */
+export interface AdminNavGroup {
+  key: string;
+  label: string;
+  icon: string;
+  children: AdminNavLeaf[];
+}
+
+/** 侧边栏导航条目：分组或平铺叶子 */
+export type AdminNavEntry = AdminNavGroup | AdminNavLeaf;
+
+/** 类型守卫：判断导航条目是否为分组 */
+export function isAdminNavGroup(entry: AdminNavEntry): entry is AdminNavGroup {
+  return "children" in entry;
+}
+
+/** Admin 侧边栏菜单（Blog-Front 式分组：人员 / 权限 / 内容 / 系统 + 平铺个人资料） */
+export const ADMIN_NAV_ITEMS: readonly AdminNavEntry[] = [
+  {
+    key: "people",
+    label: "人员管理",
+    icon: "User",
+    children: [
+      { key: "user", label: "用户管理", route: "/admin/user", icon: "User" },
+      { key: "admin", label: "管理员管理", route: "/admin/admin", icon: "UserFilled" },
+    ],
+  },
+  {
+    key: "permission",
+    label: "权限管理",
+    icon: "Key",
+    children: [
+      { key: "permission", label: "权限管理", route: "/admin/permission", icon: "Lock" },
+      { key: "role", label: "角色管理", route: "/admin/role", icon: "Avatar" },
+      { key: "temp-permission", label: "临时权限", route: "/admin/temp-permission", icon: "Timer" },
+    ],
+  },
+  { key: "file", label: "文件管理", route: "/admin/file", icon: "Document" },
+  { key: "scale", label: "量表管理", route: "/admin/scale", icon: "DataAnalysis" },
+  {
+    key: "system",
+    label: "系统配置",
+    icon: "Tools",
+    children: [
+      { key: "ai-node", label: "AI节点配置", route: "/admin/ai-node", icon: "SetUp" },
+      { key: "skill", label: "Skill管理", route: "/admin/skill", icon: "MagicStick" },
+      { key: "symptom", label: "症状字典", route: "/admin/symptom", icon: "FirstAidKit" },
+    ],
+  },
+];
 
 /* ==================== 个人中心菜单配置 ==================== */
 

@@ -1,278 +1,484 @@
 <template>
   <div class="permission-page">
-    <div class="pl-header">
-      <div class="pl-header-left">
-        <h2 class="pl-title">权限管理</h2>
-        <p v-if="permissionTree.length" class="pl-subtitle">共 {{ totalCount }} 项权限，分布于 {{ groupCount }} 个分组，{{ disabledCount }} 项停用</p>
+    <!-- ==================== 页头 ==================== -->
+    <PageHeader title="权限管理" subtitle="管理系统权限项与分组归属，支持按角色查看绑定集合">
+      <button type="button" class="op-icon-btn pl-refresh-btn" :disabled="loading" title="刷新" @click="refresh">
+        <el-icon :size="16"><Refresh /></el-icon>
+      </button>
+      <el-button type="primary" @click="openDialog()">
+        <el-icon class="btn-icon"><Plus /></el-icon>新增权限
+      </el-button>
+    </PageHeader>
+
+    <!-- ==================== 统计卡（当前视图全量，不随筛选变化） ==================== -->
+    <StatGrid :columns="4">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-indigo">
+          <el-icon :size="22"><Key /></el-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-num">{{ totalCount }}</div>
+          <div class="stat-label">权限总数</div>
+        </div>
       </div>
-      <el-button type="primary" @click="openDialog()">＋ 新增权限</el-button>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-purple">
+          <el-icon :size="22"><FolderOpened /></el-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-num">{{ groupCount }}</div>
+          <div class="stat-label">权限分组</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+          <el-icon :size="22"><CircleCheck /></el-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-num">{{ normalCount }}</div>
+          <div class="stat-label">正常权限</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-gray">
+          <el-icon :size="22"><CircleClose /></el-icon>
+        </div>
+        <div class="stat-body">
+          <div class="stat-num">{{ disabledCount }}</div>
+          <div class="stat-label">停用权限</div>
+        </div>
+      </div>
+    </StatGrid>
+
+    <!-- ==================== 筛选卡 ==================== -->
+    <div class="filter-card">
+      <div class="toolbar">
+        <!-- 视图范围：全部权限 / 按角色查看 -->
+        <div class="seg-control">
+          <button type="button" class="seg-control-item" :class="{ active: viewMode === 'all' }" @click="setViewMode('all')">
+            全部权限
+          </button>
+          <button type="button" class="seg-control-item" :class="{ active: viewMode === 'role' }" @click="setViewMode('role')">
+            按角色查看
+          </button>
+        </div>
+
+        <!-- 全部视图：分组下拉；角色视图：角色下拉 -->
+        <el-select v-if="viewMode === 'all'" v-model="groupFilter" placeholder="全部分组" style="width: 160px">
+          <el-option label="全部分组" value="" />
+          <el-option v-for="g in groupOptions" :key="g" :label="g" :value="g" />
+        </el-select>
+        <el-select
+          v-else
+          v-model="roleId"
+          placeholder="请选择角色"
+          :disabled="rolesLoading"
+          :loading="rolesLoading"
+          style="width: 190px"
+        >
+          <el-option v-for="r in roles" :key="r.id" :label="r.name" :value="r.id" />
+        </el-select>
+
+        <!-- 搜索 -->
+        <el-input
+          v-model="keyword"
+          placeholder="搜索权限名称或标识（模糊匹配）..."
+          clearable
+          style="width: 260px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-button type="primary" @click="handleSearch">
+          <el-icon class="btn-icon"><Search /></el-icon>搜索
+        </el-button>
+        <el-button @click="resetFilters">
+          <el-icon class="btn-icon"><RefreshRight /></el-icon>重置
+        </el-button>
+        <el-button :disabled="!visibleTree.length" @click="toggleAllGroups">
+          <el-icon class="btn-icon">
+            <ArrowDown v-if="allGroupsCollapsed" />
+            <ArrowUp v-else />
+          </el-icon>
+          {{ allGroupsCollapsed ? "展开全部" : "收起全部" }}
+        </el-button>
+
+        <div class="toolbar-spacer" />
+        <span class="pl-count-text">
+          <template v-if="viewMode === 'role' && currentRole">{{ currentRole.name }} · </template>共
+          {{ totalCount }} 个权限
+        </span>
+      </div>
     </div>
 
-    <div v-loading="loading" class="pl-group-list">
-      <el-empty v-if="!loading && !permissionTree.length" description="暂无权限数据" />
-      <div v-for="group in permissionTree" :key="group.groupName" class="pl-group-card">
-        <div class="pl-group-header">
-          <span class="pl-group-name">{{ group.groupName }}</span>
-          <span class="pl-group-count">{{ group.permissions?.length ?? 0 }} 项</span>
-        </div>
-        <div class="pl-group-body">
-          <div v-for="perm in group.permissions || []" :key="perm.id" class="pl-perm-row">
-            <div class="pl-perm-info">
+    <!-- ==================== 分组折叠卡片（双列网格） ==================== -->
+    <section v-loading="loading" class="pl-group-area">
+      <div v-if="!loading && visibleTree.length" class="pl-group-grid">
+        <div v-for="group in visibleTree" :key="group.groupName" class="pl-group-card">
+          <!-- 组头：整行按钮，展开/收起 -->
+          <button type="button" class="pl-group-head" @click="toggleGroup(group.groupName)">
+            <span class="pl-group-icon" :style="{ background: hashColorFor(group.groupName).gradient }">
+              <el-icon :size="16"><Key /></el-icon>
+            </span>
+            <span class="pl-group-meta">
+              <span class="pl-group-name">{{ group.groupName }}</span>
+              <span class="pl-group-sub">
+                {{ group.permissions?.length ?? 0 }} 个权限 · {{ groupNormalCount(group) }} 正常<template
+                  v-if="groupDisabledCount(group) > 0"
+                >
+                  · {{ groupDisabledCount(group) }} 停用</template
+                >
+              </span>
+            </span>
+            <el-icon class="pl-group-chevron" :class="{ collapsed: isCollapsed(group.groupName) }" :size="15">
+              <ArrowDown />
+            </el-icon>
+          </button>
+
+          <!-- 展开区：权限行（整行点击进详情） -->
+          <ul v-show="!isCollapsed(group.groupName)" class="pl-perm-list">
+            <li
+              v-for="perm in group.permissions"
+              :key="perm.id"
+              class="pl-perm-row"
+              title="点击查看详情"
+              @click="openDetail(perm, group.groupName)"
+            >
+              <span class="pl-perm-icon" :style="{ background: hashColorFor(group.groupName).gradient }">
+                <el-icon :size="12"><Key /></el-icon>
+              </span>
               <span class="pl-perm-name">{{ perm.name }}</span>
-              <span class="pl-perm-code">{{ perm.perms }}</span>
-            </div>
-            <el-tag :type="perm.status === 1 ? 'danger' : 'success'" size="small" effect="light">
-              {{ perm.status === 1 ? '停用' : '正常' }}
-            </el-tag>
-            <div class="pl-perm-actions">
-              <el-button type="primary" text size="small" @click="openDialog(perm, group.groupName)">编辑</el-button>
-              <el-button type="danger" text size="small" @click="handleDelete(perm)">删除</el-button>
-            </div>
-          </div>
-          <div v-if="!group.permissions?.length" class="pl-empty">该分组暂无权限项</div>
+              <code class="pl-perm-code">{{ perm.perms }}</code>
+              <StatusBadge class="pl-perm-status" v-bind="permStatusBadge(perm.status)" />
+              <span class="pl-perm-ops">
+                <button type="button" class="op-icon-btn op-detail" title="详情" @click.stop="openDetail(perm, group.groupName)">
+                  <el-icon :size="14"><View /></el-icon>
+                </button>
+                <button type="button" class="op-icon-btn op-edit" title="编辑" @click.stop="openDialog(perm, group.groupName)">
+                  <el-icon :size="14"><Edit /></el-icon>
+                </button>
+                <button type="button" class="op-icon-btn op-del" title="删除" @click.stop="handleDelete(perm)">
+                  <el-icon :size="14"><Delete /></el-icon>
+                </button>
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
+
+      <!-- 空态 -->
+      <div v-else-if="!loading" class="pl-empty-state">{{ emptyText }}</div>
+    </section>
+
+    <!-- ==================== 图例 ==================== -->
+    <div class="pl-legend">
+      <el-icon :size="12"><User /></el-icon>
+      <span>权限通过角色分配给用户/管理员；「全部权限」展示系统全部权限项，「按角色查看」展示该角色绑定的权限集合。</span>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑权限' : '新增权限'" width="420" destroy-on-close @closed="resetForm">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="权限标识" prop="perms">
-          <el-input v-model="form.perms" placeholder="如 sys:permission:add" :disabled="!!form.id" />
-        </el-form-item>
-        <el-form-item label="权限名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入权限名称" maxlength="20" />
-        </el-form-item>
-        <el-form-item label="分组名称" prop="groupName">
-          <el-select v-model="form.groupName" placeholder="选择或输入分组" filterable allow-create style="width: 100%">
-            <el-option v-for="g in permissionTree" :key="g.groupName" :label="g.groupName" :value="g.groupName" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="选填" maxlength="200" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    <!-- ==================== 新增 / 编辑弹窗 ==================== -->
+    <PermissionFormDialog
+      v-model="dialogVisible"
+      :target="formTarget"
+      :group-name="formGroupName"
+      :detail-remark="formRemark"
+      :group-options="groupOptions"
+      :submitting="submitting"
+      @submit="handleSubmit"
+    />
+
+    <!-- ==================== 详情弹窗 ==================== -->
+    <PermissionDetailDialog
+      v-model="detailVisible"
+      :target="detailTarget"
+      :detail="detailData"
+      :loading="detailLoading"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import type { FormInstance, FormRules } from "element-plus";
-import { getPermissionTree, getPermissionDetail, addPermission, updatePermission, deletePermission } from "@/admin/api/permission/permission";
-import type { Result } from "@/shared/api/types";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleCheck,
+  CircleClose,
+  Delete,
+  Edit,
+  FolderOpened,
+  Key,
+  Plus,
+  Refresh,
+  RefreshRight,
+  Search,
+  User,
+  View,
+} from "@element-plus/icons-vue";
+import { PageHeader, StatGrid, StatusBadge } from "@/admin/components";
+import { hashColorFor } from "@/admin/composables/useHashColor";
+import { usePermissionList } from "./usePermissionList";
+import PermissionFormDialog from "./components/PermissionFormDialog.vue";
+import PermissionDetailDialog from "./components/PermissionDetailDialog.vue";
 
-interface PermissionItem {
-  id: number;
-  perms: string;
-  name: string;
-  status: number;
-}
-interface PermissionGroup {
-  groupName: string;
-  permissions: PermissionItem[];
-}
-
-const loading = ref(false);
-const submitting = ref(false);
-const permissionTree = ref<PermissionGroup[]>([]);
-const dialogVisible = ref(false);
-const formRef = ref<FormInstance>();
-const form = reactive({ id: 0, perms: "", name: "", groupName: "", remark: "" });
-
-const totalCount = computed(() => permissionTree.value.reduce((s, g) => s + (g.permissions?.length ?? 0), 0));
-const groupCount = computed(() => permissionTree.value.length);
-const disabledCount = computed(() => permissionTree.value.reduce((s, g) => s + (g.permissions?.filter((p) => p.status === 1).length ?? 0), 0));
-
-const rules: FormRules = {
-  perms: [
-    { required: true, message: "请输入权限标识", trigger: "blur" },
-    { min: 2, max: 50, message: "长度 2-50", trigger: "blur" },
-  ],
-  name: [
-    { required: true, message: "请输入权限名称", trigger: "blur" },
-    { min: 2, max: 20, message: "长度 2-20", trigger: "blur" },
-  ],
-  groupName: [{ required: true, message: "请输入分组名称", trigger: "change" }],
-};
-
-async function fetchTree() {
-  loading.value = true;
-  try {
-    const res = (await getPermissionTree()).data as Result<PermissionGroup[]>;
-    permissionTree.value = res.data || [];
-  } catch {
-    ElMessage.error("加载权限列表失败");
-  } finally {
-    loading.value = false;
-  }
-}
-
-function resetForm() {
-  form.id = 0;
-  form.perms = "";
-  form.name = "";
-  form.groupName = "";
-  form.remark = "";
-  formRef.value?.clearValidate();
-}
-
-function openDialog(perm?: PermissionItem, groupName?: string) {
-  resetForm();
-  if (perm) {
-    form.id = perm.id;
-    form.perms = perm.perms;
-    form.name = perm.name;
-    form.groupName = groupName ?? "";
-    getPermissionDetail(perm.id)
-      .then((res) => {
-        form.remark = (res.data as Result<any>).data?.remark ?? "";
-      })
-      .catch(() => undefined);
-  }
-  dialogVisible.value = true;
-}
-
-async function handleSubmit() {
-  const valid = await formRef.value?.validate().catch(() => false);
-  if (!valid) return;
-  submitting.value = true;
-  try {
-    const payload = { perms: form.perms, name: form.name, groupName: form.groupName, remark: form.remark };
-    if (form.id) {
-      await updatePermission(form.id, payload);
-      ElMessage.success("权限已更新");
-    } else {
-      await addPermission(payload);
-      ElMessage.success("权限已新增");
-    }
-    dialogVisible.value = false;
-    await fetchTree();
-  } catch {
-    ElMessage.error("操作失败");
-  } finally {
-    submitting.value = false;
-  }
-}
-
-async function handleDelete(perm: PermissionItem) {
-  try {
-    await ElMessageBox.confirm(`确认删除权限「${perm.name}」(${perm.perms})？`, "删除确认", { type: "warning" });
-  } catch {
-    return;
-  }
-  try {
-    await deletePermission(perm.id);
-    ElMessage.success("删除成功");
-    await fetchTree();
-  } catch {
-    ElMessage.error("删除失败");
-  }
-}
-
-onMounted(fetchTree);
+const {
+  // 列表 / 统计
+  loading,
+  totalCount,
+  groupCount,
+  normalCount,
+  disabledCount,
+  groupOptions,
+  refresh,
+  permStatusBadge,
+  handleDelete,
+  // 视图范围 / 筛选
+  viewMode,
+  roles,
+  rolesLoading,
+  roleId,
+  currentRole,
+  keyword,
+  groupFilter,
+  visibleTree,
+  emptyText,
+  setViewMode,
+  handleSearch,
+  resetFilters,
+  // 分组折叠
+  isCollapsed,
+  toggleGroup,
+  allGroupsCollapsed,
+  toggleAllGroups,
+  groupNormalCount,
+  groupDisabledCount,
+  // 新增 / 编辑
+  dialogVisible,
+  submitting,
+  formTarget,
+  formGroupName,
+  formRemark,
+  openDialog,
+  handleSubmit,
+  // 详情
+  detailVisible,
+  detailTarget,
+  detailData,
+  detailLoading,
+  openDetail,
+} = usePermissionList();
 </script>
 
 <style scoped>
+/* 页面根：透明容器 + 20px 间距（页头间距由 gap 提供） */
 .permission-page {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  min-height: 400px;
-}
-.pl-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.pl-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-}
-.pl-subtitle {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 4px;
-}
-.pl-group-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
+  min-height: 400px;
 }
-.pl-group-card {
-  border: 1px solid #e2e8f0;
+
+/* 页头刷新图标按钮（覆盖全局 .op-icon-btn 的透明底，带浅边框） */
+.permission-page .pl-refresh-btn {
+  padding: 7px;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
+  background: #fff;
+  color: var(--admin-text-secondary);
+}
+.permission-page .pl-refresh-btn:hover:not(:disabled) {
+  background: var(--admin-primary-soft);
+  border-color: #c7d2fe;
+  color: var(--admin-primary);
+}
+.permission-page .pl-refresh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 分段控件内为原生 button，复位 UA 样式（选中态仍由全局 .seg-control-item.active 提供） */
+.permission-page .seg-control-item {
+  border: none;
+  font-family: inherit;
+  line-height: inherit;
+}
+.permission-page .seg-control-item:not(.active) {
+  background: transparent;
+}
+
+/* 最右统计小字 */
+.pl-count-text {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+/* 分组区域（承载 loading 遮罩） */
+.pl-group-area {
+  min-height: 200px;
+}
+
+/* 双列网格（窄屏单列） */
+.pl-group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .pl-group-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pl-group-card {
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  box-shadow: var(--admin-shadow-card);
   overflow: hidden;
 }
-.pl-group-header {
+
+/* 组头 */
+.pl-group-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--admin-border);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.pl-group-head:hover {
   background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+}
+.pl-group-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.pl-group-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 .pl-group-name {
   font-size: 14px;
   font-weight: 600;
   color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.pl-group-count {
-  font-size: 12px;
-  color: #94a3b8;
+.pl-group-sub {
+  font-size: 11px;
+  color: var(--admin-text-muted);
 }
-.pl-group-body {
-  padding: 4px 16px;
+.pl-group-chevron {
+  color: var(--admin-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.pl-group-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* 权限行 */
+.pl-perm-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
 }
 .pl-perm-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f1f5f9;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
-.pl-perm-row:last-child {
-  border-bottom: none;
+.pl-perm-row:hover {
+  background: #f8fafc;
 }
-.pl-perm-info {
-  flex: 1;
+.pl-perm-row + .pl-perm-row {
+  border-top: 1px solid #f1f5f9;
+}
+.pl-perm-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
 }
 .pl-perm-name {
+  flex-shrink: 0;
+  max-width: 9rem;
   font-size: 13px;
   font-weight: 500;
   color: #334155;
-  flex-shrink: 0;
-}
-.pl-perm-code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 12px;
-  color: #6366f1;
-  background: #eef2ff;
-  border-radius: 4px;
-  padding: 1px 6px;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.pl-perm-actions {
-  display: flex;
-  align-items: center;
+.pl-perm-code {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 11px;
+  color: var(--admin-text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pl-perm-status {
   flex-shrink: 0;
 }
-.pl-empty {
-  padding: 16px 0;
+.pl-perm-ops {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* 空态 */
+.pl-empty-state {
+  padding: 56px 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  background: #fff;
   text-align: center;
-  color: #94a3b8;
+  font-size: 13px;
+  color: var(--admin-text-muted);
+}
+
+/* 图例 */
+.pl-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
+  color: var(--admin-text-muted);
+  line-height: 1.5;
 }
 </style>

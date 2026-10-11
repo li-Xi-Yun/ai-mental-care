@@ -23,12 +23,12 @@ import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.ai.model.conversation.ChatMessageProcessorModel;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
+import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamProcessor;
 import org.lixiyun.server.ai.model.processor.api.StreamEventListener;
 import org.lixiyun.server.ai.model.processor.factory.AgentStreamProcessorBuilder;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
-import org.lixiyun.server.infrastructure.audio.TtsConnectionManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
@@ -37,7 +37,6 @@ import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.mapper.ConversationPendingActionMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -80,10 +79,9 @@ public class ChatMessageProcessor {
     private final ConversationStreamHolder conversationStreamHolder;
     private final AiNodeConfigManager aiNodeConfigManager;
     private final ChatModelFactory chatModelFactory;
-    private final TtsConnectionManager ttsConnectionManager;
     private final ConversationPendingActionMapper pendingActionMapper;
 
-    public void processMessage(ConversationProcessContextBO context, OutputContext outputContext) {
+    public Flux<AgentStreamEvent> processMessage(ConversationProcessContextBO context, OutputContext outputContext) {
         if (context == null || context.getTemporaryMessages() == null || context.getTemporaryMessages().isEmpty()) {
             log.error("[AI对话处理器] 临时消息为空，跳过处理");
             throw new BusinessException(AIChatExceptionEnum.TEMPORARY_MESSAGES_EMPTY);
@@ -132,12 +130,8 @@ public class ChatMessageProcessor {
                     .addMetadata(ConversationMetadata.NAME, metadata)
                     .build();
             Flux<NodeOutput> stream = chatMessageProcessorModel.stream(chatModel, prompt, aiNodeConfig, runnableConfig);
-            Disposable subscribe = processor.process(stream)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe();
-
-            conversationStreamHolder.addStream(conversationId, subscribe);
-            log.debug("[AI对话处理器] 流式订阅已注册到StreamHolder，会话ID：{}", conversationId);
+            Flux<AgentStreamEvent> processedFlux = processor.process(stream)
+                    .subscribeOn(Schedulers.boundedElastic());
 
             // LLM 成功生成回复后，将本会话已注入的待对话交互（status=1）批量置为已响应（status=2）
             List<Long> pendingActionIds = pendingActions.stream().map(ConversationPendingAction::getId).toList();
@@ -145,6 +139,7 @@ public class ChatMessageProcessor {
             log.debug("[AI对话处理器] 已响应的待对话交互状态回写完成，会话ID：{}，待对话交互ID：{}", conversationId, pendingActionIds);
 
             log.info("AI对话语音处理器-语音消息处理完成，会话ID：{}", conversationId);
+            return processedFlux;
         } catch (BusinessException e) {
             log.error("AI对话语音处理器-语音消息处理业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             throw e;
@@ -157,10 +152,10 @@ public class ChatMessageProcessor {
     /**
      * 构建流式事件监听器，处理内容分块、模型完成、异常和结束事件
      *
-     * <p>输出副作用由 OutputContext.outputTypes 驱动（方案A——TTS 在本处理器内级联）：
+     * <p>输出副作用由 OutputContext.outputTypes 驱动（TTS 已解耦至 TtsOutputNode）：
      * <ul>
      *   <li>{@code TEXT}：每个文本分片经 /text/reply 推送</li>
-     *   <li>{@code AUDIO}：每个文本分片送入 TTS 引擎合成 + 经 /audio/reply 推送字幕，完成时通知收尾</li>
+     *   <li>{@code AUDIO}：由下游 {@code TtsOutputNode} 从 OutputContext.fluxStore 获取 Flux 后级联驱动</li>
      * </ul>
      * </p>
      *
@@ -175,8 +170,7 @@ public class ChatMessageProcessor {
         log.debug("[AI对话处理器] 构建流式监听器，用户ID：{}，会话ID：{}，轮次：{}", userId, conversationId, currentRound);
 
         boolean textOutput = outputContext != null && outputContext.hasOutputType(OutputDataType.TEXT);
-        boolean audioOutput = outputContext != null && outputContext.hasOutputType(OutputDataType.AUDIO);
-        log.debug("[AI对话处理器] 输出模式判断结果，会话ID：{}，textOutput={}，audioOutput={}", conversationId, textOutput, audioOutput);
+        log.debug("[AI对话处理器] 输出模式判断结果，会话ID：{}，textOutput={}", conversationId, textOutput);
 
         return new StreamEventListener() {
             @Override
@@ -185,9 +179,6 @@ public class ChatMessageProcessor {
                 contentBuilder.append(text);
                 if (textOutput) {
                     conversationWebSocketManager.sendTextStream(userId, conversationId, text);
-                }
-                if (audioOutput) {
-                    ttsConnectionManager.sendTextSegment(userId, text);
                 }
             }
 
@@ -222,11 +213,6 @@ public class ChatMessageProcessor {
                         .build();
 
                 updateCacheHistory(conversationId, finalMemory);
-
-                if (audioOutput) {
-                    ttsConnectionManager.finishSynthesis(userId);
-                    log.debug("[AI对话处理器] TTS合成完成，用户ID：{}，会话ID：{}", userId, conversationId);
-                }
             }
 
             @Override

@@ -1,0 +1,1208 @@
+/**
+ * Admin 端共享视觉层（Blog-Front 参照重构）
+ *
+ * 说明：
+ * - 本文件由 /admin 布局（src/admin/layouts/default.vue）统一引入，是所有后台页面的公共样式层。
+ * - 除布局外壳（.admin-aside / .admin-header / .admin-main / .nav-item 等仅存在于布局中的类名）外，
+ *   所有通用的 Element Plus 组件样式均以 `.admin-layout` 为祖先作用域限制，避免影响 Portal 前台页面。
+ * - 页面内部已有的 scoped 样式优先级不变（页面 scoped 样式后加载时优先），此层仅做“兜底统一 + 细节打磨”，
+ *   不改动任何页面组件结构，保证既有功能与 E2E 选择器（.admin-layout / .as-nav .nav-item / .header-title
+ *   / .admin-name / .as-logout / .content-card 等）全部保留。
+ */
+
+/* ===== 0. 单一浅色主题 token（body.admin-mode 作用域） =====
+ * 说明：
+ * - 全站后台只维护这一套明调（浅色）主题，不做暗色变体。
+ * - 变量挂在 body.admin-mode 上（由路由守卫为 /admin/** 路由切换该类），
+ *   因此 Element Plus 传送到 body 的弹层（下拉/日期面板/ElMessage/MessageBox）
+ *   也能继承到主题变量，不再回退默认蓝；Portal 前台不受影响。
+ */
+body.admin-mode {
+  /* —— Element Plus 主题映射（indigo-600 主色） —— */
+  --el-color-primary: #4f46e5;
+  --el-color-primary-light-3: #6366f1;
+  --el-color-primary-light-5: #818cf8;
+  --el-color-primary-light-7: #a5b4fc;
+  --el-color-primary-light-8: #c7d2fe;
+  --el-color-primary-light-9: #eef2ff;
+  --el-color-primary-dark-2: #3730a3;
+
+  /* 语义色统一为 Tailwind 色板（消除 EP 内置绿橙红与自定义色并存） */
+  --el-color-success: #10b981;
+  --el-color-success-light-3: #34d399;
+  --el-color-success-light-5: #6ee7b7;
+  --el-color-success-light-7: #a7f3d0;
+  --el-color-success-light-8: #d1fae5;
+  --el-color-success-light-9: #ecfdf5;
+  --el-color-success-dark-2: #059669;
+
+  --el-color-warning: #f59e0b;
+  --el-color-warning-light-3: #fbbf24;
+  --el-color-warning-light-5: #fcd34d;
+  --el-color-warning-light-7: #fde68a;
+  --el-color-warning-light-8: #fef3c7;
+  --el-color-warning-light-9: #fffbeb;
+  --el-color-warning-dark-2: #d97706;
+
+  --el-color-danger: #ef4444;
+  --el-color-danger-light-3: #f87171;
+  --el-color-danger-light-5: #fca5a5;
+  --el-color-danger-light-7: #fecaca;
+  --el-color-danger-light-8: #fee2e2;
+  --el-color-danger-light-9: #fef2f2;
+  --el-color-danger-dark-2: #dc2626;
+
+  --el-color-error: #ef4444;
+  --el-color-error-light-3: #f87171;
+  --el-color-error-light-5: #fca5a5;
+  --el-color-error-light-7: #fecaca;
+  --el-color-error-light-8: #fee2e2;
+  --el-color-error-light-9: #fef2f2;
+  --el-color-error-dark-2: #dc2626;
+
+  --el-color-info: #6b7280;
+  --el-color-info-light-3: #9ca3af;
+  --el-color-info-light-5: #d1d5db;
+  --el-color-info-light-7: #e5e7eb;
+  --el-color-info-light-8: #f3f4f6;
+  --el-color-info-light-9: #f9fafb;
+  --el-color-info-dark-2: #4b5563;
+
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 8px;
+
+  /* —— Admin 自用 token —— */
+  --admin-primary: #4f46e5;
+  --admin-primary-hover: #4338ca;
+  --admin-primary-soft: #eef2ff;
+  --admin-text-primary: #1f2937;
+  --admin-text-secondary: #6b7280;
+  --admin-text-muted: #9ca3af;
+  --admin-border: #f3f4f6;
+  --admin-border-strong: #e5e7eb;
+  --admin-bg: #f9fafb;
+  --admin-radius-card: 12px;
+  --admin-radius-dialog: 16px;
+  --admin-radius-control: 8px;
+  --admin-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --admin-shadow-dialog: 0 24px 64px rgba(15, 23, 42, 0.18);
+}
+
+/* ===== 1. 后台根容器 ===== */
+.admin-layout {
+  /* 固定视口高度：侧栏不随右侧内容增高，仅 .admin-main 内部滚动 */
+  height: 100vh;
+  overflow: hidden;
+  color: var(--admin-text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 右侧列容器（el-header + el-main）：允许收缩，保证 main 成为唯一滚动容器 */
+.admin-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ===== 2. 布局外壳：侧边栏 ===== */
+.admin-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-right: none;
+  /* Blog-Front 星空夜间渐变 */
+  background: linear-gradient(180deg, #13114a 0%, #1e1b4b 40%, #312e81 78%, #4338ca 100%);
+  transition: width 0.3s ease-in-out;
+}
+
+/* 星空装饰层：70 颗 DOM 星点（闪烁）+ 周期性流星 */
+.as-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.as-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.55);
+  animation-name: as-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes as-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.as-stars::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: -10%;
+  width: 110px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95) 100%);
+  transform: rotate(28deg);
+  animation: as-shoot 9s linear infinite;
+}
+
+.admin-aside.collapsed .as-stars::after {
+  display: none;
+}
+
+@keyframes as-shoot {
+  0%,
+  5% {
+    opacity: 0;
+    transform: rotate(28deg) translateX(0);
+  }
+  7% {
+    opacity: 1;
+  }
+  15% {
+    opacity: 0;
+    transform: rotate(28deg) translateX(300px);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(28deg) translateX(300px);
+  }
+}
+
+/* Logo 区：Blog-Front 横向布局（32px 图标 + 竖排标题/副标题） */
+.as-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.as-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.as-logo-textwrap {
+  min-width: 0;
+}
+
+.as-logo-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.as-logo-sub {
+  font-size: 11px;
+  color: #a5b4fc;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.as-nav {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.as-nav:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.as-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.as-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.as-nav::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.as-nav:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+}
+
+.as-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* 导航项：Blog-Front 规格（14px/400、radius 8、hover 白 10%、激活白 20% + 右侧箭头） */
+.nav-item {
+  position: relative;
+  padding: 10px 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  color: #c7d2fe;
+  font-weight: 400;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.nav-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+}
+
+/* —— 分组导航（Blog-Front 式折叠分组） —— */
+.nav-group {
+  margin-bottom: 6px;
+}
+
+.nav-group-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #c7d2fe;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-group.has-active > .nav-group-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.nav-group-arrow {
+  margin-left: auto;
+  opacity: 0.65;
+  transform: rotate(90deg); /* 展开：箭头朝下 */
+  transition: transform 0.22s ease;
+}
+
+.nav-group.is-collapsed .nav-group-arrow {
+  transform: rotate(0deg); /* 折叠：箭头朝右 */
+}
+
+/* 高度折叠动画：0fr 收起但保留 DOM（E2E 计数与无障碍均更稳） */
+.nav-sub {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.nav-group.is-collapsed .nav-sub {
+  grid-template-rows: 0fr;
+}
+
+.nav-sub-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.nav-sub .nav-item {
+  padding: 8px 12px;
+  margin-left: 20px;
+}
+
+.nav-sub .nav-icon {
+  opacity: 0.85;
+}
+
+/* —— 收起态 —— */
+.admin-aside.collapsed .as-header {
+  justify-content: center;
+  padding: 20px 8px;
+}
+
+.admin-aside.collapsed .as-logo-textwrap {
+  display: none;
+}
+
+.admin-aside.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.admin-aside.collapsed .nav-label,
+.admin-aside.collapsed .nav-chevron {
+  display: none;
+}
+
+/* —— 收起态：分组只显示图标，子项隐藏（点击分组图标会先展开侧栏） —— */
+.admin-aside.collapsed .nav-group {
+  margin-bottom: 4px;
+}
+
+.admin-aside.collapsed .nav-group-toggle {
+  justify-content: center;
+  padding: 11px;
+  gap: 0;
+}
+
+.admin-aside.collapsed .nav-group-label,
+.admin-aside.collapsed .nav-group-arrow {
+  display: none;
+}
+
+.admin-aside.collapsed .nav-sub {
+  display: none;
+}
+
+.admin-aside.collapsed .nav-group.has-active .nav-icon {
+  color: #a5b4fc;
+}
+
+/* —— 底部用户区（整行可点进个人资料，登出为裸图标） —— */
+.as-user {
+  position: relative;
+  z-index: 1;
+  padding: 6px 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.as-user-profile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.as-user-profile:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.as-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.as-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-aside.collapsed .as-user-info {
+  display: none;
+}
+
+.as-user-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.as-user-role {
+  font-size: 11px;
+  color: #a5b4fc;
+}
+
+.admin-aside.collapsed .as-user {
+  justify-content: center;
+  padding: 6px 8px 10px;
+}
+
+.admin-aside.collapsed .as-user-profile {
+  flex: none;
+  padding: 4px;
+}
+
+.admin-aside.collapsed .as-logout {
+  display: none;
+}
+
+.as-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  color: #a5b4fc;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.as-logout:hover {
+  color: #fff;
+}
+
+/* ===== 3. 布局外壳：顶栏 ===== */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e8ebf2;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header-toggle {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f3f9;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.header-toggle:hover {
+  background: #e5e9f5;
+  color: #4338ca;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* —— 顶栏面包屑（后台 › 分组 › 当前页；末级复用 .header-title） —— */
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.header-breadcrumb-link {
+  color: var(--admin-text-secondary);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.header-breadcrumb-link:hover {
+  color: var(--admin-primary-hover);
+  background: var(--admin-primary-soft);
+}
+
+.header-breadcrumb-sep {
+  color: #cbd5e1;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* 中间级（无链接的纯文本，如「内容管理」） */
+.header-breadcrumb-text {
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.admin-name {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ===== 4. 布局外壳：主内容区（柔和蓝紫灰渐变 + 细滚动条） ===== */
+.admin-layout .admin-main {
+  /* 24px 页面边距，与 Blog-Front 后台一致 */
+  padding: 24px;
+  background:
+    radial-gradient(1100px 480px at 88% -12%, rgba(99, 102, 241, 0.07), transparent 60%),
+    radial-gradient(840px 420px at -6% 112%, rgba(99, 102, 241, 0.05), transparent 55%),
+    linear-gradient(180deg, #f6f7fb 0%, #f1f3f9 100%);
+}
+
+.admin-layout .admin-main {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+}
+
+.admin-layout .admin-main::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.admin-layout .admin-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-layout .admin-main::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: rgba(100, 116, 139, 0.3);
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s ease;
+}
+
+.admin-layout .admin-main::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.5);
+}
+
+/* ===== 5. 通用卡片/页面容器兜底（未自定义的页面获得一致观感） ===== */
+.admin-layout .content-card {
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  padding: 20px;
+  box-shadow: var(--admin-shadow-card);
+}
+
+/* 列表页筛选卡（Blog-Front：筛选栏独立成卡，与表格卡分离） */
+.admin-layout .filter-card {
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  padding: 16px 20px;
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-layout .filter-card .toolbar {
+  margin-bottom: 0;
+}
+
+.admin-layout .el-card {
+  border-radius: var(--admin-radius-card);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-layout .el-card__header {
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+/* ===== 5.1. 公共页头（PageHeader）：标题 + 副标题 + 右侧操作区 ===== */
+.admin-layout .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-layout .page-header-text {
+  min-width: 0;
+}
+
+.admin-layout .page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1e293b;
+}
+
+.admin-layout .page-subtitle {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
+.admin-layout .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ===== 5.2. 公共统计条（StatGrid / StatCard） ===== */
+.admin-layout .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.admin-layout .stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-card);
+  padding: 18px 20px;
+  box-shadow: var(--admin-shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.admin-layout .stat-card:hover {
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+  transform: translateY(-1px);
+}
+
+.admin-layout .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.admin-layout .stat-icon-indigo {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.admin-layout .stat-icon-purple {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.admin-layout .stat-icon-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.admin-layout .stat-icon-red {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.admin-layout .stat-icon-yellow {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.admin-layout .stat-icon-amber {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.admin-layout .stat-icon-gray {
+  background: linear-gradient(135deg, #64748b, #94a3b8);
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+}
+
+.admin-layout .stat-body {
+  min-width: 0;
+}
+
+.admin-layout .stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--admin-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-layout .stat-label {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+}
+
+/* ===== 5.3. 公共工具栏（Toolbar） ===== */
+.admin-layout .toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-layout .toolbar-spacer {
+  flex: 1;
+}
+
+.admin-layout .btn-icon {
+  margin-right: 4px;
+}
+
+/* ===== 5.4. 公共分页条 ===== */
+.admin-layout .pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.admin-layout .page-total {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+
+/* ===== 5.5. 公共状态徽章（StatusBadge，全圆角 pill + 圆点） ===== */
+.admin-layout .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.admin-layout .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ===== 6. 通用按钮 ===== */
+.admin-layout .el-button {
+  border-radius: var(--admin-radius-control);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.admin-layout .el-button--small {
+  border-radius: 7px;
+}
+
+.admin-layout .el-button--primary:not(.is-link):not(.is-text):not(.is-plain) {
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.22);
+}
+
+/* Blog-Front：主按钮 hover 加深（Element Plus 默认用 light-3 会变浅，语义相反） */
+.admin-layout .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):hover,
+.admin-layout .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):focus {
+  background-color: var(--admin-primary-hover);
+  border-color: var(--admin-primary-hover);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.32);
+}
+
+.admin-layout .el-button.is-text {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* ===== 7. 通用表单：输入框 / 下拉 / 文本域 / 标签 ===== */
+.admin-layout .el-input__wrapper,
+.admin-layout .el-select__wrapper,
+.admin-layout .el-textarea__inner,
+.admin-layout .el-input-number .el-input__wrapper {
+  border-radius: var(--admin-radius-control);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-layout .el-input__wrapper:hover,
+.admin-layout .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #c7d2fe inset;
+}
+
+.admin-layout .el-input__wrapper.is-focus,
+.admin-layout .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px var(--admin-primary) inset,
+    0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.admin-layout .el-form-item__label {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #374151;
+}
+
+.admin-layout .el-tag {
+  --el-tag-border-radius: 6px;
+  border-radius: 6px;
+}
+
+.admin-layout .el-tag.is-round {
+  border-radius: 999px;
+}
+
+.admin-layout .el-switch {
+  --el-switch-on-color: var(--admin-primary);
+}
+
+/* ===== 8. 通用表格 ===== */
+.admin-layout .el-table {
+  --el-table-header-bg-color: #f9fafb;
+  --el-table-header-text-color: #6b7280;
+  --el-table-border-color: var(--admin-border);
+  --el-table-row-hover-bg-color: #f9fafb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.admin-layout .el-table th.el-table__cell {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--el-table-header-text-color);
+  background: var(--el-table-header-bg-color);
+}
+
+.admin-layout .el-table td.el-table__cell,
+.admin-layout .el-table th.el-table__cell {
+  padding: 12px 0;
+}
+
+.admin-layout .el-table .cell {
+  /* 8px 左右内边距：表格更密集（原 12px），为窄列让出空间 */
+  padding: 0 8px;
+  line-height: 22px;
+}
+
+/* ===== 9. 通用分页 ===== */
+.admin-layout .el-pagination.is-background .el-pager li,
+.admin-layout .el-pagination.is-background .btn-prev,
+.admin-layout .el-pagination.is-background .btn-next {
+  border-radius: 8px;
+}
+
+.admin-layout .el-pagination.is-background .el-pager li.is-active {
+  background: var(--admin-primary);
+}
+
+/* ===== 10. 通用弹窗 / 抽屉 / 遮罩（Blog-Front：16px 圆角 + 明显阴影 + 毛玻璃遮罩） ===== */
+/* el-dialog 默认 append-to-body=false，overlay/dialog 渲染在 .admin-layout 子树内，可被命中 */
+.admin-layout .el-overlay {
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.admin-layout .el-dialog {
+  border-radius: var(--admin-radius-dialog);
+  box-shadow: var(--admin-shadow-dialog);
+  overflow: hidden;
+}
+
+.admin-layout .el-dialog__header {
+  padding: 20px 24px 0;
+  margin-right: 0;
+}
+
+.admin-layout .el-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.admin-layout .el-dialog__headerbtn {
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.admin-layout .el-dialog__headerbtn:hover {
+  background: #f1f5f9;
+}
+
+.admin-layout .el-dialog__body {
+  padding: 16px 24px 4px;
+}
+
+.admin-layout .el-dialog__footer {
+  padding: 12px 24px 20px;
+}
+
+.admin-layout .el-drawer {
+  border-radius: var(--admin-radius-dialog) 0 0 var(--admin-radius-dialog);
+  box-shadow: var(--admin-shadow-dialog);
+}
+
+.admin-layout .el-drawer__header {
+  margin-bottom: 16px;
+  padding: 20px 20px 0;
+  color: var(--admin-text-primary);
+  font-weight: 600;
+}
+
+/* 键盘可达性：所有可点击控件保留清晰的 :focus-visible 轮廓 */
+.admin-layout .nav-item:focus-visible,
+.admin-layout .nav-group-toggle:focus-visible,
+.admin-layout .header-toggle:focus-visible,
+.admin-layout .header-breadcrumb-link:focus-visible,
+.admin-layout .as-user-profile:focus-visible,
+.admin-layout .as-logout:focus-visible {
+  outline: 2px solid rgba(165, 180, 252, 0.9);
+  outline-offset: 2px;
+}
+
+/* ===== 11. 表格操作列：单行优先 + 换行后列对齐（等宽网格） ===== */
+/* min 36px 为定值 → 轨道数可确定；max-content → 按钮保持自然宽度不被拉伸；
+   换行时所有行共享同一组轨道 → 按钮严格按列上下对齐 */
+.admin-layout .op-cell {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(36px, max-content));
+  justify-content: center;
+  align-items: center;
+  gap: 2px 4px;
+}
+
+/* 清零 Element Plus 相邻按钮的 12px margin，避免轨道内挤歪 */
+.admin-layout .op-cell .el-button {
+  margin-left: 0;
+}
+
+/* 关键：必须 (0,4,0) 特异性，否则被第 7 节 `.admin-layout .el-button.is-text{padding:10px}` 压过 */
+.admin-layout .op-cell .el-button.is-text {
+  padding: 0 6px;
+}
+
+/* 表格之外（卡片/抽屉/弹窗内）的 op-btn 同样收紧 */
+.admin-layout .el-button.is-text.op-btn {
+  padding: 0 6px;
+}
+
+/* 操作按钮基础样式（各页 scoped 重复定义上收到此） */
+.admin-layout .op-btn {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.admin-layout .op-icon {
+  margin-right: 3px;
+  font-size: 12px;
+}
+
+/* 操作按钮语义色统一（含 .op-btn 提升特异性，页面 scoped 残留也会被统一） */
+.admin-layout .op-btn.op-primary {
+  color: var(--admin-primary);
+}
+
+.admin-layout .op-btn.op-primary:hover {
+  color: var(--admin-primary-hover);
+}
+
+.admin-layout .op-btn.op-edit {
+  color: var(--admin-primary);
+}
+
+.admin-layout .op-btn.op-edit:hover {
+  color: var(--admin-primary-hover);
+}
+
+.admin-layout .op-btn.op-detail {
+  color: #3b82f6;
+}
+
+.admin-layout .op-btn.op-detail:hover {
+  color: #2563eb;
+}
+
+.admin-layout .op-btn.op-answer {
+  color: var(--admin-primary);
+}
+
+.admin-layout .op-btn.op-answer:hover {
+  color: var(--admin-primary-hover);
+}
+
+.admin-layout .op-btn.op-restore {
+  color: #10b981;
+}
+
+.admin-layout .op-btn.op-restore:hover {
+  color: #059669;
+}
+
+.admin-layout .op-btn.op-del,
+.admin-layout .op-btn.op-revoke {
+  color: #ef4444;
+}
+
+.admin-layout .op-btn.op-del:hover,
+.admin-layout .op-btn.op-revoke:hover {
+  color: #dc2626;
+}
+
+/* ===== 12. 图标操作按钮（表格行内，Blog-Front 风格：hover 浅色底） ===== */
+.admin-layout .op-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin-layout .op-icon-btn:hover {
+  background: #f1f5f9;
+  color: var(--admin-text-secondary);
+}
+
+.admin-layout .op-icon-btn.op-detail:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.admin-layout .op-icon-btn.op-edit:hover {
+  background: var(--admin-primary-soft);
+  color: var(--admin-primary);
+}
+
+.admin-layout .op-icon-btn.op-del:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.admin-layout .op-icon-btn.op-enable:hover {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.admin-layout .op-icon-btn.op-disable:hover {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.admin-layout .op-icon-btn.op-grant:hover {
+  background: var(--admin-primary-soft);
+  color: var(--admin-primary);
+}
+
+/* ===== 13. 分段控件（Blog-Front：灰底圆角容器 + 选中白底阴影） ===== */
+.admin-layout .seg-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.admin-layout .seg-control-item {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-layout .seg-control-item:hover {
+  color: var(--admin-primary);
+}
+
+.admin-layout .seg-control-item.active {
+  background: #fff;
+  color: var(--admin-primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.admin-layout .seg-control-item:focus-visible {
+  outline: 2px solid rgba(79, 70, 229, 0.5);
+  outline-offset: 1px;
+}

@@ -12,10 +12,12 @@ import org.lixiyun.server.infrastructure.conversation.processor.ChatMessageProce
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
+import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,9 +74,10 @@ public class ConversationMessageProcessor {
      * 刷新缓存元数据 → 释放处理令牌。任何步骤异常均会清理处理标识。</p>
      *
      * @param outputContext 会话上下文
+     * @return 模型输出的冷 Flux（未订阅），由调用方负责存入管道上下文并订阅
      * @throws RuntimeException 消息处理失败时抛出
      */
-    public void processConversationMessage(OutputContext outputContext) {
+    public Flux<AgentStreamEvent> processConversationMessage(OutputContext outputContext) {
         Long conversationId = outputContext.getConversationId();
         log.info("[流程编排] 开始会话消息处理，会话ID：{}", conversationId);
 
@@ -93,7 +96,7 @@ public class ConversationMessageProcessor {
                 log.warn("[流程编排] 获取处理令牌失败，重新加入ZSet队列，会话ID：{}", conversationId);
                 log.debug("[流程编排] 令牌抢占失败，将重新入队，会话ID：{}", conversationId);
                 conversationProcessTokenManager.readdToZSetQueue(conversationId);
-                return;
+                return Flux.empty();
             }
 
             log.debug("[流程编排] 成功获取处理令牌，开始处理，会话ID：{}", conversationId);
@@ -104,7 +107,7 @@ public class ConversationMessageProcessor {
                 log.warn("[流程编排] 会话缓存加载失败，清理处理标识并结束，会话ID：{}", conversationId);
                 log.debug("[流程编排] 缓存加载返回false，提前退出流程，会话ID：{}", conversationId);
                 conversationProcessTokenManager.clearProcessingFlag(conversationId);
-                return;
+                return Flux.empty();
             }
             log.debug("[流程编排] 会话缓存加载成功，会话ID：{}", conversationId);
 
@@ -114,7 +117,7 @@ public class ConversationMessageProcessor {
             if (unprocessedMessages.isEmpty()) {
                 log.info("没有待处理的临时消息，清理处理标识并结束，会话ID：{}", conversationId);
                 conversationProcessTokenManager.clearProcessingFlag(conversationId);
-                return;
+                return Flux.empty();
             }
 
             log.debug("[流程编排] 步骤4/9：构建处理上下文，会话ID：{}，消息数：{}", conversationId, unprocessedMessages.size());
@@ -140,7 +143,7 @@ public class ConversationMessageProcessor {
             });
 
             log.debug("[流程编排] 步骤6/9：主线程消息处理，会话ID：{}", conversationId);
-            executeMainThread(conversationId, processContext, chatMessageProcessor, outputContext);
+            Flux<AgentStreamEvent> outputFlux = executeMainThread(conversationId, processContext, chatMessageProcessor, outputContext);
 
             log.debug("[流程编排] 步骤7/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
@@ -176,6 +179,7 @@ public class ConversationMessageProcessor {
             log.debug("[流程编排] 缓存元数据刷新完成，会话ID：{}", conversationId);
 
             log.info("[流程编排] 会话消息处理完成，会话ID：{}，处理消息数：{}", conversationId, unprocessedMessages.size());
+            return outputFlux;
         } catch (Exception e) {
             log.error("[[流程编排 - 异常] 会话消息处理异常，会话ID：{}", conversationId, e);
             throw new RuntimeException("会话消息处理失败", e);
@@ -201,17 +205,18 @@ public class ConversationMessageProcessor {
 
     /**
      * 执行主线程消息处理
-     * <p>调用 {@link ChatMessageProcessor} 处理消息，输出上下文（含输出模式）透传给处理器，
-     * 由处理器根据 outputTypes 判断是否级联 TTS（方案A）。记录执行耗时。
+     * <p>调用 {@link ChatMessageProcessor} 处理消息，返回模型输出的冷 Flux，
+     * 由上层调用方负责存入 OutputContext 并订阅。记录执行耗时。
      * 处理器为空时抛出业务异常，业务异常直接抛出，系统异常包装为业务异常抛出。</p>
      *
      * @param conversationId     会话ID
      * @param processContext     会话处理上下文
      * @param chatMessageProcessor 消息处理器实例
      * @param outputContext      输出上下文（透传给处理器判断输出模式）
+     * @return 模型输出的冷 Flux
      * @throws BusinessException 处理器未找到或执行异常时抛出
      */
-    private void executeMainThread(Long conversationId, ConversationProcessContextBO processContext,
+    private Flux<AgentStreamEvent> executeMainThread(Long conversationId, ConversationProcessContextBO processContext,
                                    ChatMessageProcessor chatMessageProcessor, OutputContext outputContext) {
         String executorName = ChatMessageProcessor.NODE_NAME;
         log.info("[主线程] 开始主线程执行，会话ID：{}，执行器：{}", conversationId, executorName);
@@ -229,13 +234,14 @@ public class ConversationMessageProcessor {
 
             long startTime = System.currentTimeMillis();
 
-            chatMessageProcessor.processMessage(processContext, outputContext);
+            Flux<AgentStreamEvent> outputFlux = chatMessageProcessor.processMessage(processContext, outputContext);
 
             long endTime = System.currentTimeMillis();
             long elapsed = endTime - startTime;
 
             log.info("[主线程] 主线程执行完成，会话ID：{}，耗时：{}ms", conversationId, elapsed);
             log.debug("[主线程] 消息处理器执行耗时明细：{}ms，处理器：{}，会话ID：{}", elapsed, executorName, conversationId);
+            return outputFlux;
         } catch (BusinessException e) {
             log.error("[主线程] 主线程执行业务异常，会话ID：{}，错误代码：{}，错误信息：{}", conversationId, e.getCode(), e.getMessage());
             log.debug("[主线程] 业务异常详情，错误代码：{}，会话ID：{}", e.getCode(), conversationId);

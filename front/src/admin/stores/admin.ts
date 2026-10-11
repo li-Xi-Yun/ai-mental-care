@@ -24,7 +24,8 @@ export const useAdminStore = defineStore(
   },
   {
     persist: {
-      pick: ["token"],
+      // adminInfo 一并持久化：刷新后顶栏/侧栏仍可显示真实管理员名称
+      pick: ["token", "adminInfo"],
     },
   },
 );

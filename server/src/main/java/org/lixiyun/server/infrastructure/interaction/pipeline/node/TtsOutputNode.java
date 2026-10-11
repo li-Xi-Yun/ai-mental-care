@@ -3,27 +3,32 @@ package org.lixiyun.server.infrastructure.interaction.pipeline.node;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.tts.api.TtsResultCallback;
+import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.lixiyun.server.infrastructure.audio.TtsConnectionManager;
-import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
+import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputNode;
 import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
 /**
  * 文本转语音输出节点
  *
- * <p><b>职责（方案A）</b>：作为 TTS 合成资源的<b>持有者</b>，TTS 合成逻辑由统一处理器
- * {@code ChatMessageProcessor} 在内部级联驱动（listener 中按 OutputContext.hasOutputType(AUDIO) 判断）。</p>
+ * <p><b>职责</b>：从 {@link OutputContext#getFlux} 中获取上游 {@code ModelChatOutputNode} 产出的
+ * {@code Flux<AgentStreamEvent>}，在 {@link #process(OutputContext)} 中对 Flux 附加 TTS 合成副作用
+ * （{@code doOnNext} → 文本分片送入引擎，{@code doOnComplete} → 通知合成收尾），并执行订阅触发整个链路。</p>
  * <ul>
  *   <li><b>init()</b>：注册 TTS 连接与音频推送回调（onAudioData → 音频二进制 WebSocket 推送）</li>
- *   <li><b>process()</b>：空实现——本节点不再消费上游文本流，合成由处理器级联</li>
+ *   <li><b>process()</b>：从 OutputContext 获取 cached Flux，附加 TTS 逻辑后订阅</li>
  *   <li><b>destroy()</b>：取消 TTS 会话、清理资源</li>
  *   <li><b>interrupt()</b>：中断当前合成，保留会话可再次合成</li>
  * </ul>
@@ -31,7 +36,7 @@ import java.util.List;
  * <p><b>输出副作用</b>：
  * <ul>
  *   <li>音频二进制（/audio/binary）：由注册的 TTS 回调 {@code onAudioData} 推送</li>
- *   <li>文字字幕（/audio/reply）：由 ChatMessageProcessor 在 outputTypes 含 AUDIO 时推送</li>
+ *   <li>文字字幕（/audio/reply）：由 ChatMessageProcessor 的 TEXT 监听器在 outputTypes 含 TEXT 时推送</li>
  * </ul></p>
  *
  * <h3>节点实例化约定：</h3>
@@ -47,9 +52,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TtsOutputNode implements OutputNode {
 
+    /** 节点名称 */
+    public static final String NODE_NAME = "ttsOutputNode";
+
     private final TtsConnectionManager ttsConnectionManager;
     private final ConversationWebSocketManager conversationWebSocketManager;
-    private final ConversationCacheManager conversationCacheManager;
+    private final ConversationStreamHolder conversationStreamHolder;
 
     /** 会话级状态：由 init() 注入，节点实例与单一会话绑定（prototype） */
     private Long conversationId;
@@ -59,7 +67,7 @@ public class TtsOutputNode implements OutputNode {
 
     @Override
     public String getNodeName() {
-        return "TtsNode";
+        return NODE_NAME;
     }
 
     // ==================== 生命周期 ====================
@@ -70,39 +78,61 @@ public class TtsOutputNode implements OutputNode {
         this.userId = userId;
         // 注册 TTS 连接与音频推送回调（TtsConnectionManager 为一用户一会话：重复注册会自动关闭旧会话）
         ttsConnectionManager.register(userId, createTtsCallback(conversationId, userId));
-        log.info("[TtsNode] 节点初始化完成，会话ID={}，用户ID={}，已注册TTS连接", conversationId, userId);
+        log.info("[管道-音频输出节点] 节点初始化完成，会话ID={}，用户ID={}，已注册TTS连接", conversationId, userId);
     }
 
     @Override
     public void destroy() {
         ttsConnectionManager.cancel(userId);
-        log.info("[TtsNode] 节点销毁，会话ID={}，用户ID={}", conversationId, userId);
+        log.info("[管道-音频输出节点] 节点销毁，会话ID={}，用户ID={}", conversationId, userId);
     }
 
     @Override
     public void interrupt() {
         ttsConnectionManager.interrupt(userId);
-        log.info("[TtsNode] 节点中断，会话ID={}，用户ID={}", conversationId, userId);
+        log.info("[管道-音频输出节点] 节点中断，会话ID={}，用户ID={}", conversationId, userId);
     }
 
     // ==================== 核心处理 ====================
 
     /**
-     * 方案A——空实现
+     * 从 {@link OutputContext} 获取上游产出的 cached {@code Flux<AgentStreamEvent>}，
+     * 附加 TTS 合成副作用后订阅，触发整个 LLM + TTS 链路。
      *
-     * <p>TTS 合成由统一处理器 {@code ChatMessageProcessor} 在内部级联驱动
-     * （listener 中根据 OutputContext.hasOutputType(AUDIO) 判断是否调用 TtsConnectionManager），
-     * 本节点不再消费上游文本流，仅作为 TTS 连接的资源持有者：</p>
-     * <ul>
-     *   <li>init()：注册 TTS 连接与音频推送回调</li>
-     *   <li>destroy() / interrupt()：取消 / 中断 TTS 会话</li>
-     * </ul>
+     * <p>由于 {@link OutputContext#putFlux} 已对 Flux 执行 {@code .cache()}，
+     * 本节点的订阅是同一 cached Flux 的二次订阅，不会重复触发 LLM 数据源，
+     * 而是重放已缓存的事件并继续接收实时事件。</p>
      *
-     * @param context 输出上下文（本节点不消费，忽略）
+     * @param context 输出上下文
      */
     @Override
     public void process(OutputContext context) {
-        // TTS 合成由 ChatMessageProcessor 内级联驱动，本节点无处理逻辑
+        boolean audioOutput = context.hasOutputType(OutputDataType.AUDIO);
+        if (!audioOutput) {
+            log.debug("[TtsNode] 非音频模式，跳过TTS处理，会话ID：{}", conversationId);
+            return;
+        }
+
+        Flux<AgentStreamEvent> cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
+
+        Disposable ttsSubscribe = cachedFlux
+                .doOnNext(event -> {
+                    if (event instanceof AgentStreamEvent.ModelContentChunk(String text)) {
+                        ttsConnectionManager.sendTextSegment(userId, text);
+                    }
+                })
+                .doOnComplete(() -> {
+                    ttsConnectionManager.finishSynthesis(userId);
+                    log.debug("[管道-音频输出节点] TTS合成完成，会话ID：{}", conversationId);
+                })
+                .doOnError(err -> {
+                    log.error("[管道-音频输出节点] TTS流处理异常，会话ID：{}", conversationId, err);
+                })
+                .subscribe();
+
+        conversationStreamHolder.addStream(conversationId, ttsSubscribe);
+
+        log.debug("[管道-音频输出节点] TTS流订阅完成，会话ID={}，音频输出已激活", conversationId);
     }
 
     /**
