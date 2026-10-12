@@ -104,6 +104,7 @@
           class="tp-table"
           size="small"
           style="width: 100%"
+          @row-click="openDetail"
         >
           <el-table-column label="权限" min-width="200">
             <template #default="{ row }">
@@ -151,7 +152,7 @@
                 text
                 size="small"
                 class="op-btn op-revoke"
-                @click="handleRevoke(row as PermItem)"
+                @click.stop="handleRevoke(row as PermItem)"
               >
                 作废
               </el-button>
@@ -176,6 +177,9 @@
       :submitting="grantSubmitting"
       @submit="handleGrantSubmit"
     />
+
+    <!-- ==================== 权限明细详情弹窗（纯行数据，零请求） ==================== -->
+    <TempPermissionDetailDialog v-model="detailVisible" :row="detailRow" />
   </div>
 </template>
 
@@ -188,6 +192,7 @@ import StatusBadge from "@/admin/components/StatusBadge.vue";
 import { useTempPermissionList } from "./useTempPermissionList";
 import type { PermItem } from "./useTempPermissionList";
 import GrantPermissionDialog from "./components/GrantPermissionDialog.vue";
+import TempPermissionDetailDialog from "./components/TempPermissionDetailDialog.vue";
 
 const {
   // 页面状态
@@ -210,6 +215,9 @@ const {
   detailLoading,
   detailList,
   handleRevoke,
+  detailVisible,
+  detailRow,
+  openDetail,
   // 授予权限弹窗
   grantVisible,
   grantSubmitting,
@@ -542,6 +550,11 @@ const {
   color: #64748b;
   font-size: 12px;
   font-weight: 600;
+}
+
+/* 整行可点进详情（仅右侧「权限明细」表） */
+.tp-table :deep(.el-table__row) {
+  cursor: pointer;
 }
 
 .tp-perm-cell {

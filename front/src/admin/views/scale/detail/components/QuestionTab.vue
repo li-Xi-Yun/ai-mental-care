@@ -11,7 +11,7 @@
     </el-button>
   </div>
 
-  <el-table v-loading="loading" :data="questions" class="pane-table" row-key="id">
+  <el-table v-loading="loading" :data="questions" class="pane-table" row-key="id" @row-click="handleQuestionRowClick">
     <el-table-column label="序号" width="64" align="center">
       <template #default="{ $index }">
         <span class="num-text">{{ $index + 1 }}</span>
@@ -50,11 +50,11 @@
     <el-table-column label="操作" width="164" align="center" fixed="right">
       <template #default="{ row }">
         <div class="op-cell">
-          <el-button text size="small" class="op-btn op-edit" @click="openEditQuestion(row)">编辑</el-button>
-          <el-button text size="small" class="op-btn op-primary" @click="openCopyQuestion(row)">
+          <el-button text size="small" class="op-btn op-edit" @click.stop="openEditQuestion(row)">编辑</el-button>
+          <el-button text size="small" class="op-btn op-primary" @click.stop="openCopyQuestion(row)">
             <el-icon class="op-icon"><CopyDocument /></el-icon>复制
           </el-button>
-          <el-button text size="small" class="op-btn op-del" @click="handleDeleteQuestion(row)">删除</el-button>
+          <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteQuestion(row)">删除</el-button>
         </div>
       </template>
     </el-table-column>
@@ -146,6 +146,14 @@
       <el-button type="primary" :loading="questionCopySubmitting" @click="handleQuestionCopy">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 题目详情弹窗 ==================== -->
+  <ScaleQuestionDetailDialog
+    v-model="questionDetailVisible"
+    :row="questionDetailRow"
+    :detail="questionDetailData"
+    :loading="questionDetailLoading"
+  />
 </template>
 
 <script setup lang="ts">
@@ -158,6 +166,7 @@ import {
   updateScaleQuestion,
   deleteScaleQuestion,
   copyScaleQuestion,
+  getScaleQuestionDetail,
 } from "@/admin/api/scale/question";
 import type {
   AdminScaleDimensionVO,
@@ -166,6 +175,7 @@ import type {
   AdminScaleVersionVO,
 } from "@/admin/api/scale/types";
 import VersionSwitch from "./VersionSwitch.vue";
+import ScaleQuestionDetailDialog from "./ScaleQuestionDetailDialog.vue";
 
 const props = defineProps<{
   versions: AdminScaleVersionVO[];
@@ -368,6 +378,31 @@ async function handleDeleteQuestion(row: any) {
     ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
+
+/* ==================== 行点击查看详情 ==================== */
+const questionDetailVisible = ref(false);
+const questionDetailRow = ref<AdminScaleQuestionVO | null>(null);
+const questionDetailData = ref<AdminScaleQuestionVO | null>(null);
+const questionDetailLoading = ref(false);
+
+function handleQuestionRowClick(row: AdminScaleQuestionVO, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  const id = row.id;
+  questionDetailRow.value = row;
+  questionDetailData.value = null;
+  questionDetailVisible.value = true;
+  questionDetailLoading.value = true;
+  getScaleQuestionDetail(id)
+    .then((res) => {
+      // 旧响应丢弃守卫：快速连点其它行时忽略过期结果
+      if (questionDetailRow.value?.id !== id) return;
+      questionDetailData.value = res.data?.data ?? null;
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      if (questionDetailRow.value?.id === id) questionDetailLoading.value = false;
+    });
+}
 </script>
 
 <style scoped>
@@ -384,6 +419,9 @@ async function handleDeleteQuestion(row: any) {
 /* 表头底/文字/边框/hover 与单元格 padding、圆角均由全局 styles/index.css 统一提供 */
 .pane-table {
   width: 100%;
+}
+:deep(.pane-table .el-table__row) {
+  cursor: pointer;
 }
 
 .num-text {

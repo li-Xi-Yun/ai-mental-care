@@ -18,21 +18,21 @@
       :image-size="80"
     />
     <div v-else class="otm-cards">
-      <div v-for="t in optionTemplateList" :key="t.id" class="otm-card">
+      <div v-for="t in optionTemplateList" :key="t.id" class="otm-card" @click="openOptionTemplateDetail(t)">
         <div class="otm-card-head">
           <div class="otm-card-title">
             <span class="otm-name">{{ t.templateName }}</span>
             <span class="otm-count">{{ (t.items ?? []).length }} 项</span>
           </div>
           <div class="otm-card-ops">
-            <el-button text size="small" class="op-btn op-edit" @click="openEditOptionTemplate(t)">编辑</el-button>
-            <el-button text size="small" class="op-btn op-primary" @click="openApplyOptionTemplate(t)">
+            <el-button text size="small" class="op-btn op-edit" @click.stop="openEditOptionTemplate(t)">编辑</el-button>
+            <el-button text size="small" class="op-btn op-primary" @click.stop="openApplyOptionTemplate(t)">
               <el-icon class="op-icon"><Promotion /></el-icon>应用
             </el-button>
-            <el-button text size="small" class="op-btn op-primary" @click="openCopyOptionTemplate(t)">
+            <el-button text size="small" class="op-btn op-primary" @click.stop="openCopyOptionTemplate(t)">
               <el-icon class="op-icon"><CopyDocument /></el-icon>复制
             </el-button>
-            <el-button text size="small" class="op-btn op-del" @click="handleDeleteOptionTemplate(t)">删除</el-button>
+            <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteOptionTemplate(t)">删除</el-button>
           </div>
         </div>
         <div v-if="t.templateDesc" class="otm-desc">{{ t.templateDesc }}</div>
@@ -152,6 +152,9 @@
       <el-button type="primary" :loading="optionTemplateCopySubmitting" @click="handleOptionTemplateCopy">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 选项模板详情弹窗 ==================== -->
+  <OptionTemplateDetailDialog v-model="optionTemplateDetailVisible" :row="optionTemplateDetailRow" />
 </template>
 
 <script setup lang="ts">
@@ -174,6 +177,7 @@ import type {
 } from "@/admin/api/scale/option-template";
 import type { AdminScaleQuestionVO, AdminScaleVersionVO } from "@/admin/api/scale/types";
 import VersionSwitch from "./VersionSwitch.vue";
+import OptionTemplateDetailDialog from "./OptionTemplateDetailDialog.vue";
 
 const props = defineProps<{
   versions: AdminScaleVersionVO[];
@@ -401,6 +405,15 @@ async function handleDeleteOptionTemplate(row: AdminScaleOptionTemplateVO) {
     ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
+
+/* ==================== 卡片点击查看详情（纯行数据，零请求） ==================== */
+const optionTemplateDetailVisible = ref(false);
+const optionTemplateDetailRow = ref<AdminScaleOptionTemplateVO | null>(null);
+
+function openOptionTemplateDetail(row: AdminScaleOptionTemplateVO) {
+  optionTemplateDetailRow.value = row;
+  optionTemplateDetailVisible.value = true;
+}
 </script>
 
 <style scoped>
@@ -452,6 +465,7 @@ async function handleDeleteOptionTemplate(row: AdminScaleOptionTemplateVO) {
   flex-direction: column;
   gap: 10px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 .otm-card:hover {
   border-color: #e0e7ff;

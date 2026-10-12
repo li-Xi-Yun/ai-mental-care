@@ -94,14 +94,21 @@
 
         <!-- 文件表格 -->
         <section class="content-card">
-          <el-table v-loading="tableLoading" :data="fileList" class="file-table" style="width: 100%">
+          <!-- 行点击查看详情；操作列按钮 @click.stop 阻断 -->
+          <el-table
+            v-loading="tableLoading"
+            :data="fileList"
+            class="file-table"
+            style="width: 100%"
+            @row-click="handleRowClick"
+          >
             <el-table-column label="文件名" min-width="152">
               <template #default="{ row }">
                 <div class="file-name-cell">
                   <span class="file-type-icon" :style="{ background: fileMeta(row).bg, color: fileMeta(row).color }">
                     <el-icon :size="16"><component :is="fileMeta(row).icon" /></el-icon>
                   </span>
-                  <span class="file-name-text" :title="row.originalName" @click="handlePreview(row)">
+                  <span class="file-name-text" :title="row.originalName" @click.stop="handlePreview(row)">
                     {{ row.originalName }}
                   </span>
                   <span v-if="row.vectorStatus === 1" class="vector-flag">向量</span>
@@ -168,11 +175,11 @@
             <el-table-column label="操作" width="216" fixed="right">
               <template #default="{ row }">
                 <div class="op-cell">
-                  <el-button text size="small" type="primary" @click="handlePreview(row)">预览</el-button>
-                  <el-button text size="small" @click="handleDownload(row)">下载</el-button>
-                  <el-button text size="small" @click="openEditDialog(row)">编辑</el-button>
-                  <el-button text size="small" type="primary" @click="goVector(row)">向量</el-button>
-                  <el-button text size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+                  <el-button text size="small" type="primary" @click.stop="handlePreview(row)">预览</el-button>
+                  <el-button text size="small" @click.stop="handleDownload(row)">下载</el-button>
+                  <el-button text size="small" @click.stop="openEditDialog(row)">编辑</el-button>
+                  <el-button text size="small" type="primary" @click.stop="goVector(row)">向量</el-button>
+                  <el-button text size="small" type="danger" @click.stop="handleDelete(row)">删除</el-button>
                 </div>
               </template>
             </el-table-column>
@@ -241,6 +248,16 @@
       @submit="handleSaveCategory"
     />
 
+    <!-- 文件详情弹窗 -->
+    <FileDetailDialog
+      v-model="detailVisible"
+      :row="detailRow"
+      :detail="detailData"
+      :loading="detailLoading"
+      @preview="handlePreview"
+      @download="handleDownload"
+    />
+
     <!-- 文件预览弹窗 -->
     <FilePreviewDialog
       v-model="previewVisible"
@@ -265,6 +282,7 @@ import FileUploadDialog from "./components/FileUploadDialog.vue";
 import FileEditDialog from "./components/FileEditDialog.vue";
 import CategoryManageDialog from "./components/CategoryManageDialog.vue";
 import CategoryEditDialog from "./components/CategoryEditDialog.vue";
+import FileDetailDialog from "./components/FileDetailDialog.vue";
 import FilePreviewDialog from "./components/FilePreviewDialog.vue";
 
 const {
@@ -330,6 +348,12 @@ const {
   handleDownload,
   handleDelete,
   goVector,
+  // 详情
+  detailVisible,
+  detailLoading,
+  detailRow,
+  detailData,
+  handleRowClick,
   // 常量
   STATUS_MAP,
   KNOWLEDGE_TYPE_MAP,
@@ -418,6 +442,11 @@ const {
   font-size: 12px;
   color: #64748b;
   font-weight: 600;
+}
+
+/* 整行可点进详情 */
+.file-table :deep(.el-table__row) {
+  cursor: pointer;
 }
 
 /* 分类列 el-tag 定宽截断（列宽压缩后长分类名省略显示） */

@@ -75,6 +75,7 @@
         row-key="id"
         class="symptom-table"
         @selection-change="handleSelectionChange"
+        @row-click="handleRowClick"
       >
         <el-table-column type="selection" width="46" align="center" />
         <el-table-column prop="id" label="ID" width="72" />
@@ -119,10 +120,12 @@
         </el-table-column>
         <el-table-column label="状态" width="86" align="center">
           <template #default="{ row }">
-            <el-switch
-              :model-value="row.status === 1"
-              @change="(val: string | number | boolean) => handleStatusToggle(row as SymptomRow, val)"
-            />
+            <span @click.stop>
+              <el-switch
+                :model-value="row.status === 1"
+                @change="(val: string | number | boolean) => handleStatusToggle(row as SymptomRow, val)"
+              />
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="创建时间" width="130">
@@ -133,8 +136,8 @@
         <el-table-column label="操作" width="108" align="center" fixed="right">
           <template #default="{ row }">
             <div class="op-cell">
-              <el-button text size="small" class="op-btn op-edit" @click="handleEdit(row as SymptomRow)">编辑</el-button>
-              <el-button text size="small" class="op-btn op-del" @click="handleDelete(row as SymptomRow)">删除</el-button>
+              <el-button text size="small" class="op-btn op-edit" @click.stop="handleEdit(row as SymptomRow)">编辑</el-button>
+              <el-button text size="small" class="op-btn op-del" @click.stop="handleDelete(row as SymptomRow)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -164,6 +167,14 @@
       :category-options="categoryOptions"
       @submit="handleSubmit"
     />
+
+    <!-- ==================== 详情弹窗 ==================== -->
+    <SymptomDetailDialog
+      v-model="detailVisible"
+      :row="detailRow"
+      :detail="detailData"
+      :loading="detailLoading"
+    />
   </div>
 </template>
 
@@ -173,6 +184,7 @@ import PageHeader from "@/admin/components/PageHeader.vue";
 import { useSymptomList } from "./useSymptomList";
 import type { SymptomRow } from "./useSymptomList";
 import SymptomFormDialog from "./components/SymptomFormDialog.vue";
+import SymptomDetailDialog from "./components/SymptomDetailDialog.vue";
 
 const {
   // 展示工具
@@ -203,6 +215,12 @@ const {
   handleAdd,
   handleEdit,
   handleSubmit,
+  // 详情
+  detailVisible,
+  detailLoading,
+  detailRow,
+  detailData,
+  openDetailDialog,
   // 删除
   handleDelete,
   handleBatchDelete,
@@ -210,6 +228,12 @@ const {
   SYMPTOM_MAX_SEVERITY,
   PAGINATION_LAYOUT,
 } = useSymptomList();
+
+/** 行点击查看详情（忽略选择列） */
+function handleRowClick(row: SymptomRow, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  void openDetailDialog(row);
+}
 </script>
 
 <style scoped>
@@ -230,6 +254,11 @@ const {
 }
 
 /* ==================== 表格 ==================== */
+
+/* 整行可点进详情 */
+.symptom-table :deep(.el-table__row) {
+  cursor: pointer;
+}
 
 .term-name {
   font-weight: 600;

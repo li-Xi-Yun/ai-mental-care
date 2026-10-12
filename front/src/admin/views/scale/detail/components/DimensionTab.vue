@@ -11,7 +11,7 @@
     </el-button>
   </div>
 
-  <el-table v-loading="loading" :data="dimensions" class="pane-table" row-key="id">
+  <el-table v-loading="loading" :data="dimensions" class="pane-table" row-key="id" @row-click="handleDimensionRowClick">
     <el-table-column label="维度名称" min-width="150" show-overflow-tooltip>
       <template #default="{ row }">
         <span class="dim-name">{{ row.dimName }}</span>
@@ -36,7 +36,7 @@
             size="small"
             class="sort-btn"
             :disabled="isDimFirst(row)"
-            @click="handleMoveDimension(row, -1)"
+            @click.stop="handleMoveDimension(row, -1)"
           >
             <el-icon><CaretTop /></el-icon>
           </el-button>
@@ -46,7 +46,7 @@
             size="small"
             class="sort-btn"
             :disabled="isDimLast(row)"
-            @click="handleMoveDimension(row, 1)"
+            @click.stop="handleMoveDimension(row, 1)"
           >
             <el-icon><CaretBottom /></el-icon>
           </el-button>
@@ -61,8 +61,8 @@
     <el-table-column label="操作" width="108" align="center" fixed="right">
       <template #default="{ row }">
         <div class="op-cell">
-          <el-button text size="small" class="op-btn op-edit" @click="openEditDimension(row)">编辑</el-button>
-          <el-button text size="small" class="op-btn op-del" @click="handleDeleteDimension(row)">删除</el-button>
+          <el-button text size="small" class="op-btn op-edit" @click.stop="openEditDimension(row)">编辑</el-button>
+          <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteDimension(row)">删除</el-button>
         </div>
       </template>
     </el-table-column>
@@ -99,6 +99,9 @@
       <el-button type="primary" :loading="dimensionSubmitting" @click="handleDimensionSubmit">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 维度详情弹窗 ==================== -->
+  <ScaleDimensionDetailDialog v-model="dimensionDetailVisible" :row="dimensionDetailRow" />
 </template>
 
 <script setup lang="ts">
@@ -114,6 +117,7 @@ import {
 } from "@/admin/api/scale/dimension";
 import type { AdminScaleDimensionVO, AdminScaleVersionVO } from "@/admin/api/scale/types";
 import VersionSwitch from "./VersionSwitch.vue";
+import ScaleDimensionDetailDialog from "./ScaleDimensionDetailDialog.vue";
 
 const props = defineProps<{
   versions: AdminScaleVersionVO[];
@@ -250,6 +254,16 @@ async function handleDeleteDimension(row: any) {
     ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
+
+/* ==================== 行点击查看详情（纯行数据，零请求） ==================== */
+const dimensionDetailVisible = ref(false);
+const dimensionDetailRow = ref<AdminScaleDimensionVO | null>(null);
+
+function handleDimensionRowClick(row: AdminScaleDimensionVO, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  dimensionDetailRow.value = row;
+  dimensionDetailVisible.value = true;
+}
 </script>
 
 <style scoped>
@@ -266,6 +280,9 @@ async function handleDeleteDimension(row: any) {
 /* 表头底/文字/边框/hover 与单元格 padding、圆角均由全局 styles/index.css 统一提供 */
 .pane-table {
   width: 100%;
+}
+:deep(.pane-table .el-table__row) {
+  cursor: pointer;
 }
 
 .cell-text {

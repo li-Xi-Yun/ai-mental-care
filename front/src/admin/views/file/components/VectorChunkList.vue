@@ -25,7 +25,8 @@
     <el-empty v-else-if="!listLoading && total === 0" :description="emptyText" :image-size="120" />
 
     <div v-else class="chunk-list" v-loading="listLoading">
-      <div v-for="item in vectorList" :key="item.id" class="chunk-card">
+      <!-- 卡片点击查看完整内容；卡内按钮 @click.stop 阻断 -->
+      <div v-for="item in vectorList" :key="item.id" class="chunk-card" @click="emit('view', item)">
         <div class="chunk-left">
           <span class="chunk-badge l1">L1 · {{ padIdx(item.chunkLevel1Idx) }}</span>
           <span class="chunk-badge l2">L2 · {{ padIdx(item.chunkLevel2Idx) }}</span>
@@ -38,7 +39,7 @@
               <el-icon :size="12"><Clock /></el-icon>
               {{ formatTime(item.createdTime) }}
             </span>
-            <el-button text type="primary" size="small" :icon="View" class="chunk-view" @click="emit('view', item)">
+            <el-button text type="primary" size="small" :icon="View" class="chunk-view" @click.stop="emit('view', item)">
               查看完整内容
             </el-button>
           </div>
@@ -132,6 +133,7 @@ const emit = defineEmits<{
   border: 1px solid var(--admin-border);
   border-radius: 12px;
   background: #fff;
+  cursor: pointer;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,

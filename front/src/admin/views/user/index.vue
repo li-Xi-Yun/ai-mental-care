@@ -88,6 +88,7 @@
         :data="tableData"
         row-key="id"
         class="user-table"
+        @row-click="handleRowClick"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="46" />
@@ -135,8 +136,8 @@
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <div class="op-cell">
-              <el-button type="primary" text size="small" @click="openDetail(row)">详情</el-button>
-              <el-button type="primary" text size="small" :disabled="row.status === 3" @click="openAssignDialog(row)">
+              <el-button type="primary" text size="small" @click.stop="openDetail(row)">详情</el-button>
+              <el-button type="primary" text size="small" :disabled="row.status === 3" @click.stop="openAssignDialog(row)">
                 编辑角色
               </el-button>
               <el-button
@@ -144,7 +145,7 @@
                 type="success"
                 text
                 size="small"
-                @click="handleEnable(row)"
+                @click.stop="handleEnable(row)"
               >
                 启用
               </el-button>
@@ -154,11 +155,11 @@
                 text
                 size="small"
                 :disabled="row.status === 3"
-                @click="openBanDialog(row)"
+                @click.stop="openBanDialog(row)"
               >
                 封禁
               </el-button>
-              <el-button type="warning" text size="small" @click="openPermDrawer(row)">
+              <el-button type="warning" text size="small" @click.stop="openPermDrawer(row)">
                 临时权限
               </el-button>
             </div>
@@ -302,6 +303,7 @@ const {
   detailTarget,
   detail,
   openDetail,
+  handleRowClick,
   // 临时权限
   permVisible,
   permLoading,
@@ -421,5 +423,10 @@ function statusMetaDot(status?: number): string {
   font-size: 12px;
   color: #94a3b8;
   font-variant-numeric: tabular-nums;
+}
+
+/* 整行可点进详情 */
+:deep(.el-table__row) {
+  cursor: pointer;
 }
 </style>

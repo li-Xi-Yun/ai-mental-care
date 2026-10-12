@@ -10,7 +10,7 @@
     </el-button>
   </div>
 
-  <el-table v-loading="pageLoading" :data="versions" class="pane-table" row-key="id">
+  <el-table v-loading="pageLoading" :data="versions" class="pane-table" row-key="id" @row-click="handleVersionRowClick">
     <el-table-column label="版本号" width="120">
       <template #default="{ row }">
         <span class="ver-no">{{ row.versionNo }}</span>
@@ -51,13 +51,13 @@
     <el-table-column label="操作" width="208" align="center" fixed="right">
       <template #default="{ row }">
         <div class="op-cell">
-          <el-button text size="small" class="op-btn op-primary" :loading="publishingId === row.id" @click="handlePublishVersion(row)">
+          <el-button text size="small" class="op-btn op-primary" :loading="publishingId === row.id" @click.stop="handlePublishVersion(row)">
             <el-icon class="op-icon"><Promotion /></el-icon>发布
           </el-button>
-          <el-button text size="small" class="op-btn op-edit" @click="openCopyVersion(row)">
+          <el-button text size="small" class="op-btn op-edit" @click.stop="openCopyVersion(row)">
             <el-icon class="op-icon"><CopyDocument /></el-icon>复制
           </el-button>
-          <el-button text size="small" class="op-btn op-del" @click="handleDeleteVersion(row)">
+          <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteVersion(row)">
             <el-icon class="op-icon"><Delete /></el-icon>删除
           </el-button>
         </div>
@@ -106,6 +106,14 @@
       <el-button type="primary" :loading="copyVersionSubmitting" @click="handleCopyVersion">开 始 复 制</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 版本详情弹窗 ==================== -->
+  <ScaleVersionDetailDialog
+    v-model="versionDetailVisible"
+    :row="versionDetailRow"
+    :detail="versionDetailData"
+    :loading="versionDetailLoading"
+  />
 </template>
 
 <script setup lang="ts">
@@ -116,10 +124,12 @@ import type { FormInstance, FormRules } from "element-plus";
 import {
   addScaleVersion,
   copyScaleVersion,
+  getScaleVersionDetail,
   publishScaleVersion,
   deleteScaleVersion,
 } from "@/admin/api/scale/version";
 import type { AdminScaleVersionVO } from "@/admin/api/scale/types";
+import ScaleVersionDetailDialog from "./ScaleVersionDetailDialog.vue";
 
 const props = defineProps<{
   scaleId: number;
@@ -254,6 +264,31 @@ async function handleDeleteVersion(row: any) {
     ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
+
+/* ==================== 行点击查看详情 ==================== */
+const versionDetailVisible = ref(false);
+const versionDetailRow = ref<AdminScaleVersionVO | null>(null);
+const versionDetailData = ref<AdminScaleVersionVO | null>(null);
+const versionDetailLoading = ref(false);
+
+function handleVersionRowClick(row: AdminScaleVersionVO, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  const id = row.id;
+  versionDetailRow.value = row;
+  versionDetailData.value = null;
+  versionDetailVisible.value = true;
+  versionDetailLoading.value = true;
+  getScaleVersionDetail(id)
+    .then((res) => {
+      // 旧响应丢弃守卫：快速连点其它行时忽略过期结果
+      if (versionDetailRow.value?.id !== id) return;
+      versionDetailData.value = res.data?.data ?? null;
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      if (versionDetailRow.value?.id === id) versionDetailLoading.value = false;
+    });
+}
 </script>
 
 <style scoped>
@@ -278,6 +313,9 @@ async function handleDeleteVersion(row: any) {
 /* 表头底/文字/边框/hover 与单元格 padding、圆角均由全局 styles/index.css 统一提供 */
 .pane-table {
   width: 100%;
+}
+:deep(.pane-table .el-table__row) {
+  cursor: pointer;
 }
 
 .cell-text {

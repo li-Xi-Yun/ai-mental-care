@@ -7,6 +7,7 @@ import {
 } from "@/shared/api/config";
 import {
   getSymptomDictPage,
+  getSymptomDictDetail,
   addSymptomDict,
   updateSymptomDict,
   updateSymptomDictStatus,
@@ -19,6 +20,8 @@ import {
   levelColor,
   severityText,
 } from "@/admin/constants/symptom";
+import type { EnumMetaItem } from "@/admin/types";
+import type { Result } from "@/shared/api/types";
 
 /* ==================== 类型定义 ==================== */
 
@@ -33,6 +36,24 @@ export interface SymptomRow {
   createdTime?: string;
   updatedTime?: string;
 }
+
+/** 症状字典详情（详情接口补全，字段可能缺失） */
+export interface SymptomDetail {
+  id?: number;
+  symptomTerm?: string;
+  symptomCategory?: string;
+  synonymWords?: string[];
+  severityDefault?: number;
+  status?: number;
+  createdTime?: string;
+  updatedTime?: string;
+}
+
+/** 症状状态徽章元数据（1 启用绿 / 0 禁用灰；供详情弹窗复用） */
+export const SYMPTOM_STATUS_BADGE_META: Record<number, EnumMetaItem> = {
+  1: { label: "启用", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0" },
+  0: { label: "禁用", color: "#6b7280", bg: "#f3f4f6", border: "#e5e7eb" },
+};
 
 /** 新增 / 编辑弹窗提交载荷（表单校验通过后由 SymptomFormDialog 回传） */
 export interface SymptomSubmitPayload {
@@ -102,6 +123,31 @@ export function useSymptomList() {
   const submitting = ref(false);
   const dialogTitle = ref("新增症状");
   const dialogTarget = ref<SymptomRow | null>(null);
+
+  /* ==================== 详情弹窗状态 ==================== */
+
+  const detailVisible = ref(false);
+  const detailLoading = ref(false);
+  const detailRow = ref<SymptomRow | null>(null);
+  const detailData = ref<SymptomDetail | null>(null);
+
+  /** 打开详情弹窗：行数据即时渲染，详情接口返回后补全（失败静默回退行数据） */
+  async function openDetailDialog(row: SymptomRow) {
+    detailRow.value = row;
+    detailData.value = null;
+    detailVisible.value = true;
+    detailLoading.value = true;
+    try {
+      const res = (await getSymptomDictDetail(String(row.id))).data as Result<SymptomDetail>;
+      // 旧响应丢弃守卫：快速连点时仅保留最后一次点击的行数据
+      if (detailRow.value?.id !== row.id) return;
+      detailData.value = res.data ?? null;
+    } catch {
+      /* 详情接口失败：静默回退，仅用行数据渲染 */
+    } finally {
+      if (detailRow.value?.id === row.id) detailLoading.value = false;
+    }
+  }
 
   /* ==================== 数据加载 ==================== */
 
@@ -289,6 +335,12 @@ export function useSymptomList() {
     handleAdd,
     handleEdit,
     handleSubmit,
+    // 详情
+    detailVisible,
+    detailLoading,
+    detailRow,
+    detailData,
+    openDetailDialog,
     // 删除
     handleDelete,
     handleBatchDelete,

@@ -40,7 +40,7 @@
 
     <!-- ==================== 主卡片 ==================== -->
     <div class="content-card">
-      <el-table :data="skillList" stripe>
+      <el-table :data="skillList" stripe @row-click="openDetail">
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="name" label="Skill名称" width="180" />
         <el-table-column prop="type" label="类型" width="120">
@@ -58,8 +58,8 @@
         <el-table-column label="操作" width="108" align="center">
           <template #default>
             <div class="op-cell">
-              <el-button type="primary" text size="small">编辑</el-button>
-              <el-button type="danger" text size="small">删除</el-button>
+              <el-button type="primary" text size="small" @click.stop>编辑</el-button>
+              <el-button type="danger" text size="small" @click.stop>删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -71,6 +71,9 @@
     </div>
 
     <SkillFormDialog v-model="showAddDialog" />
+
+    <!-- Skill 详情弹窗（纯行数据，零请求） -->
+    <SkillDetailDialog v-model="detailVisible" :row="detailRow" />
   </div>
 </template>
 
@@ -79,6 +82,7 @@ import { CircleCheck, CircleClose, Grid, Plus } from "@element-plus/icons-vue";
 import PageHeader from "@/admin/components/PageHeader.vue";
 import { useSkillList } from "./useSkillList";
 import SkillFormDialog from "./components/SkillFormDialog.vue";
+import SkillDetailDialog from "./components/SkillDetailDialog.vue";
 
 const {
   currentPage,
@@ -87,6 +91,9 @@ const {
   totalCount,
   enabledCount,
   disabledCount,
+  detailVisible,
+  detailRow,
+  openDetail,
   DEFAULT_PAGE_SIZE,
   PAGINATION_LAYOUT,
 } = useSkillList();
@@ -109,5 +116,10 @@ const {
 /* 公共 .pagination-bar（display/flex/间距）已由 admin/styles/index.css 提供，仅保留页面特有的右对齐差异 */
 .pagination-bar {
   justify-content: flex-end;
+}
+
+/* 整行可点进详情 */
+.skill-page :deep(.el-table__row) {
+  cursor: pointer;
 }
 </style>

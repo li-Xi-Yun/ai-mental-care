@@ -20,7 +20,7 @@
           <span class="muted">共 {{ historyTotal }} 条变更记录</span>
         </div>
 
-        <el-table v-loading="historyLoading" :data="historyList" stripe class="history-table">
+        <el-table v-loading="historyLoading" :data="historyList" stripe class="history-table" @row-click="handleRowClick">
           <el-table-column prop="changeSummary" label="变更摘要" min-width="170" show-overflow-tooltip>
             <template #default="{ row }">
               <span class="summary-text">{{ row.changeSummary || "-" }}</span>
@@ -64,8 +64,8 @@
           <el-table-column label="操作" width="88" fixed="right">
             <template #default="{ row }">
               <div class="op-cell">
-                <el-button type="primary" text size="small" @click="emit('viewDetail', row)">详情</el-button>
-                <el-button type="warning" text size="small" @click="emit('rollback', row)">回滚</el-button>
+                <el-button type="primary" text size="small" @click.stop="emit('viewDetail', row)">详情</el-button>
+                <el-button type="warning" text size="small" @click.stop="emit('rollback', row)">回滚</el-button>
               </div>
             </template>
           </el-table-column>
@@ -162,6 +162,11 @@ const emit = defineEmits<{
   (e: "refreshNodeCache"): void;
   (e: "reloadCache"): void;
 }>();
+
+/** 变更历史行点击 → 复用父级 HistoryDetailDialog 查看详情 */
+function handleRowClick(row: AiNodeConfigHistoryVO) {
+  emit("viewDetail", row);
+}
 </script>
 
 <style scoped>
@@ -208,6 +213,11 @@ const emit = defineEmits<{
 
 .history-table {
   width: 100%;
+}
+
+/* 整行可点查看变更详情 */
+.history-table :deep(.el-table__row) {
+  cursor: pointer;
 }
 
 /* 公共 .pagination-bar（display / 间距）已由 admin/styles/index.css 提供，仅保留页面特有的右对齐差异 */

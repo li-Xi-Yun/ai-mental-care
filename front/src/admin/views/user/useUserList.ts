@@ -311,6 +311,12 @@ export function useUserList() {
     }
   }
 
+  /** 行点击打开详情抽屉：忽略选择列，其余列复用 openDetail */
+  function handleRowClick(row: any, column?: any) {
+    if (column?.type === "selection") return;
+    openDetail(row);
+  }
+
   // ==================== 临时权限抽屉 ====================
   const permVisible = ref(false);
   const permLoading = ref(false);
@@ -390,6 +396,7 @@ export function useUserList() {
     detailTarget,
     detail,
     openDetail,
+    handleRowClick,
     // 临时权限
     permVisible,
     permLoading,

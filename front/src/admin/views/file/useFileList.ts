@@ -70,7 +70,7 @@ export interface FileUploadRequestOptions {
 /* ==================== 格式化工具 ==================== */
 
 /** 大小格式化（B / KB / MB） */
-function formatSize(bytes?: number): string {
+export function formatSize(bytes?: number): string {
   if (bytes === undefined || bytes === null) return "-";
   if (bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -468,6 +468,39 @@ export function useFileList() {
     previewImageUrl.value = "";
   }
 
+  // ==================== 详情 ====================
+  const detailVisible = ref(false);
+  const detailLoading = ref(false);
+  const detailRow = ref<FileRow | null>(null);
+  const detailData = ref<FileRow | null>(null);
+
+  /** 行点击：忽略选择列 */
+  function handleRowClick(row: FileRow, column?: { type?: string } | null) {
+    if (column?.type === "selection") return;
+    openDetailDialog(row);
+  }
+
+  /** 打开详情弹窗：行数据即时渲染，getFileDetail 返回后补全（失败仅用行数据兜底） */
+  async function openDetailDialog(row: FileRow) {
+    detailRow.value = row;
+    detailData.value = null;
+    detailVisible.value = true;
+    detailLoading.value = true;
+    try {
+      const res = await getFileDetail(String(row.id));
+      // 旧响应丢弃守卫：快速连点其他行时避免旧详情覆盖
+      if (detailRow.value?.id !== row.id) return;
+      const detail: FileRow | null = res.data?.data ?? null;
+      detailData.value = detail;
+      // 详情接口返回的 fileUrl 兜底刷回行数据，供预览 / 下载使用
+      if (detail?.fileUrl) row.fileUrl = detail.fileUrl;
+    } catch {
+      // 详情获取失败时仅用行数据兜底
+    } finally {
+      if (detailRow.value?.id === row.id) detailLoading.value = false;
+    }
+  }
+
   function goVector(row: any) {
     router.push(`/admin/file/vector/${row.id}`);
   }
@@ -543,6 +576,13 @@ export function useFileList() {
     handleDownload,
     handleDelete,
     goVector,
+    // 详情
+    detailVisible,
+    detailLoading,
+    detailRow,
+    detailData,
+    handleRowClick,
+    openDetailDialog,
     // 常量
     STATUS_MAP,
     KNOWLEDGE_TYPE_MAP,

@@ -234,6 +234,17 @@ export function useTempPermissionList() {
     }
   }
 
+  /* ==================== 权限明细详情弹窗（纯行数据，零请求） ==================== */
+
+  const detailVisible = ref(false);
+  const detailRow = ref<PermItem | null>(null);
+
+  /** 打开权限明细详情弹窗：仅用行数据渲染，不发起任何接口请求 */
+  function openDetail(row: PermItem) {
+    detailRow.value = row;
+    detailVisible.value = true;
+  }
+
   // 列表变化后自动选中第一行；被移除的人置空
   watch(tableData, (rows) => {
     if (!rows.length) {
@@ -362,6 +373,9 @@ export function useTempPermissionList() {
     detailLoading,
     detailList,
     handleRevoke,
+    detailVisible,
+    detailRow,
+    openDetail,
     // 授予权限弹窗
     grantVisible,
     grantSubmitting,

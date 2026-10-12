@@ -11,7 +11,7 @@
     </el-button>
   </div>
 
-  <el-table v-loading="branchRuleLoading" :data="branchRuleList" class="pane-table" row-key="id">
+  <el-table v-loading="branchRuleLoading" :data="branchRuleList" class="pane-table" row-key="id" @row-click="handleBranchRuleRowClick">
     <el-table-column label="源题目" min-width="200" show-overflow-tooltip>
       <template #default="{ row }">
         <span class="q-title">{{ row.sourceQuestionTitle || "—" }}</span>
@@ -32,8 +32,8 @@
     <el-table-column label="操作" width="108" align="center" fixed="right">
       <template #default="{ row }">
         <div class="op-cell">
-          <el-button text size="small" class="op-btn op-edit" @click="openEditBranchRule(row)">编辑</el-button>
-          <el-button text size="small" class="op-btn op-del" @click="handleDeleteBranchRule(row)">删除</el-button>
+          <el-button text size="small" class="op-btn op-edit" @click.stop="openEditBranchRule(row)">编辑</el-button>
+          <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteBranchRule(row)">删除</el-button>
         </div>
       </template>
     </el-table-column>
@@ -80,6 +80,9 @@
       <el-button type="primary" :loading="branchRuleSubmitting" @click="handleBranchRuleSubmit">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 跳题规则详情弹窗 ==================== -->
+  <BranchRuleDetailDialog v-model="branchRuleDetailVisible" :row="branchRuleDetailRow" />
 </template>
 
 <script setup lang="ts">
@@ -99,6 +102,7 @@ import type {
   AdminScaleVersionVO,
 } from "@/admin/api/scale/types";
 import VersionSwitch from "./VersionSwitch.vue";
+import BranchRuleDetailDialog from "./BranchRuleDetailDialog.vue";
 
 const props = defineProps<{
   versions: AdminScaleVersionVO[];
@@ -228,6 +232,16 @@ async function handleDeleteBranchRule(row: any) {
     ElMessage.error((e as Error)?.message || "删除失败，请稍后重试");
   }
 }
+
+/* ==================== 行点击查看详情（纯行数据，零请求） ==================== */
+const branchRuleDetailVisible = ref(false);
+const branchRuleDetailRow = ref<AdminScaleBranchRuleVO | null>(null);
+
+function handleBranchRuleRowClick(row: AdminScaleBranchRuleVO, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  branchRuleDetailRow.value = row;
+  branchRuleDetailVisible.value = true;
+}
 </script>
 
 <style scoped>
@@ -244,6 +258,9 @@ async function handleDeleteBranchRule(row: any) {
 /* 表头底/文字/边框/hover 与单元格 padding、圆角均由全局 styles/index.css 统一提供 */
 .pane-table {
   width: 100%;
+}
+:deep(.pane-table .el-table__row) {
+  cursor: pointer;
 }
 
 .muted {

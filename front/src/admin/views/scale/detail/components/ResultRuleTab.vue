@@ -35,7 +35,7 @@
           </el-button>
         </div>
       </div>
-      <el-table :data="rules" class="pane-table" row-key="id">
+      <el-table :data="rules" class="pane-table" row-key="id" @row-click="(row, column) => openResultRuleDetail(dimensionId, row, column)">
         <el-table-column label="得分区间" min-width="150">
           <template #default="{ row }">
             <span class="score-range">{{ formatScore(row.minScore) }} ~ {{ formatScore(row.maxScore) }}</span>
@@ -61,8 +61,8 @@
         <el-table-column label="操作" width="108" align="center" fixed="right">
           <template #default="{ row }">
             <div class="op-cell">
-              <el-button text size="small" class="op-btn op-edit" @click="openEditResultRule(row)">编辑</el-button>
-              <el-button text size="small" class="op-btn op-del" @click="handleDeleteResultRule(row)">删除</el-button>
+              <el-button text size="small" class="op-btn op-edit" @click.stop="openEditResultRule(row)">编辑</el-button>
+              <el-button text size="small" class="op-btn op-del" @click.stop="handleDeleteResultRule(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -111,6 +111,13 @@
       <el-button type="primary" :loading="resultRuleSubmitting" @click="handleResultRuleSubmit">确 定</el-button>
     </template>
   </el-dialog>
+
+  <!-- ==================== 结果规则详情弹窗 ==================== -->
+  <ResultRuleDetailDialog
+    v-model="resultRuleDetailVisible"
+    :row="resultRuleDetailRow"
+    :group-title="resultRuleDetailGroupTitle"
+  />
 </template>
 
 <script setup lang="ts">
@@ -131,6 +138,7 @@ import type {
   AdminScaleVersionVO,
 } from "@/admin/api/scale/types";
 import VersionSwitch from "./VersionSwitch.vue";
+import ResultRuleDetailDialog from "./ResultRuleDetailDialog.vue";
 
 const props = defineProps<{
   versions: AdminScaleVersionVO[];
@@ -386,6 +394,19 @@ async function handleResultRuleGroupSave(dimensionId: number | null) {
     resultRuleSaving.value = false;
   }
 }
+
+/* ==================== 行点击查看详情（纯行数据，零请求） ==================== */
+const resultRuleDetailVisible = ref(false);
+const resultRuleDetailRow = ref<AdminScaleResultRuleVO | null>(null);
+const resultRuleDetailGroupTitle = ref("");
+
+/** 按维度分组的多个表格各自接线：分组标题（维度名）随行点击一并传入弹窗 */
+function openResultRuleDetail(dimensionId: number | null, row: AdminScaleResultRuleVO, column?: { type?: string } | null) {
+  if (column?.type === "selection") return;
+  resultRuleDetailRow.value = row;
+  resultRuleDetailGroupTitle.value = resultRuleGroupTitle(dimensionId);
+  resultRuleDetailVisible.value = true;
+}
 </script>
 
 <style scoped>
@@ -402,6 +423,9 @@ async function handleResultRuleGroupSave(dimensionId: number | null) {
 /* 表头底/文字/边框/hover 与单元格 padding、圆角均由全局 styles/index.css 统一提供 */
 .pane-table {
   width: 100%;
+}
+:deep(.pane-table .el-table__row) {
+  cursor: pointer;
 }
 
 .cell-text {

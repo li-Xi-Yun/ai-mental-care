@@ -247,6 +247,18 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     }
   }
 
+  /** 解析 /user/queue/error 的 Result{code,msg} 报文，返回可读文案 */
+  function parsePipelineError(raw: string): string {
+    if (!raw) return "";
+    try {
+      const body = JSON.parse(raw) as { code?: number; msg?: string };
+      if (body?.msg) return body.msg;
+    } catch {
+      /* 非 JSON，按纯文本处理 */
+    }
+    return raw;
+  }
+
   /** 轻提示（非阻塞，自动消失） */
   function setNotice(text: string): void {
     notice.value = text;
@@ -292,9 +304,11 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       clearWatchdog();
     },
     onPipelineError: (message) => {
-      // 服务端业务/管道异常（如 ASR 会话失效、适配器不存在）：轻提示，避免静默无反应
+      // 服务端业务/管道异常（如 ASR 会话失效、适配器不存在）：轻提示，避免静默无反应。
+      // 后端报文为 Result{code,msg}，解析后展示可读文案（避免直接把 JSON 抛给用户）
       console.warn("[audio] 服务端管道异常：", message);
-      if (message) setNotice(message);
+      const text = parsePipelineError(message);
+      if (text) setNotice(text);
     },
   };
 

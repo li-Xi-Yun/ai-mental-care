@@ -3,11 +3,12 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import dayjs from "dayjs";
 import type { AxiosResponse } from "axios";
 import { DEFAULT_PAGE_SIZE, PAGINATION_LAYOUT } from "@/shared/api/config";
-import type { ListResult } from "@shared/api/types";
+import type { ListResult, Result } from "@shared/api/types";
 import { useAdminStore } from "@/admin/stores/admin";
 import {
   getAdminPage,
   addAdmin,
+  getAdminDetail,
   updateAdmin,
   updateAdminStatus,
   resetAdminPwd,
@@ -18,6 +19,7 @@ import {
 } from "@/admin/api/admin/admin-manage";
 import type {
   AdminAddDTO,
+  AdminDetailVO,
   AdminPageVO,
   AdminUpdateDTO,
   AdminStatusUpdateDTO,
@@ -369,6 +371,37 @@ export function useAdminList() {
     }
   }
 
+  /* ==================== 详情 ==================== */
+
+  const detailVisible = ref(false);
+  const detailLoading = ref(false);
+  const detailRow = ref<AdminPageVO | null>(null);
+  const detailData = ref<AdminDetailVO | null>(null);
+
+  /** 打开详情弹窗：行数据即时渲染，getAdminDetail 返回后补全（失败静默回退行数据） */
+  async function openDetailDialog(row: any) {
+    const id = row.id;
+    detailRow.value = row;
+    detailData.value = null;
+    detailVisible.value = true;
+    detailLoading.value = true;
+    try {
+      const res = (await getAdminDetail(id)).data as Result<AdminDetailVO>;
+      if (detailRow.value?.id !== id) return; // 旧响应丢弃守卫
+      detailData.value = res.data ?? null;
+    } catch {
+      // 静默回退行数据
+    } finally {
+      if (detailRow.value?.id === id) detailLoading.value = false;
+    }
+  }
+
+  /** 行点击打开详情：忽略选择列，其余列打开详情弹窗 */
+  function handleRowClick(row: any, column?: any) {
+    if (column?.type === "selection") return;
+    openDetailDialog(row);
+  }
+
   /* ==================== 初始化 ==================== */
 
   onMounted(() => {
@@ -425,6 +458,13 @@ export function useAdminList() {
     assignSubmitting,
     openAssignRoles,
     handleAssignSubmit,
+    // 详情
+    detailVisible,
+    detailLoading,
+    detailRow,
+    detailData,
+    openDetailDialog,
+    handleRowClick,
   };
 }
 

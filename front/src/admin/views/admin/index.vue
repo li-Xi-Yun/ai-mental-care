@@ -78,7 +78,7 @@
     <!-- ==================== 表格卡片 ==================== -->
     <section class="content-card">
       <!-- 表格 -->
-      <el-table v-loading="loading" :data="tableData" class="admin-table">
+      <el-table v-loading="loading" :data="tableData" class="admin-table" @row-click="handleRowClick">
         <el-table-column prop="id" label="ID" width="76" />
         <el-table-column label="用户名" min-width="150">
           <template #default="{ row }">
@@ -116,12 +116,14 @@
                 <span class="status-dot" :style="{ background: STATUS_META[row.status]?.color ?? '#94a3b8' }" />
                 {{ statusLabel(row.status) }}
               </span>
-              <el-switch
-                :model-value="row.status === 0"
-                :disabled="isSelf(row) || row.status === 3"
-                size="small"
-                @change="(val: string | number | boolean) => handleStatusToggle(row, val)"
-              />
+              <span @click.stop>
+                <el-switch
+                  :model-value="row.status === 0"
+                  :disabled="isSelf(row) || row.status === 3"
+                  size="small"
+                  @change="(val: string | number | boolean) => handleStatusToggle(row, val)"
+                />
+              </span>
             </div>
           </template>
         </el-table-column>
@@ -133,10 +135,10 @@
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <div class="op-cell">
-              <el-button type="primary" text size="small" @click="openEdit(row)">编辑</el-button>
-              <el-button type="warning" text size="small" @click="handleResetPwd(row)">重置密码</el-button>
-              <el-button type="primary" text size="small" :disabled="isSelf(row)" @click="openAssignRoles(row)">分配角色</el-button>
-              <el-button type="danger" text size="small" :disabled="isSelf(row)" @click="handleDelete(row)">注销</el-button>
+              <el-button type="primary" text size="small" @click.stop="openEdit(row)">编辑</el-button>
+              <el-button type="warning" text size="small" @click.stop="handleResetPwd(row)">重置密码</el-button>
+              <el-button type="primary" text size="small" :disabled="isSelf(row)" @click.stop="openAssignRoles(row)">分配角色</el-button>
+              <el-button type="danger" text size="small" :disabled="isSelf(row)" @click.stop="handleDelete(row)">注销</el-button>
             </div>
           </template>
         </el-table-column>
@@ -179,6 +181,14 @@
       @update:selected-role-ids="selectedRoleIds = $event"
       @submit="handleAssignSubmit"
     />
+
+    <!-- ==================== 管理员详情弹窗 ==================== -->
+    <AdminDetailDialog
+      v-model="detailVisible"
+      :row="detailRow"
+      :detail="detailData"
+      :loading="detailLoading"
+    />
   </div>
 </template>
 
@@ -195,6 +205,7 @@ import {
 import PageHeader from "@/admin/components/PageHeader.vue";
 import { useAdminList } from "./useAdminList";
 import AdminFormDialog from "./components/AdminFormDialog.vue";
+import AdminDetailDialog from "./components/AdminDetailDialog.vue";
 import BanDialog from "./components/BanDialog.vue";
 import AssignRoleDialog from "./components/AssignRoleDialog.vue";
 
@@ -247,6 +258,12 @@ const {
   assignSubmitting,
   openAssignRoles,
   handleAssignSubmit,
+  // 详情
+  detailVisible,
+  detailLoading,
+  detailRow,
+  detailData,
+  handleRowClick,
 } = useAdminList();
 </script>
 
@@ -324,5 +341,10 @@ const {
   font-size: 12px;
   color: #94a3b8;
   font-variant-numeric: tabular-nums;
+}
+
+/* 整行可点进详情 */
+.admin-table :deep(.el-table__row) {
+  cursor: pointer;
 }
 </style>
