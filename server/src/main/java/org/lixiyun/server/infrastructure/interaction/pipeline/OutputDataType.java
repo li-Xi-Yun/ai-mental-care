@@ -18,7 +18,10 @@ import java.util.stream.Collectors;
 public enum OutputDataType {
 
     TEXT,
-    AUDIO;
+    AUDIO,
+    AVATAR_2D,
+
+    ;
 
     /**
      * 从字符串集合转换为 OutputDataType 枚举集合

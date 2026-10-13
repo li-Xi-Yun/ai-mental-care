@@ -205,15 +205,17 @@
       </div>
     </div>
 
-    <!-- 上传弹窗 -->
+    <!-- 上传弹窗（暂存模式：点「确定」后统一上传） -->
     <FileUploadDialog
       v-model="uploadVisible"
       v-model:category-id="uploadCategoryId"
       v-model:file-list="uploadFileList"
       :category-tree="categoryTree"
       :category-tree-props="categoryTreeProps"
-      :before-upload="beforeUpload"
-      :upload-request="handleUploadRequest"
+      :submitting="uploadSubmitting"
+      :progress-text="uploadProgressText"
+      @change="handleUploadChange"
+      @submit="handleUploadSubmit"
     />
 
     <!-- 编辑弹窗 -->
@@ -221,6 +223,7 @@
       v-model="editVisible"
       :form="editForm"
       :saving="editSaving"
+      :vector-enabled="editVectorEnabled"
       :category-tree="categoryTree"
       :category-tree-props="categoryTreeProps"
       @submit="handleSaveEdit"
@@ -263,10 +266,8 @@
       v-model="previewVisible"
       :row="previewRow"
       :loading="previewLoading"
-      :image-url="previewImageUrl"
-      :text="previewText"
-      :is-image="isImagePreview"
-      :is-text="isTextPreview"
+      :preview-url="previewImageUrl"
+      :preview-mode="previewMode"
       @download="handleDownload"
       @closed="clearPreview"
     />
@@ -322,17 +323,20 @@ const {
   handleSaveCategory,
   // 统计
   stats,
-  // 上传
+  // 上传（暂存模式）
   uploadVisible,
   uploadCategoryId,
   uploadFileList,
+  uploadSubmitting,
+  uploadProgressText,
   openUploadDialog,
-  beforeUpload,
-  handleUploadRequest,
+  handleUploadChange,
+  handleUploadSubmit,
   // 编辑
   editVisible,
   editSaving,
   editForm,
+  editVectorEnabled,
   openEditDialog,
   handleSaveEdit,
   // 预览 / 下载 / 删除 / 跳转
@@ -340,9 +344,7 @@ const {
   previewLoading,
   previewRow,
   previewImageUrl,
-  previewText,
-  isImagePreview,
-  isTextPreview,
+  previewMode,
   handlePreview,
   clearPreview,
   handleDownload,

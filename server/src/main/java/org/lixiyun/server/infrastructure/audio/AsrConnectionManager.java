@@ -55,8 +55,12 @@ public class AsrConnectionManager {
     @Value("${asr.connection-mode:long}")
     private String connectionMode;
 
-    /** 用户ID → 抽象会话ID 映射表（长连接模式） */
-    private final ConcurrentHashMap<Long, String> userSessions = new ConcurrentHashMap<>();
+    /** 用户ID → 抽象会话（会话ID + 回调），回调用于会话失效时自愈重建（长连接模式） */
+    private final ConcurrentHashMap<Long, UserAsrSession> userSessions = new ConcurrentHashMap<>();
+
+    /** 长连接模式下用户与其 ASR 会话的绑定（保留回调以便自动重建） */
+    private record UserAsrSession(String sessionId, AsrResultCallback callback) {
+    }
 
     /** 短连接模式：用户ID → 回调 映射表（仅存储，不建长连接） */
     private final ConcurrentHashMap<Long, AsrResultCallback> shortCallbacks = new ConcurrentHashMap<>();
@@ -80,14 +84,14 @@ public class AsrConnectionManager {
             log.info("[ASR防腐层-短连接] 用户{}已注册回调", userId);
             return;
         }
-        userSessions.compute(userId, (k, oldSessionId) -> {
-            if (oldSessionId != null) {
-                log.info("[ASR防腐层] 用户{}已有会话{}，先关闭旧会话", userId, oldSessionId);
-                asrProvider.cancel(oldSessionId);
+        userSessions.compute(userId, (k, old) -> {
+            if (old != null) {
+                log.info("[ASR防腐层] 用户{}已有会话{}，先关闭旧会话", userId, old.sessionId());
+                asrProvider.cancel(old.sessionId());
             }
             String newSessionId = asrProvider.createSession(callback);
             log.info("[ASR防腐层] 用户{}映射到会话{}", userId, newSessionId);
-            return newSessionId;
+            return new UserAsrSession(newSessionId, callback);
         });
     }
 
@@ -119,12 +123,47 @@ public class AsrConnectionManager {
             asrProvider.recognizeShortAudio(data, callback);
             return;
         }
-        String sessionId = userSessions.get(userId);
-        if (sessionId == null) {
+        UserAsrSession session = userSessions.get(userId);
+        if (session == null) {
             log.warn("[ASR防腐层] 用户{}没有活跃的ASR会话", userId);
             return;
         }
-        asrProvider.sendAudio(sessionId, data, length);
+
+        // 自愈：底层会话可能因网络/协议异常被服务端关闭（Provider 侧已从注册表移除），
+        // 此时用保存的回调重建会话后再发送，避免后续音频帧被永久静默丢弃
+        if (!asrProvider.isSessionActive(session.sessionId())) {
+            UserAsrSession rebuilt = rebuildSession(userId, session);
+            if (rebuilt == null) {
+                return;
+            }
+            session = rebuilt;
+        }
+
+        asrProvider.sendAudio(session.sessionId(), data, length);
+    }
+
+    /**
+     * 重建用户的 ASR 长连接会话（尽力而为）。
+     * <p>不使用 {@code compute}：createSession 会阻塞至多一个连接超时，
+     * 持有 CHM 桶锁会卡住同桶的音频线程；极端并发下可能短暂产生重复会话，由 Provider 空闲清理回收。</p>
+     *
+     * @param userId  用户ID
+     * @param stale   已失效的会话绑定
+     * @return 重建后的绑定；重建失败返回 null
+     */
+    private UserAsrSession rebuildSession(Long userId, UserAsrSession stale) {
+        try {
+            log.warn("[ASR防腐层] 用户{}会话{}已失效，自动重建", userId, stale.sessionId());
+            asrProvider.cancel(stale.sessionId());
+            String newSessionId = asrProvider.createSession(stale.callback());
+            UserAsrSession rebuilt = new UserAsrSession(newSessionId, stale.callback());
+            userSessions.put(userId, rebuilt);
+            log.info("[ASR防腐层] 用户{}ASR会话重建成功，新会话{}", userId, newSessionId);
+            return rebuilt;
+        } catch (Exception e) {
+            log.error("[ASR防腐层] 用户{}ASR会话重建失败，本帧丢弃", userId, e);
+            return null;
+        }
     }
 
     /**
@@ -138,10 +177,10 @@ public class AsrConnectionManager {
             log.info("[ASR防腐层-短连接] 用户{}回调已移除", userId);
             return;
         }
-        String sessionId = userSessions.remove(userId);
-        if (sessionId != null) {
-            log.info("[ASR防腐层] 用户{}会话{}已取消并解除映射", userId, sessionId);
-            asrProvider.cancel(sessionId);
+        UserAsrSession session = userSessions.remove(userId);
+        if (session != null) {
+            log.info("[ASR防腐层] 用户{}会话{}已取消并解除映射", userId, session.sessionId());
+            asrProvider.cancel(session.sessionId());
         }
     }
 
@@ -155,8 +194,8 @@ public class AsrConnectionManager {
         if (SHORT_MODE.equals(connectionMode)) {
             return false;
         }
-        String sessionId = userSessions.get(userId);
-        return sessionId != null && asrProvider.isSessionActive(sessionId);
+        UserAsrSession session = userSessions.get(userId);
+        return session != null && asrProvider.isSessionActive(session.sessionId());
     }
 
     /**
@@ -170,13 +209,13 @@ public class AsrConnectionManager {
             log.debug("[ASR防腐层-短连接] endOfStream已在sendAudio中自动发送，跳过");
             return;
         }
-        String sessionId = userSessions.get(userId);
-        if (sessionId == null) {
+        UserAsrSession session = userSessions.get(userId);
+        if (session == null) {
             log.warn("[ASR防腐层] 用户{}没有活跃的ASR会话，忽略结束信号", userId);
             return;
         }
-        log.info("[ASR防腐层] 用户{}会话{}发送音频流结束信号", userId, sessionId);
-        asrProvider.sendEndOfStream(sessionId);
+        log.info("[ASR防腐层] 用户{}会话{}发送音频流结束信号", userId, session.sessionId());
+        asrProvider.sendEndOfStream(session.sessionId());
     }
 
     /**

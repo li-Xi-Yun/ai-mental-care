@@ -27,6 +27,7 @@ export const STATUS_MAP = [
 
 /** 向量库知识类型 */
 export const KNOWLEDGE_TYPE_MAP: Record<number, string> = {
+  0: "无",
   1: "症状库",
   2: "诊断标准库",
   3: "干预方案库",
@@ -59,6 +60,10 @@ export const COMMON_FILE_SUFFIXES = [
 
 export const PDF_SUFFIXES = ["pdf"];
 export const OFFICE_SUFFIXES = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+/** 预览分支用的细分后缀集 */
+export const EXCEL_SUFFIXES = ["xls", "xlsx"];
+export const WORD_SUFFIXES = ["doc", "docx"];
+export const PPT_SUFFIXES = ["ppt", "pptx"];
 export const IMAGE_SUFFIXES = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"];
 export const AUDIO_SUFFIXES = ["mp3", "wav", "m4a", "ogg", "flac"];
 export const VIDEO_SUFFIXES = ["mp4", "avi", "mov", "mkv", "webm", "flv"];

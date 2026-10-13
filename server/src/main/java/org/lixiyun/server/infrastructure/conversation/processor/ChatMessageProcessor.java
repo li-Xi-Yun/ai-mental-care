@@ -321,6 +321,11 @@ public class ChatMessageProcessor {
      * @param conversationId 会话ID
      */
     private void markPendingInjectResponded(Long conversationId, List<Long> pendingActionIds) {
+        // 无待对话注入记录是常态（普通聊天回合）：必须跳过，否则 MyBatis-Plus 会生成非法的 IN ()
+        if (pendingActionIds == null || pendingActionIds.isEmpty()) {
+            log.debug("[AI对话处理器] 无待对话注入记录，跳过状态回写，会话ID：{}", conversationId);
+            return;
+        }
         log.debug("[AI对话处理器] 批量更新待对话注入状态为已响应，会话ID：{}，待对话交互ID：{}", conversationId, pendingActionIds);
         pendingActionMapper.update(null, new LambdaUpdateWrapper<ConversationPendingAction>()
                 .eq(ConversationPendingAction::getConversationId, conversationId)

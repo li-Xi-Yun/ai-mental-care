@@ -92,7 +92,17 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
 
     @Override
     public void endSession(Long conversationId) {
-        log.info("[对话生命周期] 开始销毁，会话ID：{}", conversationId);
+        Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+        log.info("[对话生命周期] 开始销毁，会话ID：{}，用户ID：{}", conversationId, userId);
+
+        // 归属校验：会话不存在时保持幂等（前端会对已删除的空会话重复调用释放），
+        // 但存在且不属于当前用户时必须拒绝，防止越权销毁他人会话资源
+        Conversation conversation = conversationRepository.getConversationById(conversationId);
+        if (conversation != null && !userId.equals(conversation.getUserId())) {
+            log.error("[对话生命周期] 会话不属于当前用户，无权销毁，会话ID：{}，会话归属用户{}，请求用户{}",
+                    conversationId, conversation.getUserId(), userId);
+            throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
+        }
 
         // 输入层和输出层各自独立销毁，一方失败不影响另一方
         inputAdapterSessionManager.endSession(conversationId);
@@ -103,9 +113,9 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
         conversationCacheManager.removeCacheZSetValue(conversationId);
 
         // 会话无有效数据消息时删除（本次对话未产生任何消息，视为空会话）
-        deleteEmptyConversation(conversationId);
+        deleteEmptyConversation(conversationId, userId);
 
-        log.info("[对话生命周期] 销毁完成，会话ID：{}", conversationId);
+        log.info("[对话生命周期] 销毁完成，会话ID：{}，用户ID：{}", conversationId, userId);
     }
 
     /**
@@ -131,16 +141,20 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
      * <p>会话无任何消息记录时，删除会话及关联数据，避免产生空会话残留。</p>
      *
      * @param conversationId 会话ID
+     * @param userId         当前用户ID（限定删除范围，防越权）
      */
-    private void deleteEmptyConversation(Long conversationId) {
+    private void deleteEmptyConversation(Long conversationId, Long userId) {
         long messageCount = conversationMemoryMapper.selectCount(
                 new LambdaQueryWrapper<ConversationMemory>()
                         .eq(ConversationMemory::getConversationId, conversationId)
         );
 
         if (messageCount == 0) {
-            conversationMapper.deleteById(conversationId);
-            log.warn("[对话生命周期] 会话{}无消息记录，已删除空会话", conversationId);
+            // 按 id + userId 限定删除范围：即使上游校验被绕过，也无法删除他人会话
+            conversationMapper.delete(new LambdaQueryWrapper<Conversation>()
+                    .eq(Conversation::getId, conversationId)
+                    .eq(Conversation::getUserId, userId));
+            log.warn("[对话生命周期] 会话{}无消息记录，已删除空会话，用户ID：{}", conversationId, userId);
         } else {
             log.debug("[对话生命周期] 会话{}含{}条消息记录，保留会话", conversationId, messageCount);
         }

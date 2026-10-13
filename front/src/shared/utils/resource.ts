@@ -15,5 +15,7 @@ export function resolveResourceUrl(url?: string | null): string {
   if (!value) return "";
   if (/^(https?:)?\/\//i.test(value) || /^(data|blob):/i.test(value)) return value;
   const base = API_BASE_URL.replace(/\/+$/, "");
-  return `${base}/${value.replace(/^\/+/, "")}`;
+  // 兼容存量数据中的 Windows 反斜杠路径（后端 FileStorage 在 Windows 下入库为 `static-resources\files\...`）
+  const normalized = value.replace(/\\/g, "/").replace(/^\/+/, "");
+  return `${base}/${normalized}`;
 }

@@ -22,6 +22,7 @@
       :submitting="submitting"
       :deleting="deleting"
       :can-load="canLoad"
+      :load-blocked-reason="loadBlockedReason"
       :can-delete="canDelete"
       :load-label="loadLabel"
       @load="handleLoad"
@@ -77,6 +78,7 @@ const {
   statusIcon,
   isParsing,
   canLoad,
+  loadBlockedReason,
   canDelete,
   loadLabel,
   submitting,

@@ -65,7 +65,9 @@ spring:
         master:
           type: ${spring.datasource.type}
           driverClassName: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://${db.host:localhost}:${db.port:3306}/${db.database}?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&useSSL=false
+          # connectionTimeZone=UTC：驱动按 UTC 解释库内时间；sessionVariables 强制会话时区为 +00:00，
+          # 使 CURRENT_TIMESTAMP 等 DB 默认值写入 UTC（与 web.timeZone=UTC、JVM 时区保持一致）
+          url: jdbc:mysql://${db.host:localhost}:${db.port:3306}/${db.database}?connectionTimeZone=UTC&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&sessionVariables=time_zone='%2B00:00'
           username: ${db.username}
           password: ${db.password}
       hikari:
@@ -517,6 +519,10 @@ tts:
     speech-rate: ${tts.volcengine.speech-rate:0}
     # 音量，取值范围[-50,100]，默认0
     loudness-rate: ${tts.volcengine.loudness-rate:0}
+    # WebSocket连接超时时间（毫秒）
+    connect-timeout-ms: ${tts.volcengine.connect-timeout-ms:10000}
+    # 连接健康检查/重连间隔（毫秒）；服务端约15分钟会主动断开长连接
+    reconnect-interval-ms: ${tts.volcengine.reconnect-interval-ms:30000}
 
 weather:
   # 天气接口地址

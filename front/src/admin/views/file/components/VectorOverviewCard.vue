@@ -32,6 +32,10 @@
           <el-icon class="is-loading" :size="14"><Loading /></el-icon>
           向量解析进行中，可随时中断
         </span>
+        <span v-else-if="loadBlockedReason" class="toolbar-hint toolbar-hint-warn">
+          <el-icon :size="14"><Warning /></el-icon>
+          {{ loadBlockedReason }}
+        </span>
         <span v-else class="toolbar-hint">文件将按层级切分为向量片段，供 AI 知识库检索</span>
       </div>
       <div class="toolbar-right">
@@ -81,7 +85,7 @@
 
 <script setup lang="ts">
 import type { Component } from "vue";
-import { CollectionTag, Delete, Document, Loading, Refresh, VideoPause } from "@element-plus/icons-vue";
+import { CollectionTag, Delete, Document, Loading, Refresh, VideoPause, Warning } from "@element-plus/icons-vue";
 import type { VectorStatusMeta } from "../useFileVector";
 
 defineProps<{
@@ -98,6 +102,8 @@ defineProps<{
   canLoad: boolean;
   canDelete: boolean;
   loadLabel: string;
+  /** 无法向量化的原因（如知识类型为「无」），非空时展示警告提示 */
+  loadBlockedReason?: string;
 }>();
 
 const emit = defineEmits<{
@@ -225,6 +231,10 @@ const emit = defineEmits<{
   gap: 6px;
   font-size: 12.5px;
   color: var(--text-muted);
+}
+
+.toolbar-hint-warn {
+  color: #d97706;
 }
 
 .toolbar-right {

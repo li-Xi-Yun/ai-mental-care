@@ -113,16 +113,33 @@ public class TtsOutputNode implements OutputNode {
             return;
         }
 
-        Flux<AgentStreamEvent> cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
+        Flux<AgentStreamEvent> cachedFlux;
+        if (context.hasOutputType(OutputDataType.TEXT)) {
+            cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
+        } else if (context.hasOutputType(OutputDataType.AVATAR_2D)) {
+            cachedFlux = context.getFlux(AvatarOutputNode.NODE_NAME, AgentStreamEvent.class);
+        } else {
+            cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
+        }
 
         Disposable ttsSubscribe = cachedFlux
                 .doOnNext(event -> {
                     if (event instanceof AgentStreamEvent.ModelContentChunk(String text)) {
-                        ttsConnectionManager.sendTextSegment(userId, text);
+                        // 防御性降级：TTS 异常不得终止本订阅（否则音频全丢且抛出未处理异常）
+                        try {
+                            ttsConnectionManager.sendTextSegment(userId, text);
+                        } catch (Exception e) {
+                            log.warn("[管道-音频输出节点] TTS分片发送异常，本次降级为纯文本，会话ID：{}，原因：{}",
+                                    conversationId, e.getMessage());
+                        }
                     }
                 })
                 .doOnComplete(() -> {
-                    ttsConnectionManager.finishSynthesis(userId);
+                    try {
+                        ttsConnectionManager.finishSynthesis(userId);
+                    } catch (Exception e) {
+                        log.warn("[管道-音频输出节点] TTS收尾异常（忽略），会话ID：{}，原因：{}", conversationId, e.getMessage());
+                    }
                     log.debug("[管道-音频输出节点] TTS合成完成，会话ID：{}", conversationId);
                 })
                 .doOnError(err -> {

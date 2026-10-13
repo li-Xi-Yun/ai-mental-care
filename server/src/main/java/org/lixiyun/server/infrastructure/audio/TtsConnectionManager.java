@@ -85,7 +85,12 @@ public class TtsConnectionManager {
             log.warn("[TTS防腐层] 用户{}没有活跃的TTS会话", userId);
             return;
         }
-        ttsProvider.sendTextSegment(sessionId, segment);
+        // 防腐层职责：TTS 属于可选输出，任何异常都不应向上穿透（会终止响应式链，影响文本与落库）
+        try {
+            ttsProvider.sendTextSegment(sessionId, segment);
+        } catch (Exception e) {
+            log.warn("[TTS防腐层] 用户{}语音合成分片发送失败，本次降级为纯文本：{}", userId, e.getMessage());
+        }
     }
 
     /**
@@ -99,7 +104,11 @@ public class TtsConnectionManager {
             log.warn("[TTS防腐层] 用户{}没有活跃的TTS会话", userId);
             return;
         }
-        ttsProvider.finishSynthesis(sessionId);
+        try {
+            ttsProvider.finishSynthesis(sessionId);
+        } catch (Exception e) {
+            log.warn("[TTS防腐层] 用户{}语音合成收尾失败（忽略）：{}", userId, e.getMessage());
+        }
     }
 
     /**
@@ -113,7 +122,11 @@ public class TtsConnectionManager {
             log.warn("[TTS防腐层] 用户{}没有活跃的TTS会话", userId);
             return;
         }
-        ttsProvider.interrupt(sessionId);
+        try {
+            ttsProvider.interrupt(sessionId);
+        } catch (Exception e) {
+            log.warn("[TTS防腐层] 用户{}中断语音合成失败（忽略）：{}", userId, e.getMessage());
+        }
     }
 
     /**

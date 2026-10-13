@@ -2,8 +2,9 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadUserFile } from "element-plus";
-import { DEFAULT_PAGE_SIZE } from "@/shared/api/config";
+import { API_BASE_URL, DEFAULT_PAGE_SIZE } from "@/shared/api/config";
 import dayjs, { FORMAT_DATE } from "@/shared/utils/dayjs";
+import { resolveResourceUrl } from "@/shared/utils/resource";
 import {
   uploadFile,
   getFilePage,
@@ -24,6 +25,10 @@ import {
   COMMON_FILE_SUFFIXES,
   IMAGE_SUFFIXES,
   TEXT_SUFFIXES,
+  PDF_SUFFIXES,
+  EXCEL_SUFFIXES,
+  WORD_SUFFIXES,
+  PPT_SUFFIXES,
   categoryTreeProps,
   fileMeta,
   categoryTagType,
@@ -60,12 +65,8 @@ export interface FileRow {
   updatedTime?: string;
 }
 
-/** el-upload 自定义上传回调参数（保持页面原有签名） */
-export interface FileUploadRequestOptions {
-  file: File;
-  onSuccess: (resp: any) => void;
-  onError: (err: any) => void;
-}
+/** 单个文件大小上限（与后端 AdminFileServiceImpl.MAX_FILE_SIZE 一致：10MB） */
+export const MAX_UPLOAD_FILE_SIZE = 10 * 1024 * 1024;
 
 /* ==================== 格式化工具 ==================== */
 
@@ -124,19 +125,24 @@ export function useFileList() {
   // 统计
   const stats = reactive({ totalFiles: 0, totalSize: 0, vectorizedFiles: 0 });
 
-  // 上传
+  // 上传（暂存模式：文件先保存在浏览器，点「确定」后统一上传）
   const uploadVisible = ref(false);
   const uploadCategoryId = ref<number | undefined>(undefined);
   const uploadFileList = ref<UploadUserFile[]>([]);
+  const uploadSubmitting = ref(false);
+  const uploadProgressText = ref("");
 
   // 编辑
   const editVisible = ref(false);
   const editSaving = ref(false);
-  const editForm = reactive<{ originalName: string; categoryId?: number }>({
+  const editForm = reactive<{ originalName: string; categoryId?: number; knowledgeType: number }>({
     originalName: "",
     categoryId: undefined,
+    knowledgeType: 0,
   });
   const editingFileId = ref<number | undefined>(undefined);
+  /** 正在编辑的文件是否已启用向量（启用时不允许把知识类型改为「无」） */
+  const editVectorEnabled = ref(false);
 
   // 分类管理
   const categoryManageVisible = ref(false);
@@ -151,17 +157,18 @@ export function useFileList() {
   const previewLoading = ref(false);
   const previewRow = ref<FileRow | null>(null);
   const previewImageUrl = ref("");
-  const previewText = ref("");
 
   // ==================== 计算属性 ====================
-  const isImagePreview = computed(() => {
+  /** 预览渲染模式：由文件后缀决定（image/pdf/excel/word/ppt/text/none） */
+  const previewMode = computed<"image" | "pdf" | "excel" | "word" | "ppt" | "text" | "none">(() => {
     const suffix = (previewRow.value?.fileSuffix || "").toLowerCase();
-    return IMAGE_SUFFIXES.includes(suffix);
-  });
-
-  const isTextPreview = computed(() => {
-    const suffix = (previewRow.value?.fileSuffix || "").toLowerCase();
-    return TEXT_SUFFIXES.includes(suffix);
+    if (IMAGE_SUFFIXES.includes(suffix)) return "image";
+    if (PDF_SUFFIXES.includes(suffix)) return "pdf";
+    if (EXCEL_SUFFIXES.includes(suffix)) return "excel";
+    if (WORD_SUFFIXES.includes(suffix)) return "word";
+    if (PPT_SUFFIXES.includes(suffix)) return "ppt";
+    if (TEXT_SUFFIXES.includes(suffix)) return "text";
+    return "none";
   });
 
   // ==================== 列表加载 ====================
@@ -247,39 +254,68 @@ export function useFileList() {
     loadFiles();
   }
 
-  // ==================== 上传 ====================
+  // ==================== 上传（暂存 + 确定上传） ====================
   function openUploadDialog() {
     uploadCategoryId.value = undefined;
     uploadFileList.value = [];
+    uploadSubmitting.value = false;
+    uploadProgressText.value = "";
     uploadVisible.value = true;
   }
 
-  function beforeUpload(file: File) {
-    if (file.size > 100 * 1024 * 1024) {
-      ElMessage.error(`「${file.name}」超过 100MB 限制`);
-      return false;
+  /** 选择文件后校验大小（暂存模式：超限文件直接从暂存列表移除并提示） */
+  function handleUploadChange(file: { name: string; size?: number; uid?: number }, list: UploadUserFile[]) {
+    if ((file.size ?? 0) > MAX_UPLOAD_FILE_SIZE) {
+      ElMessage.error(`「${file.name}」超过 10MB 限制，已移除`);
+      uploadFileList.value = list.filter((item) => item.uid !== file.uid);
+      return;
     }
-    return true;
+    uploadFileList.value = list;
   }
 
-  async function handleUploadRequest(options: FileUploadRequestOptions) {
-    const { file, onSuccess, onError } = options;
-    const formData = new FormData();
-    formData.append("file", file);
-    if (uploadCategoryId.value !== undefined) {
-      formData.append("categoryId", String(uploadCategoryId.value));
+  /** 点「确定」后串行上传暂存文件；全部成功关弹窗刷新，部分失败保留失败项可重试 */
+  async function handleUploadSubmit() {
+    const pending = uploadFileList.value.filter((item) => item.raw);
+    if (!pending.length) {
+      ElMessage.warning("请先选择要上传的文件");
+      return;
     }
+    uploadSubmitting.value = true;
+    const failed: UploadUserFile[] = [];
+    let succeeded = 0;
     try {
-      await uploadFile(formData);
-      onSuccess({});
-      ElMessage.success(`「${file.name}」上传成功`);
-      loadFiles();
-      loadStats();
-      loadCategoryTree();
-    } catch (err) {
-      onError(err);
-      ElMessage.error(`「${file.name}」上传失败`);
+      for (let i = 0; i < pending.length; i += 1) {
+        const item = pending[i];
+        uploadProgressText.value = `正在上传 ${i + 1}/${pending.length}…`;
+        const formData = new FormData();
+        formData.append("file", item.raw as File);
+        if (uploadCategoryId.value !== undefined) {
+          formData.append("categoryId", String(uploadCategoryId.value));
+        }
+        try {
+          await uploadFile(formData);
+          succeeded += 1;
+        } catch {
+          failed.push(item);
+        }
+      }
+    } finally {
+      uploadSubmitting.value = false;
+      uploadProgressText.value = "";
     }
+    if (!failed.length) {
+      ElMessage.success(`成功上传 ${succeeded} 个文件`);
+      uploadFileList.value = [];
+      uploadVisible.value = false;
+    } else {
+      uploadFileList.value = failed;
+      ElMessage.error(
+        `${failed.length} 个文件上传失败${succeeded ? `（成功 ${succeeded} 个）` : ""}，可重试`,
+      );
+    }
+    loadFiles();
+    loadStats();
+    loadCategoryTree();
   }
 
   // ==================== 编辑 ====================
@@ -287,6 +323,8 @@ export function useFileList() {
     editingFileId.value = row.id;
     editForm.originalName = row.originalName;
     editForm.categoryId = row.categoryId;
+    editForm.knowledgeType = row.knowledgeType ?? 0;
+    editVectorEnabled.value = row.vectorStatus === 1;
     editVisible.value = true;
   }
 
@@ -301,13 +339,16 @@ export function useFileList() {
       const payload: Record<string, any> = { id: editingFileId.value };
       if (editForm.originalName.trim()) payload.fileName = editForm.originalName.trim();
       if (editForm.categoryId !== undefined) payload.categoryId = editForm.categoryId;
+      payload.knowledgeType = editForm.knowledgeType;
       await updateFile(String(editingFileId.value), payload);
       ElMessage.success("文件信息已更新");
       editVisible.value = false;
       loadFiles();
       loadStats();
-    } catch {
-      ElMessage.error("更新失败");
+    } catch (err) {
+      // 透出后端业务错误（如向量启用时改为「无」的 1818 提示）
+      const msg = (err as Error)?.message;
+      ElMessage.error(msg && msg !== "请求失败" ? msg : "更新失败");
     } finally {
       editSaving.value = false;
     }
@@ -411,7 +452,7 @@ export function useFileList() {
   async function handleDownload(row: any) {
     if (!row) return;
     try {
-      const response = await fetch(`/admin/file/${row.id}/download`, {
+      const response = await fetch(`${API_BASE_URL}/admin/file/${row.id}/download`, {
         headers: getAuthHeaders("admin"),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -429,34 +470,24 @@ export function useFileList() {
     }
   }
 
+  /** 打开预览：解析静态资源 URL（拼 /api 前缀 + 反斜杠归一化），按后缀决定渲染模式；字节获取与渲染由弹窗内聚 */
   async function handlePreview(row: any) {
     previewRow.value = row;
     previewVisible.value = true;
     previewLoading.value = true;
-    previewText.value = "";
+
     previewImageUrl.value = "";
 
     try {
       const res = await getFileDetail(String(row.id));
       const detail: FileRow | null = res.data?.data ?? null;
       const fileUrl = detail?.fileUrl || row.fileUrl;
-
-      if (isImagePreview.value) {
-        if (!fileUrl) return;
-        // 文件访问地址为 static-resources 静态资源（后端已放行），无需鉴权头
-        previewImageUrl.value = fileUrl;
-      } else if (isTextPreview.value) {
-        if (!fileUrl) return;
-        try {
-          const response = await fetch(fileUrl, { headers: getAuthHeaders("admin") });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          previewText.value = await response.text();
-        } catch {
-          previewText.value = "";
-        }
-      }
+      // 详情接口返回的 fileUrl 兜底刷回行数据，供预览 / 下载使用
+      if (detail?.fileUrl) row.fileUrl = detail.fileUrl;
+      previewImageUrl.value = fileUrl ? resolveResourceUrl(fileUrl) : "";
     } catch {
-      // 详情获取失败时按类型展示占位
+      // 详情获取失败时用行数据兜底
+      previewImageUrl.value = row.fileUrl ? resolveResourceUrl(row.fileUrl) : "";
     } finally {
       previewLoading.value = false;
     }
@@ -464,7 +495,7 @@ export function useFileList() {
 
   function clearPreview() {
     previewRow.value = null;
-    previewText.value = "";
+
     previewImageUrl.value = "";
   }
 
@@ -554,13 +585,16 @@ export function useFileList() {
     uploadVisible,
     uploadCategoryId,
     uploadFileList,
+    uploadSubmitting,
+    uploadProgressText,
     openUploadDialog,
-    beforeUpload,
-    handleUploadRequest,
+    handleUploadChange,
+    handleUploadSubmit,
     // 编辑
     editVisible,
     editSaving,
     editForm,
+    editVectorEnabled,
     openEditDialog,
     handleSaveEdit,
     // 预览 / 下载 / 删除 / 跳转
@@ -568,9 +602,7 @@ export function useFileList() {
     previewLoading,
     previewRow,
     previewImageUrl,
-    previewText,
-    isImagePreview,
-    isTextPreview,
+    previewMode,
     handlePreview,
     clearPreview,
     handleDownload,

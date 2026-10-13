@@ -107,15 +107,13 @@ public class ModelChatOutputNode implements OutputNode {
         // 存入 OutputContext（内部自动 .cache()），供下游节点（TtsOutputNode）消费
         context.putFlux(NODE_NAME, outputFlux);
 
-        if (!context.hasOutputType(OutputDataType.TEXT)) {
-            return;
+        if (context.onlyContainOutputType(OutputDataType.TEXT)) {
+            // 从 OutputContext 取回 cached 版本订阅，确保与下游共享同一份缓存，避免重复触发 LLM
+            Flux<AgentStreamEvent> cachedFlux = context.getFlux(NODE_NAME, AgentStreamEvent.class);
+            Disposable subscribe = cachedFlux.subscribe();
+            conversationStreamHolder.addStream(conversationId, subscribe);
+            log.debug("[管道-文本输出节点] 流式订阅已注册到StreamHolder，会话ID：{}", conversationId);
         }
-
-        // 从 OutputContext 取回 cached 版本订阅，确保与下游共享同一份缓存，避免重复触发 LLM
-        Flux<AgentStreamEvent> cachedFlux = context.getFlux(NODE_NAME, AgentStreamEvent.class);
-        Disposable subscribe = cachedFlux.subscribe();
-        conversationStreamHolder.addStream(conversationId, subscribe);
-        log.debug("[管道-文本输出节点] 流式订阅已注册到StreamHolder，会话ID：{}", conversationId);
     }
 
     // ==================== Socket 路径与说明 ====================

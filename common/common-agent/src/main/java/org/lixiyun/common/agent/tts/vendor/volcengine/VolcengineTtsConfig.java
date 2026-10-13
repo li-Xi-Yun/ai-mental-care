@@ -39,4 +39,10 @@ public class VolcengineTtsConfig {
 
     /** 音量，取值范围[-50,100]，默认0 */
     private int loudnessRate = 0;
+
+    /** WebSocket连接超时时间（毫秒），用于建连与等待连接就绪 */
+    private int connectTimeoutMs = 10000;
+
+    /** 连接健康检查/重连间隔（毫秒）；服务端约15分钟会主动断开长连接，需周期探测并重建 */
+    private int reconnectIntervalMs = 30000;
 }

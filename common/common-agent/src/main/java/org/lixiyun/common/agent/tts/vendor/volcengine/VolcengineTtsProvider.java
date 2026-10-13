@@ -90,6 +90,12 @@ public class VolcengineTtsProvider implements ITtsProvider {
     private volatile VolcWebSocketClient wsClient;
     /** 定时任务调度器 */
     private ScheduledExecutorService scheduler;
+    /** 连接健康检查/重连调度器（独立于空闲清理，避免 connectBlocking 阻塞） */
+    private ScheduledExecutorService connectionScheduler;
+    /** 连接就绪信号：由 dispatcher 收到 CONNECTION_STARTED 时释放 */
+    private volatile CountDownLatch connStartedLatch;
+    /** StartConnection 是否已完成（断线后置 false） */
+    private volatile boolean connectionStarted = false;
     /** Provider运行状态 */
     private volatile boolean running = false;
     /** 消息分发线程 */
@@ -119,30 +125,8 @@ public class VolcengineTtsProvider implements ITtsProvider {
             return;
         }
 
-        try {
-            Map<String, String> headers = new HashMap<>();
-            headers.put("X-Api-Key", config.getApiKey());
-            headers.put("X-Api-Resource-Id", config.getResourceId());
-            headers.put("X-Api-Connect-Id", UUID.randomUUID().toString());
-            headers.put("X-Control-Require-Usage-Tokens-Return", "*");
-
-            wsClient = new VolcWebSocketClient(new URI(config.getEndpoint()), headers);
-            wsClient.connectBlocking();
-
-            log.info("[火山引擎 TTS] WebSocket连接已建立, endpoint={}", config.getEndpoint());
-
-            wsClient.sendStartConnection();
-            wsClient.waitForMessage(MsgType.FULL_SERVER_RESPONSE, EventType.CONNECTION_STARTED);
-            if (!wsClient.isConnected()) {
-                log.error("[火山引擎 TTS] WebSocket连接建立后立即断开，请检查 api-key、resource-id 和网络连通性");
-                throw new RuntimeException("[火山引擎 TTS] WebSocket连接建立失败: 请检查 tts.volcengine.api-key 和 tts.volcengine.resource-id 配置是否正确");
-            }
-            log.info("[火山引擎 TTS] StartConnection成功");
-        } catch (Exception e) {
-            log.error("[火山引擎 TTS] WebSocket连接或StartConnection失败", e);
-            throw new RuntimeException("[火山引擎 TTS] 初始化失败: " + e.getMessage(), e);
-        }
-
+        // 先启动运行态与后台线程，再建立连接：
+        // 首次连接失败不再阻止应用启动，由连接保活任务按 reconnectIntervalMs 持续重试
         running = true;
         dispatcherThread = new Thread(this::dispatchMessages, "tts-volcengine-dispatcher");
         dispatcherThread.setDaemon(true);
@@ -160,7 +144,95 @@ public class VolcengineTtsProvider implements ITtsProvider {
                 TimeUnit.SECONDS
         );
 
+        // 连接健康检查与重连（独立线程池，避免 connectBlocking 阻塞空闲清理）
+        connectionScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "tts-volcengine-connection-check");
+            t.setDaemon(true);
+            return t;
+        });
+        connectionScheduler.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        ensureConnected();
+                    } catch (Exception e) {
+                        log.warn("[火山引擎 TTS] 连接健康检查异常", e);
+                    }
+                },
+                config.getReconnectIntervalMs(),
+                config.getReconnectIntervalMs(),
+                TimeUnit.MILLISECONDS
+        );
+
+        if (!ensureConnected()) {
+            log.error("[火山引擎 TTS] 初始连接失败，已交由连接保活任务每{}ms重试；请检查 api-key、resource-id 与网络连通性",
+                    config.getReconnectIntervalMs());
+        }
+
         log.info("[火山引擎 TTS] Provider初始化完成，最大会话数：{}", MAX_SESSIONS);
+    }
+
+    /**
+     * 确保底层 WebSocket 连接可用（服务端约15分钟会主动断开长连接）。
+     * <p>已连接直接返回；否则重建客户端、建连并完成 StartConnection 握手。
+     * 连接就绪信号由 dispatcher 线程在收到 CONNECTION_STARTED 时释放
+     * （不能由本方法直接从消息队列读取，否则会与 dispatcher 争抢消息）。</p>
+     *
+     * @return true 表示连接可用
+     */
+    private synchronized boolean ensureConnected() {
+        if (!running) {
+            return false;
+        }
+        VolcWebSocketClient current = wsClient;
+        if (current != null && current.isConnected() && connectionStarted) {
+            return true;
+        }
+
+        // 关闭可能残留的旧连接
+        if (current != null) {
+            try {
+                current.close();
+            } catch (Exception e) {
+                log.debug("[火山引擎 TTS] 关闭旧连接失败（忽略）", e);
+            }
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        connStartedLatch = latch;
+        connectionStarted = false;
+        try {
+            VolcWebSocketClient client = new VolcWebSocketClient(new URI(config.getEndpoint()), buildHeaders());
+            wsClient = client;
+            if (!client.connectBlocking(config.getConnectTimeoutMs(), TimeUnit.MILLISECONDS)) {
+                log.error("[火山引擎 TTS] WebSocket建连超时（{}ms）", config.getConnectTimeoutMs());
+                return false;
+            }
+            client.setConnectionLostTimeout(Math.max(10, config.getReconnectIntervalMs() / 1000));
+            client.sendStartConnection();
+
+            if (!latch.await(config.getConnectTimeoutMs(), TimeUnit.MILLISECONDS) || !client.isConnected()) {
+                log.error("[火山引擎 TTS] StartConnection未就绪（等待超时或连接已断开）");
+                return false;
+            }
+            log.info("[火山引擎 TTS] StartConnection成功，endpoint={}", config.getEndpoint());
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (Exception e) {
+            log.error("[火山引擎 TTS] WebSocket连接或StartConnection失败", e);
+            return false;
+        }
+    }
+
+    /** 构建鉴权头（重连时需复用） */
+    private Map<String, String> buildHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("X-Api-Key", config.getApiKey());
+        headers.put("X-Api-Resource-Id", config.getResourceId());
+        headers.put("X-Api-Connect-Id", UUID.randomUUID().toString());
+        headers.put("X-Control-Require-Usage-Tokens-Return", "*");
+        return headers;
     }
 
     @Override
@@ -174,6 +246,13 @@ public class VolcengineTtsProvider implements ITtsProvider {
         }
         if (scheduler != null) {
             scheduler.shutdownNow();
+        }
+        if (connectionScheduler != null) {
+            connectionScheduler.shutdownNow();
+        }
+        connectionStarted = false;
+        if (connStartedLatch != null) {
+            connStartedLatch.countDown();
         }
 
         sessions.forEach((sessionId, session) -> {
@@ -236,6 +315,11 @@ public class VolcengineTtsProvider implements ITtsProvider {
 
         if (text == null || text.isBlank()) {
             return;
+        }
+
+        // 发送前校验连接（服务端会主动断开长连接）：不可用则尝试重建，仍失败则抛错由上层降级为纯文本
+        if (!ensureConnected()) {
+            throw new BusinessException(ConversationExceptionEnum.AUDIO_CACHE_NOT_INITIALIZED);
         }
 
         if (!session.sessionActive.get()) {
@@ -305,6 +389,10 @@ public class VolcengineTtsProvider implements ITtsProvider {
         }
 
         try {
+            if (!ensureConnected()) {
+                log.warn("[火山引擎 TTS] 会话{}连接不可用，跳过FinishSession", sessionId);
+                return;
+            }
             wsClient.sendFinishSession(session.protocolSessionId);
 
             boolean completed = session.finishedLatch.await(SYNTHESIS_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -340,6 +428,10 @@ public class VolcengineTtsProvider implements ITtsProvider {
 
         try {
             session.canceledLatch = new CountDownLatch(1);
+            if (!ensureConnected()) {
+                log.warn("[火山引擎 TTS] 会话{}连接不可用，跳过CancelSession", sessionId);
+                return;
+            }
             wsClient.sendCancelSession(session.protocolSessionId);
 
             boolean canceled = session.canceledLatch.await(SESSION_WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -370,9 +462,12 @@ public class VolcengineTtsProvider implements ITtsProvider {
                 return null;
             }
 
-            if (session.sessionActive.get() && session.protocolSessionId != null) {
+            // 清理路径不触发重连（避免在 compute 内阻塞），仅在连接可用时通知服务端
+            VolcWebSocketClient client = wsClient;
+            if (session.sessionActive.get() && session.protocolSessionId != null
+                    && client != null && client.isConnected()) {
                 try {
-                    wsClient.sendCancelSession(session.protocolSessionId);
+                    client.sendCancelSession(session.protocolSessionId);
                 } catch (Exception e) {
                     log.error("[火山引擎 TTS] 会话{}发送CancelSession失败", sessionId, e);
                 }
@@ -418,7 +513,13 @@ public class VolcengineTtsProvider implements ITtsProvider {
         log.info("[火山引擎 TTS] 消息分发线程启动");
         while (running) {
             try {
-                Message msg = wsClient.receiveMessage(1, TimeUnit.SECONDS);
+                VolcWebSocketClient client = wsClient;
+                if (client == null) {
+                    // 连接尚未建立/正在重建：短暂等待，避免空转
+                    Thread.sleep(200);
+                    continue;
+                }
+                Message msg = client.receiveMessage(1, TimeUnit.SECONDS);
                 if (msg == null) {
                     continue;
                 }
@@ -431,7 +532,17 @@ public class VolcengineTtsProvider implements ITtsProvider {
 
                 String protocolSessionId = msg.getSessionId();
                 if (protocolSessionId == null || protocolSessionId.isEmpty()) {
-                    log.debug("[火山引擎 TTS] 收到无sessionId的消息: {}", msg);
+                    // 连接级事件（无会话ID）：CONNECTION_STARTED 用于唤醒 ensureConnected 的等待
+                    if (type == MsgType.FULL_SERVER_RESPONSE && msg.getEvent() == EventType.CONNECTION_STARTED) {
+                        connectionStarted = true;
+                        CountDownLatch latch = connStartedLatch;
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                        log.info("[火山引擎 TTS] 收到CONNECTION_STARTED，连接就绪");
+                    } else {
+                        log.debug("[火山引擎 TTS] 收到无sessionId的消息: {}", msg);
+                    }
                     continue;
                 }
 

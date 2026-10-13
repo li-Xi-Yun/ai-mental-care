@@ -103,10 +103,17 @@ export function useFileVector() {
   });
   const fileSizeText = computed(() => formatSize(fileInfo.value?.fileSize));
   const isParsing = computed(() => fileInfo.value?.status === 1);
+  /** 知识类型为 0（无）时后端拒绝向量化（1818），前端禁用按钮并给出提示 */
+  const knowledgeTypeNone = computed(() => (fileInfo.value?.knowledgeType ?? 0) === 0);
   const canLoad = computed(() => {
     const s = fileInfo.value?.status;
-    return s === 0 || s === 2;
+    return (s === 0 || s === 2) && !knowledgeTypeNone.value;
   });
+  const loadBlockedReason = computed(() =>
+    knowledgeTypeNone.value
+      ? "该文件未设置知识类型（当前为「无」），请先在文件管理中编辑知识类型后再向量化"
+      : "",
+  );
   const canDelete = computed(() => fileInfo.value?.status === 3);
   const loadLabel = computed(() => {
     const s = fileInfo.value?.status;
@@ -219,6 +226,9 @@ export function useFileVector() {
     submitting.value = false;
   }
 
+  /** 轮询最长时长（防任务卡死导致无限轮询） */
+  const MAX_POLL_MS = 10 * 60 * 1000;
+
   function startPolling() {
     stopPolling();
     loadStartAt = Date.now();
@@ -228,6 +238,13 @@ export function useFileVector() {
       elapsed.value = Math.floor((Date.now() - loadStartAt) / 1000);
     }, 1000);
     pollTimer = window.setInterval(async () => {
+      // 超时保护：超过 10 分钟仍未完成则停止轮询，提示手动刷新
+      if (Date.now() - loadStartAt > MAX_POLL_MS) {
+        stopPolling();
+        ElMessage.warning("向量解析超时（超过 10 分钟），请稍后刷新页面查看结果");
+        loadVectors();
+        return;
+      }
       await refreshFileInfo();
       const s = fileInfo.value?.status;
       if (s === 3) {
@@ -253,6 +270,11 @@ export function useFileVector() {
 
   /* ==================== 操作 ==================== */
   async function handleLoad() {
+    // 双重保险：知识类型为「无」时后端会拒绝（1818），前端先行拦截
+    if (knowledgeTypeNone.value) {
+      ElMessage.warning(loadBlockedReason.value);
+      return;
+    }
     try {
       await ElMessageBox.confirm(
         `确定开始对「${fileName.value}」${loadLabel.value}吗？文件将被切分为向量片段，可能需要较长时间。`,
@@ -274,6 +296,7 @@ export function useFileVector() {
       }
     } catch (e) {
       submitting.value = false;
+      // 透出后端业务错误（如 1818 知识类型为空、1805 文件过大等）
       ElMessage.error((e as Error)?.message || "启动向量加载失败");
     }
   }
@@ -367,6 +390,7 @@ export function useFileVector() {
     canLoad,
     canDelete,
     loadLabel,
+    loadBlockedReason,
     submitting,
     deleting,
     elapsed,

@@ -4,8 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.websocket.utils.WebSocketUtils;
 import org.lixiyun.pojo.entity.conversation.ConversationPendingAction;
 import org.lixiyun.server.socket.constant.AudioConstant;
+import org.lixiyun.server.socket.constant.AvatarConstant;
 import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 会话WebSocket管理器
@@ -115,5 +118,29 @@ public class ConversationWebSocketManager {
      */
     public void sendPendingAction(Long userId, Long conversationId, ConversationPendingAction pendingAction) {
         sendViaWebSocket(userId, ConversationConstant.PENDING_ACTION, conversationId, pendingAction);
+    }
+
+    /**
+     * 发送虚拟形象表情指令（持续状态，切换后保持直到下次切换）
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param expression     表情资产 id（来自 expressionList）
+     */
+    public void sendAvatarExpression(Long userId, Long conversationId, String expression) {
+        log.debug("会话WebSocket管理器-虚拟形象表情指令下发，会话ID：{}，表情：{}", conversationId, expression);
+        sendViaWebSocket(userId, AvatarConstant.AI_AVATAR_EXPRESSION, conversationId, Map.of("expression", expression));
+    }
+
+    /**
+     * 发送虚拟形象动作指令（一次性触发，播放完毕后自动回归）
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param motion         动作资产 id（来自 motionList）
+     */
+    public void sendAvatarMotion(Long userId, Long conversationId, String motion) {
+        log.debug("会话WebSocket管理器-虚拟形象动作指令下发，会话ID：{}，动作：{}", conversationId, motion);
+        sendViaWebSocket(userId, AvatarConstant.AI_AVATAR_MOTION, conversationId, Map.of("motion", motion));
     }
 }

@@ -15,8 +15,6 @@ import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -231,12 +229,6 @@ public class HistoryMessageCompressionModel extends BaseModel {
                 .build();
     }
 
-    @Retryable(
-            label = "history-message-compression-model",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doCall(chatModel, userPrompt, config, runnableConfig);
     }

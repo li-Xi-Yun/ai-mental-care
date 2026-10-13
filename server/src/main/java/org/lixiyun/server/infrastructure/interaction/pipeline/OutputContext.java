@@ -84,6 +84,16 @@ public class OutputContext {
         return outputTypes != null && outputTypes.contains(type);
     }
 
+    /**
+     * 便捷方法：判断是否仅包含指定输出模式
+     *
+     * @param type 输出数据类型
+     * @return true 如果 outputTypes 中仅包含该类型
+     */
+    public boolean onlyContainOutputType(OutputDataType type) {
+        return outputTypes != null && outputTypes.size() == 1 && outputTypes.contains(type);
+    }
+
     // ==================== Flux 存取 ====================
 
     /**

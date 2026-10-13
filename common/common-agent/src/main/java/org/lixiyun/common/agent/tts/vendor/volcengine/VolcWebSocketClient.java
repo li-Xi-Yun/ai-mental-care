@@ -92,16 +92,24 @@ public class VolcWebSocketClient extends WebSocketClient {
     }
 
     /**
-     * 等待指定类型和事件的响应消息
+     * 等待指定类型和事件的响应消息（带超时，跳过非匹配消息）。
+     * <p>注意：消息队列同时被 dispatcher 线程消费，业务路径请勿依赖本方法读取连接级事件，
+     * 应改由 dispatcher 统一分发（参见 {@code VolcengineTtsProvider.ensureConnected}）。</p>
      *
-     * @param type  期望的消息类型
-     * @param event 期望的事件类型
-     * @return 匹配的消息
-     * @throws RuntimeException 收到非预期消息时抛出
+     * @param type    期望的消息类型
+     * @param event   期望的事件类型
+     * @param timeout 等待超时时间
+     * @param unit    超时单位
+     * @return 匹配的消息；超时返回 null
+     * @throws RuntimeException 收到 ERROR 类型响应时抛出
      */
-    public Message waitForMessage(MsgType type, EventType event) throws InterruptedException {
-        while (true) {
-            Message msg = receiveMessage();
+    public Message waitForMessage(MsgType type, EventType event, long timeout, TimeUnit unit) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
+        while (System.currentTimeMillis() < deadline) {
+            Message msg = receiveMessage(200, TimeUnit.MILLISECONDS);
+            if (msg == null) {
+                continue;
+            }
             if (msg.getType() == type && msg.getEvent() == event) {
                 return msg;
             }
@@ -110,9 +118,9 @@ public class VolcWebSocketClient extends WebSocketClient {
                 throw new RuntimeException(
                         "[火山引擎 TTS] 收到错误响应: code=" + msg.getErrorCode() + ", payload=" + errorPayload);
             }
-            throw new RuntimeException(
-                    "[火山引擎 TTS] 收到非预期消息: type=" + msg.getType() + ", event=" + msg.getEvent());
+            log.debug("[火山引擎 TTS] 等待{}时跳过非匹配消息: type={}, event={}", event, msg.getType(), msg.getEvent());
         }
+        return null;
     }
 
     // ======================== 连接管理 ========================

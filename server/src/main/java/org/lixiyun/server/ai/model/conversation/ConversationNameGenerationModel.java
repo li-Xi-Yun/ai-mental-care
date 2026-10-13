@@ -229,12 +229,6 @@ public class ConversationNameGenerationModel extends BaseModel {
                 .build();
     }
 
-    @Retryable(
-            label = "conversation-name-generation-model",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     public AssistantMessage call(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doCall(chatModel, userPrompt, config, runnableConfig);
     }

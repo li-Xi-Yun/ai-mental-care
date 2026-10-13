@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.OutputPipelineExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
+import org.lixiyun.server.infrastructure.interaction.pipeline.node.AvatarOutputNode;
 import org.lixiyun.server.infrastructure.interaction.pipeline.node.ModelChatOutputNode;
 import org.lixiyun.server.infrastructure.interaction.pipeline.node.TtsOutputNode;
 import org.springframework.beans.factory.ObjectProvider;
@@ -60,6 +61,11 @@ public class OutputPipelineFactory {
     private final ObjectProvider<TtsOutputNode> ttsNodeProvider;
 
     /**
+     * AvatarOutputNode 的对象提供者——每次 getObject() 创建该会话独立的节点实例
+     */
+    private final ObjectProvider<AvatarOutputNode> avatarOutputNodeProvider;
+
+    /**
      * 根据输出模式集合组装管道
      *
      * @param outputTypes    前端请求的输出模式集合（如 {TEXT, AUDIO}）
@@ -100,6 +106,16 @@ public class OutputPipelineFactory {
         if (needAudio) {
             log.debug("[输出管道工厂] 组装音频输出节点链：ModelChatOutputNode → TtsNode");
             return List.of(modelChatNodeProvider.getObject(), ttsNodeProvider.getObject());
+        }
+
+        if(outputTypes.contains(OutputDataType.AVATAR_2D) && !outputTypes.contains(OutputDataType.AUDIO)){
+            log.debug("[输出管道工厂] 组装虚拟形象输出节点链：AvatarOutputNode");
+            return List.of(modelChatNodeProvider.getObject(), avatarOutputNodeProvider.getObject());
+        }
+
+        if(outputTypes.contains(OutputDataType.AVATAR_2D) && outputTypes.contains(OutputDataType.AUDIO)){
+            log.debug("[输出管道工厂] 组装虚拟形象输出节点链：AvatarOutputNode");
+            return List.of(modelChatNodeProvider.getObject(), avatarOutputNodeProvider.getObject(), ttsNodeProvider.getObject());
         }
 
         log.debug("[输出管道工厂] 组装纯文本输出节点链：ModelChatOutputNode");

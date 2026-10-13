@@ -279,12 +279,6 @@ public class EmotionRecognitionModel extends BaseModel {
         return stream(chatModel, userPrompt, config, null);
     }
 
-    @Retryable(
-            label = "emotion-recognition-model",
-            retryFor = {Exception.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
     public EmotionRecognitionResult callForResult(ChatModel chatModel, String userPrompt, AiNodeConfig config, RunnableConfig runnableConfig) throws GraphRunnerException {
         return doCallForResult(chatModel, userPrompt, config, runnableConfig);
     }

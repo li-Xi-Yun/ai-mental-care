@@ -163,9 +163,9 @@ public class ChatMessageProcessorModel extends BaseModel {
                 .numGPU(-1)
                 .lowVRAM(false);
 
-        if (isOllamaThinkingModel(modelName)) {
-            optionsBuilder.enableThinking();
-        }
+//        if (isOllamaThinkingModel(modelName)) {
+//            optionsBuilder.enableThinking();
+//        }
 
         return optionsBuilder.build();
     }
@@ -191,8 +191,8 @@ public class ChatMessageProcessorModel extends BaseModel {
                 .responseFormat(DashScopeResponseFormat.builder()
                         .type(isJsonResponseFormat(config) ? DashScopeResponseFormat.Type.JSON_OBJECT : DashScopeResponseFormat.Type.TEXT)
                         .build())
-                .enableThinking(true)
-                .thinkingBudget(8)
+//                .enableThinking(true)
+//                .thinkingBudget(8)
                 .enableSearch(false)
                 .stream(true)
                 .incrementalOutput(true)
