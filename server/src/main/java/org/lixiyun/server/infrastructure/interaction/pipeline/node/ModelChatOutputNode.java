@@ -56,6 +56,26 @@ public class ModelChatOutputNode implements OutputNode {
     /** 节点名称 */
     public static final String NODE_NAME = "modelChatOutputNode";
 
+    /** 源节点：任何输出组合都必须存在，servesType() 返回 null（见接口契约） */
+    @Override
+    public OutputDataType servesType() {
+        return null;
+    }
+
+    /** 源节点恒在链首，排序置为 0 */
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    /** 链尾标记：由 OutputPipelineFactory 装配时注入（纯 TEXT 模式时本节点为链尾需自行订阅触发） */
+    private boolean terminal;
+
+    @Override
+    public void setTerminal(boolean terminal) {
+        this.terminal = terminal;
+    }
+
     private final ConversationStreamHolder conversationStreamHolder;
     private final ConversationMessageProcessor conversationMessageProcessor;
 
@@ -104,10 +124,11 @@ public class ModelChatOutputNode implements OutputNode {
     public void process(OutputContext context) {
         Flux<AgentStreamEvent> outputFlux = conversationMessageProcessor.processConversationMessage(context);
 
-        // 存入 OutputContext（内部自动 .cache()），供下游节点（TtsOutputNode）消费
+        // 存入 OutputContext（内部自动 .cache()），供下游节点消费
         context.putFlux(NODE_NAME, outputFlux);
 
-        if (context.onlyContainOutputType(OutputDataType.TEXT)) {
+        // 纯文本模式（TEXT 单输出）时本节点为链尾，需自行订阅触发整个链路
+        if (terminal) {
             // 从 OutputContext 取回 cached 版本订阅，确保与下游共享同一份缓存，避免重复触发 LLM
             Flux<AgentStreamEvent> cachedFlux = context.getFlux(NODE_NAME, AgentStreamEvent.class);
             Disposable subscribe = cachedFlux.subscribe();

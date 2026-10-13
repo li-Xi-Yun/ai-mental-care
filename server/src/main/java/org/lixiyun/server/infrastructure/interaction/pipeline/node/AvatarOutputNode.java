@@ -35,14 +35,15 @@ import java.util.stream.Collectors;
  *   <li>通过节点内部的有状态剥离器 {@link AvatarControlStrip} 检测首个连续终止符 {@code +++}：
  *       其前的控制段 JSON **解析一次**（提取 expression / motion）→ 白名单校验 → 经 WebSocket
  *       分别下发 {@code /avatar/expression} / {@code /avatar/motion}；其后的内容作为正文透传</li>
- *   <li>剥离控制段后的正文事件重包装为 {@code ai_body} Flux 写入 {@link OutputContext}，
- *       供 {@code TtsOutputNode} / TEXT 通道消费（当前阶段 TTS 仍直接消费 model_output，ai_body 为后续接线预留）</li>
+ *   <li>剥离控制段后的正文事件重包装为该节点产出 Flux（key 为 {@link AvatarOutputNode#NODE_NAME}）写入
+ *       {@link OutputContext}：含 `AUDIO` 输出时由 {@code TtsOutputNode} 消费（TTS 不会朗读控制段），
+ *       不含 `AUDIO` 时本节点作为链尾自行订阅触发</li>
  * </ul>
  *
  * <p><b>关键设计（方案B）</b>：
  * <ul>
  *   <li><b>零额外 LLM 调用</b>：消费的是既有 cached Flux，不触发上游；逗号/短句等碎片仅进缓冲，不逐帧解析</li>
- *   <li><b>副作用只执行一次</b>：控制段下发放置在 transform 内，{@code ai_body} 经 putFlux 再 .cache()，
+ *   <li><b>副作用只执行一次</b>：控制段下发放置在 transform 内，正文 Flux 经 putFlux 再 .cache()，
  *       下游订阅属重放，不会重复发布指令</li>
  *   <li><b>剥离逻辑内聚</b>：剥离器作为本节点的内部实现，不单独建类（全链只有本节点负责剥离）</li>
  *   <li><b>降级安全</b>：剥离/校验/推送任何异常仅影响表情/动作，不影响正文与 TTS 通道</li>
@@ -66,10 +67,38 @@ public class AvatarOutputNode implements OutputNode {
     /** 节点名称 */
     public static final String NODE_NAME = "avatarOutputNode";
 
+    /** 本节点负责的输出类型，由声明式 Factory 按 outputTypes 过滤装配 */
+    @Override
+    public OutputDataType servesType() {
+        return OutputDataType.AVATAR_2D;
+    }
+
+    /** 控制段剥离必须发生在 TTS 之前 */
+    @Override
+    public int order() {
+        return 10;
+    }
+
+    /** Factory 注入的上游 Flux key（通常为 ModelChatOutputNode.NODE_NAME） */
+    private String inputFluxKey;
+
+    /** Factory 注入的链尾标记：无 AUDIO 时为链尾 */
+    private boolean terminal;
+
+    @Override
+    public void setInputFluxKey(String inputFluxKey) {
+        this.inputFluxKey = inputFluxKey;
+    }
+
+    @Override
+    public void setTerminal(boolean terminal) {
+        this.terminal = terminal;
+    }
+
     /** 控制段终止分隔符：首个 "+++" 之后均为正文 */
     private static final String CONTROL_TERMINATOR = "+++";
 
-    /** 控制段最大长度保护（字节/字符），超过仍未出现 "+++" 则放弃控制段、直接按正文放行 */
+    /** 控制段最大长度保护（字符），超过仍未出现 "+++" 则放弃控制段、直接按正文放行 */
     private static final int MAX_CONTROL_LENGTH = 100;
 
     private final ConversationStreamHolder conversationStreamHolder;
@@ -112,7 +141,7 @@ public class AvatarOutputNode implements OutputNode {
 
     /**
      * 前缀剥离处理：从 OutputContext 取上游 cached Flux，经内部剥离器 transform，
-     * 将控制段解析下发、剩余正文重包装为 {@code ai_body} 写入 OutputContext，并订阅触发副作用。
+     * 将控制段解析下发、剩余正文重包装为正文 Flux（key 为 {@link AvatarOutputNode#NODE_NAME}）写入 OutputContext，并订阅触发副作用。
      *
      * @param context 输出上下文
      */
@@ -124,7 +153,7 @@ public class AvatarOutputNode implements OutputNode {
             return;
         }
 
-        Flux<AgentStreamEvent> aiResponse = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
+        Flux<AgentStreamEvent> aiResponse = context.getFlux(inputFluxKey, AgentStreamEvent.class);
 
         // 白名单来自启用的 Live2D 模型配置（懒加载；无配置/异常时为空集，严格放行不命中）
         DataConfig config = loadAllowList();
@@ -145,12 +174,13 @@ public class AvatarOutputNode implements OutputNode {
             }
         }));
 
-        if(context.hasOutputType(OutputDataType.AUDIO)){
-            // 剩余正文重包装，写入 OutputContext（内部 .cache()，供 Tts/TEXT 后续消费）
+        if (!terminal) {
+            // 非链尾：剩余正文重包装写入 OutputContext（内部 .cache()，供 TTS 消费）
             context.putFlux(NODE_NAME, bodyFlux);
             return;
         }
 
+        // 链尾（无 AUDIO）：本节点作为唯一订阅触发方
         Disposable subscribe = bodyFlux.subscribe();
         conversationStreamHolder.addStream(conversationId, subscribe);
 

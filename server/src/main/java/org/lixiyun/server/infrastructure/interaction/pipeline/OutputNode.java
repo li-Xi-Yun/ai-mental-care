@@ -30,6 +30,59 @@ public interface OutputNode {
      */
     String getNodeName();
 
+    // ==================== 声明式装配契约（由 OutputPipelineFactory 统一读取） ====================
+
+    /**
+     * 本节点负责的输出类型；{@code null} 表示无论 outputTypes 如何该节点都必须存在（源节点，如模型输出）。
+     *
+     * <p>Factory 依据该类型判断节点是否进入节点链（{@code outputTypes.contains(servesType()) 或 servesType()==null}），
+     * 实现泛化装配，无需逐组合硬编码。</p>
+     *
+     * @return 服务类型；可为 {@code null}
+     */
+    default OutputDataType servesType() {
+        return null;
+    }
+
+    /**
+     * 链内排序（消费顺序），数值越小越靠前。
+     *
+     * @return 节点在链中的次序
+     */
+    default int order() {
+        return 0;
+    }
+
+    /**
+     * 本节点产出 Flux 写入 OutputContext 的 key。
+     * 默认取 {@link #getNodeName()}；如产出写入其他 key 可覆写。
+     *
+     * @return 产出 Flux key
+     */
+    default String producedFluxKey() {
+        return getNodeName();
+    }
+
+    /**
+     * 由 Factory 装配时注入：上游节点产出的 Flux key。
+     * 源节点（无上游）不调用本方法；读取上游的节点应保持该字段并在 {@link #process(OutputContext)} 中使用。
+     *
+     * @param inputFluxKey 上游产出 key
+     */
+    default void setInputFluxKey(String inputFluxKey) {
+        // 默认空实现；需要读取上游的节点自行覆写并通过字段保持
+    }
+
+    /**
+     * 由 Factory 装配时注入：是否为节点链的最后一个节点（链尾）。
+     * 链尾是唯一订阅触发的节点，其余节点只负责 putFlux 传递。
+     *
+     * @param terminal 是否链尾
+     */
+    default void setTerminal(boolean terminal) {
+        // 默认空实现；源/链尾订阅相关节点自行覆写
+    }
+
     /**
      * 初始化节点：创建连接、注册回调、分配资源
      *

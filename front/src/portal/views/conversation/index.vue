@@ -31,13 +31,19 @@
     />
 
     <EmotionPanel
-      :current-emotion="currentEmotion"
-      :emotion-list="emotionList"
+      :items="emotionItems"
+      :pagination="emotionPagination"
       :expanded-analysis-id="expandedAnalysisId"
       :show-panel="showEmotionPanel"
-      :keywords="currentKeywords"
       @toggle-panel="showEmotionPanel = false"
       @toggle-analysis="(id: string) => expandedAnalysisId = expandedAnalysisId === id ? null : id"
+      @load-more="loadMoreEmotions"
+      @view-detail="openEmotionDetail"
+    />
+
+    <EmotionAnalysisDetailDialog
+      v-model="emotionDetailVisible"
+      :analysis-id="emotionDetailTargetId"
     />
   </div>
 </template>
@@ -50,7 +56,8 @@ import { ElMessage } from "element-plus";
 import { useConversationStore } from "@/portal/stores/conversation";
 import { useUserStore } from "@/portal/stores/user";
 import { useConversationList } from "@/portal/composables/useConversationList";
-import { useEmotionAnalysis, cmpByTime } from "@/portal/composables/useEmotionAnalysis";
+import { cmpByTime } from "@/portal/composables/useEmotionDisplay";
+import { useEmotionList } from "@/portal/composables/useEmotionList";
 import { useScaleCardActions } from "@/portal/composables/useScaleCardActions";
 import { useStompConversation } from "@/portal/composables/useStompConversation";
 import {
@@ -62,13 +69,12 @@ import {
 } from "@/portal/composables/useConversationLifecycle";
 import type { ConversationItem, MemoryMessage, PendingActionItem } from "@/portal/api/conversation/types";
 import { fetchRoundMemory, parsePendingActionPush } from "@/portal/api/conversation/dialogue";
-import { getEmotionAnalysisList } from "@/portal/api/conversation/emotion-analysis";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
 import { PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
 import ConversationListPanel from "@/portal/components/conversation/ConversationListPanel.vue";
 import ChatPanel from "@/portal/components/conversation/ChatPanel.vue";
 import EmotionPanel from "@/portal/components/conversation/EmotionPanel.vue";
-import type { EmotionAnalysisItem } from "@/portal/composables/useEmotionAnalysis";
+import EmotionAnalysisDetailDialog from "@/portal/components/conversation/EmotionAnalysisDetailDialog.vue";
 
 /* ==================== 常量 ==================== */
 
@@ -101,8 +107,20 @@ const {
 } = useConversationList();
 
 const allMessages = ref<MemoryMessage[]>([]);
-const emotionList = ref<EmotionAnalysisItem[]>([]);
 const pendingActions = ref<PendingActionItem[]>([]);
+
+/** 情绪分析：按会话分页加载（数据 + 分页状态） */
+const {
+  items: emotionItems,
+  pagination: emotionPagination,
+  load: loadEmotions,
+  loadMore: loadMoreEmotions,
+  reset: resetEmotions,
+} = useEmotionList(() => currentConversationId.value);
+
+/** 情绪分析详情弹窗 */
+const emotionDetailVisible = ref(false);
+const emotionDetailTargetId = ref<string | null>(null);
 
 /** 未发送的本地新会话：不进入左侧列表，发送首条消息后才插入列表项 */
 const draftConversation = ref<ConversationItem | null>(null);
@@ -133,10 +151,11 @@ let skipReleaseOnLeave = false;
 
 /* ==================== 情绪分析 ==================== */
 
-const { currentEmotion, currentKeywords } = useEmotionAnalysis(
-  () => emotionList.value,
-  () => allMessages.value,
-);
+/** 打开情绪分析详情弹窗 */
+function openEmotionDetail(id: string) {
+  emotionDetailTargetId.value = id;
+  emotionDetailVisible.value = true;
+}
 
 /** 量表卡片动作（与语音对话页共用同一实现，toolId/conversationId 字符串直传保精度） */
 const { pendingActActions, handleScaleStart, handleScaleAnswered } = useScaleCardActions(() => currentConversationId.value);
@@ -318,34 +337,6 @@ function captureBaseline(): void {
 
 /* ==================== API 数据加载 ==================== */
 
-function unwrapList(res: any): any[] {
-  const body = res?.data?.data;
-  if (Array.isArray(body)) return body;
-  if (body && Array.isArray(body.records)) return body.records;
-  return [];
-}
-
-async function fetchEmotions(conversationId: string): Promise<EmotionAnalysisItem[]> {
-  const res = await getEmotionAnalysisList(conversationId, { pageNum: 1, pageSize: 100 });
-  return unwrapList(res).map((e: any) => ({
-    id: String(e.id),
-    roundNum: Number(e.roundNum ?? 0),
-    analysisContent: e.analysisContent ?? "",
-    emotionLabel: e.emotionLabel ?? "",
-    emotionSubLabel: e.emotionSubLabel ?? "",
-    emotionConfidence: e.emotionConfidence ?? undefined,
-    emotionIntensity: e.emotionIntensity ?? undefined,
-    emotionTrend: e.emotionTrend ?? "",
-    pScore: e.pScore ?? undefined,
-    aScore: e.aScore ?? undefined,
-    dScore: e.dScore ?? undefined,
-    negativeEmotionRatio: e.negativeEmotionRatio ?? undefined,
-    neutralEmotionRatio: e.neutralEmotionRatio ?? undefined,
-    positiveEmotionRatio: e.positiveEmotionRatio ?? undefined,
-    createdTime: e.createdTime ?? "",
-  }));
-}
-
 /** 加载历史消息（不触发 init：会话资源初始化只在发送时/语音首次输入时发生） */
 async function loadChat(conversationId: string) {
   loadingChat.value = true;
@@ -354,7 +345,7 @@ async function loadChat(conversationId: string) {
     allMessages.value = messages;
     pendingActions.value = acts;
     // 切换会话时同步刷新情绪分析面板（失败保留旧数据）
-    emotionList.value = [];
+    resetEmotions();
     expandedAnalysisId.value = null;
     await refreshEmotionList(conversationId);
   } catch {
@@ -366,11 +357,13 @@ async function loadChat(conversationId: string) {
   }
 }
 
+/** 刷新情绪分析首屏数据（分页第 1 页） */
 async function refreshEmotionList(conversationId: string) {
+  const prev = expandedAnalysisId.value;
   try {
-    const prev = expandedAnalysisId.value;
-    const list = await fetchEmotions(conversationId);
-    emotionList.value = list;
+    await loadEmotions(conversationId);
+    // 保留原展开项；不存在则默认展开最新一轮
+    const list = emotionItems.value;
     expandedAnalysisId.value = prev && list.some((e) => e.id === prev) ? prev : list[0]?.id ?? null;
   } catch {
     /* 保留旧数据 */
@@ -413,7 +406,7 @@ function handleNewConversation() {
   };
   setCurrentConversation(localId);
   allMessages.value = [];
-  emotionList.value = [];
+  resetEmotions();
   expandedAnalysisId.value = null;
   focusInput();
 }
@@ -596,7 +589,7 @@ async function handleItemCommand(item: typeof conversationList.value[0], cmd: st
         await loadChat(nextId);
       } else {
         allMessages.value = [];
-        emotionList.value = [];
+        resetEmotions();
       }
     }
   }

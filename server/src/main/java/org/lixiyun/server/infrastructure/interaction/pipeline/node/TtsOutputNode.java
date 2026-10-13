@@ -11,6 +11,7 @@ import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputNode;
+import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineFactory;
 import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -54,6 +55,26 @@ public class TtsOutputNode implements OutputNode {
 
     /** 节点名称 */
     public static final String NODE_NAME = "ttsOutputNode";
+
+    /** 本节点负责的输出类型，由声明式 Factory 按 outputTypes 过滤装配 */
+    @Override
+    public OutputDataType servesType() {
+        return OutputDataType.AUDIO;
+    }
+
+    /** TTS 位于链末，消费上游产出 */
+    @Override
+    public int order() {
+        return 20;
+    }
+
+    /** Factory 注入的上游 Flux key（含 AVATAR_2D 时为 AvatarOutputNode.NODE_NAME，否则为 ModelChatOutputNode.NODE_NAME） */
+    private String inputFluxKey;
+
+    @Override
+    public void setInputFluxKey(String inputFluxKey) {
+        this.inputFluxKey = inputFluxKey;
+    }
 
     private final TtsConnectionManager ttsConnectionManager;
     private final ConversationWebSocketManager conversationWebSocketManager;
@@ -99,6 +120,10 @@ public class TtsOutputNode implements OutputNode {
      * 从 {@link OutputContext} 获取上游产出的 cached {@code Flux<AgentStreamEvent>}，
      * 附加 TTS 合成副作用后订阅，触发整个 LLM + TTS 链路。
      *
+     * <p>上游产出 key 由 {@link OutputPipelineFactory} 声明式装配时注入
+     * （{@link #setInputFluxKey}）：含 AVATAR_2D 时为 {@code AvatarOutputNode} 重包装后的正文 Flux
+     * （已剥离控制段），否则为 {@code ModelChatOutputNode} 原始输出。</p>
+     *
      * <p>由于 {@link OutputContext#putFlux} 已对 Flux 执行 {@code .cache()}，
      * 本节点的订阅是同一 cached Flux 的二次订阅，不会重复触发 LLM 数据源，
      * 而是重放已缓存的事件并继续接收实时事件。</p>
@@ -113,14 +138,7 @@ public class TtsOutputNode implements OutputNode {
             return;
         }
 
-        Flux<AgentStreamEvent> cachedFlux;
-        if (context.hasOutputType(OutputDataType.TEXT)) {
-            cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
-        } else if (context.hasOutputType(OutputDataType.AVATAR_2D)) {
-            cachedFlux = context.getFlux(AvatarOutputNode.NODE_NAME, AgentStreamEvent.class);
-        } else {
-            cachedFlux = context.getFlux(ModelChatOutputNode.NODE_NAME, AgentStreamEvent.class);
-        }
+        Flux<AgentStreamEvent> cachedFlux = context.getFlux(inputFluxKey, AgentStreamEvent.class);
 
         Disposable ttsSubscribe = cachedFlux
                 .doOnNext(event -> {
