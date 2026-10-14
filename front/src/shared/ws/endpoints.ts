@@ -9,6 +9,8 @@
  *   （后端类级 @RequestMapping 不参与 STOMP 映射，此处为 /app 前缀 + @MessageMapping 路径）。
  */
 
+import { PAGE_BASE_URL } from "@/shared/api/config";
+
 /** 上行音频帧目的地（JSON：{ audioMessage: base64(PCM16LE 16k 单声道), conversationId }） */
 export const STOMP_AUDIO_FRAME_DEST = "/app/audio/frame";
 
@@ -34,10 +36,10 @@ export const asrIntermediateTopic = (conversationId: string) => userQueueTopic("
  */
 export const USER_ERROR_TOPIC = "/user/queue/error";
 
-/** 一次性 wsTicket 接口路径（后端真实路径带 /api 前缀，前端 vite 代理会 strip，故必须直连后端 origin） */
-export const WS_TICKET_PATH = "/api/get-ws-ticket";
+/** 一次性 wsTicket 接口路径（后端真实路径自带 /api 前缀，前端 vite 代理会 strip，故必须直连后端 origin） */
+export const WS_TICKET_PATH = `${PAGE_BASE_URL}/api/get-ws-ticket`;
 /** 原生 WebSocket 端点（必须原生才能接收 TTS 二进制帧；SockJS 端点 /ws/ai-mental-care 无法承载二进制） */
-export const WS_NATIVE_ENDPOINT = "/ws-native";
+export const WS_NATIVE_ENDPOINT = `${PAGE_BASE_URL}/ws-native`;
 
 /** STOMP 心跳（与后端配置对齐：服务端 10s / 客户端 20s） */
 export const WS_HEARTBEAT_INCOMING = 10000;

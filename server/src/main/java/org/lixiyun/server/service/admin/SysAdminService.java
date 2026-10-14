@@ -6,6 +6,7 @@ import org.lixiyun.pojo.dto.admin.sysadmin.AdminQueryDTO;
 import org.lixiyun.pojo.dto.admin.sysadmin.AdminStatusUpdateDTO;
 import org.lixiyun.pojo.dto.admin.sysadmin.AdminUpdateDTO;
 import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
+import org.lixiyun.pojo.vo.admin.sysadmin.AdminAddVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminDetailVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.RoleVO;
@@ -49,12 +50,13 @@ public interface SysAdminService {
     /**
      * 新增管理员账号
      * <p>
-     * 创建新的管理员账号，密码加密入库
+     * 创建新的管理员账号，密码加密入库，登录账号由系统自动生成并在响应中一次性返回。
      * </p>
      *
      * @param adminAddDTO 新增管理员信息 {@link AdminAddDTO}
+     * @return 新增结果（含自动生成的登录账号） {@link AdminAddVO}
      */
-    void addAdmin(AdminAddDTO adminAddDTO);
+    AdminAddVO addAdmin(AdminAddDTO adminAddDTO);
 
     /**
      * 修改管理员基础信息

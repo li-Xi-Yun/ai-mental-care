@@ -1,15 +1,15 @@
 <template>
   <div class="diagnosis-detail-page">
     <div class="breadcrumb">
-      <router-link to="/diagnosis" class="breadcrumb-link">心理诊断</router-link>
+      <router-link to="/diagnosis" class="breadcrumb-link">心理评估</router-link>
       <span class="breadcrumb-sep">›</span>
-      <router-link :to="`/diagnosis/${sessionId}`" class="breadcrumb-link">诊断记录</router-link>
+      <router-link :to="`/diagnosis/${sessionId}`" class="breadcrumb-link">评估记录</router-link>
       <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">诊断详情</span>
+      <span class="breadcrumb-current">评估详情</span>
     </div>
 
     <template v-if="!userStore.token">
-      <el-empty description="登录后即可查看诊断详情">
+      <el-empty description="登录后即可查看评估详情">
         <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
       </el-empty>
     </template>
@@ -25,7 +25,7 @@
 
     <template v-else-if="loadError">
       <div class="error-box">
-        <el-empty description="诊断报告加载失败，请稍后重试" />
+        <el-empty description="评估报告加载失败，请稍后重试" />
         <el-button type="primary" @click="loadDiagnosis">重新加载</el-button>
       </div>
     </template>
@@ -41,7 +41,7 @@
       <DiagnosisStatCards :diagnosis="diagnosis" :emotion-risk-meta="emotionRiskMeta" :crisis-text="crisisText" :format-percent="formatPercent" :signed="signed" />
 
       <section v-if="diagnosis.diagnosisContent" class="panel">
-        <div class="panel-title"><span class="panel-icon">📝</span>诊断摘要</div>
+        <div class="panel-title"><span class="panel-icon">📝</span>评估摘要</div>
         <p class="para summary-text">{{ diagnosis.diagnosisContent }}</p>
       </section>
 

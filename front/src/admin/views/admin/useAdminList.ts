@@ -19,6 +19,7 @@ import {
 } from "@/admin/api/admin/admin-manage";
 import type {
   AdminAddDTO,
+  AdminAddVO,
   AdminDetailVO,
   AdminPageVO,
   AdminUpdateDTO,
@@ -195,6 +196,11 @@ export function useAdminList() {
   const submitting = ref(false);
   const editTarget = ref<AdminPageVO | null>(null);
 
+  /* 新增成功一次性展示账号 */
+  const addSuccessVisible = ref(false);
+  const addSuccessData = ref<AdminAddVO | null>(null);
+  const addUsedDefaultPwd = ref(false);
+
   function openAdd() {
     editTarget.value = null;
     isEdit.value = false;
@@ -220,6 +226,8 @@ export function useAdminList() {
         };
         await updateAdmin(dto);
         ElMessage.success("管理员信息已更新");
+        dialogVisible.value = false;
+        await refreshAll();
       } else {
         const dto: AdminAddDTO = {
           username: payload.username.trim(),
@@ -229,11 +237,14 @@ export function useAdminList() {
           password: payload.sysPassword ? generateValidPassword() : payload.password,
           sysPassword: payload.sysPassword ? null : false,
         };
-        await addAdmin(dto);
-        ElMessage.success(payload.sysPassword ? "新增成功，账号已使用系统默认密码" : "管理员新增成功");
+        const res = await addAdmin(dto);
+        dialogVisible.value = false;
+        await refreshAll();
+        // 一次性展示系统生成的登录账号
+        addSuccessData.value = res.data?.data ?? null;
+        addUsedDefaultPwd.value = !!payload.sysPassword;
+        addSuccessVisible.value = true;
       }
-      dialogVisible.value = false;
-      await refreshAll();
     } catch {
       ElMessage.error("保存失败，请稍后重试");
     } finally {
@@ -440,6 +451,10 @@ export function useAdminList() {
     openAdd,
     openEdit,
     submitAdminForm,
+    // 新增成功一次性展示账号
+    addSuccessVisible,
+    addSuccessData,
+    addUsedDefaultPwd,
     // 状态切换 / 封禁
     banVisible,
     banTarget,

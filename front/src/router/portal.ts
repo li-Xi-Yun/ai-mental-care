@@ -1,9 +1,10 @@
 import type { RouteRecordRaw } from "vue-router";
 import PortalLayout from "@/portal/layouts/default.vue";
+import { USER_PAGE_PREFIX } from "@/shared/api/config";
 
 const portalRoutes: RouteRecordRaw[] = [
   {
-    path: "/",
+    path: USER_PAGE_PREFIX || "/",
     component: PortalLayout,
     children: [
       {
@@ -34,19 +35,19 @@ const portalRoutes: RouteRecordRaw[] = [
         path: "diagnosis",
         name: "PortalDiagnosis",
         component: () => import("@/portal/views/emotion/index.vue"),
-        meta: { title: "心理诊断" },
+        meta: { title: "心理评估" },
       },
       {
         path: "diagnosis/:sessionId",
         name: "PortalDiagnosisList",
         component: () => import("@/portal/views/emotion/diagnosis-list.vue"),
-        meta: { title: "诊断记录" },
+        meta: { title: "评估记录" },
       },
       {
         path: "diagnosis/:sessionId/:diagnosisId",
         name: "PortalDiagnosisDetail",
         component: () => import("@/portal/views/emotion/diagnosis-detail.vue"),
-        meta: { title: "诊断详情" },
+        meta: { title: "评估详情" },
       },
       {
         path: "scale",

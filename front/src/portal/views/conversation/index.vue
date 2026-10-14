@@ -35,10 +35,12 @@
       :pagination="emotionPagination"
       :expanded-analysis-id="expandedAnalysisId"
       :show-panel="showEmotionPanel"
+      :latest-diagnosis-id="latestDiagnosisId"
       @toggle-panel="showEmotionPanel = false"
       @toggle-analysis="(id: string) => expandedAnalysisId = expandedAnalysisId === id ? null : id"
       @load-more="loadMoreEmotions"
       @view-detail="openEmotionDetail"
+      @jump-diagnosis="openLatestDiagnosis"
     />
 
     <EmotionAnalysisDetailDialog
@@ -49,9 +51,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { onBeforeRouteLeave } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useConversationStore } from "@/portal/stores/conversation";
 import { useUserStore } from "@/portal/stores/user";
@@ -69,6 +71,7 @@ import {
 } from "@/portal/composables/useConversationLifecycle";
 import type { ConversationItem, MemoryMessage, PendingActionItem } from "@/portal/api/conversation/types";
 import { fetchRoundMemory, parsePendingActionPush } from "@/portal/api/conversation/dialogue";
+import { getEmotionDiagnosisListByConversation } from "@/portal/api/conversation/emotion-diagnosis";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
 import { PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
 import ConversationListPanel from "@/portal/components/conversation/ConversationListPanel.vue";
@@ -89,12 +92,17 @@ const RECONCILE_RETRY_MS = 800;
 const RECONCILE_MAX_RETRY = 3;
 /** WS 已连接但迟迟无首包的兜底时长 */
 const NO_CHUNK_FALLBACK_MS = 10000;
+/** 心理评估为消息处理后的异步生成：回复完成后的复检间隔与最大次数 */
+const DIAGNOSIS_RECHECK_MS = 30000;
+const DIAGNOSIS_RECHECK_MAX = 3;
 
 /* ==================== 布局状态（持久化到 store，刷新不重置） ==================== */
 
 const conversationStore = useConversationStore();
 const userStore = useUserStore();
+const router = useRouter();
 const { showConversationList, showEmotionPanel, expandedAnalysisId } = storeToRefs(conversationStore);
+const { token, loginSuccessVersion } = storeToRefs(userStore);
 
 /* ==================== 数据状态 ==================== */
 
@@ -122,6 +130,9 @@ const {
 const emotionDetailVisible = ref(false);
 const emotionDetailTargetId = ref<string | null>(null);
 
+/** 当前会话最新一条心理评估 id（情绪面板顶部跳转入口；无评估为 null） */
+const latestDiagnosisId = ref<string | null>(null);
+
 /** 未发送的本地新会话：不进入左侧列表，发送首条消息后才插入列表项 */
 const draftConversation = ref<ConversationItem | null>(null);
 
@@ -139,6 +150,8 @@ let pollAttempts = 0;
 let aiIdleTimer: number | null = null;
 let reconcileTimer: number | null = null;
 let noChunkTimer: number | null = null;
+let diagnosisRecheckTimer: number | null = null;
+let diagnosisRecheckAttempts = 0;
 let reconcileAttempts = 0;
 let baselineAssistantCount = 0;
 let baselinePendingCount = 0;
@@ -263,6 +276,7 @@ async function reconcile(): Promise<void> {
       thinking.value = false;
       clearNoChunkTimer();
       await Promise.allSettled([refreshEmotionList(id), loadConversationList(false)]);
+      refreshLatestDiagnosisAfterReply(id);
       return;
     }
     // 仅待处理卡片推送、memory 暂未体现：保留本地 upsert 结果并结束等待
@@ -271,6 +285,7 @@ async function reconcile(): Promise<void> {
       thinking.value = false;
       clearNoChunkTimer();
       await Promise.allSettled([refreshEmotionList(id), loadConversationList(false)]);
+      refreshLatestDiagnosisAfterReply(id);
       return;
     }
     scheduleReconcileRetry();
@@ -348,6 +363,7 @@ async function loadChat(conversationId: string) {
     resetEmotions();
     expandedAnalysisId.value = null;
     await refreshEmotionList(conversationId);
+    void refreshLatestDiagnosis(conversationId);
   } catch {
     allMessages.value = [];
     pendingActions.value = [];
@@ -362,12 +378,61 @@ async function refreshEmotionList(conversationId: string) {
   const prev = expandedAnalysisId.value;
   try {
     await loadEmotions(conversationId);
-    // 保留原展开项；不存在则默认展开最新一轮
+    // 保留原展开项；不存在则全部收起（默认不展开最新一轮）
     const list = emotionItems.value;
-    expandedAnalysisId.value = prev && list.some((e) => e.id === prev) ? prev : list[0]?.id ?? null;
+    expandedAnalysisId.value = prev && list.some((e) => e.id === prev) ? prev : null;
   } catch {
     /* 保留旧数据 */
   }
+}
+
+/** 刷新当前会话最新心理评估（评估为消息处理后的异步生成，故支持有界复检） */
+async function refreshLatestDiagnosis(conversationId: string, recheck = false): Promise<void> {
+  if (!conversationId || isLocalConversationId(conversationId)) {
+    latestDiagnosisId.value = null;
+    return;
+  }
+  try {
+    const res = await getEmotionDiagnosisListByConversation(conversationId, { pageNum: 1, pageSize: 1 });
+    // 会话已切换：丢弃过期响应
+    if (currentConversationId.value !== conversationId) return;
+    const id = res.data?.data?.records?.[0]?.id;
+    latestDiagnosisId.value = id != null ? String(id) : null;
+  } catch {
+    if (currentConversationId.value === conversationId) latestDiagnosisId.value = null;
+  }
+  if (recheck && !latestDiagnosisId.value) scheduleDiagnosisRecheck(conversationId);
+}
+
+/** AI 回复完成：开一个新的评估复检窗口（后端评估异步生成，可能尚未落库） */
+function refreshLatestDiagnosisAfterReply(conversationId: string): void {
+  clearDiagnosisRecheck();
+  void refreshLatestDiagnosis(conversationId, true);
+}
+
+function scheduleDiagnosisRecheck(conversationId: string): void {
+  if (diagnosisRecheckTimer !== null || diagnosisRecheckAttempts >= DIAGNOSIS_RECHECK_MAX) return;
+  diagnosisRecheckTimer = window.setTimeout(() => {
+    diagnosisRecheckTimer = null;
+    if (currentConversationId.value !== conversationId) return;
+    diagnosisRecheckAttempts += 1;
+    void refreshLatestDiagnosis(conversationId, true);
+  }, DIAGNOSIS_RECHECK_MS);
+}
+
+function clearDiagnosisRecheck(): void {
+  if (diagnosisRecheckTimer !== null) {
+    window.clearTimeout(diagnosisRecheckTimer);
+    diagnosisRecheckTimer = null;
+  }
+  diagnosisRecheckAttempts = 0;
+}
+
+/** 跳转到当前会话最新一条心理评估详情 */
+function openLatestDiagnosis(id: string): void {
+  const convId = currentConversationId.value;
+  if (!convId || isLocalConversationId(convId)) return;
+  void router.push(`/diagnosis/${convId}/${id}`);
 }
 
 /* ==================== 交互 ==================== */
@@ -377,6 +442,7 @@ async function selectConversation(id: string) {
   cancelPending();
   aiStream.value = "";
   draftConversation.value = null;
+  latestDiagnosisId.value = null;
   const prevId = currentConversationId.value;
   setCurrentConversation(id);
   // 离开的会话：销毁后端资源（本地临时 id 自动跳过）；不 init，发送时才按需初始化
@@ -408,10 +474,15 @@ function handleNewConversation() {
   allMessages.value = [];
   resetEmotions();
   expandedAnalysisId.value = null;
+  latestDiagnosisId.value = null;
   focusInput();
 }
 
 async function handleSend() {
+  if (!token.value) {
+    userStore.openLoginDialog("login");
+    return;
+  }
   const text = inputMessage.value.trim();
   if (!text || thinking.value) return;
   let conv = currentConversation.value;
@@ -526,6 +597,7 @@ function waitForAssistant(conversationId: string, prevAssistantCount: number) {
         thinking.value = false;
         clearNoChunkTimer();
         await Promise.allSettled([refreshEmotionList(conversationId), loadConversationList(false)]);
+        refreshLatestDiagnosisAfterReply(conversationId);
         return;
       }
     } catch {
@@ -551,6 +623,7 @@ function cancelPending() {
     reconcileTimer = null;
   }
   clearNoChunkTimer();
+  clearDiagnosisRecheck();
 }
 
 function clearAiIdleTimer(): void {
@@ -590,6 +663,7 @@ async function handleItemCommand(item: typeof conversationList.value[0], cmd: st
       } else {
         allMessages.value = [];
         resetEmotions();
+        latestDiagnosisId.value = null;
       }
     }
   }
@@ -616,8 +690,19 @@ function handlePageShow(e: PageTransitionEvent) {
 
 onMounted(() => {
   window.addEventListener("pageshow", handlePageShow);
-  void initPage();
+  if (token.value) void initPage();
+  // 游客：无会话列表请求，直接结束加载态展示空态（避免骨架常驻）
+  else loadingConversations.value = false;
 });
+
+watch(
+  [token, loginSuccessVersion],
+  ([hasToken], [_oldToken, oldSuccessVersion]) => {
+    if (!hasToken) return;
+    if (!oldSuccessVersion && loginSuccessVersion.value === 0) return;
+    void initPage();
+  },
+);
 
 async function initPage() {
   loadingConversations.value = true;

@@ -1,5 +1,6 @@
 package org.lixiyun.server.infrastructure.conversation;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.AIChatExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -12,7 +13,6 @@ import org.lixiyun.server.infrastructure.conversation.processor.ChatMessageProce
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
-import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -77,7 +77,7 @@ public class ConversationMessageProcessor {
      * @return 模型输出的冷 Flux（未订阅），由调用方负责存入管道上下文并订阅
      * @throws RuntimeException 消息处理失败时抛出
      */
-    public Flux<AgentStreamEvent> processConversationMessage(OutputContext outputContext) {
+    public Flux<NodeOutput> processConversationMessage(OutputContext outputContext) {
         Long conversationId = outputContext.getConversationId();
         log.info("[流程编排] 开始会话消息处理，会话ID：{}", conversationId);
 
@@ -123,6 +123,9 @@ public class ConversationMessageProcessor {
             log.debug("[流程编排] 步骤4/9：构建处理上下文，会话ID：{}，消息数：{}", conversationId, unprocessedMessages.size());
             ConversationProcessContextBO processContext = conversationCacheManager.getProcessContext(conversationId, unprocessedMessages);
             outputContext.setUserId(processContext.getConversation().getUserId());
+            outputContext.setCurrentRound(processContext.getConversation().getCurrentRound());
+            // 注入本轮用户输入消息（供 Avatar 等下游节点构建提示词使用），置于异步任务提交之前
+            outputContext.putData(ConversationProcessContextBO.NAME, processContext);
             log.debug("[流程编排] 处理上下文构建完成，会话ID：{}，ConversationProcessContextBO：{}", conversationId, processContext);
 
 //            String conversationType = conversationCacheManager.getConversationType(conversationId, processContext);
@@ -143,7 +146,7 @@ public class ConversationMessageProcessor {
             });
 
             log.debug("[流程编排] 步骤6/9：主线程消息处理，会话ID：{}", conversationId);
-            Flux<AgentStreamEvent> outputFlux = executeMainThread(conversationId, processContext, chatMessageProcessor, outputContext);
+            Flux<NodeOutput> outputFlux = executeMainThread(conversationId, processContext, chatMessageProcessor, outputContext);
 
             log.debug("[流程编排] 步骤7/9：提交异步分析与诊断任务，会话ID：{}", conversationId);
             diagnosisExecutor.execute(() -> {
@@ -216,7 +219,7 @@ public class ConversationMessageProcessor {
      * @return 模型输出的冷 Flux
      * @throws BusinessException 处理器未找到或执行异常时抛出
      */
-    private Flux<AgentStreamEvent> executeMainThread(Long conversationId, ConversationProcessContextBO processContext,
+    private Flux<NodeOutput> executeMainThread(Long conversationId, ConversationProcessContextBO processContext,
                                    ChatMessageProcessor chatMessageProcessor, OutputContext outputContext) {
         String executorName = ChatMessageProcessor.NODE_NAME;
         log.info("[主线程] 开始主线程执行，会话ID：{}，执行器：{}", conversationId, executorName);
@@ -234,7 +237,7 @@ public class ConversationMessageProcessor {
 
             long startTime = System.currentTimeMillis();
 
-            Flux<AgentStreamEvent> outputFlux = chatMessageProcessor.processMessage(processContext, outputContext);
+            Flux<NodeOutput> outputFlux = chatMessageProcessor.processMessage(processContext, outputContext);
 
             long endTime = System.currentTimeMillis();
             long elapsed = endTime - startTime;

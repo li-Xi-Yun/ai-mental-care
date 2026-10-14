@@ -55,7 +55,10 @@ export function useDiagnosisList() {
     if (recordsLoadingMap[conversationId] || conversationId in recordMap) return;
     recordsLoadingMap[conversationId] = true;
     try {
-      const res = await getEmotionDiagnosisListByConversation(String(conversationId), {});
+      const res = await getEmotionDiagnosisListByConversation(String(conversationId), {
+        pageNum: 1,
+        pageSize: DEFAULT_PAGE_SIZE,
+      });
       recordMap[conversationId] = res.data?.data?.records ?? [];
     } catch {
       recordMap[conversationId] = [];

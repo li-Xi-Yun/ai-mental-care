@@ -2,7 +2,7 @@
   <header class="report-header">
     <div class="hero">
       <div class="hero-info">
-        <h1 class="hero-title">诊断详情</h1>
+        <h1 class="hero-title">评估详情</h1>
         <p class="hero-sub">
           {{ roundNumText }} · 创建 {{ formatDateTime(diagnosis?.createdTime) }} · 更新
           {{ formatDateTime(diagnosis?.updatedTime) }}

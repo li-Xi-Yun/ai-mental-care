@@ -1,6 +1,8 @@
 package org.lixiyun.server.service.impl.admin;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.DesensitizedUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.enums.JwtType;
 import org.lixiyun.common.authentication.utils.JwtUtil;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
+import org.lixiyun.common.core.constant.RoleConstant;
 import org.lixiyun.common.core.error.enums.AuthenticationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.StreamUtils;
@@ -91,8 +94,32 @@ public class SysUserServiceImpl implements SysUserService {
             throw new BusinessException(AuthenticationExceptionEnum.USER_NOT_FOUND);
         }
 
+        // 隐私脱敏：手机号/邮箱为敏感信息，普通管理员仅可见脱敏形态，超级管理员可见明文
+        SysUserDetailVO detailVO = BeanUtil.copyProperties(user, SysUserDetailVO.class);
+        if (!isSuperAdmin()) {
+            detailVO.setMobile(maskMobile(user.getMobile()));
+            detailVO.setEmail(maskEmail(user.getEmail()));
+        }
+
         log.debug("系统用户Service-用户详情查询完成，用户ID: {}", id);
-        return BeanUtil.copyProperties(user, SysUserDetailVO.class);
+        return detailVO;
+    }
+
+    /** 是否超级管理员：用于判断用户详情 PII 是否明文可见 */
+    private boolean isSuperAdmin() {
+        return UserInfoThreadLocalUtil.getUserRolesThrow().stream()
+                .anyMatch(role -> RoleConstant.SUPER_ADMIN_ROLE.equals(role)
+                        || ("ROLE_" + RoleConstant.SUPER_ADMIN_ROLE).equals(role));
+    }
+
+    /** 手机号脱敏（138****1234）；空值原样返回，避免把默认空串脱成无意义形态 */
+    private String maskMobile(String mobile) {
+        return StrUtil.isBlank(mobile) ? mobile : DesensitizedUtil.mobilePhone(mobile);
+    }
+
+    /** 邮箱脱敏（l***@***.com）；空值原样返回 */
+    private String maskEmail(String email) {
+        return StrUtil.isBlank(email) ? email : DesensitizedUtil.email(email);
     }
 
     @Override

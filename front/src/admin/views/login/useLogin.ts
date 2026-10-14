@@ -30,7 +30,7 @@ export function useLogin() {
   const rules: FormRules = {
     loginAccount: [
       { required: true, message: "请输入管理员账号", trigger: "blur" },
-      { min: 2, max: 20, message: "账号长度为 2 ~ 20 个字符", trigger: "blur" },
+      { min: 2, max: 64, message: "账号长度为 2 ~ 64 个字符", trigger: "blur" },
     ],
     password: [
       { required: true, message: "请输入密码", trigger: "blur" },

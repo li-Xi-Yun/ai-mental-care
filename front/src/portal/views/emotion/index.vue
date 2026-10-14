@@ -2,9 +2,9 @@
   <div class="diagnosis-page">
     <header class="page-header">
       <div class="header-copy">
-        <div class="header-eyebrow">AI 心理健康 · 情绪诊断</div>
-        <h2 class="page-title">心理诊断</h2>
-        <p class="page-subtitle">AI 根据对话生成的诊断书沉淀于此，持续追踪你的情绪状态变化</p>
+        <div class="header-eyebrow">AI 心理健康 · 情绪评估</div>
+        <h2 class="page-title">心理评估</h2>
+        <p class="page-subtitle">AI 根据对话生成的评估报告沉淀于此，持续追踪你的情绪状态变化</p>
       </div>
       <div class="search-row">
         <el-input
@@ -28,15 +28,15 @@
     </div>
 
     <template v-else>
-      <el-empty v-if="!userStore.token" class="empty-wrap" description="登录后即可查看诊断记录">
+      <el-empty v-if="!userStore.token" class="empty-wrap" description="登录后即可查看评估记录">
         <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
       </el-empty>
       <div v-else-if="loadError" class="empty-wrap">
-        <el-empty description="诊断列表加载失败，请稍后重试">
+        <el-empty description="评估列表加载失败，请稍后重试">
           <el-button type="primary" @click="fetchList">重新加载</el-button>
         </el-empty>
       </div>
-      <el-empty v-else-if="sessions.length === 0" class="empty-wrap" description="暂未生成诊断记录，快去 AI 对话中聊聊吧" />
+      <el-empty v-else-if="sessions.length === 0" class="empty-wrap" description="暂未生成评估记录，快去 AI 对话中聊聊吧" />
       <template v-else>
         <div class="session-list">
           <div
@@ -54,7 +54,7 @@
                   <el-tag :type="countTone(session.diagnosisCount).type" size="small" effect="light" round>{{ countTone(session.diagnosisCount).text }}</el-tag>
                 </div>
                 <div class="card-meta">
-                  <span class="meta-item">最新诊断 {{ roundText(session.latestRoundNum) }}</span>
+                  <span class="meta-item">最新评估 {{ roundText(session.latestRoundNum) }}</span>
                   <span class="meta-dot">·</span>
                   <span class="meta-item">最近 {{ formatDateTime(session.diagnosisUpdatedTime) }}</span>
                 </div>
@@ -68,19 +68,19 @@
                 <div class="body-inner">
                   <div class="info-chips">
                     <div class="info-chip"><span class="chip-label">会话创建</span><span class="chip-value">{{ formatDateTime(session.conversationCreatedTime) }}</span></div>
-                    <div class="info-chip"><span class="chip-label">最近诊断</span><span class="chip-value">{{ formatDateTime(session.diagnosisUpdatedTime) }}</span></div>
+                    <div class="info-chip"><span class="chip-label">最近评估</span><span class="chip-value">{{ formatDateTime(session.diagnosisUpdatedTime) }}</span></div>
                     <div class="info-chip"><span class="chip-label">最新轮次</span><span class="chip-value">{{ roundText(session.latestRoundNum) }}</span></div>
-                    <div class="info-chip"><span class="chip-label">诊断次数</span><span class="chip-value">{{ session.diagnosisCount ?? 0 }} 次</span></div>
+                    <div class="info-chip"><span class="chip-label">评估次数</span><span class="chip-value">{{ session.diagnosisCount ?? 0 }} 次</span></div>
                   </div>
                   <div class="records-block">
                     <div class="records-head">
-                      <span class="records-title">诊断记录</span>
+                      <span class="records-title">评估记录</span>
                       <el-button text type="primary" size="small" class="records-link" @click="goConversationRecords(session)">
                         查看全部记录 <el-icon><ArrowRight /></el-icon>
                       </el-button>
                     </div>
-                    <div v-if="isRecordsLoading(session)" class="records-state"><span class="mini-spinner"></span>正在加载诊断记录…</div>
-                    <div v-else-if="recordsOf(session).length === 0" class="records-state">该会话暂无诊断书记录</div>
+                    <div v-if="isRecordsLoading(session)" class="records-state"><span class="mini-spinner"></span>正在加载评估记录…</div>
+                    <div v-else-if="recordsOf(session).length === 0" class="records-state">该会话暂无评估报告记录</div>
                     <div v-else class="records-list">
                       <div
                         v-for="record in recordsOf(session)"
@@ -88,14 +88,14 @@
                         class="record-row"
                         @click="goDiagnosisDetail(session.conversationId, record.id)"
                       >
-                        <span class="record-badge" :style="{ background: tintFor(session.conversationId).soft, color: tintFor(session.conversationId).fg }">{{ record.roundNum ? `第${record.roundNum}轮` : "诊断书" }}</span>
+                        <span class="record-badge" :style="{ background: tintFor(session.conversationId).soft, color: tintFor(session.conversationId).fg }">{{ record.roundNum ? `第${record.roundNum}轮` : "评估报告" }}</span>
                         <span class="record-time">{{ formatDateTime(record.createdTime) }}</span>
                         <span class="record-more">查看详情 <el-icon :size="13"><ArrowRight /></el-icon></span>
                       </div>
                     </div>
                   </div>
                   <button type="button" class="view-all-btn" @click="goConversationRecords(session)">
-                    查看诊断记录 <el-icon class="btn-arrow"><ArrowRight /></el-icon>
+                    查看评估记录 <el-icon class="btn-arrow"><ArrowRight /></el-icon>
                   </button>
                 </div>
               </div>
@@ -174,9 +174,9 @@ function tintFor(id: number) {
 
 function countTone(count?: number) {
   const c = count ?? 0;
-  if (c >= 5) return { text: `${c}次诊断`, type: "primary" as const };
-  if (c >= 2) return { text: `${c}次诊断`, type: "success" as const };
-  return { text: c ? `${c}次诊断` : "暂无诊断", type: "info" as const };
+  if (c >= 5) return { text: `${c}次评估`, type: "primary" as const };
+  if (c >= 2) return { text: `${c}次评估`, type: "success" as const };
+  return { text: c ? `${c}次评估` : "暂无评估", type: "info" as const };
 }
 
 function goDiagnosisDetail(conversationId: number, recordId: number | undefined) {

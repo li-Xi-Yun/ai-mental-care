@@ -1,5 +1,5 @@
 import { getToken } from "@shared/api/auth";
-import { API_BASE_URL } from "@shared/api/config";
+import { API_BASE_URL, PAGE_BASE_URL, ADMIN_PAGE_PREFIX } from "@shared/api/config";
 
 /**
  * 前端日志上报基础设施（独立模块，不依赖 axios 拦截器 / 路由 / nprogress）。
@@ -59,10 +59,10 @@ function formatTimestamp(date: Date): string {
   );
 }
 
-/** 按 location.pathname 判断当前端：/admin 前缀为后台，其余为前台 */
+/** 按 location.pathname 判断当前端：/{PAGE_BASE_URL}{ADMIN_PAGE_PREFIX} 前缀为后台，其余为前台 */
 function detectAppType(): "portal" | "admin" {
   if (typeof window === "undefined") return "portal";
-  return window.location.pathname.startsWith("/admin") ? "admin" : "portal";
+  return window.location.pathname.startsWith(`${PAGE_BASE_URL}${ADMIN_PAGE_PREFIX}`) ? "admin" : "portal";
 }
 
 /** 日志级别（与后端 FrontendLogEntryDTO.level 对齐） */

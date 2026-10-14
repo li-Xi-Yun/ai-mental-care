@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OutputContext {
 
     private Long userId;
+    private Integer currentRound;
     private Long conversationId;
 
     /**

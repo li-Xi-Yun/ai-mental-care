@@ -117,6 +117,7 @@ import { ElMessage } from "element-plus";
 import { Operation, DataAnalysis, ChatDotRound } from "@element-plus/icons-vue";
 import dayjs from "@/shared/utils/dayjs";
 import { useConversationStore } from "@/portal/stores/conversation";
+import { useUserStore } from "@/portal/stores/user";
 import ChatInputArea from "./ChatInputArea.vue";
 import PendingActionCard from "./PendingActionCard.vue";
 import VoiceModeDialog from "./VoiceModeDialog.vue";
@@ -147,6 +148,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const userStore = useUserStore();
 const conversationStore = useConversationStore();
 const chatBodyRef = ref<HTMLElement | null>(null);
 const inputAreaRef = ref<InstanceType<typeof ChatInputArea> | null>(null);
@@ -157,6 +159,10 @@ const voiceDialogVisible = ref(false);
 
 /** 语音对话：先弹输入/输出模式选择弹窗，确认后进入语音页 */
 function showVoicePage() {
+  if (!userStore.token) {
+    userStore.openLoginDialog("login");
+    return;
+  }
   voiceDialogVisible.value = true;
 }
 

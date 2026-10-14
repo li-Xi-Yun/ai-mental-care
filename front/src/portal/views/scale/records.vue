@@ -328,7 +328,9 @@ function detailButtonText(status?: number) {
 
 function handleViewDetail(record: ScaleRecordVO) {
   if (record.finishStatus === 0) {
-    router.push(`/scale/${record.scaleId}/answer`);
+    // 未完成记录走续答：必须带上 recordId，否则答题页会新建记录（并终止本条），
+    // 导致“继续作答”实际变成重新开始、已答草稿丢失
+    router.push(`/scale/${record.scaleId}/answer?recordId=${record.recordId}`);
     return;
   }
   router.push(`/scale/records/${record.recordId}`);

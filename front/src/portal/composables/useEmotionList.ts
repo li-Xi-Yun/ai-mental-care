@@ -1,4 +1,4 @@
-import { reactive, ref } from "vue";
+import { reactive, ref, type Ref } from "vue";
 import { getEmotionAnalysisList, type EmotionAnalysisVO } from "@/portal/api/conversation/emotion-analysis";
 import { DEFAULT_PAGE_SIZE } from "@/shared/api/config";
 
@@ -52,8 +52,8 @@ export interface EmotionPagination {
 }
 
 export interface UseEmotionListResult {
-  /** 全部已加载条目（新轮在前，与后端 created_time 倒序对齐） */
-  items: EmotionAnalysisItem[];
+  /** 全部已加载条目（新轮在前，与后端 created_time 倒序对齐；Ref 供调用方读写） */
+  items: Ref<EmotionAnalysisItem[]>;
   /** 分页状态 */
   pagination: EmotionPagination;
   /** 加载首页数据 */

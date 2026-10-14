@@ -30,6 +30,13 @@ export interface AdminAddDTO {
   sysPassword?: boolean | null;
 }
 
+/** 新增管理员结果 VO（含系统生成的登录账号，仅创建响应一次性返回） */
+export interface AdminAddVO {
+  id: number;
+  loginAccount: string;
+  username?: string;
+}
+
 /** 修改管理员基础信息 DTO */
 export interface AdminUpdateDTO {
   id: number;
@@ -108,7 +115,7 @@ export function getAdminPage(data: AdminPageParams) {
 
 /** 新增管理员 */
 export function addAdmin(data: AdminAddDTO) {
-  return httpClient.post<Result<void>>("/admin/sysAdmin/add", data);
+  return httpClient.post<Result<AdminAddVO>>("/admin/sysAdmin/add", data);
 }
 
 /** 修改管理员基础信息 */

@@ -45,7 +45,7 @@
 
     <div v-else class="fb-form">
       <div class="fb-field">
-        <label class="fb-label">诊断评分</label>
+        <label class="fb-label">评估评分</label>
         <el-rate v-model="form.diagnosisScore" :max="5" show-score :allow-half="false" />
       </div>
       <div class="fb-field">
@@ -76,7 +76,7 @@
           :rows="3"
           maxlength="500"
           show-word-limit
-          placeholder="写下你对本次诊断的看法或建议..."
+          placeholder="写下你对本次评估的看法或建议..."
         />
       </div>
       <div class="fb-actions">

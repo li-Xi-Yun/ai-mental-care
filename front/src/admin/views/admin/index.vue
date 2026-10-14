@@ -189,6 +189,13 @@
       :detail="detailData"
       :loading="detailLoading"
     />
+
+    <!-- ==================== 新增成功弹窗（一次性展示系统生成的登录账号） ==================== -->
+    <AddSuccessDialog
+      v-model="addSuccessVisible"
+      :data="addSuccessData"
+      :used-default-pwd="addUsedDefaultPwd"
+    />
   </div>
 </template>
 
@@ -208,6 +215,7 @@ import AdminFormDialog from "./components/AdminFormDialog.vue";
 import AdminDetailDialog from "./components/AdminDetailDialog.vue";
 import BanDialog from "./components/BanDialog.vue";
 import AssignRoleDialog from "./components/AssignRoleDialog.vue";
+import AddSuccessDialog from "./components/AddSuccessDialog.vue";
 
 const {
   // 常量
@@ -240,6 +248,10 @@ const {
   openAdd,
   openEdit,
   submitAdminForm,
+  // 新增成功一次性展示账号
+  addSuccessVisible,
+  addSuccessData,
+  addUsedDefaultPwd,
   // 状态切换 / 封禁
   banVisible,
   banTarget,

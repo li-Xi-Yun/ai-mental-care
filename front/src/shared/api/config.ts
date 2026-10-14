@@ -5,14 +5,33 @@
  * 所有具体业务模块的 API 都基于此处定义的前缀拼接请求地址。
  */
 
+/* ==================== 页面路径前缀（浏览器 URL，与 API 前缀相互独立） ==================== */
+
 /**
- * 后端服务统一根地址（统一请求前缀）。
- * - 接口请求：httpClient 拼接为 `${API_BASE_URL}${path}`。
- * - 图片等静态资源：相对路径经 normalizeResourceUrl 携带此前缀发送；完整 URL 则直接请求，不拼接。
- * 开发环境使用空字符串（相对路径），由 Vite 代理转发到 http://localhost:8088。
- * 生产环境按实际部署地址配置（如 `https://api.example.com`，由 NGINX 转发到后端）。
+ * 页面统一前缀（最前层）—— 读取 .env 的 VITE_APP_BASE（.env.development / .env.production 同名变量覆盖 .env）。
+ * - 根路径部署：留空 ""（或 "/"）；
+ * - 与其它项目共用一个域名、本应用挂在子路径：在 .env.production 填 "/ai-mental-care"（会自动去掉尾斜杠）。
+ * 与 vite.config.ts 的 base 同一来源：base（构建期资产前缀）与 vue-router 的 history base（运行期路由）必须一致。
+ * 访问规则：{域名}/{PAGE_BASE_URL}/{前台或后台前缀}/{页面路径}
  */
-export const API_BASE_URL = "/api";
+export const PAGE_BASE_URL = ((import.meta.env.VITE_APP_BASE as string | undefined) ?? "").replace(/\/+$/, "");
+
+/** 前台页面统一前缀（位于 PAGE_BASE_URL 之后）：默认空（前台在根路径），需要隔离时填 "/portal" 等 */
+export const USER_PAGE_PREFIX = "";
+
+/** 后台页面统一前缀（位于 PAGE_BASE_URL 之后）：后台页面路径统一位于此前缀之下 */
+export const ADMIN_PAGE_PREFIX = "/admin";
+
+/**
+ * 后端服务统一根地址（统一请求前缀）—— 以 .env 为单源：
+ * - VITE_APP_BASE_API 若为完整地址（http/https 开头）：直接使用（后端独立域名的场景）；
+ * - 否则：拼接为 {VITE_APP_BASE_API}，使 API 前缀与页面子路径前缀同源。
+ *   根路径部署（dev 默认）："/" + "/api" = "/api"，由 Vite 代理转发；
+ *   子路径部署（prod 默认）："/ai-mental-care" + "/api" = "/ai-mental-care/api"，由 NGINX 反代。
+ * - 图片等静态资源：相对路径经 normalizeResourceUrl 携带此前缀发送；完整 URL 则直接请求，不拼接。
+ */
+const envApiBase = (import.meta.env.VITE_APP_BASE_API as string | undefined) ?? "";
+export const API_BASE_URL = envApiBase.startsWith("http") ? envApiBase : `${envApiBase || "/api"}`;
 
 /** 前台用户接口统一前缀 */
 export const USER_API_PREFIX = "";
@@ -109,10 +128,10 @@ export const HOME_FEATURE_CARDS = [
   },
   {
     icon: "🧠",
-    title: "心理诊断",
-    description: "AI生成诊断报告，全面评估心理状况",
+    title: "心理评估",
+    description: "AI生成评估报告，全面评估心理状况",
     route: "/diagnosis",
-    action: "查看诊断",
+    action: "查看评估",
   },
 ] as const;
 
@@ -120,7 +139,7 @@ export const HOME_FEATURE_CARDS = [
 export const HOME_ANNOUNCEMENTS = [
   "新增SCL-90症状自评量表，欢迎体验",
   "AI对话支持语音输入，更便捷地倾诉心声",
-  "心理诊断报告支持反馈评分，帮助我们改进",
+  "心理评估报告支持反馈评分，帮助我们改进",
 ];
 
 /* ==================== 量表测评配置 ==================== */
@@ -141,9 +160,9 @@ export const SCALE_DEFAULT_PAGE_SIZE = 12;
 /** 量表列表页分页器布局 */
 export const SCALE_PAGINATION_LAYOUT = "total, prev, pager, next";
 
-/* ==================== 心理诊断配置 ==================== */
+/* ==================== 心理评估配置 ==================== */
 
-/** 诊断筛选标签 */
+/** 评估筛选标签 */
 export const DIAGNOSIS_FILTERS = [
   { label: "全部", value: "all" },
   { label: "需关注", value: "attention" },
@@ -168,7 +187,7 @@ export const EMOTION_COLORS: Record<string, string> = {
 export const PORTAL_NAV_ITEMS = [
   { label: "首页", route: "/" },
   { label: "AI对话", route: "/conversation" },
-  { label: "心理诊断", route: "/diagnosis" },
+  { label: "心理评估", route: "/diagnosis" },
   { label: "量表测评", route: "/scale" },
   { label: "个人中心", route: "/profile" },
 ] as const;

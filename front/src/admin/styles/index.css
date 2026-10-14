@@ -954,6 +954,16 @@ body.admin-mode {
   line-height: 22px;
 }
 
+/* 用户管理列表：行更紧凑（减小数据展示间隔，仅作用于 user-table） */
+.admin-layout .el-table.user-table td.el-table__cell {
+  padding: 5px 0;
+}
+
+.admin-layout .el-table.user-table .cell {
+  padding: 0 6px;
+  line-height: 20px;
+}
+
 /* ===== 9. 通用分页 ===== */
 .admin-layout .el-pagination.is-background .el-pager li,
 .admin-layout .el-pagination.is-background .btn-prev,

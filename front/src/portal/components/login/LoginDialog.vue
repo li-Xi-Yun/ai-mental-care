@@ -20,8 +20,8 @@
           :hide-required-asterisk="true"
           @submit.prevent="handleLogin"
         >
-          <el-form-item prop="email">
-            <el-input v-model="loginForm.email" placeholder="请输入邮箱" :prefix-icon="Message" />
+          <el-form-item prop="loginAccount">
+            <el-input v-model="loginForm.loginAccount" placeholder="请输入账号名" :prefix-icon="User" />
           </el-form-item>
 
           <el-form-item prop="password">
@@ -64,8 +64,12 @@
           :hide-required-asterisk="true"
           @submit.prevent="handleRegister"
         >
-          <el-form-item prop="email">
-            <el-input v-model="registerForm.email" placeholder="请输入邮箱" :prefix-icon="Message" />
+          <el-form-item prop="loginAccount">
+            <el-input v-model="registerForm.loginAccount" placeholder="请输入账号名（2-32位）" :prefix-icon="User" />
+          </el-form-item>
+
+          <el-form-item prop="username">
+            <el-input v-model="registerForm.username" placeholder="请输入用户名（2-12位）" :prefix-icon="UserFilled" />
           </el-form-item>
 
           <el-form-item prop="password">
@@ -112,9 +116,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
 import { ElMessage, type FormInstance, type FormRules } from "element-plus";
-import { Message, Lock } from "@element-plus/icons-vue";
+import { User, UserFilled, Lock } from "@element-plus/icons-vue";
 import { login, register } from "@/portal/api/user/account";
 import { useUserStore } from "@/portal/stores/user";
+import { setTokenInfo } from "@/shared/api/auth";
 import { useCaptcha } from "@/portal/composables/useCaptcha";
 import CaptchaInput from "@/portal/components/login/CaptchaInput.vue";
 
@@ -141,15 +146,15 @@ const registerFormRef = ref<FormInstance | null>(null);
 /* ==================== 登录表单 ==================== */
 
 const loginForm = ref({
-  email: "",
+  loginAccount: "",
   password: "",
   code: "",
 });
 
 const loginRules: FormRules = {
-  email: [
-    { required: true, message: "请输入邮箱", trigger: "blur" },
-    { type: "email", message: "邮箱格式不正确", trigger: "blur" },
+  loginAccount: [
+    { required: true, message: "请输入账号名", trigger: "blur" },
+    { min: 2, max: 32, message: "账号名长度应在 2~32 之间", trigger: "blur" },
   ],
   password: [{ required: true, message: "请输入密码", trigger: "blur" }],
   code: [{ required: true, message: "请输入验证码", trigger: "blur" }],
@@ -158,16 +163,21 @@ const loginRules: FormRules = {
 /* ==================== 注册表单 ==================== */
 
 const registerForm = ref({
-  email: "",
+  loginAccount: "",
+  username: "",
   password: "",
   confirmPassword: "",
   code: "",
 });
 
 const registerRules: FormRules = {
-  email: [
-    { required: true, message: "请输入邮箱", trigger: "blur" },
-    { type: "email", message: "邮箱格式不正确", trigger: "blur" },
+  loginAccount: [
+    { required: true, message: "请输入账号名", trigger: "blur" },
+    { min: 2, max: 32, message: "账号名长度应在 2~32 之间", trigger: "blur" },
+  ],
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    { min: 2, max: 12, message: "用户名长度应在 2~12 之间", trigger: "blur" },
   ],
   password: [
     { required: true, message: "请设置密码", trigger: "blur" },
@@ -241,7 +251,7 @@ async function handleLogin() {
 
   try {
     const response = await login({
-      loginAccount: loginForm.value.email,
+      loginAccount: loginForm.value.loginAccount,
       password: loginForm.value.password,
       key: captchaKey.value,
       code: loginForm.value.code,
@@ -251,6 +261,13 @@ async function handleLogin() {
     if (result?.data) {
       userStore.setToken(result.data.token);
       userStore.setUserInfo(result.data.userInfo ?? {});
+      // 持久化到 axios 拦截器读取的凭证存储（user_token_info / legacy token），
+      // 否则后续请求不会携带鉴权头，会立刻 401 并重新弹出登录框
+      setTokenInfo("user", {
+        token: result.data.token,
+        headerName: result.data.headerName || "user-token",
+      });
+      userStore.consumeLoginSuccess();
       ElMessage.success("登录成功");
       userStore.closeLoginDialog();
       resetAllForms();
@@ -287,10 +304,9 @@ async function handleRegister() {
 
   try {
     const response = await register({
-      loginAccount: registerForm.value.email,
-      username: registerForm.value.email,
+      loginAccount: registerForm.value.loginAccount,
+      username: registerForm.value.username,
       password: registerForm.value.password,
-      email: registerForm.value.email,
       key: captchaKey.value,
       code: registerForm.value.code,
     });
@@ -299,7 +315,7 @@ async function handleRegister() {
     if (result?.code === 200) {
       ElMessage.success("注册成功，请登录");
 
-      loginForm.value.email = registerForm.value.email;
+      loginForm.value.loginAccount = registerForm.value.loginAccount;
       loginForm.value.password = registerForm.value.password;
 
       registerFormRef.value?.resetFields();

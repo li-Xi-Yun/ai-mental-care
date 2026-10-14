@@ -1,9 +1,10 @@
 import type { RouteRecordRaw } from "vue-router";
 import AdminLayout from "@/admin/layouts/default.vue";
+import { ADMIN_PAGE_PREFIX } from "@/shared/api/config";
 
 const adminRoutes: RouteRecordRaw[] = [
   {
-    path: "/admin",
+    path: ADMIN_PAGE_PREFIX,
     component: AdminLayout,
     children: [
       {
@@ -99,7 +100,7 @@ const adminRoutes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: "/admin/login",
+    path: `${ADMIN_PAGE_PREFIX}/login`,
     name: "AdminLogin",
     component: () => import("@/admin/views/login/index.vue"),
     meta: { title: "管理员登录", noAuth: true },

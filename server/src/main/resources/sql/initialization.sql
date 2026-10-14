@@ -151,11 +151,9 @@ INSERT INTO `role` (`id`, `role_key`, `name`, `status`, `remark`, `created_time`
 (2, 'ADMIN', '管理员', 0, '管理员角色（持有全部查询权限）', NOW(), 0, NOW(), 0, 0),
 (3, 'SUPER_ADMIN', '超级管理员', 0, '超级管理员角色（持有全部权限）', NOW(), 0, NOW(), 0, 0);
 
--- 管理员角色(role_id=2) -> 全部查询权限
+-- 管理员角色(role_id=2) -> 全部查询权限（管理员管理 admin:sysAdmin:* 为超级管理员专属，不含 5/6/7/8/9/10/11/12/13/14）
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (2, 1),
-(2, 5),
-(2, 6),
 (2, 12),
 (2, 14),
 (2, 15),

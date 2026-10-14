@@ -1,7 +1,7 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
-import { SUCCESS_CODE } from "./config";
+import { SUCCESS_CODE, PAGE_BASE_URL, ADMIN_PAGE_PREFIX } from "./config";
 import type { Result } from "./types";
 import { getToken, getHeaderName, clearTokenInfo, promptUserLogin } from "./auth";
 import { parseJSONWithBigInt, processBigIntFields } from "@/shared/utils/bigint";
@@ -10,7 +10,7 @@ import { processTimeFields } from "@/shared/utils/time";
 NProgress.configure({ showSpinner: false });
 
 /** 后台接口路径前缀：/admin/**（含登录） */
-const ADMIN_PATH_PREFIX = "/admin/";
+const ADMIN_PATH_PREFIX = `${ADMIN_PAGE_PREFIX}/`;
 
 /** 判断请求是否为后台（admin）接口 */
 function isAdminRequest(config: { url?: string }): boolean {
@@ -125,7 +125,7 @@ export function setupResponseInterceptors(instance: AxiosInstance) {
         if (isAdmin) {
           // 后台有独立登录页：硬跳转 /admin/login
           clearTokenInfo("admin");
-          window.location.href = "/admin/login";
+          window.location.href = `${PAGE_BASE_URL}${ADMIN_PAGE_PREFIX}/login`;
         } else {
           // 前台登录是弹窗：清除凭证并在当前页面触发登录弹窗，不刷新、不跳转
           clearTokenInfo("user");

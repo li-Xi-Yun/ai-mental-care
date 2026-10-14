@@ -76,7 +76,7 @@ const name = computed(() => props.detail?.username ?? props.row?.username ?? "�
 const colorKey = computed(() => {
   const d = props.detail;
   const r = props.row;
-  return d?.username || r?.username || d?.loginAccount || r?.loginAccount || "";
+  return d?.username || r?.username || "";
 });
 const color = computed(() => colorFor(colorKey.value, 2));
 const status = computed(() => adminStatus.itemOf(props.detail?.status ?? props.row?.status));
@@ -86,7 +86,7 @@ const fields = computed<DetailField[]>(() => {
   const r = props.row;
   const list: DetailField[] = [
     { icon: Postcard, label: "管理员 ID", value: String(d?.id ?? r?.id ?? "") },
-    { icon: User, label: "登录账号", value: d?.loginAccount ?? r?.loginAccount ?? "" },
+    { icon: User, label: "登录账号", value: d?.loginAccount ?? r?.loginAccount ?? "", optional: true },
     { icon: Avatar, label: "用户名", value: d?.username ?? r?.username ?? "" },
     { icon: Message, label: "邮箱", value: d?.email ?? r?.email ?? "" },
     { icon: Iphone, label: "手机号", value: d?.mobile ?? r?.mobile ?? "" },

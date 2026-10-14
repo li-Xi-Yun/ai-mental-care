@@ -14,6 +14,7 @@ import org.lixiyun.pojo.dto.admin.sysadmin.AdminQueryDTO;
 import org.lixiyun.pojo.dto.admin.sysadmin.AdminStatusUpdateDTO;
 import org.lixiyun.pojo.dto.admin.sysadmin.AdminUpdateDTO;
 import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
+import org.lixiyun.pojo.vo.admin.sysadmin.AdminAddVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminDetailVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.RoleVO;
@@ -62,11 +63,11 @@ public class SysAdminController {
 
     @PostMapping("/add")
     @PreAuthorize("hasAuthority('admin:sysAdmin:add')")
-    @Operation(summary = "新增管理员账号", description = "新增管理员账号，密码加密入库")
-    public Result<Void> addAdmin(@RequestBody @Validated AdminAddDTO adminAddDTO) {
-        log.info("新增管理员：{}", adminAddDTO);
-        sysAdminService.addAdmin(adminAddDTO);
-        return Result.success();
+    @Operation(summary = "新增管理员账号", description = "新增管理员账号，密码加密入库，响应返回系统生成的登录账号")
+    public Result<AdminAddVO> addAdmin(@RequestBody @Validated AdminAddDTO adminAddDTO) {
+        log.info("新增管理员，用户名：{}", adminAddDTO.getUsername());
+        AdminAddVO adminAddVO = sysAdminService.addAdmin(adminAddDTO);
+        return Result.success(adminAddVO);
     }
 
     @PutMapping("/update")

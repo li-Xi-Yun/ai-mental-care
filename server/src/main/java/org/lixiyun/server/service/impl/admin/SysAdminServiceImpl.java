@@ -26,6 +26,7 @@ import org.lixiyun.pojo.entity.Admin;
 import org.lixiyun.pojo.entity.permission.Role;
 import org.lixiyun.pojo.tool.BasicsUser;
 import org.lixiyun.pojo.vo.admin.permission.TempPermissionVO;
+import org.lixiyun.pojo.vo.admin.sysadmin.AdminAddVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminDetailVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.AdminPageVO;
 import org.lixiyun.pojo.vo.admin.sysadmin.RoleVO;
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 /**
  * 管理员管理服务实现类
@@ -79,6 +81,16 @@ public class SysAdminServiceImpl implements SysAdminService {
 
         PageInfo<AdminPageVO> page = new PageInfo<>(adminPage);
 
+        // 安全投影：登录账号属于凭证信息，非超级管理员仅可查看自己的账号，他人账号置空
+        if (!isSuperAdmin()) {
+            Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+            for (AdminPageVO vo : page.getList()) {
+                if (!Objects.equals(vo.getId(), currentId)) {
+                    vo.setLoginAccount(null);
+                }
+            }
+        }
+
         PageResult<AdminPageVO> result = new PageResult<>(page.getTotal(), page.getList());
 
         log.debug("系统管理员Service-管理员列表查询完成，总数: {}, 当前页记录数: {}", result.getTotal(), result.getRecords().size());
@@ -96,13 +108,21 @@ public class SysAdminServiceImpl implements SysAdminService {
             throw new BusinessException(AuthenticationExceptionEnum.ADMIN_NOT_FOUND);
         }
 
+        // 安全投影：登录账号属于凭证信息，非超级管理员查看他人详情时置空账号
+        if (!isSuperAdmin()) {
+            Long currentId = UserInfoThreadLocalUtil.getCurrentIdThrow();
+            if (!Objects.equals(adminDetailVO.getId(), currentId)) {
+                adminDetailVO.setLoginAccount(null);
+            }
+        }
+
         log.debug("系统管理员Service-管理员详情查询完成，管理员ID: {}", id);
         return adminDetailVO;
     }
 
     @Override
     @Transactional
-    public void addAdmin(AdminAddDTO adminAddDTO) {
+    public AdminAddVO addAdmin(AdminAddDTO adminAddDTO) {
         log.debug("系统管理员Service-开始新增管理员，用户名: {}", adminAddDTO.getUsername());
 
         String username = adminAddDTO.getUsername();
@@ -130,9 +150,10 @@ public class SysAdminServiceImpl implements SysAdminService {
         }
 
 
+        String loginAccount = generateUniqueLoginAccount();
         Admin admin = Admin.builder()
                 .username(username)
-                .loginAccount(generateUniqueLoginAccount())
+                .loginAccount(loginAccount)
                 .password(sysPassword == null ? passwordEncoder.encode(AdminConstant.DEFAULT_PASSWORD) : passwordEncoder.encode(password))
                 .email(email)
                 .mobile(mobile)
@@ -148,6 +169,11 @@ public class SysAdminServiceImpl implements SysAdminService {
         personRoleMapper.saveUserRole(admin.getId(), RoleConstant.ADMIN_ROLE);
 
         log.info("系统管理员Service-管理员新增成功，ID: {}, 用户名: {}", admin.getId(), username);
+        return AdminAddVO.builder()
+                .id(admin.getId())
+                .loginAccount(loginAccount)
+                .username(username)
+                .build();
     }
 
     @Override
@@ -387,13 +413,25 @@ public class SysAdminServiceImpl implements SysAdminService {
                         || ("ROLE_" + RoleConstant.SUPER_ADMIN_ROLE).equals(role));
     }
 
+    /**
+     * 登录账号可用字符集：小写字母 + 数字，去除易混淆字符（i/l/o 与 0/1），便于人工抄录与记忆。
+     */
+    private static final String LOGIN_ACCOUNT_CHARSET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+    /** 登录账号长度：12 位，符合前台登录表单 2~20 位校验。 */
+    private static final int LOGIN_ACCOUNT_LENGTH = 12;
+
     private String generateUniqueLoginAccount() {
         String loginAccount;
         int maxAttempts = 100;
         int attempt = 0;
 
         do {
-            loginAccount = RandomUtil.randomString(32);
+            // 从可读字符集中随机取样，避免 Hutool randomString(int, String) 的重载歧义
+            loginAccount = IntStream.range(0, LOGIN_ACCOUNT_LENGTH)
+                    .map(i -> LOGIN_ACCOUNT_CHARSET.charAt(RandomUtil.randomInt(LOGIN_ACCOUNT_CHARSET.length())))
+                    .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                    .toString();
             attempt++;
 
             if (attempt >= maxAttempts) {

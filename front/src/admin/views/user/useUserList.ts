@@ -110,15 +110,10 @@ export function useUserList() {
   const pageSize = ref(10);
   const searchForm = reactive<{ keyword: string; status?: number }>({ keyword: "", status: undefined });
   const stats = reactive({ total: 0, normal: 0, ban: 0, logout: 0 });
-  const detailMap = ref<Record<number, SysUserDetailVO>>({});
   const selectedRows = ref<SysUserPageVO[]>([]);
 
   function handleSelectionChange(rows: any[]) {
     selectedRows.value = rows;
-  }
-
-  function mobileOf(row: any): string {
-    return detailMap.value[row.id]?.mobile || "—";
   }
 
   async function loadData() {
@@ -137,22 +132,6 @@ export function useUserList() {
     } finally {
       loading.value = false;
     }
-    await loadDetails();
-  }
-
-  async function loadDetails() {
-    const map: Record<number, SysUserDetailVO> = {};
-    await Promise.all(
-      tableData.value.map(async (row) => {
-        try {
-          const res = await getUserDetail(row.id);
-          if (res.data?.data) map[row.id] = res.data.data;
-        } catch {
-          // 忽略单行详情加载失败
-        }
-      }),
-    );
-    detailMap.value = map;
   }
 
   async function loadStats() {
@@ -368,7 +347,6 @@ export function useUserList() {
     stats,
     selectedRows,
     handleSelectionChange,
-    mobileOf,
     loadData,
     handleSearch,
     handleReset,

@@ -8,6 +8,7 @@ export const useUserStore = defineStore(
     const userInfo = ref<Record<string, any>>({});
     const loginDialogVisible = ref(false);
     const loginDialogTab = ref<"login" | "register">("login");
+    const loginSuccessVersion = ref(0);
 
     function setToken(val: string) {
       token.value = val;
@@ -31,16 +32,22 @@ export const useUserStore = defineStore(
       loginDialogVisible.value = false;
     }
 
+    function consumeLoginSuccess(): void {
+      loginSuccessVersion.value += 1;
+    }
+
     return {
       token,
       userInfo,
       loginDialogVisible,
       loginDialogTab,
+      loginSuccessVersion,
       setToken,
       setUserInfo,
       clearUser,
       openLoginDialog,
       closeLoginDialog,
+      consumeLoginSuccess,
     };
   },
   {

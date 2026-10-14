@@ -48,7 +48,7 @@
       <div class="toolbar">
         <el-input
           v-model="searchForm.keyword"
-          placeholder="搜索用户名 / 登录账号 / 手机号 / 邮箱"
+          placeholder="搜索用户名 / 登录账号"
           clearable
           style="width: 260px"
           @keyup.enter="handleSearch"
@@ -93,7 +93,7 @@
       >
         <el-table-column type="selection" width="46" />
         <el-table-column prop="id" label="用户ID" width="92" />
-        <el-table-column label="用户名" min-width="170">
+        <el-table-column label="用户名" width="150">
           <template #default="{ row }">
             <div class="user-cell">
               <div class="avatar-wrap">
@@ -107,11 +107,6 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="手机号" width="130">
-          <template #default="{ row }">
-            <span class="mobile-text">{{ mobileOf(row) }}</span>
-          </template>
-        </el-table-column>
         <el-table-column label="性别" width="86">
           <template #default="{ row }">
             <span class="gender-tag" :style="genderTagStyle(row.gender)">
@@ -120,7 +115,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="注册时间" width="160">
+        <el-table-column label="注册时间" min-width="160">
           <template #default="{ row }">
             <span class="time-text">{{ formatTime(row.createdTime) }}</span>
           </template>
@@ -277,7 +272,6 @@ const {
   stats,
   selectedRows,
   handleSelectionChange,
-  mobileOf,
   handleSearch,
   handleReset,
   // 封禁
@@ -393,12 +387,6 @@ function statusMetaDot(status?: number): string {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.mobile-text {
-  font-size: 12.5px;
-  color: #475569;
-  font-variant-numeric: tabular-nums;
 }
 
 .gender-tag {

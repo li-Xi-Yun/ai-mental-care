@@ -7,6 +7,17 @@
       </span>
     </div>
 
+    <!-- 该会话已有心理评估：直达最新一条评估详情 -->
+    <div
+      v-if="latestDiagnosisId"
+      class="ep-jump"
+      title="查看该会话最新的心理评估"
+      @click="emit('jumpDiagnosis', latestDiagnosisId)"
+    >
+      <span>查看最新评估</span>
+      <span class="ep-jump-arrow">→</span>
+    </div>
+
     <div class="ep-body" ref="bodyRef" @scroll.passive="onScroll">
       <el-empty
         v-if="!items.length && !pagination.loading"
@@ -111,6 +122,8 @@ const props = defineProps<{
   pagination: EmotionPagination;
   expandedAnalysisId: string | null;
   showPanel: boolean;
+  /** 当前会话最新一条心理评估 id；无评估为 null（顶部跳转按钮显隐） */
+  latestDiagnosisId: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -118,6 +131,7 @@ const emit = defineEmits<{
   (e: "toggleAnalysis", id: string): void;
   (e: "loadMore"): void;
   (e: "viewDetail", id: string): void;
+  (e: "jumpDiagnosis", id: string): void;
 }>();
 
 /* ==================== 面板宽度（沿用设计稿 340px，收缩为 0） ==================== */
@@ -196,6 +210,33 @@ function onScroll(e: Event) {
 .ep-close:hover {
   color: #6c63ff;
   background: #f0eeff;
+}
+
+/* 最新心理评估跳转（不随列表滚动） */
+.ep-jump {
+  margin: 10px 12px 0;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0eeff;
+  border: 1px solid #e0dcff;
+  border-radius: 8px;
+  color: #6c63ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.ep-jump:hover {
+  background: #e8e4ff;
+  border-color: #d5cfff;
+}
+
+.ep-jump-arrow {
+  font-weight: 700;
 }
 
 .ep-body {

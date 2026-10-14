@@ -6,19 +6,19 @@
           <el-icon><ArrowLeft /></el-icon> 返回
         </el-button>
       </div>
-      <h2 class="page-title">诊断记录列表</h2>
-      <p class="page-sub">会话 {{ conversationName || `#${conversationId}` }} 的全部历史诊断书</p>
+      <h2 class="page-title">评估记录列表</h2>
+      <p class="page-sub">会话 {{ conversationName || `#${conversationId}` }} 的全部历史评估报告</p>
     </header>
 
     <div v-if="loading" class="list-loading">
       <div v-for="i in 3" :key="i" class="sk-row"></div>
     </div>
 
-    <el-empty v-else-if="loadError" class="empty-wrap" description="诊断记录加载失败，请稍后重试">
+    <el-empty v-else-if="loadError" class="empty-wrap" description="评估记录加载失败，请稍后重试">
       <el-button type="primary" @click="fetchList">重新加载</el-button>
     </el-empty>
 
-    <el-empty v-else-if="records.length === 0" class="empty-wrap" description="该会话暂无诊断书" />
+    <el-empty v-else-if="records.length === 0" class="empty-wrap" description="该会话暂无评估报告" />
 
     <template v-else>
       <div class="record-list">
@@ -31,7 +31,7 @@
           <span class="record-strip"></span>
           <div class="record-main">
             <div class="record-title-row">
-              <span class="record-round">{{ record.roundNum ? `第${record.roundNum}轮诊断` : "诊断书" }}</span>
+              <span class="record-round">{{ record.roundNum ? `第${record.roundNum}轮评估` : "评估报告" }}</span>
               <el-tag :type="riskTagType(record.emotionRisk)" size="small" effect="light">
                 {{ riskLabel(record.emotionRisk) }}
               </el-tag>
