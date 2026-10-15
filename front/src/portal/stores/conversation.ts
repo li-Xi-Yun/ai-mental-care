@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { CONVERSATION_LIST_WIDTH, EMOTION_PANEL_WIDTH } from "@/shared/api/config";
 
 /** 语音对话输入方式（与后端 inputTypes 对齐，可多选） */
 export const VOICE_INPUT_OPTIONS = [
@@ -27,6 +28,10 @@ export const useConversationStore = defineStore(
     const showEmotionPanel = ref(false);
     /** 历史情绪展开项 */
     const expandedAnalysisId = ref<string | null>(null);
+
+    /** 左右面板宽度（px，拖拽可调，刷新持久化） */
+    const conversationListWidth = ref(CONVERSATION_LIST_WIDTH);
+    const emotionPanelWidth = ref(EMOTION_PANEL_WIDTH);
 
     /** 语音对话模式偏好（可多选；下次进入默认选中） */
     const voiceInputTypes = ref<string[]>(["AUDIO"]);
@@ -66,6 +71,8 @@ export const useConversationStore = defineStore(
       expandedAnalysisId,
       voiceInputTypes,
       voiceOutputTypes,
+      conversationListWidth,
+      emotionPanelWidth,
       setCurrentConversation,
       setConversationList,
       toggleConversationList,
@@ -84,6 +91,8 @@ export const useConversationStore = defineStore(
         "expandedAnalysisId",
         "voiceInputTypes",
         "voiceOutputTypes",
+        "conversationListWidth",
+        "emotionPanelWidth",
       ],
     },
   },

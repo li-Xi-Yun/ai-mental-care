@@ -23,6 +23,14 @@ INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark
 INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (104, 'live2d:config:delete', 'Live2D模型配置-删除', 'Live2D模型配置', 0, 'Live2D模型配置删除', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
+-- 一-三、AI 对话配额（AdminQuotaController / SysUserQuotaController）
+-- ------------------------------------------------------------
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (105, 'quota:config:list', '对话配额-全局配置查询', '对话配额', 0, '查询资源类型全局默认上限与可用性/限流状态', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (106, 'quota:config:update', '对话配额-全局配置修改', '对话配额', 0, '修改资源类型默认上限/可用性/限流开关', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (107, 'quota:user:list', '对话配额-用户配额查询', '对话配额', 0, '查询指定用户各资源配额', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (108, 'quota:user:adjust', '对话配额-用户调整', '对话配额', 0, '调整指定用户个性化上限与已用次数', NOW(), 0, NOW(), 0, 0);
+
+-- ------------------------------------------------------------
 -- 二、管理员管理（SysAdminController）
 -- ------------------------------------------------------------
 INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (5, 'admin:sysAdmin:page', '管理员-分页查询', '管理员管理', 0, '分页查询管理员列表', NOW(), 0, NOW(), 0, 0);
@@ -197,7 +205,9 @@ INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (2, 101),
 (2, 102),
 (2, 103),
-(2, 104);
+(2, 104),
+(2, 105),
+(2, 107);
 
 -- 超级管理员角色(role_id=3) -> 全部权限
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
@@ -304,7 +314,11 @@ INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (3, 101),
 (3, 102),
 (3, 103),
-(3, 104);
+(3, 104),
+(3, 105),
+(3, 106),
+(3, 107),
+(3, 108);
 
 -- ============================================================
 -- 基础管理员账号（两个：一个管理员角色、一个超级管理员角色）
@@ -450,3 +464,61 @@ CREATE TABLE IF NOT EXISTS `live2d_config` (
     `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
     `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除，0-否，1-是'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Live2D模型配置表';
+
+-- ============================================================
+-- AI 对话配额三表（quota_config / quota_user / quota_usage_log）
+-- 说明：QuotaConfigManager 启动时全量预热 quota_config；首期仅落地 TEXT 一行，
+--       available 未指定走 DEFAULT 1（可用），enabled=1 启用限流。
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `quota_config` (
+    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
+    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
+    `default_limit` int NOT NULL DEFAULT 8 COMMENT '全局默认次数上限',
+    `enabled` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用限流：1启用，0不启用(不限额)',
+    `available` tinyint NOT NULL DEFAULT 1 COMMENT '资源可用性：1=启用（可用，进入限流判断），0=禁用（整资源不可用，请求被拒）',
+    `cycle_type` tinyint NOT NULL DEFAULT 0 COMMENT '重置周期：0=NONE终身累计不重置(当前默认)，1=MONTHLY按自然月重置(预留，套餐化时启用)',
+    `remark` varchar(200) DEFAULT NULL COMMENT '备注',
+
+    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `updated_by` bigint DEFAULT NULL COMMENT '最后更新人ID',
+
+    UNIQUE KEY `uk_resource_type` (`resource_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-全局默认配置';
+
+CREATE TABLE IF NOT EXISTS `quota_user` (
+    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
+    `user_id` bigint NOT NULL COMMENT '用户ID',
+    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
+    `custom_limit` int DEFAULT NULL COMMENT '个性化上限，NULL=跟随全局默认',
+    `unlimited` tinyint NOT NULL DEFAULT 0 COMMENT '不限量（豁免）：1=该用户此资源不限额、不计数，0=正常限流',
+    `used_count` int NOT NULL DEFAULT 0 COMMENT '已用次数（cycle_type=0 为终身累计，1=MONTHLY 为当周期内次数）',
+    `cycle_start_time` datetime DEFAULT NULL COMMENT '当前周期开始时间；cycle_type=1(MONTHLY) 时用于跨月判断重置，0(NONE) 时保持 NULL',
+
+    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `updated_by` bigint DEFAULT NULL COMMENT '最后更新人ID',
+
+    UNIQUE KEY `uk_user_resource` (`user_id`, `resource_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-用户级使用量与个性化上限';
+
+CREATE TABLE IF NOT EXISTS `quota_usage_log` (
+    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
+    `user_id` bigint NOT NULL COMMENT '用户ID',
+    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
+    `action` tinyint NOT NULL COMMENT '动作：1=CONSUME扣减 / 2=ROLLBACK回滚 / 3=ADMIN_ADJUST管理员调整 / 4=RESET周期重置',
+    `delta` int NOT NULL COMMENT '变化量：CONSUME=+1，ROLLBACK=-1，RESET=0，ADMIN_ADJUST=(after-before)',
+    `before_used` int DEFAULT NULL COMMENT '动作前 used_count',
+    `after_used` int DEFAULT NULL COMMENT '动作后 used_count',
+    `operator_id` bigint DEFAULT NULL COMMENT '操作人ID（管理员调整时必填，系统自动扣减为 NULL）',
+    `conversation_id` bigint DEFAULT NULL COMMENT '关联会话ID（可选，便于核对具体一次对话）',
+    `remark` varchar(200) DEFAULT NULL COMMENT '备注（如 QUOTA_REJECTED、调整说明）',
+
+    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+
+    KEY `idx_user_resource_time` (`user_id`, `resource_type`, `created_time`),
+    KEY `idx_created_time` (`created_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-消费与变更明细（审计）';
+
+INSERT INTO `quota_config` (`resource_type`, `default_limit`, `enabled`, `cycle_type`, `remark`) VALUES
+(1, 8, 1, 0, 'AI文本对话，一条成功提交的文本消息计一次');

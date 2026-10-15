@@ -102,6 +102,28 @@ public class ModelFileSigner {
     }
 
     /**
+     * 对外签发模型文件签名下载 URL（用户端 sign-url 接口使用）。
+     * <p>前端拿到的是入库相对路径（如 {@code modelUrl}），但模型文件唯一入口是带签名的下载接口，
+     * 签名密钥在服务端，前端无法自行签发。本方法按当前 {@code expireSeconds()} 有效期对该路径签发
+     * {@link #DOWNLOAD_PATH} 完整查询串 URL。归一化与根目录前缀校验（防穿越）与 {@link #load} 一致，
+     * 路径越权直接抛错。</p>
+     *
+     * @param path 模型文件相对路径（servlet 相对运行目录，如 live2d-models/hiyori/hiyori.model3.json）
+     * @return 带签名与过期时间的完整下载 URL（相对路径形式：{@code /user/live2d-model/file?path=...&expires=...&sign=...}）
+     * @throws BusinessException 路径越权时抛出
+     */
+    public String signDownloadUrl(String path) {
+        String normalized = normalizeAndCheckPath(path);
+        if (normalized == null) {
+            log.warn("[模型文件签名器] 签发拒绝：路径越权，path：{}", path);
+            throw new BusinessException(Live2dConfigExceptionEnum.LIVE2D_MODEL_PATH_INVALID);
+        }
+        long expires = System.currentTimeMillis() / 1000 + expireSeconds();
+        String sign = SignatureUtil.sign(normalized, expires, activeSecret());
+        return DOWNLOAD_PATH + "?path=" + normalized + "&expires=" + expires + "&sign=" + sign;
+    }
+
+    /**
      * 校验下载参数并返回文件字节。
      *
      * @param path    请求携带的完整相对路径（servlet 相对运行目录，如 live2d-models/hiyori/hiyori.model3.json）

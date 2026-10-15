@@ -35,6 +35,9 @@ public class QuotaUsageLog implements Serializable {
     /** 动作：RESET 周期重置 */
     public static final int ACTION_RESET = 4;
 
+    /** 备注：超限拒绝 */
+    public static final String REMARK_QUOTA_REJECTED = "QUOTA_REJECTED";
+
     /** 自增主键ID */
     @TableId(type = IdType.AUTO)
     private Long id;

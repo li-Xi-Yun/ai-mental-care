@@ -1,14 +1,27 @@
 <template>
-  <div class="conversation-page" :style="{ '--portal-header-height': PORTAL_HEADER_HEIGHT + 'px' }">
+  <div
+    class="conversation-page"
+    ref="pageRef"
+    :class="{ resizing: dragState }"
+    :style="{ '--portal-header-height': PORTAL_HEADER_HEIGHT + 'px' }"
+  >
     <ConversationListPanel
       :conversation-list="conversationList"
       :current-conversation-id="currentConversationId"
       :loading="loadingConversations"
       :show-panel="showConversationList"
+      :width="conversationListWidth"
       @select="selectConversation"
       @new="handleNewConversation"
       @command="handleItemCommand"
     />
+
+    <div
+      v-if="showConversationList"
+      class="resize-bar"
+      title="拖拽调整列表宽度"
+      @pointerdown="startResize('list', $event)"
+    ></div>
 
     <ChatPanel
       ref="chatPanelRef"
@@ -30,12 +43,20 @@
       @scale-answered="handleScaleAnswered"
     />
 
+    <div
+      v-if="showEmotionPanel"
+      class="resize-bar"
+      title="拖拽调整情绪面板宽度"
+      @pointerdown="startResize('emotion', $event)"
+    ></div>
+
     <EmotionPanel
       :items="emotionItems"
       :pagination="emotionPagination"
       :expanded-analysis-id="expandedAnalysisId"
       :show-panel="showEmotionPanel"
       :latest-diagnosis-id="latestDiagnosisId"
+      :width="emotionPanelWidth"
       @toggle-panel="showEmotionPanel = false"
       @toggle-analysis="(id: string) => expandedAnalysisId = expandedAnalysisId === id ? null : id"
       @load-more="loadMoreEmotions"
@@ -73,7 +94,7 @@ import type { ConversationItem, MemoryMessage, PendingActionItem } from "@/porta
 import { fetchRoundMemory, parsePendingActionPush } from "@/portal/api/conversation/dialogue";
 import { getEmotionDiagnosisListByConversation } from "@/portal/api/conversation/emotion-diagnosis";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
-import { PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
+import { PORTAL_HEADER_HEIGHT, CONVERSATION_LIST_WIDTH, EMOTION_PANEL_WIDTH } from "@/shared/api/config";
 import ConversationListPanel from "@/portal/components/conversation/ConversationListPanel.vue";
 import ChatPanel from "@/portal/components/conversation/ChatPanel.vue";
 import EmotionPanel from "@/portal/components/conversation/EmotionPanel.vue";
@@ -101,8 +122,51 @@ const DIAGNOSIS_RECHECK_MAX = 3;
 const conversationStore = useConversationStore();
 const userStore = useUserStore();
 const router = useRouter();
-const { showConversationList, showEmotionPanel, expandedAnalysisId } = storeToRefs(conversationStore);
+const { showConversationList, showEmotionPanel, expandedAnalysisId, conversationListWidth, emotionPanelWidth } = storeToRefs(conversationStore);
 const { token, loginSuccessVersion } = storeToRefs(userStore);
+
+/* ==================== 左右面板拖拽调宽（最小=默认宽度，最大=页宽 1/3；宽度持久化） ==================== */
+
+const pageRef = ref<HTMLElement | null>(null);
+/** 当前正在拖拽的侧边（拖拽期间禁用面板宽度过渡、锁定全局光标/选区） */
+const dragState = ref<null | "list" | "emotion">(null);
+/** 最小宽度即面板当前（默认）大小：左 220 / 右 260 */
+const MIN_LIST_WIDTH = CONVERSATION_LIST_WIDTH;
+const MIN_EMOTION_WIDTH = EMOTION_PANEL_WIDTH;
+
+function pageWidth(): number {
+  return pageRef.value?.clientWidth ?? window.innerWidth;
+}
+
+/** 拖拽分隔条调整侧栏宽度：左栏向右拖变宽，右栏向左拖变宽 */
+function startResize(side: "list" | "emotion", e: PointerEvent): void {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const startX = e.clientX;
+  const startW = side === "list" ? conversationListWidth.value : emotionPanelWidth.value;
+  const max = Math.floor(pageWidth() / 3);
+  // 窗口过窄（页宽 1/3 < 默认宽度）时以最大值为下界，防止反向
+  const min = Math.min(side === "list" ? MIN_LIST_WIDTH : MIN_EMOTION_WIDTH, max);
+  dragState.value = side;
+  document.body.classList.add("is-resizing");
+
+  const onMove = (ev: PointerEvent): void => {
+    const w = side === "list" ? startW + (ev.clientX - startX) : startW + (startX - ev.clientX);
+    const cw = Math.min(Math.max(w, min), max);
+    if (side === "list") conversationListWidth.value = cw;
+    else emotionPanelWidth.value = cw;
+  };
+  const onEnd = (): void => {
+    dragState.value = null;
+    document.body.classList.remove("is-resizing");
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onEnd);
+    window.removeEventListener("pointercancel", onEnd);
+  };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onEnd);
+  window.addEventListener("pointercancel", onEnd);
+}
 
 /* ==================== 数据状态 ==================== */
 
@@ -748,5 +812,35 @@ onBeforeUnmount(() => {
   display: flex;
   overflow: hidden;
   background: #f8f9fc;
+}
+
+/* 左右侧栏拖拽分隔条：5px 热区，拖拽/悬停高亮 */
+.resize-bar {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.resize-bar:hover {
+  background: rgba(108, 99, 255, 0.28);
+}
+
+.conversation-page.resizing .resize-bar {
+  background: rgba(108, 99, 255, 0.5);
+}
+
+/* 拖拽中禁用面板宽度过渡，保证实时跟随光标 */
+.conversation-page.resizing :deep(.conversation-list-panel),
+.conversation-page.resizing :deep(.emotion-panel) {
+  transition: none !important;
+}
+
+/* 拖拽期间：禁止文本选区 + 全局拉伸光标 */
+:global(body.is-resizing) {
+  user-select: none;
+  cursor: col-resize;
 }
 </style>

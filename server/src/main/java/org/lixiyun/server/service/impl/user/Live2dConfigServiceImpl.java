@@ -49,6 +49,12 @@ public class Live2dConfigServiceImpl implements Live2dConfigService {
     }
 
     @Override
+    public String signDownloadUrl(String path) {
+        // 委托 ModelFileSigner 签发：内部做路径前缀校验（防穿越）+ HMAC 签名 + 有效期
+        return modelFileSigner.signDownloadUrl(path);
+    }
+
+    @Override
     public ModelFileSigner.ModelFileBytes downloadModelFile(String path, long expires, String sign) {
         return modelFileSigner.load(path, expires, sign);
     }

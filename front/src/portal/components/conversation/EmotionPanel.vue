@@ -103,7 +103,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Close } from "@element-plus/icons-vue";
-import { EMOTION_PANEL_WIDTH } from "@/shared/api/config";
 import type { EmotionAnalysisItem, EmotionPagination } from "@/portal/composables/useEmotionList";
 import {
   toEmotionKey,
@@ -124,6 +123,8 @@ const props = defineProps<{
   showPanel: boolean;
   /** 当前会话最新一条心理评估 id；无评估为 null（顶部跳转按钮显隐） */
   latestDiagnosisId: string | null;
+  /** 面板宽度（px，可拖拽调整） */
+  width: number;
 }>();
 
 const emit = defineEmits<{
@@ -137,7 +138,7 @@ const emit = defineEmits<{
 /* ==================== 面板宽度（沿用设计稿 340px，收缩为 0） ==================== */
 
 const emotionPanelStyle = computed(() => ({
-  width: props.showPanel ? `${EMOTION_PANEL_WIDTH}px` : "0px",
+  width: props.showPanel ? `${props.width}px` : "0px",
   opacity: props.showPanel ? 1 : 0,
 }));
 

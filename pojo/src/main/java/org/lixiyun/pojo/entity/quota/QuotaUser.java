@@ -24,6 +24,11 @@ public class QuotaUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 不限量开关：豁免（unlimited=1，该用户此资源不限额、不计数） */
+    public static final int UNLIMITED_YES = 1;
+    /** 不限量开关：正常限流（unlimited=0） */
+    public static final int UNLIMITED_NO = 0;
+
     /** 自增主键ID */
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -55,5 +60,23 @@ public class QuotaUser implements Serializable {
     /** 最后更新人ID */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updatedBy;
+
+    /**
+     * 是否不限量豁免（unlimited=1）
+     *
+     * @return true=该用户此资源不限额、不计数
+     */
+    public boolean isUnlimited() {
+        return unlimited != null && unlimited == UNLIMITED_YES;
+    }
+
+    /**
+     * usedCount 空安全取值（用于 VO 构建等场景）
+     *
+     * @return 若字段为 null 则返回 0，否则返回实际值
+     */
+    public int usedCountOrDefault() {
+        return usedCount == null ? 0 : usedCount;
+    }
 
 }

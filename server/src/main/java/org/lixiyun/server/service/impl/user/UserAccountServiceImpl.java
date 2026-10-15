@@ -3,6 +3,7 @@ package org.lixiyun.server.service.impl.user;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.enums.JwtType;
@@ -16,9 +17,12 @@ import org.lixiyun.pojo.dto.user.user.LoginUserDTO;
 import org.lixiyun.pojo.dto.user.user.PasswordDTO;
 import org.lixiyun.pojo.dto.user.user.RegisterUserDTO;
 import org.lixiyun.pojo.entity.User;
+import org.lixiyun.pojo.entity.quota.QuotaConfig;
+import org.lixiyun.pojo.entity.quota.QuotaUser;
 import org.lixiyun.pojo.tool.LoginUser;
 import org.lixiyun.pojo.vo.user.user.LoginResultVO;
 import org.lixiyun.pojo.vo.user.user.LoginUserInfoVO;
+import org.lixiyun.server.infrastructure.ai.QuotaConfigManager;
 import org.lixiyun.server.mapper.PermissionMapper;
 import org.lixiyun.server.mapper.PersonRoleMapper;
 import org.lixiyun.server.mapper.RoleMapper;
@@ -49,6 +53,8 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     private final PersonRoleMapper personRoleMapper;
 
+    private final QuotaConfigManager quotaConfigManager;
+
     @Override
     @Transactional
     public void register(RegisterUserDTO registerUserDTO) {
@@ -67,6 +73,9 @@ public class UserAccountServiceImpl implements UserAccountService {
 
         // 新增该用户普通用户权限
         personRoleMapper.saveUserRole(user.getId(), RoleConstant.USER_ROLE);
+
+        // 预建 AI 对话配额行（可选优化；缺失时由 tryConsume 懒创建兜底）
+        preCreateQuotaRows(user.getId());
     }
 
     @Override
@@ -174,6 +183,34 @@ public class UserAccountServiceImpl implements UserAccountService {
         if (userMapper.selectCount(queryWrapper) > 0) {
             log.warn("账号名已存在：{}", loginAccount);
             throw new BusinessException(AuthenticationExceptionEnum.LOGIN_ACCOUNT_EXIST);
+        }
+    }
+
+    /**
+     * 注册后预建 AI对话配额行（可选优化；缺失时由 tryConsume 懒创建兜底）
+     * <p>按当前全局配置（quota_config）中「可用(available=1) 且 启用限流(enabled=1)」的资源类型
+     * 批量插入 quota_user（used=0）。整体 best-effort：预建失败仅告警，绝不阻断注册主流程。</p>
+     *
+     * @param userId 新注册用户ID
+     */
+    private void preCreateQuotaRows(Long userId) {
+        try {
+            List<QuotaUser> quotaUsers = quotaConfigManager.getAllConfigs().stream()
+                    .filter(QuotaConfig::isAvailable)
+                    .filter(QuotaConfig::isEnabled)
+                    .map(config -> QuotaUser.builder()
+                            .userId(userId)
+                            .resourceType(config.getResourceType())
+                            .unlimited(QuotaUser.UNLIMITED_NO)
+                            .usedCount(0)
+                            .cycleStartTime(config.isMonthly() ? QuotaConfig.currentPeriodStart() : null)
+                            .build())
+                    .toList();
+            if (!quotaUsers.isEmpty()) {
+                Db.saveBatch(quotaUsers);
+            }
+        } catch (Exception e) {
+            log.warn("[用户注册] 预建配额行失败（懒创建兜底），userId：{}，原因：{}", userId, e.getMessage());
         }
     }
 

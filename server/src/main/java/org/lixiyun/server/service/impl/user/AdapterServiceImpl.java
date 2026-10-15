@@ -6,11 +6,12 @@ import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.enums.InputAdapterExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.pojo.dto.user.conversation.AudioInterruptDTO;
 import org.lixiyun.pojo.dto.user.conversation.AudioMessageSendDTO;
 import org.lixiyun.pojo.dto.user.conversation.UserMessageSendDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
+import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.pojo.vo.user.conversation.UserMessageSendVO;
+import org.lixiyun.server.infrastructure.ai.annotation.QuotaLimit;
 import org.lixiyun.server.infrastructure.conversation.ConversationRepository;
 import org.lixiyun.server.infrastructure.interaction.adapter.InputAdapterSessionManager;
 import org.lixiyun.server.infrastructure.interaction.adapter.InputDataType;
@@ -41,6 +42,7 @@ public class AdapterServiceImpl implements AdapterService {
     private final ConversationRepository conversationRepository;
 
     @Override
+    @QuotaLimit(resourceType = QuotaConfig.RESOURCE_TYPE_TEXT)
     public UserMessageSendVO sendTextMessage(UserMessageSendDTO dto) {
         Long conversationId = dto.getConversationId();
         Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();

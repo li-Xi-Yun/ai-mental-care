@@ -55,6 +55,17 @@ public class Live2dConfigController {
     }
 
 
+    @GetMapping("/sign-url")
+    @Operation(summary = "获取Live2D模型文件签名下载URL", description = "根据模型文件相对路径签发短时有效下载URL；本接口需登录（未放行 permit-all-urls），签名下载接口本身无需登录但必须验签")
+    public Result<String> signDownloadUrl(
+            @RequestParam @NotBlank(message = "模型文件路径不能为空")
+            @Parameter(description = "模型文件相对路径，如 live2d-models/hiyori/hiyori.model3.json", required = true) String path) {
+        log.info("获取Live2D模型文件签名URL，path：{}", path);
+        String url = live2dConfigService.signDownloadUrl(path);
+        return Result.success(url);
+    }
+
+    @GetMapping("/file")
     @Operation(summary = "认证下载Live2D模型文件", description = "模型资源的唯一访问入口：校验签名（HMAC+有效期）与路径（必须在 live2d-models/ 下）；model3.json 实时改写内部子资源路径为带签名的下载 URL")
     public ResponseEntity<byte[]> downloadModelFile(
             @RequestParam @NotBlank(message = "模型文件路径不能为空")

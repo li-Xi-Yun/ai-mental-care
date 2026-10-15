@@ -67,7 +67,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Plus, ChatDotRound, More, EditPen, Delete } from "@element-plus/icons-vue";
-import { CONVERSATION_LIST_WIDTH } from "@/shared/api/config";
 import dayjs from "@/shared/utils/dayjs";
 import type { ConversationItem } from "@/portal/api/conversation/types";
 
@@ -76,6 +75,8 @@ const props = defineProps<{
   currentConversationId: string;
   loading: boolean;
   showPanel: boolean;
+  /** 面板宽度（px，可拖拽调整） */
+  width: number;
 }>();
 
 const emit = defineEmits<{
@@ -85,7 +86,7 @@ const emit = defineEmits<{
 }>();
 
 const listPanelStyle = computed(() => ({
-  width: props.showPanel ? `${CONVERSATION_LIST_WIDTH}px` : "0px",
+  width: props.showPanel ? `${props.width}px` : "0px",
   opacity: props.showPanel ? 1 : 0,
 }));
 
