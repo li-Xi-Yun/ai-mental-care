@@ -7,8 +7,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -123,6 +126,53 @@ public class JsonUtils {
             return null;
         }
         return OBJECT_MAPPER.convertValue(map, clazz);
+    }
+
+    /**
+     * 将字节数组解析为 JSON 树节点
+     * <p>复用项目全局 ObjectMapper，供需要定位/改写 JSON 结构的场景使用（如 model3.json 资源路径改写）。</p>
+     *
+     * @param bytes 字节数组（UTF-8 JSON）
+     * @return JSON 树根节点；空数组返回 null
+     */
+    public static JsonNode readTree(byte[] bytes) {
+        if (ArrayUtil.isEmpty(bytes)) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readTree(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 创建 JSON 对象节点（复用项目全局 ObjectMapper 的 NodeFactory）
+     */
+    public static ObjectNode createObjectNode() {
+        return OBJECT_MAPPER.createObjectNode();
+    }
+
+    /**
+     * 创建 JSON 数组节点（复用项目全局 ObjectMapper 的 NodeFactory）
+     */
+    public static ArrayNode createArrayNode() {
+        return OBJECT_MAPPER.createArrayNode();
+    }
+
+    /**
+     * 将 JSON 节点/对象序列化为字节数组
+     * <p>供需要返回改写后 JSON 结构的场景使用（如 model3.json 改写后写回响应）。</p>
+     *
+     * @param value JSON 节点或任意可序列化对象
+     * @return UTF-8 字节数组
+     */
+    public static byte[] writeValueAsBytes(Object value) {
+        try {
+            return OBJECT_MAPPER.writeValueAsBytes(value);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

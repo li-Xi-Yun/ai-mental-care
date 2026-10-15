@@ -9,5 +9,7 @@ SymptomDictExceptionEnum:2400
 AiNodeConfigExceptionEnum:2600
 InputAdapterExceptionEnum:2800
 OutputPipelineExceptionEnum:3000
+Live2dConfigExceptionEnum:3200
+
 
 SystemExceptionEnum:10000

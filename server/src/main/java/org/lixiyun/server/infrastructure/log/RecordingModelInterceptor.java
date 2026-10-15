@@ -211,8 +211,11 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
             return response;
         }
 
-        if (response.getChatResponse().hasToolCalls()) {
-            log.debug("[模型同步调用日志拦截器] 模型调用响应工具调用: {}", response.getChatResponse().getResult().getOutput().getToolCalls());
+        // 结构化输出（outputType）场景下框架可能只回填 message 而不带完整 ChatResponse，
+        // 此处必须判空，否则 NPE 会导致整个节点调用失败（如情绪识别节点）
+        ChatResponse chatResponse = response.getChatResponse();
+        if (chatResponse != null && chatResponse.hasToolCalls()) {
+            log.debug("[模型同步调用日志拦截器] 模型调用响应工具调用: {}", chatResponse.getResult().getOutput().getToolCalls());
         }
 
         return response;

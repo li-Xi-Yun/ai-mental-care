@@ -15,6 +15,14 @@ INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark
 INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (4, 'ai:node:config:delete', 'AI节点配置-删除', 'AI节点配置', 0, 'AI节点配置删除', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
+-- 一-二、Live2D 模型配置（AdminLive2dConfigController）
+-- ------------------------------------------------------------
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (101, 'live2d:config:list', 'Live2D模型配置-列表查询', 'Live2D模型配置', 0, 'Live2D模型配置列表查询', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (102, 'live2d:config:create', 'Live2D模型配置-上传新增', 'Live2D模型配置', 0, 'Live2D模型配置上传新增', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (103, 'live2d:config:update', 'Live2D模型配置-修改/启用', 'Live2D模型配置', 0, 'Live2D模型配置修改与启用切换', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (104, 'live2d:config:delete', 'Live2D模型配置-删除', 'Live2D模型配置', 0, 'Live2D模型配置删除', NOW(), 0, NOW(), 0, 0);
+
+-- ------------------------------------------------------------
 -- 二、管理员管理（SysAdminController）
 -- ------------------------------------------------------------
 INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (5, 'admin:sysAdmin:page', '管理员-分页查询', '管理员管理', 0, '分页查询管理员列表', NOW(), 0, NOW(), 0, 0);
@@ -185,7 +193,11 @@ INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (2, 94),
 (2, 98),
 (2, 99),
-(2, 100);
+(2, 100),
+(2, 101),
+(2, 102),
+(2, 103),
+(2, 104);
 
 -- 超级管理员角色(role_id=3) -> 全部权限
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
@@ -288,7 +300,11 @@ INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (3, 97),
 (3, 98),
 (3, 99),
-(3, 100);
+(3, 100),
+(3, 101),
+(3, 102),
+(3, 103),
+(3, 104);
 
 -- ============================================================
 -- 基础管理员账号（两个：一个管理员角色、一个超级管理员角色）
@@ -410,3 +426,27 @@ INSERT INTO `symptom_dict` (`id`, `symptom_term`, `symptom_category`, `synonym_w
 -- ============================================================
 INSERT INTO infra_file_category (id, parent_id, person_id, category_name, default_type, file_count)
 VALUES (0, 0, NULL, '默认分类', 1, 0);
+-- ============================================================
+-- Live2D 模型配置表 live2d_config（启动必需）
+-- 说明：一个模型一条记录，model_url 为前端加载入口（.model3.json 相对路径），
+--       expression_list / motion_list 为 LLM 输出姿态/动作的白名单（上传时解析 exp3/motion3 自动提取）
+--       启用互斥：全局同时仅允许一条 enabled=1（接口层事务保证，节点层按 sort 升序取一兜底）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `live2d_config` (
+    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
+    `model_name` varchar(100) NOT NULL COMMENT 'Live2D模型名称',
+    `model_url` varchar(255) NOT NULL COMMENT '.model3.json 服务器相对路径，前端加载入口',
+    `model_relative_path` varchar(255) NOT NULL COMMENT '模型包根目录相对路径（.moc3/.exp3/.motion3/纹理所在目录）',
+    `cover_image_path` varchar(255) DEFAULT NULL COMMENT '模型封面图路径（管理端列表 + 用户端预览共用）',
+    `enabled` tinyint NOT NULL DEFAULT 0 COMMENT '是否启用：0-禁用，1-启用（全局唯一启用，互斥）',
+    `sort` int NOT NULL DEFAULT 0 COMMENT '排序值，越大越靠前',
+    `semantic_prompt` text DEFAULT NULL COMMENT '语义解析说明，发给大模型的提示词（模型资产描述）',
+    `motion_list` json DEFAULT NULL COMMENT '动作JSON中固定词汇List（资产 id 白名单）',
+    `expression_list` json DEFAULT NULL COMMENT '表情JSON中固定词汇List（资产 id 白名单）',
+    `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+    `created_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
+    `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
+    `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除，0-否，1-是'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Live2D模型配置表';

@@ -107,6 +107,7 @@ public class AiHttpClientConfig {
                 .setDefaultRequestConfig(requestConfig)
                 .disableAutomaticRetries()
                 .disableCookieManagement()
+                .disableContentCompression()
                 .evictExpiredConnections()
                 .evictIdleConnections(TimeValue.ofSeconds(60))
                 .build();

@@ -1,4 +1,4 @@
-package org.lixiyun.server.controller.admin.config;
+package org.lixiyun.server.controller.admin.node;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

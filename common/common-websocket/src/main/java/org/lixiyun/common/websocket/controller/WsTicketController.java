@@ -51,7 +51,6 @@ public class WsTicketController {
                 10,
                 TimeUnit.SECONDS
         );
-
         log.info("为用户 {} 生成 WebSocket 一次性 ticket", userId);
         return Result.success(ticket);
     }
