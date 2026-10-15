@@ -3,7 +3,9 @@ package org.lixiyun.server.infrastructure.interaction.pipeline.node;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.agent.tts.api.TtsResultCallback;
+import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
+import org.lixiyun.server.infrastructure.ai.annotation.QuotaLimit;
 import org.lixiyun.server.infrastructure.audio.TtsConnectionManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
@@ -128,13 +130,29 @@ public class TtsOutputNode implements OutputNode {
      * 本节点的订阅是同一 cached Flux 的二次订阅，不会重复触发 LLM 数据源，
      * 而是重放已缓存的事件并继续接收实时事件。</p>
      *
+     * <p><b>AI配额（切面拦截）</b>：被拒时——纯 AUDIO 模式整节点被切面跳过（本轮无回复仅拒绝事件）；
+     * 混合模式切面注入 {@code quota:skip} 标记后放行，本方法读标记降级为纯文本订阅
+     * （不附加 TTS 副作用，TEXT 通道照常送达）。</p>
+     *
      * @param context 输出上下文
      */
     @Override
+    @QuotaLimit(resourceType = QuotaConfig.RESOURCE_TYPE_TTS,
+                userSource = QuotaLimit.QuotaUserSource.OUTPUT_CONTEXT,
+                async = true)
     public void process(OutputContext context) {
         boolean audioOutput = context.hasOutputType(OutputDataType.AUDIO);
         if (!audioOutput) {
             log.debug("[TtsNode] 非音频模式，跳过TTS处理，会话ID：{}", conversationId);
+            return;
+        }
+
+        if (Boolean.TRUE.equals(context.getData("quota:skip:" + QuotaConfig.RESOURCE_TYPE_TTS, Boolean.class))) {
+            // 配额被拒（混合模式降级为纯文本）：驱动整链保证 TEXT 通道送达，不附加 TTS 副作用
+            Flux<AgentStreamEvent> cachedFlux = context.getFlux(inputFluxKey, AgentStreamEvent.class);
+            Disposable textOnlySubscribe = cachedFlux.subscribe();
+            conversationStreamHolder.addStream(conversationId, textOnlySubscribe);
+            log.info("[TtsNode] 配额被拒，降级为纯文本，会话ID：{}", conversationId);
             return;
         }
 

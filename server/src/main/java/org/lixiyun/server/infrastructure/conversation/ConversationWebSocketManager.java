@@ -143,4 +143,17 @@ public class ConversationWebSocketManager {
         log.debug("会话WebSocket管理器-虚拟形象动作指令下发，会话ID：{}，动作：{}", conversationId, motion);
         sendViaWebSocket(userId, AvatarConstant.AI_AVATAR_MOTION, conversationId, Map.of("motion", motion));
     }
+
+    /**
+     * 发送AI配额拒绝事件（异步资源超限/停用时由 QuotaLimitAspect 调用）
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param resourceType   资源类型：2=ASR 3=TTS 4=AVATAR_2D
+     */
+    public void sendQuotaRejected(Long userId, Long conversationId, Integer resourceType) {
+        log.warn("会话WebSocket管理器-配额拒绝事件下发，会话ID：{}，资源类型：{}", conversationId, resourceType);
+        sendViaWebSocket(userId, ConversationConstant.QUOTA_REJECTED, conversationId,
+                Map.of("event", "QUOTA_REJECTED", "resourceType", resourceType));
+    }
 }

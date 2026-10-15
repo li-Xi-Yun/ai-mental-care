@@ -21,4 +21,7 @@ public interface ConversationConstant {
     /** 待处理交互推送，需要在后面路径中添加/{conversationId} */
     String PENDING_ACTION = "/pending-action";
 
+    /** AI配额拒绝事件推送，需要在后面路径中添加/{conversationId} */
+    String QUOTA_REJECTED = "/quota/rejected";
+
 }

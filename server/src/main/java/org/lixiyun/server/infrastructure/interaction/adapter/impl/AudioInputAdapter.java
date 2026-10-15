@@ -10,9 +10,8 @@ import org.lixiyun.common.core.error.enums.InputAdapterExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.dto.user.conversation.AudioMessageSendDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
-import org.lixiyun.pojo.entity.conversation.ConversationMemory;
-import org.lixiyun.server.ai.message.enums.MessageType;
 import org.lixiyun.server.infrastructure.audio.AsrConnectionManager;
+import org.lixiyun.server.infrastructure.audio.AsrQuotaHandler;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
@@ -20,7 +19,6 @@ import org.lixiyun.server.infrastructure.interaction.adapter.InputAdapter;
 import org.lixiyun.server.infrastructure.interaction.adapter.InputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSessionManager;
 import org.lixiyun.server.mapper.ConversationMapper;
-import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.scheduler.ConversationAggregateScheduler;
 import org.lixiyun.server.socket.constant.ConversationConstant;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -62,10 +60,10 @@ import java.util.List;
 public class AudioInputAdapter implements InputAdapter {
 
     private final ConversationMapper conversationMapper;
-    private final ConversationMemoryMapper conversationMemoryMapper;
     private final ConversationCacheManager conversationCacheManager;
     private final ConversationWebSocketManager conversationWebSocketManager;
     private final AsrConnectionManager asrConnectionManager;
+    private final AsrQuotaHandler asrQuotaHandler;
     private final ConversationAggregateScheduler aggregateScheduler;
     private final OutputPipelineSessionManager outputPipelineSessionManager;
 
@@ -234,32 +232,13 @@ public class AudioInputAdapter implements InputAdapter {
                 log.info(" [音频输入适配器] ASR回调-句子识别完成，会话ID：{}，句子编号：{}，文本：{}，置信度：{}",
                         conversationId, result.getSentenceIndex(), text, result.getConfidence());
 
-                Conversation cacheMetadata = conversationCacheManager.getCacheMetadata(conversationId);
-                int currentRound;
-                if (cacheMetadata != null && cacheMetadata.getCurrentRound() != null) {
-                    currentRound = cacheMetadata.getCurrentRound();
-                } else {
-                    Conversation conversation = conversationMapper.selectById(conversationId);
-                    currentRound = (conversation != null && conversation.getCurrentRound() != null)
-                            ? conversation.getCurrentRound() : 1;
+                int currentRound = resolveCurrentRound(conversationId);
+
+                // AI配额（@QuotaLimit 切面拦截）：被拒则未落库、未触发管道，仅推送拒绝事件
+                if (!asrQuotaHandler.commitRecognizedSentence(userId, conversationId, text, currentRound)) {
+                    log.info("[AI配额] 用户{}语音识别次数已达上限，丢弃该句，会话ID：{}", userId, conversationId);
+                    return;
                 }
-
-                ConversationMemory conversationMemory = ConversationMemory.builder()
-                        .userId(userId)
-                        .conversationId(conversationId)
-                        .content(text)
-                        .type(MessageType.USER.getName())
-                        .state(ConversationMemory.STATE_NOT_PROCESSED)
-                        .roundNum(currentRound)
-                        .build();
-
-                conversationMemoryMapper.insert(conversationMemory);
-                log.debug("[音频输入适配器] ASR回调-用户消息保存成功，会话ID：{}，轮次：{}，消息ID：{}", conversationId, currentRound, conversationMemory.getId());
-
-                saveMessageToZSet(conversationId);
-
-                aggregateScheduler.addTask(conversationId, 2);
-                log.debug("[音频输入适配器] ASR回调-聚合调度器已添加任务，会话ID：{}", conversationId);
             }
 
             @Override
@@ -270,13 +249,19 @@ public class AudioInputAdapter implements InputAdapter {
     }
 
     /**
-     * 将会话ID加入Redis ZSet延迟队列，触发聚合调度
+     * 解析当前会话轮次（优先缓存，兜底数据库）
      *
      * @param conversationId 会话ID
+     * @return 当前轮次
      */
-    private void saveMessageToZSet(Long conversationId) {
-        conversationCacheManager.saveMessageToZSet(conversationId, LocalDateTime.now());
-        log.debug("[音频输入适配器] 消息ZSet集合保存成功，会话ID：{}", conversationId);
+    private int resolveCurrentRound(Long conversationId) {
+        Conversation cacheMetadata = conversationCacheManager.getCacheMetadata(conversationId);
+        if (cacheMetadata != null && cacheMetadata.getCurrentRound() != null) {
+            return cacheMetadata.getCurrentRound();
+        }
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        return (conversation != null && conversation.getCurrentRound() != null)
+                ? conversation.getCurrentRound() : 1;
     }
 
 }

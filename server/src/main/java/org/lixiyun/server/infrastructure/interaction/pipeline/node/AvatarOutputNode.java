@@ -6,9 +6,11 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.server.ai.model.pipeline.AvatarModel;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.lixiyun.server.ai.node.pipeline.AvatarNode;
+import org.lixiyun.server.infrastructure.ai.annotation.QuotaLimit;
 import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
 import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
@@ -169,13 +171,31 @@ public class AvatarOutputNode implements OutputNode {
      * </ul>
      * </p>
      *
+     * <p><b>AI配额（切面拦截）</b>：被拒时——纯 AVATAR_2D 模式整节点被切面跳过（本轮无回复仅拒绝事件）；
+     * 混合模式切面注入 {@code quota:skip} 标记后放行，本方法读标记跳过表情/动作生成
+     * （仍透传正文并驱动链，TEXT/TTS 通道照常送达）。</p>
+     *
      * @param context 输出上下文
      */
     @Override
+    @QuotaLimit(resourceType = QuotaConfig.RESOURCE_TYPE_AVATAR_2D,
+                userSource = QuotaLimit.QuotaUserSource.OUTPUT_CONTEXT,
+                async = true)
     public void process(OutputContext context) {
         boolean avatarOutput = context.hasOutputType(OutputDataType.AVATAR_2D);
         if (!avatarOutput) {
             log.debug("[管道-虚拟形象输出节点] 非虚拟形象输出模式，跳过处理，会话ID：{}", conversationId);
+            return;
+        }
+
+        if (Boolean.TRUE.equals(context.getData("quota:skip:" + QuotaConfig.RESOURCE_TYPE_AVATAR_2D, Boolean.class))) {
+            // 配额被拒（混合模式）：仍透传正文流并订阅驱动（TEXT/TTS 通道可送达），跳过表情/动作生成
+            context.putFlux(NODE_NAME, context.getFlux(inputFluxKey, AgentStreamEvent.class));
+            if (terminal) {
+                Disposable subscribe = context.getFlux(inputFluxKey, AgentStreamEvent.class).subscribe();
+                conversationStreamHolder.addStream(conversationId, subscribe);
+            }
+            log.info("[管道-虚拟形象输出节点] 配额被拒，跳过表情/动作生成，会话ID：{}", conversationId);
             return;
         }
 

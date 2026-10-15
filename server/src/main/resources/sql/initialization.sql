@@ -522,3 +522,8 @@ CREATE TABLE IF NOT EXISTS `quota_usage_log` (
 
 INSERT INTO `quota_config` (`resource_type`, `default_limit`, `enabled`, `cycle_type`, `remark`) VALUES
 (1, 8, 1, 0, 'AI文本对话，一条成功提交的文本消息计一次');
+
+INSERT INTO `quota_config` (`resource_type`, `default_limit`, `enabled`, `cycle_type`, `remark`) VALUES
+(2, 8, 1, 0, 'AI语音识别，一段识别完成计一次'),
+(3, 8, 1, 0, 'AI语音合成，一次合成计一次'),
+(4, 8, 1, 0, 'AI 2D 形象播报，一次播报计一次');
