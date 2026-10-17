@@ -50,6 +50,18 @@ const adminRoutes: RouteRecordRaw[] = [
         meta: { title: "量表详情" },
       },
       {
+        path: "quota",
+        name: "AdminQuota",
+        component: () => import("@/admin/views/quota/index.vue"),
+        meta: { title: "全局限流管理" },
+      },
+      {
+        path: "quota/users",
+        name: "AdminQuotaUsers",
+        component: () => import("@/admin/views/quota/users/index.vue"),
+        meta: { title: "用户限流管理" },
+      },
+      {
         path: "symptom",
         name: "AdminSymptom",
         component: () => import("@/admin/views/symptom/index.vue"),

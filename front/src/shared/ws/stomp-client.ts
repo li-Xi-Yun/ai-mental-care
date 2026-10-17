@@ -15,6 +15,7 @@ import {
   buildNativeWsUrl,
   conversationNameTopic,
   pendingActionTopic,
+  quotaRejectedTopic,
   textReplyTopic,
   USER_ERROR_TOPIC,
   STOMP_AUDIO_FRAME_DEST,
@@ -39,6 +40,8 @@ export interface ConversationStreamHandlers {
   onAsrIntermediate?: (text: string) => void;
   /** 服务端业务/管道异常（/user/queue/error，如 ASR 会话失效、适配器不存在） */
   onPipelineError?: (message: string) => void;
+  /** AI 配额拒绝事件（异步资源超限/停用；载荷原始 JSON，由业务层解析） */
+  onQuotaRejected?: (rawJson: string) => void;
 }
 
 export interface ConversationStompClientOptions {
@@ -185,6 +188,9 @@ export class ConversationStompClient {
     if (handlers.onPipelineError) {
       // 用户级错误队列：无会话后缀
       add(USER_ERROR_TOPIC, (m) => handlers.onPipelineError?.(m.body ?? ""));
+    }
+    if (handlers.onQuotaRejected) {
+      add(quotaRejectedTopic(conversationId), (m) => handlers.onQuotaRejected?.(m.body ?? ""));
     }
   }
 

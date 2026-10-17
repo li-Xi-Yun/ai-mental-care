@@ -243,6 +243,15 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavEntry[] = [
   { key: "file", label: "文件管理", route: "/admin/file", icon: "Document" },
   { key: "scale", label: "量表管理", route: "/admin/scale", icon: "DataAnalysis" },
   {
+    key: "quota",
+    label: "限流管理",
+    icon: "Coin",
+    children: [
+      { key: "quota-config", label: "全局限流管理", route: "/admin/quota", icon: "DataLine" },
+      { key: "quota-users", label: "用户限流管理", route: "/admin/quota/users", icon: "UserFilled" },
+    ],
+  },
+  {
     key: "system",
     label: "系统配置",
     icon: "Tools",

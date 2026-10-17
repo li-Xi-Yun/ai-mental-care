@@ -29,6 +29,8 @@ export const pendingActionTopic = (conversationId: string) => userQueueTopic("/p
 export const audioBinaryTopic = (conversationId: string) => userQueueTopic("/audio/binary", conversationId);
 /** ASR 中间识别结果（实时弹幕，最终以 memory 落库文本为准） */
 export const asrIntermediateTopic = (conversationId: string) => userQueueTopic("/audio/asr/intermediate", conversationId);
+/** AI 配额拒绝事件（异步资源超限/停用时后端下发；载荷 JSON：{ event:"QUOTA_REJECTED", resourceType: 2|3|4 }） */
+export const quotaRejectedTopic = (conversationId: string) => userQueueTopic("/quota/rejected", conversationId);
 
 /**
  * 用户级错误队列（无会话后缀；后端异常处理器 @SendToUser("/queue/error") 下发业务/管道异常，

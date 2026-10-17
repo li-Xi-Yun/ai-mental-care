@@ -83,6 +83,7 @@ import { cmpByTime } from "@/portal/composables/useEmotionDisplay";
 import { useEmotionList } from "@/portal/composables/useEmotionList";
 import { useScaleCardActions } from "@/portal/composables/useScaleCardActions";
 import { useStompConversation } from "@/portal/composables/useStompConversation";
+import { showQuotaRejected } from "@/portal/composables/useQuotaRejected";
 import {
   TEXT_MODES,
   initConversation,
@@ -276,6 +277,7 @@ function bindStomp(conversationId: string): void {
     onTextReply: handleAiChunk,
     onConversationName: handleConversationNamePush,
     onPendingAction: handlePendingActionPush,
+    onQuotaRejected: showQuotaRejected,
   });
 }
 

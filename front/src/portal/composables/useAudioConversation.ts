@@ -17,6 +17,7 @@ import {
   type LifecycleModes,
 } from "@/portal/composables/useConversationLifecycle";
 import { useStompConversation } from "@/portal/composables/useStompConversation";
+import { showQuotaRejected } from "@/portal/composables/useQuotaRejected";
 import { useConversationStore } from "@/portal/stores/conversation";
 import { useUserStore } from "@/portal/stores/user";
 import { PcmStreamPlayer } from "@/portal/audio/pcm-player";
@@ -309,6 +310,10 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       console.warn("[audio] 服务端管道异常：", message);
       const text = parsePipelineError(message);
       if (text) setNotice(text);
+    },
+    onQuotaRejected: (rawJson) => {
+      // AI 配额拒绝（语音识别/合成/形象播报超限或停用）：轻提示对应降级行为
+      showQuotaRejected(rawJson);
     },
   };
 

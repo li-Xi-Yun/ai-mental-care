@@ -170,6 +170,42 @@ public class QuotaServiceImpl implements QuotaService {
                 .eq(QuotaUser::getResourceType, resourceType));
     }
 
+    @Override
+    public boolean hasQuota(Long userId, Integer resourceType) {
+        QuotaConfig config = quotaConfigManager.getConfig(resourceType);
+        if (config == null) {
+            log.debug("[AI配额-预检] 资源未配置，放行兜底，userId：{}，resourceType：{}", userId, resourceType);
+            return true;
+        }
+        if (config.isDisabled()) {
+            log.debug("[AI配额-预检] 资源已停用，userId：{}，resourceType：{}", userId, resourceType);
+            return false;
+        }
+        if (!config.isEnabled()) {
+            log.debug("[AI配额-预检] 限流已关闭，直接放行，userId：{}，resourceType：{}", userId, resourceType);
+            return true;
+        }
+
+        QuotaUser quotaUser = findUserQuota(userId, resourceType);
+        if (quotaUser != null && quotaUser.isUnlimited()) {
+            log.debug("[AI配额-预检] 用户豁免放行，userId：{}，resourceType：{}", userId, resourceType);
+            return true;
+        }
+
+        Integer limit = quotaUser != null && quotaUser.getCustomLimit() != null
+                ? quotaUser.getCustomLimit() : config.getDefaultLimit();
+        if (limit == null) {
+            // 防御：未配置有效上限视为不限额（DDL 默认 8，正常不会出现）
+            log.debug("[AI配额-预检] 生效上限为空，视为不限额放行，userId：{}，resourceType：{}", userId, resourceType);
+            return true;
+        }
+        int used = quotaUser == null ? 0 : quotaUser.usedCountOrDefault();
+        boolean hasQuota = used < limit;
+        log.debug("[AI配额-预检] 用户{}资源{}已用{}，生效上限{}，{}",
+                userId, resourceType, used, limit, hasQuota ? "有剩余" : "已达上限");
+        return hasQuota;
+    }
+
     /**
      * 记录消费成功审计明细（best-effort，失败仅告警不影响主流程）。
      *

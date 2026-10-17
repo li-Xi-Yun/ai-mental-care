@@ -5,11 +5,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
+import org.lixiyun.common.core.error.enums.QuotaExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.user.conversation.ConversationLifecycleInitDTO;
 import org.lixiyun.pojo.entity.conversation.Conversation;
 import org.lixiyun.pojo.entity.conversation.ConversationMemory;
+import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.pojo.vo.user.conversation.ConversationLifecycleInitVO;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
@@ -22,9 +24,11 @@ import org.lixiyun.server.infrastructure.interaction.pipeline.OutputPipelineSess
 import org.lixiyun.server.mapper.ConversationMapper;
 import org.lixiyun.server.mapper.ConversationMemoryMapper;
 import org.lixiyun.server.scheduler.ConversationAggregateScheduler;
+import org.lixiyun.server.service.ai.QuotaService;
 import org.lixiyun.server.service.user.ConversationLifecycleService;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +54,7 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
     private final ConversationAggregateScheduler aggregateScheduler;
     private final ConversationMapper conversationMapper;
     private final ConversationMemoryMapper conversationMemoryMapper;
+    private final QuotaService quotaService;
 
     @Override
     public ConversationLifecycleInitVO initSession(ConversationLifecycleInitDTO request) {
@@ -60,6 +65,9 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
 
         log.info("[对话生命周期] 开始初始化，会话ID：{}，用户ID：{}，inputTypes：{}，outputTypes：{}",
                 conversationId, userId, inputTypes, outputTypes);
+
+        // AI配额预检：本次会话将用到的资源任一无剩余额度 → 拒绝建立会话（只读不扣减，见 quotaPreCheck）
+        quotaPreCheck(userId, inputTypes, outputTypes);
 
         // 会话ID为空时创建新会话；非空时校验会话归属，防止跨用户越权绑定资源
         if (conversationId == null) {
@@ -116,6 +124,46 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
         deleteEmptyConversation(conversationId, userId);
 
         log.info("[对话生命周期] 销毁完成，会话ID：{}，用户ID：{}", conversationId, userId);
+    }
+
+    /**
+     * 会话初始化配额预检
+     * <p>按本次会话声明使用的输入/输出类型映射配额资源，逐一做<b>只读</b>资格校验
+     * （{@code QuotaService.hasQuota}，不扣减、不写审计）；任一资源无剩余额度即抛 1500，
+     * 前端无法建立该会话进行操作（「初始化 gate，消费点照常扣」）。</p>
+     *
+     * @param userId      当前用户ID
+     * @param inputTypes  输入类型集合（可空）
+     * @param outputTypes 输出类型集合（可空）
+     * @throws BusinessException 任一所需资源无剩余额度时抛 {@link QuotaExceptionEnum#QUOTA_EXCEEDED}
+     */
+    private void quotaPreCheck(Long userId, Set<InputDataType> inputTypes, Set<OutputDataType> outputTypes) {
+        // 资源映射对齐各消费点扣减点：文本输入→TEXT；语音输入→ASR；语音输出→TTS；形象输出→AVATAR_2D
+        Set<Integer> resourceTypes = new LinkedHashSet<>();
+        if (inputTypes != null && inputTypes.contains(InputDataType.TEXT)) {
+            resourceTypes.add(QuotaConfig.RESOURCE_TYPE_TEXT);
+        }
+        if (inputTypes != null && inputTypes.contains(InputDataType.AUDIO)) {
+            resourceTypes.add(QuotaConfig.RESOURCE_TYPE_ASR);
+        }
+        if (outputTypes != null && outputTypes.contains(OutputDataType.AUDIO)) {
+            resourceTypes.add(QuotaConfig.RESOURCE_TYPE_TTS);
+        }
+        if (outputTypes != null && outputTypes.contains(OutputDataType.AVATAR_2D)) {
+            resourceTypes.add(QuotaConfig.RESOURCE_TYPE_AVATAR_2D);
+        }
+        if (resourceTypes.isEmpty()) {
+            return;
+        }
+
+        for (Integer resourceType : resourceTypes) {
+            if (!quotaService.hasQuota(userId, resourceType)) {
+                log.warn("[对话生命周期] 会话初始化配额预检未通过，userId：{}，resourceType：{}", userId, resourceType);
+                throw new BusinessException(QuotaExceptionEnum.QUOTA_EXCEEDED.getCode(),
+                        quotaService.getRemainingDesc(resourceType));
+            }
+        }
+        log.debug("[对话生命周期] 会话初始化配额预检通过，userId：{}，resourceTypes：{}", userId, resourceTypes);
     }
 
     /**

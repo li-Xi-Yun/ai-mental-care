@@ -9,154 +9,165 @@
 -- ------------------------------------------------------------
 -- 一、AI 节点配置（AdminAiNodeConfigController / Cache / History / Prompt）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (1, 'ai:node:config:list', 'AI节点配置-列表查询', 'AI节点配置', 0, 'AI节点配置列表查询', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (2, 'ai:node:config:create', 'AI节点配置-新增', 'AI节点配置', 0, 'AI节点配置新增', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (3, 'ai:node:config:update', 'AI节点配置-修改', 'AI节点配置', 0, 'AI节点配置修改', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (4, 'ai:node:config:delete', 'AI节点配置-删除', 'AI节点配置', 0, 'AI节点配置删除', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(1, 'ai:node:config:list', 'AI节点配置-列表查询', 'AI节点配置', 0, 'AI节点配置列表查询', NOW(), 0, NOW(), 0, 0),
+(2, 'ai:node:config:create', 'AI节点配置-新增', 'AI节点配置', 0, 'AI节点配置新增', NOW(), 0, NOW(), 0, 0),
+(3, 'ai:node:config:update', 'AI节点配置-修改', 'AI节点配置', 0, 'AI节点配置修改', NOW(), 0, NOW(), 0, 0),
+(4, 'ai:node:config:delete', 'AI节点配置-删除', 'AI节点配置', 0, 'AI节点配置删除', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 一-二、Live2D 模型配置（AdminLive2dConfigController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (101, 'live2d:config:list', 'Live2D模型配置-列表查询', 'Live2D模型配置', 0, 'Live2D模型配置列表查询', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (102, 'live2d:config:create', 'Live2D模型配置-上传新增', 'Live2D模型配置', 0, 'Live2D模型配置上传新增', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (103, 'live2d:config:update', 'Live2D模型配置-修改/启用', 'Live2D模型配置', 0, 'Live2D模型配置修改与启用切换', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (104, 'live2d:config:delete', 'Live2D模型配置-删除', 'Live2D模型配置', 0, 'Live2D模型配置删除', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(101, 'live2d:config:list', 'Live2D模型配置-列表查询', 'Live2D模型配置', 0, 'Live2D模型配置列表查询', NOW(), 0, NOW(), 0, 0),
+(102, 'live2d:config:create', 'Live2D模型配置-上传新增', 'Live2D模型配置', 0, 'Live2D模型配置上传新增', NOW(), 0, NOW(), 0, 0),
+(103, 'live2d:config:update', 'Live2D模型配置-修改/启用', 'Live2D模型配置', 0, 'Live2D模型配置修改与启用切换', NOW(), 0, NOW(), 0, 0),
+(104, 'live2d:config:delete', 'Live2D模型配置-删除', 'Live2D模型配置', 0, 'Live2D模型配置删除', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 一-三、AI 对话配额（AdminQuotaController / SysUserQuotaController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (105, 'quota:config:list', '对话配额-全局配置查询', '对话配额', 0, '查询资源类型全局默认上限与可用性/限流状态', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (106, 'quota:config:update', '对话配额-全局配置修改', '对话配额', 0, '修改资源类型默认上限/可用性/限流开关', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (107, 'quota:user:list', '对话配额-用户配额查询', '对话配额', 0, '查询指定用户各资源配额', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (108, 'quota:user:adjust', '对话配额-用户调整', '对话配额', 0, '调整指定用户个性化上限与已用次数', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(105, 'quota:config:list', '对话配额-全局配置查询', '对话配额', 0, '查询资源类型全局默认上限与可用性/限流状态', NOW(), 0, NOW(), 0, 0),
+(106, 'quota:config:update', '对话配额-全局配置修改', '对话配额', 0, '修改资源类型默认上限/可用性/限流开关', NOW(), 0, NOW(), 0, 0),
+(107, 'quota:user:list', '对话配额-用户配额查询', '对话配额', 0, '查询指定用户各资源配额', NOW(), 0, NOW(), 0, 0),
+(108, 'quota:user:adjust', '对话配额-用户调整', '对话配额', 0, '调整指定用户个性化上限与已用次数', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 二、管理员管理（SysAdminController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (5, 'admin:sysAdmin:page', '管理员-分页查询', '管理员管理', 0, '分页查询管理员列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (6, 'admin:sysAdmin:detail', '管理员-详情查询', '管理员管理', 0, '查询单个管理员详情', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (7, 'admin:sysAdmin:add', '管理员-新增', '管理员管理', 0, '新增管理员账号', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (8, 'admin:sysAdmin:update', '管理员-修改', '管理员管理', 0, '修改管理员基础信息', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (9, 'admin:sysAdmin:status', '管理员-状态修改', '管理员管理', 0, '启用或封禁管理员账号', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (10, 'admin:sysAdmin:resetPwd', '管理员-密码重置', '管理员管理', 0, '重置管理员密码为默认密码', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (11, 'admin:sysAdmin:delete', '管理员-注销', '管理员管理', 0, '管理员账号注销（status=3）', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (12, 'admin:sysAdmin:roles', '管理员-角色查询', '管理员管理', 0, '查询管理员已分配的角色', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (13, 'admin:sysAdmin:assignRoles', '管理员-分配角色', '管理员管理', 0, '给管理员分配角色（全量覆盖）', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (14, 'admin:sysAdmin:tempPerms', '管理员-临时权限查询', '管理员管理', 0, '查询管理员临时权限记录', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(5, 'admin:sysAdmin:page', '管理员-分页查询', '管理员管理', 0, '分页查询管理员列表', NOW(), 0, NOW(), 0, 0),
+(6, 'admin:sysAdmin:detail', '管理员-详情查询', '管理员管理', 0, '查询单个管理员详情', NOW(), 0, NOW(), 0, 0),
+(7, 'admin:sysAdmin:add', '管理员-新增', '管理员管理', 0, '新增管理员账号', NOW(), 0, NOW(), 0, 0),
+(8, 'admin:sysAdmin:update', '管理员-修改', '管理员管理', 0, '修改管理员基础信息', NOW(), 0, NOW(), 0, 0),
+(9, 'admin:sysAdmin:status', '管理员-状态修改', '管理员管理', 0, '启用或封禁管理员账号', NOW(), 0, NOW(), 0, 0),
+(10, 'admin:sysAdmin:resetPwd', '管理员-密码重置', '管理员管理', 0, '重置管理员密码为默认密码', NOW(), 0, NOW(), 0, 0),
+(11, 'admin:sysAdmin:delete', '管理员-注销', '管理员管理', 0, '管理员账号注销（status=3）', NOW(), 0, NOW(), 0, 0),
+(12, 'admin:sysAdmin:roles', '管理员-角色查询', '管理员管理', 0, '查询管理员已分配的角色', NOW(), 0, NOW(), 0, 0),
+(13, 'admin:sysAdmin:assignRoles', '管理员-分配角色', '管理员管理', 0, '给管理员分配角色（全量覆盖）', NOW(), 0, NOW(), 0, 0),
+(14, 'admin:sysAdmin:tempPerms', '管理员-临时权限查询', '管理员管理', 0, '查询管理员临时权限记录', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 三、用户管理（SysUserController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (15, 'admin:sysUser:page', '用户-分页查询', '用户管理', 0, '分页查询用户列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (16, 'admin:sysUser:detail', '用户-详情查询', '用户管理', 0, '查询单个用户详情', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (17, 'admin:sysUser:status', '用户-状态修改', '用户管理', 0, '启用或封禁用户账号', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (18, 'admin:sysUser:roles', '用户-角色查询', '用户管理', 0, '查询用户已分配的角色', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (19, 'admin:sysUser:assignRoles', '用户-分配角色', '用户管理', 0, '给用户分配角色（全量覆盖）', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (20, 'admin:sysUser:tempPerms', '用户-临时权限查询', '用户管理', 0, '查询用户临时权限记录', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(15, 'admin:sysUser:page', '用户-分页查询', '用户管理', 0, '分页查询用户列表', NOW(), 0, NOW(), 0, 0),
+(16, 'admin:sysUser:detail', '用户-详情查询', '用户管理', 0, '查询单个用户详情', NOW(), 0, NOW(), 0, 0),
+(17, 'admin:sysUser:status', '用户-状态修改', '用户管理', 0, '启用或封禁用户账号', NOW(), 0, NOW(), 0, 0),
+(18, 'admin:sysUser:roles', '用户-角色查询', '用户管理', 0, '查询用户已分配的角色', NOW(), 0, NOW(), 0, 0),
+(19, 'admin:sysUser:assignRoles', '用户-分配角色', '用户管理', 0, '给用户分配角色（全量覆盖）', NOW(), 0, NOW(), 0, 0),
+(20, 'admin:sysUser:tempPerms', '用户-临时权限查询', '用户管理', 0, '查询用户临时权限记录', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 四、角色管理（SysRoleController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (21, 'admin:sysRole:page', '角色-分页查询', '角色管理', 0, '分页查询角色列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (22, 'admin:sysRole:detail', '角色-详情查询', '角色管理', 0, '查询角色详情', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (23, 'admin:sysRole:add', '角色-新增', '角色管理', 0, '新增角色', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (24, 'admin:sysRole:update', '角色-修改', '角色管理', 0, '修改角色信息', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (25, 'admin:sysRole:status', '角色-状态修改', '角色管理', 0, '启用或停用角色', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (26, 'admin:sysRole:delete', '角色-删除', '角色管理', 0, '删除角色', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (27, 'admin:sysRole:permissions', '角色-权限查询', '角色管理', 0, '查询角色已分配的权限', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (28, 'admin:sysRole:assignPermissions', '角色-分配权限', '角色管理', 0, '给角色分配权限（全量覆盖）', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (29, 'admin:sysRole:allSimple', '角色-全部简单列表', '角色管理', 0, '查询全部角色简单列表', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(21, 'admin:sysRole:page', '角色-分页查询', '角色管理', 0, '分页查询角色列表', NOW(), 0, NOW(), 0, 0),
+(22, 'admin:sysRole:detail', '角色-详情查询', '角色管理', 0, '查询角色详情', NOW(), 0, NOW(), 0, 0),
+(23, 'admin:sysRole:add', '角色-新增', '角色管理', 0, '新增角色', NOW(), 0, NOW(), 0, 0),
+(24, 'admin:sysRole:update', '角色-修改', '角色管理', 0, '修改角色信息', NOW(), 0, NOW(), 0, 0),
+(25, 'admin:sysRole:status', '角色-状态修改', '角色管理', 0, '启用或停用角色', NOW(), 0, NOW(), 0, 0),
+(26, 'admin:sysRole:delete', '角色-删除', '角色管理', 0, '删除角色', NOW(), 0, NOW(), 0, 0),
+(27, 'admin:sysRole:permissions', '角色-权限查询', '角色管理', 0, '查询角色已分配的权限', NOW(), 0, NOW(), 0, 0),
+(28, 'admin:sysRole:assignPermissions', '角色-分配权限', '角色管理', 0, '给角色分配权限（全量覆盖）', NOW(), 0, NOW(), 0, 0),
+(29, 'admin:sysRole:allSimple', '角色-全部简单列表', '角色管理', 0, '查询全部角色简单列表', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 五、系统权限管理（SysPermissionController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (30, 'sys:permission:list', '权限-列表查询', '系统权限管理', 0, '查询权限列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (31, 'sys:permission:detail', '权限-详情查询', '系统权限管理', 0, '查询权限详情', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (32, 'sys:permission:add', '权限-新增', '系统权限管理', 0, '新增权限', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (33, 'sys:permission:update', '权限-修改', '系统权限管理', 0, '修改权限', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (34, 'sys:permission:delete', '权限-删除', '系统权限管理', 0, '删除权限', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(30, 'sys:permission:list', '权限-列表查询', '系统权限管理', 0, '查询权限列表', NOW(), 0, NOW(), 0, 0),
+(31, 'sys:permission:detail', '权限-详情查询', '系统权限管理', 0, '查询权限详情', NOW(), 0, NOW(), 0, 0),
+(32, 'sys:permission:add', '权限-新增', '系统权限管理', 0, '新增权限', NOW(), 0, NOW(), 0, 0),
+(33, 'sys:permission:update', '权限-修改', '系统权限管理', 0, '修改权限', NOW(), 0, NOW(), 0, 0),
+(34, 'sys:permission:delete', '权限-删除', '系统权限管理', 0, '删除权限', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 六、临时权限管理（SysTempPermissionController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (35, 'sys:tempPerm:page', '临时权限-分页查询', '临时权限管理', 0, '分页查询临时权限记录', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (36, 'sys:tempPerm:grant', '临时权限-授予', '临时权限管理', 0, '授予临时权限', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (37, 'sys:tempPerm:revoke', '临时权限-收回', '临时权限管理', 0, '收回临时权限', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(35, 'sys:tempPerm:page', '临时权限-分页查询', '临时权限管理', 0, '分页查询临时权限记录', NOW(), 0, NOW(), 0, 0),
+(36, 'sys:tempPerm:grant', '临时权限-授予', '临时权限管理', 0, '授予临时权限', NOW(), 0, NOW(), 0, 0),
+(37, 'sys:tempPerm:revoke', '临时权限-收回', '临时权限管理', 0, '收回临时权限', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 七、文件管理（AdminFileController / AdminFileVectorController / AdminFileCategoryController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (38, 'admin:file:upload', '文件-上传', '文件管理', 0, '上传文件', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (39, 'admin:file:query', '文件-查询', '文件管理', 0, '查询文件列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (40, 'admin:file:delete', '文件-删除', '文件管理', 0, '删除文件', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (41, 'admin:file:update', '文件-修改', '文件管理', 0, '修改文件信息', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (42, 'admin:file:download', '文件-下载', '文件管理', 0, '下载文件', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (43, 'admin:file:vector:load', '文件向量-导入加载', '文件管理', 0, '文件向量导入加载', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (44, 'admin:file:vector:delete', '文件向量-删除', '文件管理', 0, '删除文件向量', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (45, 'admin:file:vector:list', '文件向量-列表查询', '文件管理', 0, '查询文件向量列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (46, 'admin:file:vector:interrupt', '文件向量-中断', '文件管理', 0, '中断文件向量导入任务', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (47, 'admin:file:category:create', '文件分类-新增', '文件管理', 0, '新增文件分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (48, 'admin:file:category:update', '文件分类-修改', '文件管理', 0, '修改文件分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (49, 'admin:file:category:delete', '文件分类-删除', '文件管理', 0, '删除文件分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (50, 'admin:file:category:list:all', '文件分类-全量列表', '文件管理', 0, '查询全部文件分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (51, 'admin:file:category:list:detail', '文件分类-详情列表', '文件管理', 0, '查询文件分类详情列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (52, 'file:category:list', '文件分类-列表查询', '文件管理', 0, '查询文件分类列表', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(38, 'admin:file:upload', '文件-上传', '文件管理', 0, '上传文件', NOW(), 0, NOW(), 0, 0),
+(39, 'admin:file:query', '文件-查询', '文件管理', 0, '查询文件列表', NOW(), 0, NOW(), 0, 0),
+(40, 'admin:file:delete', '文件-删除', '文件管理', 0, '删除文件', NOW(), 0, NOW(), 0, 0),
+(41, 'admin:file:update', '文件-修改', '文件管理', 0, '修改文件信息', NOW(), 0, NOW(), 0, 0),
+(42, 'admin:file:download', '文件-下载', '文件管理', 0, '下载文件', NOW(), 0, NOW(), 0, 0),
+(43, 'admin:file:vector:load', '文件向量-导入加载', '文件管理', 0, '文件向量导入加载', NOW(), 0, NOW(), 0, 0),
+(44, 'admin:file:vector:delete', '文件向量-删除', '文件管理', 0, '删除文件向量', NOW(), 0, NOW(), 0, 0),
+(45, 'admin:file:vector:list', '文件向量-列表查询', '文件管理', 0, '查询文件向量列表', NOW(), 0, NOW(), 0, 0),
+(46, 'admin:file:vector:interrupt', '文件向量-中断', '文件管理', 0, '中断文件向量导入任务', NOW(), 0, NOW(), 0, 0),
+(47, 'admin:file:category:create', '文件分类-新增', '文件管理', 0, '新增文件分类', NOW(), 0, NOW(), 0, 0),
+(48, 'admin:file:category:update', '文件分类-修改', '文件管理', 0, '修改文件分类', NOW(), 0, NOW(), 0, 0),
+(49, 'admin:file:category:delete', '文件分类-删除', '文件管理', 0, '删除文件分类', NOW(), 0, NOW(), 0, 0),
+(50, 'admin:file:category:list:all', '文件分类-全量列表', '文件管理', 0, '查询全部文件分类', NOW(), 0, NOW(), 0, 0),
+(51, 'admin:file:category:list:detail', '文件分类-详情列表', '文件管理', 0, '查询文件分类详情列表', NOW(), 0, NOW(), 0, 0),
+(52, 'file:category:list', '文件分类-列表查询', '文件管理', 0, '查询文件分类列表', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 八、症状字典（AdminSymptomController）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (53, 'symptom:dict:list', '症状字典-列表查询', '症状字典', 0, '查询症状字典', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (54, 'symptom:dict:create', '症状字典-新增', '症状字典', 0, '新增症状字典', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (55, 'symptom:dict:update', '症状字典-修改', '症状字典', 0, '修改症状字典', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (56, 'symptom:dict:delete', '症状字典-删除', '症状字典', 0, '删除症状字典', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(53, 'symptom:dict:list', '症状字典-列表查询', '症状字典', 0, '查询症状字典', NOW(), 0, NOW(), 0, 0),
+(54, 'symptom:dict:create', '症状字典-新增', '症状字典', 0, '新增症状字典', NOW(), 0, NOW(), 0, 0),
+(55, 'symptom:dict:update', '症状字典-修改', '症状字典', 0, '修改症状字典', NOW(), 0, NOW(), 0, 0),
+(56, 'symptom:dict:delete', '症状字典-删除', '症状字典', 0, '删除症状字典', NOW(), 0, NOW(), 0, 0);
 
 -- ------------------------------------------------------------
 -- 九、量表管理（AdminScale* 系列控制器）
 -- ------------------------------------------------------------
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (57, 'scale:category:list', '量表分类-列表查询', '量表管理', 0, '查询量表分类列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (58, 'scale:category:create', '量表分类-新增', '量表管理', 0, '新增量表分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (59, 'scale:category:update', '量表分类-修改', '量表管理', 0, '修改量表分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (60, 'scale:category:delete', '量表分类-删除', '量表管理', 0, '删除量表分类', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (61, 'scale:scale:list', '量表-列表查询', '量表管理', 0, '查询量表列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (62, 'scale:scale:create', '量表-新增', '量表管理', 0, '新增量表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (63, 'scale:scale:update', '量表-修改', '量表管理', 0, '修改量表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (64, 'scale:scale:delete', '量表-删除', '量表管理', 0, '删除量表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (65, 'scale:version:list', '量表版本-列表查询', '量表管理', 0, '查询量表版本列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (66, 'scale:version:create', '量表版本-新增', '量表管理', 0, '新增量表版本', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (67, 'scale:version:update', '量表版本-修改', '量表管理', 0, '修改量表版本', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (68, 'scale:version:delete', '量表版本-删除', '量表管理', 0, '删除量表版本', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (69, 'scale:version:publish', '量表版本-发布', '量表管理', 0, '发布量表版本为当前生效版本', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (70, 'scale:dimension:list', '量表维度-列表查询', '量表管理', 0, '查询量表维度列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (71, 'scale:dimension:create', '量表维度-新增', '量表管理', 0, '新增量表维度', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (72, 'scale:dimension:update', '量表维度-修改', '量表管理', 0, '修改量表维度', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (73, 'scale:dimension:delete', '量表维度-删除', '量表管理', 0, '删除量表维度', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (74, 'scale:question:list', '量表题目-列表查询', '量表管理', 0, '查询量表题目列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (75, 'scale:question:create', '量表题目-新增', '量表管理', 0, '新增量表题目', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (76, 'scale:question:update', '量表题目-修改', '量表管理', 0, '修改量表题目', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (77, 'scale:question:delete', '量表题目-删除', '量表管理', 0, '删除量表题目', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (78, 'scale:option:create', '量表选项-新增', '量表管理', 0, '新增量表选项', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (79, 'scale:option:update', '量表选项-修改', '量表管理', 0, '修改量表选项', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (80, 'scale:option:delete', '量表选项-删除', '量表管理', 0, '删除量表选项', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (81, 'scale:option-template:list', '选项模板-列表查询', '量表管理', 0, '查询选项模板列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (82, 'scale:option-template:create', '选项模板-新增', '量表管理', 0, '新增选项模板', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (83, 'scale:option-template:update', '选项模板-修改', '量表管理', 0, '修改选项模板', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (84, 'scale:option-template:delete', '选项模板-删除', '量表管理', 0, '删除选项模板', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (85, 'scale:option-template:apply', '选项模板-应用', '量表管理', 0, '选项模板应用到题目', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (86, 'scale:branch-rule:list', '分支规则-列表查询', '量表管理', 0, '查询量表分支规则列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (87, 'scale:branch-rule:create', '分支规则-新增', '量表管理', 0, '新增量表分支规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (88, 'scale:branch-rule:update', '分支规则-修改', '量表管理', 0, '修改量表分支规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (89, 'scale:branch-rule:delete', '分支规则-删除', '量表管理', 0, '删除量表分支规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (90, 'scale:result-rule:list', '结果规则-列表查询', '量表管理', 0, '查询量表结果规则列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (91, 'scale:result-rule:create', '结果规则-新增', '量表管理', 0, '新增量表结果规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (92, 'scale:result-rule:update', '结果规则-修改', '量表管理', 0, '修改量表结果规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (93, 'scale:result-rule:delete', '结果规则-删除', '量表管理', 0, '删除量表结果规则', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (94, 'scale:norm:list', '常模-列表查询', '量表管理', 0, '查询量表常模列表', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (95, 'scale:norm:create', '常模-新增', '量表管理', 0, '新增量表常模', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (96, 'scale:norm:update', '常模-修改', '量表管理', 0, '修改量表常模', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (97, 'scale:norm:delete', '常模-删除', '量表管理', 0, '删除量表常模', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (98, 'scale:record:list', '测评记录-分页查询', '量表管理', 0, '分页查询测评记录', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (99, 'scale:record:detail', '测评记录-详情查询', '量表管理', 0, '查询测评记录/报告详情', NOW(), 0, NOW(), 0, 0);
-INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES (100, 'scale:record:statistics', '测评记录-数据统计', '量表管理', 0, '测评数据统计', NOW(), 0, NOW(), 0, 0);
+INSERT INTO `permission` (`id`, `perms`, `name`, `group_name`, `status`, `remark`, `created_time`, `created_by`, `updated_time`, `updated_by`, `deleted`) VALUES
+(57, 'scale:category:list', '量表分类-列表查询', '量表管理', 0, '查询量表分类列表', NOW(), 0, NOW(), 0, 0),
+(58, 'scale:category:create', '量表分类-新增', '量表管理', 0, '新增量表分类', NOW(), 0, NOW(), 0, 0),
+(59, 'scale:category:update', '量表分类-修改', '量表管理', 0, '修改量表分类', NOW(), 0, NOW(), 0, 0),
+(60, 'scale:category:delete', '量表分类-删除', '量表管理', 0, '删除量表分类', NOW(), 0, NOW(), 0, 0),
+(61, 'scale:scale:list', '量表-列表查询', '量表管理', 0, '查询量表列表', NOW(), 0, NOW(), 0, 0),
+(62, 'scale:scale:create', '量表-新增', '量表管理', 0, '新增量表', NOW(), 0, NOW(), 0, 0),
+(63, 'scale:scale:update', '量表-修改', '量表管理', 0, '修改量表', NOW(), 0, NOW(), 0, 0),
+(64, 'scale:scale:delete', '量表-删除', '量表管理', 0, '删除量表', NOW(), 0, NOW(), 0, 0),
+(65, 'scale:version:list', '量表版本-列表查询', '量表管理', 0, '查询量表版本列表', NOW(), 0, NOW(), 0, 0),
+(66, 'scale:version:create', '量表版本-新增', '量表管理', 0, '新增量表版本', NOW(), 0, NOW(), 0, 0),
+(67, 'scale:version:update', '量表版本-修改', '量表管理', 0, '修改量表版本', NOW(), 0, NOW(), 0, 0),
+(68, 'scale:version:delete', '量表版本-删除', '量表管理', 0, '删除量表版本', NOW(), 0, NOW(), 0, 0),
+(69, 'scale:version:publish', '量表版本-发布', '量表管理', 0, '发布量表版本为当前生效版本', NOW(), 0, NOW(), 0, 0),
+(70, 'scale:dimension:list', '量表维度-列表查询', '量表管理', 0, '查询量表维度列表', NOW(), 0, NOW(), 0, 0),
+(71, 'scale:dimension:create', '量表维度-新增', '量表管理', 0, '新增量表维度', NOW(), 0, NOW(), 0, 0),
+(72, 'scale:dimension:update', '量表维度-修改', '量表管理', 0, '修改量表维度', NOW(), 0, NOW(), 0, 0),
+(73, 'scale:dimension:delete', '量表维度-删除', '量表管理', 0, '删除量表维度', NOW(), 0, NOW(), 0, 0),
+(74, 'scale:question:list', '量表题目-列表查询', '量表管理', 0, '查询量表题目列表', NOW(), 0, NOW(), 0, 0),
+(75, 'scale:question:create', '量表题目-新增', '量表管理', 0, '新增量表题目', NOW(), 0, NOW(), 0, 0),
+(76, 'scale:question:update', '量表题目-修改', '量表管理', 0, '修改量表题目', NOW(), 0, NOW(), 0, 0),
+(77, 'scale:question:delete', '量表题目-删除', '量表管理', 0, '删除量表题目', NOW(), 0, NOW(), 0, 0),
+(78, 'scale:option:create', '量表选项-新增', '量表管理', 0, '新增量表选项', NOW(), 0, NOW(), 0, 0),
+(79, 'scale:option:update', '量表选项-修改', '量表管理', 0, '修改量表选项', NOW(), 0, NOW(), 0, 0),
+(80, 'scale:option:delete', '量表选项-删除', '量表管理', 0, '删除量表选项', NOW(), 0, NOW(), 0, 0),
+(81, 'scale:option-template:list', '选项模板-列表查询', '量表管理', 0, '查询选项模板列表', NOW(), 0, NOW(), 0, 0),
+(82, 'scale:option-template:create', '选项模板-新增', '量表管理', 0, '新增选项模板', NOW(), 0, NOW(), 0, 0),
+(83, 'scale:option-template:update', '选项模板-修改', '量表管理', 0, '修改选项模板', NOW(), 0, NOW(), 0, 0),
+(84, 'scale:option-template:delete', '选项模板-删除', '量表管理', 0, '删除选项模板', NOW(), 0, NOW(), 0, 0),
+(85, 'scale:option-template:apply', '选项模板-应用', '量表管理', 0, '选项模板应用到题目', NOW(), 0, NOW(), 0, 0),
+(86, 'scale:branch-rule:list', '分支规则-列表查询', '量表管理', 0, '查询量表分支规则列表', NOW(), 0, NOW(), 0, 0),
+(87, 'scale:branch-rule:create', '分支规则-新增', '量表管理', 0, '新增量表分支规则', NOW(), 0, NOW(), 0, 0),
+(88, 'scale:branch-rule:update', '分支规则-修改', '量表管理', 0, '修改量表分支规则', NOW(), 0, NOW(), 0, 0),
+(89, 'scale:branch-rule:delete', '分支规则-删除', '量表管理', 0, '删除量表分支规则', NOW(), 0, NOW(), 0, 0),
+(90, 'scale:result-rule:list', '结果规则-列表查询', '量表管理', 0, '查询量表结果规则列表', NOW(), 0, NOW(), 0, 0),
+(91, 'scale:result-rule:create', '结果规则-新增', '量表管理', 0, '新增量表结果规则', NOW(), 0, NOW(), 0, 0),
+(92, 'scale:result-rule:update', '结果规则-修改', '量表管理', 0, '修改量表结果规则', NOW(), 0, NOW(), 0, 0),
+(93, 'scale:result-rule:delete', '结果规则-删除', '量表管理', 0, '删除量表结果规则', NOW(), 0, NOW(), 0, 0),
+(94, 'scale:norm:list', '常模-列表查询', '量表管理', 0, '查询量表常模列表', NOW(), 0, NOW(), 0, 0),
+(95, 'scale:norm:create', '常模-新增', '量表管理', 0, '新增量表常模', NOW(), 0, NOW(), 0, 0),
+(96, 'scale:norm:update', '常模-修改', '量表管理', 0, '修改量表常模', NOW(), 0, NOW(), 0, 0),
+(97, 'scale:norm:delete', '常模-删除', '量表管理', 0, '删除量表常模', NOW(), 0, NOW(), 0, 0),
+(98, 'scale:record:list', '测评记录-分页查询', '量表管理', 0, '分页查询测评记录', NOW(), 0, NOW(), 0, 0),
+(99, 'scale:record:detail', '测评记录-详情查询', '量表管理', 0, '查询测评记录/报告详情', NOW(), 0, NOW(), 0, 0),
+(100, 'scale:record:statistics', '测评记录-数据统计', '量表管理', 0, '测评数据统计', NOW(), 0, NOW(), 0, 0);
 
 -- ============================================================
 -- 角色基础数据：普通用户 / 管理员 / 超级管理员
@@ -441,89 +452,9 @@ INSERT INTO `symptom_dict` (`id`, `symptom_term`, `symptom_category`, `synonym_w
 INSERT INTO infra_file_category (id, parent_id, person_id, category_name, default_type, file_count)
 VALUES (0, 0, NULL, '默认分类', 1, 0);
 -- ============================================================
--- Live2D 模型配置表 live2d_config（启动必需）
--- 说明：一个模型一条记录，model_url 为前端加载入口（.model3.json 相对路径），
---       expression_list / motion_list 为 LLM 输出姿态/动作的白名单（上传时解析 exp3/motion3 自动提取）
---       启用互斥：全局同时仅允许一条 enabled=1（接口层事务保证，节点层按 sort 升序取一兜底）
--- ============================================================
-CREATE TABLE IF NOT EXISTS `live2d_config` (
-    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
-    `model_name` varchar(100) NOT NULL COMMENT 'Live2D模型名称',
-    `model_url` varchar(255) NOT NULL COMMENT '.model3.json 服务器相对路径，前端加载入口',
-    `model_relative_path` varchar(255) NOT NULL COMMENT '模型包根目录相对路径（.moc3/.exp3/.motion3/纹理所在目录）',
-    `cover_image_path` varchar(255) DEFAULT NULL COMMENT '模型封面图路径（管理端列表 + 用户端预览共用）',
-    `enabled` tinyint NOT NULL DEFAULT 0 COMMENT '是否启用：0-禁用，1-启用（全局唯一启用，互斥）',
-    `sort` int NOT NULL DEFAULT 0 COMMENT '排序值，越大越靠前',
-    `semantic_prompt` text DEFAULT NULL COMMENT '语义解析说明，发给大模型的提示词（模型资产描述）',
-    `motion_list` json DEFAULT NULL COMMENT '动作JSON中固定词汇List（资产 id 白名单）',
-    `expression_list` json DEFAULT NULL COMMENT '表情JSON中固定词汇List（资产 id 白名单）',
-    `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-    `created_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `created_by` bigint DEFAULT NULL COMMENT '创建人ID',
-    `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `updated_by` bigint DEFAULT NULL COMMENT '修改人ID',
-    `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除，0-否，1-是'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Live2D模型配置表';
-
--- ============================================================
--- AI 对话配额三表（quota_config / quota_user / quota_usage_log）
--- 说明：QuotaConfigManager 启动时全量预热 quota_config；首期仅落地 TEXT 一行，
---       available 未指定走 DEFAULT 1（可用），enabled=1 启用限流。
--- ============================================================
-CREATE TABLE IF NOT EXISTS `quota_config` (
-    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
-    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
-    `default_limit` int NOT NULL DEFAULT 8 COMMENT '全局默认次数上限',
-    `enabled` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用限流：1启用，0不启用(不限额)',
-    `available` tinyint NOT NULL DEFAULT 1 COMMENT '资源可用性：1=启用（可用，进入限流判断），0=禁用（整资源不可用，请求被拒）',
-    `cycle_type` tinyint NOT NULL DEFAULT 0 COMMENT '重置周期：0=NONE终身累计不重置(当前默认)，1=MONTHLY按自然月重置(预留，套餐化时启用)',
-    `remark` varchar(200) DEFAULT NULL COMMENT '备注',
-
-    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `updated_by` bigint DEFAULT NULL COMMENT '最后更新人ID',
-
-    UNIQUE KEY `uk_resource_type` (`resource_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-全局默认配置';
-
-CREATE TABLE IF NOT EXISTS `quota_user` (
-    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
-    `user_id` bigint NOT NULL COMMENT '用户ID',
-    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
-    `custom_limit` int DEFAULT NULL COMMENT '个性化上限，NULL=跟随全局默认',
-    `unlimited` tinyint NOT NULL DEFAULT 0 COMMENT '不限量（豁免）：1=该用户此资源不限额、不计数，0=正常限流',
-    `used_count` int NOT NULL DEFAULT 0 COMMENT '已用次数（cycle_type=0 为终身累计，1=MONTHLY 为当周期内次数）',
-    `cycle_start_time` datetime DEFAULT NULL COMMENT '当前周期开始时间；cycle_type=1(MONTHLY) 时用于跨月判断重置，0(NONE) 时保持 NULL',
-
-    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `updated_by` bigint DEFAULT NULL COMMENT '最后更新人ID',
-
-    UNIQUE KEY `uk_user_resource` (`user_id`, `resource_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-用户级使用量与个性化上限';
-
-CREATE TABLE IF NOT EXISTS `quota_usage_log` (
-    `id` bigint NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键ID',
-    `user_id` bigint NOT NULL COMMENT '用户ID',
-    `resource_type` tinyint NOT NULL COMMENT '资源类型：1=TEXT 2=ASR 3=TTS 4=AVATAR_2D',
-    `action` tinyint NOT NULL COMMENT '动作：1=CONSUME扣减 / 2=ROLLBACK回滚 / 3=ADMIN_ADJUST管理员调整 / 4=RESET周期重置',
-    `delta` int NOT NULL COMMENT '变化量：CONSUME=+1，ROLLBACK=-1，RESET=0，ADMIN_ADJUST=(after-before)',
-    `before_used` int DEFAULT NULL COMMENT '动作前 used_count',
-    `after_used` int DEFAULT NULL COMMENT '动作后 used_count',
-    `operator_id` bigint DEFAULT NULL COMMENT '操作人ID（管理员调整时必填，系统自动扣减为 NULL）',
-    `conversation_id` bigint DEFAULT NULL COMMENT '关联会话ID（可选，便于核对具体一次对话）',
-    `remark` varchar(200) DEFAULT NULL COMMENT '备注（如 QUOTA_REJECTED、调整说明）',
-
-    `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-
-    KEY `idx_user_resource_time` (`user_id`, `resource_type`, `created_time`),
-    KEY `idx_created_time` (`created_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话配额-消费与变更明细（审计）';
 
 INSERT INTO `quota_config` (`resource_type`, `default_limit`, `enabled`, `cycle_type`, `remark`) VALUES
-(1, 8, 1, 0, 'AI文本对话，一条成功提交的文本消息计一次');
-
-INSERT INTO `quota_config` (`resource_type`, `default_limit`, `enabled`, `cycle_type`, `remark`) VALUES
+(1, 8, 1, 0, 'AI文本对话，一条成功提交的文本消息计一次'),
 (2, 8, 1, 0, 'AI语音识别，一段识别完成计一次'),
 (3, 8, 1, 0, 'AI语音合成，一次合成计一次'),
 (4, 8, 1, 0, 'AI 2D 形象播报，一次播报计一次');

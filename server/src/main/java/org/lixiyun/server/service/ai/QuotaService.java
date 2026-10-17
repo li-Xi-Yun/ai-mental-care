@@ -39,4 +39,16 @@ public interface QuotaService {
      * @return 如「AI文本对话次数已达上限，如需继续使用请联系管理员」
      */
     String getRemainingDesc(Integer resourceType);
+
+    /**
+     * 只读预检：用户某资源当前是否仍有可用额度
+     * <p>与 {@link #tryConsume} 前置判定逐条同口径：配置缺失→放行；available=0→无额度；enabled=0→放行；
+     * unlimited=1→放行；否则 {@code used &lt; 生效上限} 才为 true。<b>只读不扣减、不写审计明细</b>，
+     * 供会话初始化等场景做「无额度早拒绝」，实际用量仍由消费点 {@link #tryConsume} 精确控制。</p>
+     *
+     * @param userId       用户ID
+     * @param resourceType 资源类型
+     * @return true=有额度/放行；false=无额度（超限或资源停用）
+     */
+    boolean hasQuota(Long userId, Integer resourceType);
 }
