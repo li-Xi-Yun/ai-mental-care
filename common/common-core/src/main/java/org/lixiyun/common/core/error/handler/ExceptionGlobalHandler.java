@@ -46,6 +46,22 @@ public class ExceptionGlobalHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * 无权限访问（Spring Security @PreAuthorize 拒绝）→ HTTP 403
+     * 方法级 @PreAuthorize 异常在 DispatcherServlet 内被本处理器抢先解析，
+     * 冒泡不到 Security 的 ExceptionTranslationFilter，故在此显式映射为 403
+     * （否则会落进 Throwable 兜底被硬编码成 500）。
+     */
+    @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    public ResponseEntity<Result<?>> handleAuthorizationDenied(
+            org.springframework.security.authorization.AuthorizationDeniedException e, HttpServletRequest request) {
+        log.warn("请求路径：{}，请求方法：{}，无权限访问：{}",
+                request.getRequestURI(), request.getMethod(), e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(Result.error(403, "无权限访问，请联系管理员"));
+    }
+
+    /**
      * 兜底异常处理器 → HTTP 500
      * 所有未被其他处理器捕获的异常（含框架内部错误等）统一返回 500
      */

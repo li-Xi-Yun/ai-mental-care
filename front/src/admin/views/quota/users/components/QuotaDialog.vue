@@ -2,9 +2,9 @@
   <el-dialog
     :model-value="modelValue"
     title="用户配额总览"
-    width="720px"
+    width="960px"
     align-center
-    :close-on-click-modal="false"
+    :close-on-click-modal="true"
     @update:model-value="emit('update:modelValue', $event)"
     @closed="handleClosed"
   >
@@ -23,7 +23,7 @@
           class="quota-table"
           :row-class-name="quotaRowClass"
         >
-          <el-table-column label="资源类型" width="170">
+          <el-table-column label="资源类型" min-width="180">
             <template #default="{ row }">
               <span class="resource-badge" :style="resourceBadgeStyle((row as QuotaRow).resourceType)">
                 <span class="resource-dot" :style="resourceDotStyle((row as QuotaRow).resourceType)" />
@@ -31,22 +31,22 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="已用次数" width="100" align="center">
+          <el-table-column label="已用次数" min-width="110" align="center">
             <template #default="{ row }">
               <span class="num-text">{{ usedCountOf(row as QuotaRow) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生效上限" width="120" align="center">
+          <el-table-column label="生效上限" min-width="130" align="center">
             <template #default="{ row }">
               <span :class="effectiveLimitClass(row as QuotaRow)">{{ effectiveLimitText(row as QuotaRow) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="剩余次数" width="120" align="center">
+          <el-table-column label="剩余次数" min-width="130" align="center">
             <template #default="{ row }">
               <span :class="remainingClass(row as QuotaRow)">{{ remainingText(row as QuotaRow) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="豁免状态" width="110" align="center">
+          <el-table-column label="豁免状态" min-width="120" align="center">
             <template #default="{ row }">
               <span class="status-badge" :style="unlimitedBadgeStyle((row as QuotaRow).unlimited)">
                 <span class="status-dot" :style="unlimitedDotStyle((row as QuotaRow).unlimited)" />
@@ -54,7 +54,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="96" align="center">
+          <el-table-column label="操作" min-width="110" align="center">
             <template #default="{ row }">
               <el-button
                 text

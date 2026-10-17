@@ -4,7 +4,7 @@
     :title="dialogTitle"
     width="560px"
     align-center
-    :close-on-click-modal="false"
+    :close-on-click-modal="true"
     @update:model-value="emit('update:modelValue', $event)"
     @closed="handleClosed"
   >

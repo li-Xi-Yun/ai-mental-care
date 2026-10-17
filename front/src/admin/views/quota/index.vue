@@ -66,7 +66,7 @@
 
     <!-- ==================== 表格卡片 ==================== -->
     <section class="content-card">
-      <el-table v-loading="loading" :data="filteredList" row-key="resourceType" class="quota-config-table">
+      <el-table v-loading="loading" :data="filteredList" row-key="resourceType" class="quota-config-table" @row-click="openDetail($event as QuotaConfigVO)">
         <el-table-column label="资源类型" min-width="180">
           <template #default="{ row }">
             <span class="resource-badge" :style="resourceBadgeStyle((row as QuotaConfigVO).resourceType)">
@@ -110,7 +110,7 @@
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
             <div class="op-cell">
-              <el-button text size="small" class="op-btn op-edit" @click="openEdit(row as QuotaConfigVO)">编辑</el-button>
+              <el-button text size="small" class="op-btn op-edit" @click.stop="openEdit(row as QuotaConfigVO)">编辑</el-button>
             </div>
           </template>
         </el-table-column>
@@ -128,6 +128,9 @@
       :form="form"
       @submit="handleSubmit"
     />
+
+    <!-- ==================== 资源配置详情弹窗（只读） ==================== -->
+    <QuotaConfigDetailDialog v-model="detailVisible" :row="detailRow" />
   </div>
 </template>
 
@@ -135,6 +138,7 @@
 import PageHeader from "@/admin/components/PageHeader.vue";
 import { useQuotaList } from "./useQuotaList";
 import QuotaConfigFormDialog from "./components/QuotaConfigFormDialog.vue";
+import QuotaConfigDetailDialog from "./components/QuotaConfigDetailDialog.vue";
 import type { QuotaConfigVO } from "@/admin/api/quota/quota";
 
 const {
@@ -163,6 +167,10 @@ const {
   form,
   openEdit,
   handleSubmit,
+  // 详情弹窗
+  detailVisible,
+  detailRow,
+  openDetail,
   // 常量
   QUOTA_RESOURCE_OPTIONS,
   QUOTA_AVAILABLE_OPTIONS,

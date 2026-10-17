@@ -196,8 +196,8 @@ public class UserAccountServiceImpl implements UserAccountService {
     private void preCreateQuotaRows(Long userId) {
         try {
             List<QuotaUser> quotaUsers = quotaConfigManager.getAllConfigs().stream()
-                    .filter(QuotaConfig::isAvailable)
-                    .filter(QuotaConfig::isEnabled)
+                    .filter(QuotaConfig::isAvailableFlag)
+                    .filter(QuotaConfig::isEnabledFlag)
                     .map(config -> QuotaUser.builder()
                             .userId(userId)
                             .resourceType(config.getResourceType())

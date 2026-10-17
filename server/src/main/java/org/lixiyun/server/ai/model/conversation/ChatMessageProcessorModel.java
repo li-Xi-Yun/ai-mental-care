@@ -286,11 +286,4 @@ public class ChatMessageProcessorModel extends BaseModel {
         return stream(chatModel, userPrompt, config, null);
     }
 
-    private boolean isOllamaThinkingModel(String modelName) {
-        if (modelName == null) {
-            return false;
-        }
-        String lower = modelName.toLowerCase();
-        return lower.contains("qwen3") || lower.contains("deepseek-r1") || lower.contains("thinking");
-    }
 }

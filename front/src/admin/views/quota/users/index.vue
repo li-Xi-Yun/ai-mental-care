@@ -37,7 +37,7 @@
 
     <!-- ==================== 表格卡片 ==================== -->
     <section class="content-card">
-      <el-table v-loading="loading" :data="tableData" row-key="id" class="quota-user-table">
+      <el-table v-loading="loading" :data="tableData" row-key="id" class="quota-user-table" @row-click="openQuota($event as SysUserPageVO)">
         <el-table-column prop="id" label="用户ID" width="100" />
         <el-table-column label="用户名" min-width="180">
           <template #default="{ row }">

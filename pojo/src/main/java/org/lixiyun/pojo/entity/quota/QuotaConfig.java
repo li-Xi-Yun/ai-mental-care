@@ -91,19 +91,23 @@ public class QuotaConfig implements Serializable {
 
     /**
      * 资源是否可用（available 缺省视为可用）
+     * <p>命名避开 JavaBeans 属性 getter 冲突（字段 available + getAvailable 已存在），
+     * 否则 MyBatis Reflector 会因 {@code getAvailable()}/{@code isAvailable()} 返回类型不一致
+     * 抛出 “Illegal overloaded getter method with ambiguous type”。</p>
      *
      * @return true=可用
      */
-    public boolean isAvailable() {
+    public boolean isAvailableFlag() {
         return available == null || available == AVAILABLE_YES;
     }
 
     /**
      * 是否启用限流（enabled 缺省视为启用）
+     * <p>命名避开 JavaBeans 属性 getter 冲突（字段 enabled + getEnabled 已存在）。</p>
      *
      * @return true=启用限流
      */
-    public boolean isEnabled() {
+    public boolean isEnabledFlag() {
         return enabled == null || enabled == ENABLED_YES;
     }
 

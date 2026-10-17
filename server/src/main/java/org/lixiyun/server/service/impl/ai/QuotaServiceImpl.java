@@ -48,7 +48,7 @@ public class QuotaServiceImpl implements QuotaService {
             throw new BusinessException(QuotaExceptionEnum.RESOURCE_DISABLED.getCode(),
                     "「" + QuotaConfig.resourceName(resourceType) + "」已停用，请联系管理员");
         }
-        if (!config.isEnabled()) {
+        if (!config.isEnabledFlag()) {
             log.debug("[AI配额-扣减] 限流已关闭，直接放行，userId：{}，resourceType：{}", userId, resourceType);
             return true;
         }
@@ -69,7 +69,7 @@ public class QuotaServiceImpl implements QuotaService {
                 recordConsume(userId, resourceType, 1);
                 return true;
             }
-        } else if (quotaUser.isUnlimited()) {
+        } else if (quotaUser.isUnlimitedFlag()) {
             log.info("[AI配额-扣减] 用户豁免放行，不计数不写明细，userId：{}，resourceType：{}", userId, resourceType);
             return true;
         }
@@ -181,13 +181,13 @@ public class QuotaServiceImpl implements QuotaService {
             log.debug("[AI配额-预检] 资源已停用，userId：{}，resourceType：{}", userId, resourceType);
             return false;
         }
-        if (!config.isEnabled()) {
+        if (!config.isEnabledFlag()) {
             log.debug("[AI配额-预检] 限流已关闭，直接放行，userId：{}，resourceType：{}", userId, resourceType);
             return true;
         }
 
         QuotaUser quotaUser = findUserQuota(userId, resourceType);
-        if (quotaUser != null && quotaUser.isUnlimited()) {
+        if (quotaUser != null && quotaUser.isUnlimitedFlag()) {
             log.debug("[AI配额-预检] 用户豁免放行，userId：{}，resourceType：{}", userId, resourceType);
             return true;
         }

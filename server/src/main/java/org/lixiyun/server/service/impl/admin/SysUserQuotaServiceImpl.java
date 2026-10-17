@@ -166,8 +166,8 @@ public class SysUserQuotaServiceImpl implements SysUserQuotaService {
         int usedCount = user == null ? 0 : user.usedCountOrDefault();
         int unlimited = user == null ? QuotaUser.UNLIMITED_NO : user.getUnlimited() == null ? QuotaUser.UNLIMITED_NO : user.getUnlimited();
         Integer customLimit = user == null ? null : user.getCustomLimit();
-        boolean available = config.isAvailable();
-        boolean enabled = config.isEnabled();
+        boolean available = config.isAvailableFlag();
+        boolean enabled = config.isEnabledFlag();
         Integer effectiveLimit = null;
         Integer remaining = null;
 

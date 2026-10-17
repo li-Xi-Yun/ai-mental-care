@@ -142,6 +142,15 @@ export function useQuotaList() {
     dialogVisible.value = true;
   }
 
+  // ==================== 详情弹窗（只读，列表行数据即全字段） ====================
+  const detailVisible = ref(false);
+  const detailRow = ref<QuotaConfigVO | null>(null);
+
+  function openDetail(row: QuotaConfigVO) {
+    detailRow.value = row;
+    detailVisible.value = true;
+  }
+
   /** 弹窗校验通过后提交：全字段局部更新，成功后刷新列表 */
   async function handleSubmit() {
     if (editingType.value == null) return;
@@ -194,6 +203,10 @@ export function useQuotaList() {
     form,
     openEdit,
     handleSubmit,
+    // 详情弹窗
+    detailVisible,
+    detailRow,
+    openDetail,
     // 常量
     QUOTA_RESOURCE_OPTIONS,
     QUOTA_AVAILABLE_OPTIONS,

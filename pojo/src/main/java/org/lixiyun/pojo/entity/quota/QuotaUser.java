@@ -63,10 +63,13 @@ public class QuotaUser implements Serializable {
 
     /**
      * 是否不限量豁免（unlimited=1）
+     * <p>命名避开 JavaBeans 属性 getter 冲突（字段 unlimited + getUnlimited 已存在），
+     * 否则 MyBatis Reflector 会因 {@code getUnlimited()}/{@code isUnlimited()} 返回类型不一致
+     * 抛出 “Illegal overloaded getter method with ambiguous type”。</p>
      *
      * @return true=该用户此资源不限额、不计数
      */
-    public boolean isUnlimited() {
+    public boolean isUnlimitedFlag() {
         return unlimited != null && unlimited == UNLIMITED_YES;
     }
 
