@@ -1,32 +1,38 @@
 <template>
-  <div class="diagnosis-detail-page">
-    <div class="breadcrumb">
-      <router-link to="/diagnosis" class="breadcrumb-link">心理评估</router-link>
-      <span class="breadcrumb-sep">›</span>
-      <router-link :to="`/diagnosis/${sessionId}`" class="breadcrumb-link">评估记录</router-link>
-      <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb-current">评估详情</span>
+  <div class="es-page es-detail-page">
+    <!-- 面包屑 -->
+    <div class="es-breadcrumb">
+      <router-link to="/diagnosis">心理评估</router-link>
+      <span>›</span>
+      <router-link :to="`/diagnosis/${sessionId}`">评估记录</router-link>
+      <span>›</span>
+      <span class="cur">评估详情</span>
     </div>
 
+    <!-- 未登录 -->
     <template v-if="!userStore.token">
-      <el-empty description="登录后即可查看评估详情">
-        <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
-      </el-empty>
-    </template>
-
-    <template v-else-if="loading">
-      <div class="skeleton">
-        <div class="sk-line" style="width: 60%"></div>
-        <div class="sk-line" style="width: 100%"></div>
-        <div class="sk-line" style="width: 85%"></div>
-        <div class="sk-line" style="width: 40%"></div>
+      <div class="es-empty-wrap">
+        <el-empty description="登录后即可查看评估详情">
+          <el-button type="primary" @click="userStore.openLoginDialog('login')">去登录</el-button>
+        </el-empty>
       </div>
     </template>
 
+    <!-- 加载骨架 -->
+    <template v-else-if="loading">
+      <div class="es-list-loading">
+        <div class="es-sk-line" style="width: 60%"></div>
+        <div class="es-sk-line" style="width: 100%"></div>
+        <div class="es-sk-line" style="width: 85%"></div>
+      </div>
+    </template>
+
+    <!-- 加载失败 -->
     <template v-else-if="loadError">
-      <div class="error-box">
-        <el-empty description="评估报告加载失败，请稍后重试" />
-        <el-button type="primary" @click="loadDiagnosis">重新加载</el-button>
+      <div class="es-empty-wrap">
+        <el-empty description="评估报告加载失败，请稍后重试">
+          <el-button type="primary" @click="loadDiagnosis">重新加载</el-button>
+        </el-empty>
       </div>
     </template>
 
@@ -36,16 +42,19 @@
         :round-num-text="roundNumText"
         :format-date-time="formatDateTime"
         :format-percent="formatPercent"
+        @scroll-to-feedback="scrollToFeedback"
       />
 
-      <DiagnosisStatCards :diagnosis="diagnosis" :emotion-risk-meta="emotionRiskMeta" :crisis-text="crisisText" :format-percent="formatPercent" :signed="signed" />
+      <DiagnosisStatCards
+        :diagnosis="diagnosis"
+        :emotion-risk-meta="emotionRiskMeta"
+        :crisis-text="crisisText"
+        :format-percent="formatPercent"
+        :signed="signed"
+      />
 
-      <section v-if="diagnosis.diagnosisContent" class="panel">
-        <div class="panel-title"><span class="panel-icon">📝</span>评估摘要</div>
-        <p class="para summary-text">{{ diagnosis.diagnosisContent }}</p>
-      </section>
-
-      <div class="grid-2">
+      <!-- 情绪占比 + 情绪趋势 -->
+      <div class="es-g2 es-chart-row es-overview-row">
         <EmotionPieChart
           :emotion-segments="emotionSegments"
           :core-emotion-label="diagnosis.coreEmotionLabel"
@@ -58,165 +67,169 @@
           :ring-circumference="RING_CIRCUMFERENCE"
         />
 
-        <section class="panel">
-          <div class="panel-title"><span class="panel-icon">📈</span>情绪趋势</div>
-          <div class="trend-badge">
-            <span class="trend-icon">{{ trendMeta.icon }}</span>
-            <span class="trend-text">整体情绪{{ trendMeta.text }}</span>
-            <el-tag :type="trendMeta.type" size="small" effect="light">{{ trendMeta.text }}</el-tag>
+        <section class="es-data-panel">
+          <h4><span class="es-icon">📈</span>情绪趋势</h4>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:8px;">
+            <span>{{ trendMeta.icon }}</span>
+            <span style="font-weight:600;color:#333;">整体情绪{{ trendMeta.text }}</span>
+            <span class="es-pill" :class="trendMeta.type">{{ trendMeta.text }}</span>
           </div>
-          <div class="trend-grid">
-            <div class="trend-item">
-              <div class="trend-label">峰值轮次</div>
-              <div class="trend-value">第{{ diagnosis.emotionPeakRound ?? "--" }}轮</div>
-            </div>
-            <div class="trend-item">
-              <div class="trend-label">低谷轮次</div>
-              <div class="trend-value">第{{ diagnosis.emotionValleyRound ?? "--" }}轮</div>
-            </div>
-            <div class="trend-item">
-              <div class="trend-label">波动幅度</div>
-              <div class="trend-value">{{ formatNumber(diagnosis.emotionFluctuationAmplitude) }}</div>
-            </div>
-            <div class="trend-item">
-              <div class="trend-label">稳定轮次</div>
-              <div class="trend-value">{{ diagnosis.emotionStableRounds ?? "--" }} 轮</div>
-            </div>
-          </div>
+          <div class="es-data-item"><span class="es-key">峰值轮次</span><span class="es-val">第{{ diagnosis.emotionPeakRound ?? "--" }}轮</span></div>
+          <div class="es-data-item"><span class="es-key">低谷轮次</span><span class="es-val">第{{ diagnosis.emotionValleyRound ?? "--" }}轮</span></div>
+          <div class="es-data-item"><span class="es-key">波动幅度</span><span class="es-val">{{ formatNumber(diagnosis.emotionFluctuationAmplitude) }}</span></div>
+          <div class="es-data-item"><span class="es-key">稳定轮次</span><span class="es-val">第{{ diagnosis.emotionStableRounds ?? "--" }}轮</span></div>
+          <div class="es-data-item"><span class="es-key">稳定性得分</span><span class="es-val">{{ formatPercent(diagnosis.emotionStabilityScore) }}</span></div>
         </section>
       </div>
 
-      <section v-if="emotionEntries.length" class="panel">
-        <div class="panel-title"><span class="panel-icon">📊</span>核心情绪分布</div>
-        <div class="bar-row" v-for="(e, i) in emotionEntries" :key="e.label">
-          <span class="bar-name">{{ e.label }}</span>
-          <div class="bar-track">
-            <div
-              class="bar-fill"
-              :style="{
-                width: `${emotionTotal ? (e.value / emotionTotal) * 100 : 0}%`,
-                backgroundColor: emotionColor(e.label, i),
-              }"
-            ></div>
-          </div>
-          <span class="bar-value">{{ toPercent(e.value).toFixed(0) }}%</span>
-        </div>
-      </section>
+      <!-- 核心 + 次要情绪分布 -->
+      <div class="es-g2 es-chart-row es-emotion-row">
+        <EmotionBarChart title="📊 核心情绪分布" :entries="coreTopEntries" :color-of="normalizedEmotionColor" />
+        <EmotionBarChart title="🔬 次要情绪分布" :entries="secondaryEntries" :color-of="normalizedEmotionColor" />
+      </div>
 
-      <section class="panel">
-        <div class="panel-title"><span class="panel-icon">🎯</span>PAD 情绪维度</div>
-        <div class="pad-grid">
-          <div class="pad-card" v-for="item in padItems" :key="item.name">
-            <div class="pad-head">
-              <div>
-                <div class="pad-name">{{ item.name }} · {{ item.label }}</div>
-                <div class="pad-value" :style="{ color: item.color }">{{ signed(item.mean) }}</div>
-              </div>
-              <el-tag size="small" :type="padStdTagType(item)" effect="light">
-                σ {{ item.std != null ? item.std.toFixed(2) : "--" }}
-              </el-tag>
-            </div>
-            <div class="pad-track-labels"><span>-1</span><span>0</span><span>+1</span></div>
-            <div class="pad-bar">
-              <div class="pad-zero"></div>
-              <div class="pad-fill" :style="padBarStyle(item)"></div>
-            </div>
-            <div class="pad-sub">{{ padStdText(item) }}</div>
+      <!-- PAD 情绪维度雷达 -->
+      <EmotionPadRadar :items="padRadarItems" />
+
+      <!-- 基础信息 -->
+      <div class="es-section-title">📌 基础信息</div>
+      <section class="es-data-panel">
+        <div class="es-g4">
+          <div class="es-data-item"><span class="es-key">诊断ID</span><span class="es-val">{{ diagnosis.id ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">会话ID</span><span class="es-val">{{ diagnosis.conversationId ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">用户ID</span><span class="es-val">{{ diagnosis.userId ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">诊断轮次</span><span class="es-val">{{ roundNumText }}</span></div>
+          <div class="es-data-item"><span class="es-key">创建时间</span><span class="es-val">{{ formatDateTime(diagnosis.createdTime) }}</span></div>
+          <div class="es-data-item"><span class="es-key">更新时间</span><span class="es-val">{{ formatDateTime(diagnosis.updatedTime) }}</span></div>
+          <div class="es-data-item">
+            <span class="es-key">核心情绪标签</span>
+            <span class="es-val" style="color:#6c63ff;">{{ diagnosis.coreEmotionLabel ?? "--" }}</span>
+          </div>
+          <div class="es-data-item"><span class="es-key">置信度</span><span class="es-val">{{ formatPercent(diagnosis.coreEmotionConfAvg) }}</span></div>
+          <div class="es-data-item"><span class="es-key">强度</span><span class="es-val">{{ formatPercent(diagnosis.coreEmotionIntensityScore) }}</span></div>
+          <div class="es-data-item">
+            <span class="es-key">整体心理状态</span>
+            <span class="es-pill" :class="emotionRiskMeta.type">{{ diagnosis.psychologicalState ?? "--" }}</span>
           </div>
         </div>
       </section>
 
-      <div class="grid-2">
-        <section class="panel">
-          <div class="panel-title"><span class="panel-icon">⚡</span>触发因素</div>
-          <div class="trigger-scene">
-            <span class="trigger-icon">📍</span>
-            <div>
-              <div class="kv-label">核心触发场景</div>
-              <div class="trigger-scene-value">{{ diagnosis.coreTriggerScene ?? "--" }}</div>
-            </div>
-          </div>
-          <div class="trigger-meta">
-            <span class="kv-label">首次触发轮次</span>
-            <span class="trigger-meta-value">{{ diagnosis.triggerRoundNum ? `第${diagnosis.triggerRoundNum}轮` : "--" }}</span>
-          </div>
-          <div v-if="triggerKeywords.length" class="tag-block">
-            <span class="kv-label">触发关键词</span>
-            <div class="tag-list">
-              <el-tag v-for="kw in triggerKeywords" :key="kw" size="small" effect="plain" class="kw-tag">{{ kw }}</el-tag>
-            </div>
-          </div>
-          <p v-if="diagnosis.firstTriggerDesc" class="para trigger-desc">{{ diagnosis.firstTriggerDesc }}</p>
-        </section>
+      <div class="es-section-title">📝 诊断评估内容</div>
+      <section class="es-data-panel">
+        <p class="es-para">{{ diagnosis.diagnosisContent }}</p>
+      </section>
 
-        <section class="panel">
-          <div class="panel-title"><span class="panel-icon">⚠️</span>风险评估</div>
-          <div class="kv-grid">
-            <div class="kv-item" v-for="r in riskItems" :key="r.label">
-              <span class="kv-label">{{ r.label }}</span>
-              <el-tag :type="r.type" size="small" effect="light">{{ r.text }}</el-tag>
-            </div>
-          </div>
-          <p v-if="diagnosis.riskDetail" class="para risk-detail">{{ diagnosis.riskDetail }}</p>
-        </section>
-      </div>
+      <!-- 趋势数据已在顶部趋势面板展示；PAD 均值与标准差已在雷达图右侧按维度归组 -->
 
-      <div class="grid-2">
-        <section class="panel">
-          <div class="panel-title"><span class="panel-icon">🏥</span>症状与心理状态</div>
-          <div class="kv-grid">
-            <div class="kv-item"><span class="kv-label">心理状态</span><strong class="kv-strong">{{ diagnosis.psychologicalState ?? "--" }}</strong></div>
-            <div class="kv-item"><span class="kv-label">持续时长</span><span>{{ diagnosis.symptomDuration ?? "--" }}</span></div>
-            <div class="kv-item"><span class="kv-label">发作模式</span><span>{{ diagnosis.onsetPattern ?? "--" }}</span></div>
+      <!-- 触发因素分析 -->
+      <div class="es-section-title">🎯 触发因素分析</div>
+      <section class="es-data-panel">
+        <div class="es-g4">
+          <div class="es-data-item"><span class="es-key">触发场景</span><span class="es-val">{{ diagnosis.coreTriggerScene ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">触发关键词</span><span class="es-val">{{ triggerKeywords.join("、") || "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">触发轮次</span><span class="es-val">{{ diagnosis.triggerRoundNum ? `第${diagnosis.triggerRoundNum}轮` : "--" }}</span></div>
+          <div class="es-data-item" style="grid-column: 1 / -1;">
+            <span class="es-key">首次触发描述</span>
+            <span class="es-val">{{ diagnosis.firstTriggerDesc ?? "--" }}</span>
           </div>
-          <p v-if="diagnosis.symptomSummary" class="para">{{ diagnosis.symptomSummary }}</p>
-          <div v-if="symptomTagList.length" class="tag-block">
-            <span class="kv-label">症状标签</span>
-            <div class="tag-list">
-              <el-tag v-for="t in symptomTagList" :key="t" size="small" effect="light" type="warning">{{ t }}</el-tag>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-title"><span class="panel-icon">🌐</span>社会功能评估</div>
-          <div class="kv-grid">
-            <div class="kv-item"><span class="kv-label">社会功能</span><el-tag :type="socialImpactType" size="small" effect="light">{{ diagnosis.socialFunctionImpact ?? "--" }}</el-tag></div>
-            <div class="kv-item"><span class="kv-label">社会支持</span><span>{{ socialSupportText }}</span></div>
-          </div>
-          <p v-if="diagnosis.impactDomains" class="para">影响领域：{{ diagnosis.impactDomains }}</p>
-          <p v-if="diagnosis.dailyLifeInfluence" class="para">{{ diagnosis.dailyLifeInfluence }}</p>
-          <div v-if="protectiveFactorsList.length" class="tag-block">
-            <span class="kv-label">保护因素</span>
-            <div class="tag-list">
-              <el-tag v-for="t in protectiveFactorsList" :key="t" size="small" effect="plain" type="success">{{ t }}</el-tag>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section class="panel">
-        <div class="panel-title"><span class="panel-icon">💡</span>AI 建议</div>
-        <div class="advice-grid">
-          <div class="advice-card" :class="{ hot: suggestionPriority === 1 }">
-            <div class="advice-head"><span class="advice-icon">🧘</span><span class="advice-title">自助调节</span></div>
-            <p>{{ diagnosis.selfHelpSuggestion || "暂无建议" }}</p>
-          </div>
-          <div class="advice-card" :class="{ hot: suggestionPriority === 2 }">
-            <div class="advice-head"><span class="advice-icon">🤝</span><span class="advice-title">社会支持</span></div>
-            <p>{{ diagnosis.socialSupportSuggestion || "暂无建议" }}</p>
-          </div>
-          <div class="advice-card" :class="{ hot: suggestionPriority === 3 }">
-            <div class="advice-head"><span class="advice-icon">🩺</span><span class="advice-title">专业干预</span></div>
-            <p>{{ diagnosis.professionalInterveneSuggestion || "暂无建议" }}</p>
-          </div>
-        </div>
-        <div class="priority-banner" :class="priorityMeta.type">
-          <span class="priority-icon">💡</span>
-          <span>建议优先级：<strong>{{ priorityMeta.text }}</strong></span>
         </div>
       </section>
 
+      <!-- 症状与心理状态评估 -->
+      <div class="es-section-title">🏥 症状与心理状态评估</div>
+      <div class="es-g3">
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🧠</span>心理状态</h4>
+          <div class="es-data-item"><span class="es-key">整体状态</span><span class="es-val">{{ diagnosis.psychologicalState ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">持续时长</span><span class="es-val">{{ diagnosis.symptomDuration ?? "--" }}</span></div>
+          <div class="es-data-item"><span class="es-key">发作模式</span><span class="es-val">{{ diagnosis.onsetPattern ?? "--" }}</span></div>
+        </section>
+
+        <section class="es-data-panel">
+          <h4><span class="es-icon">📋</span>症状总结</h4>
+          <p class="es-para">{{ diagnosis.symptomSummary }}</p>
+        </section>
+
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🏷️</span>症状标签</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="es-pill warning" v-for="t in symptomTagList" :key="t">{{ t }}</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- 社会功能评估 -->
+      <div class="es-section-title">🌐 社会功能评估</div>
+      <div class="es-g3">
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🤝</span>社会功能</h4>
+          <div class="es-data-item">
+            <span class="es-key">受损程度</span>
+            <span class="es-pill" :class="socialImpactType">{{ diagnosis.socialFunctionImpact ?? "--" }}</span>
+          </div>
+          <div class="es-data-item"><span class="es-key">影响领域</span><span class="es-val">{{ diagnosis.impactDomains || "--" }}</span></div>
+        </section>
+
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🏠</span>日常生活影响</h4>
+          <p class="es-para">{{ diagnosis.dailyLifeInfluence }}</p>
+        </section>
+
+        <section class="es-data-panel">
+          <h4><span class="es-icon">💪</span>心理资源</h4>
+          <div class="es-data-item"><span class="es-key">社会支持</span><span class="es-val">{{ socialSupportText }}</span></div>
+          <div class="es-data-item"><span class="es-key">应对方式</span><span class="es-val">{{ diagnosis.copingStyle || "--" }}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+            <span class="es-pill success" v-for="t in protectiveFactorsList" :key="t">{{ t }}</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- 风险评估 -->
+      <div class="es-section-title">⚠️ 风险评估</div>
+      <section class="es-data-panel">
+        <div class="es-g4">
+          <div class="es-data-item" v-for="r in riskItems" :key="r.label">
+            <span class="es-key">{{ r.label }}</span>
+            <span class="es-pill" :class="r.type">{{ r.text }}</span>
+          </div>
+          <div v-if="diagnosis.riskDetail" class="es-data-item" style="grid-column: 1 / -1;">
+            <span class="es-key">风险细节</span>
+            <span class="es-val">{{ diagnosis.riskDetail }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 干预建议 -->
+      <div class="es-section-title">💡 干预建议</div>
+      <div class="es-g2">
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🧘</span>自我调节建议</h4>
+          <p class="es-para">{{ diagnosis.selfHelpSuggestion }}</p>
+        </section>
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🤝</span>社会支持建议</h4>
+          <p class="es-para">{{ diagnosis.socialSupportSuggestion }}</p>
+        </section>
+      </div>
+      <div class="es-g2">
+        <section class="es-data-panel">
+          <h4><span class="es-icon">🩺</span>专业干预建议</h4>
+          <p class="es-para">{{ diagnosis.professionalInterveneSuggestion }}</p>
+        </section>
+        <section class="es-data-panel">
+          <h4><span class="es-icon">💡</span>情绪调节建议</h4>
+          <p class="es-para">{{ diagnosis.emotionAdjustSuggestion }}</p>
+        </section>
+      </div>
+      <section class="es-data-panel">
+        <div class="es-data-item">
+          <span class="es-key">建议优先级</span>
+          <span class="es-pill" :class="priorityMeta.type">{{ priorityMeta.text }}</span>
+        </div>
+      </section>
+
+      <!-- 反馈 -->
       <DiagnosisFeedbackSection
         :feedback="feedback"
         :editing="editing"
@@ -236,7 +249,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import type { CSSProperties } from "vue";
 import { useRoute } from "vue-router";
 import { useUserStore } from "@/portal/stores/user";
 import { getEmotionDiagnosisDetail } from "@/portal/api/conversation/emotion-diagnosis";
@@ -247,6 +259,9 @@ import {
   formatNumber,
   signed,
   toPercent,
+  normalizeEmotionLabel,
+  normalizeEmotionEntries,
+  normalizedEmotionColor,
   RING_CIRCUMFERENCE,
   RING_RADIUS,
   emotionColor,
@@ -256,7 +271,10 @@ import { useDiagnosisFeedback } from "@/portal/composables/useDiagnosisFeedback"
 import DiagnosisHero from "@/portal/components/emotion/DiagnosisHero.vue";
 import DiagnosisStatCards from "@/portal/components/emotion/DiagnosisStatCards.vue";
 import EmotionPieChart from "@/portal/components/emotion/EmotionPieChart.vue";
+import EmotionBarChart from "@/portal/components/emotion/EmotionBarChart.vue";
+import EmotionPadRadar, { type PadRadarItem } from "@/portal/components/emotion/EmotionPadRadar.vue";
 import DiagnosisFeedbackSection from "@/portal/components/emotion/DiagnosisFeedbackSection.vue";
+import "@/shared/styles/emotion/emotion-design.css";
 
 /* ==================== 基础状态 ==================== */
 
@@ -273,7 +291,6 @@ const diagnosis = ref<EmotionDiagnosisVO | null>(null);
 
 const {
   emotionEntries,
-  emotionTotal,
   emotionSegments,
   coreEmotionShare,
   ratioSummary,
@@ -285,7 +302,6 @@ const {
   padItems,
   socialImpactType,
   socialSupportText,
-  suggestionPriority,
   priorityMeta,
   symptomTagList,
   triggerKeywords,
@@ -321,24 +337,51 @@ const riskItems = computed(() => {
   ];
 });
 
-/* ==================== PAD 样式 ==================== */
+/* ==================== 图表数据 ==================== */
 
-function padBarStyle(item: { mean: number | null; name: string }): CSSProperties {
-  const v = item.mean ?? 0;
-  const width = Math.abs(v) * 50;
-  const left = v >= 0 ? 50 : 50 - width;
-  return { left: `${left}%`, width: `${width}%`, backgroundColor: v >= 0 ? "#6c63ff" : "#ff6b6b" };
-}
+const coreTopEntries = computed(() =>
+  emotionEntries.value.slice(0, 6).map((e) => ({ label: normalizeEmotionLabel(e.label), value: Math.round(toPercent(e.value)) })),
+);
 
-function padStdTagType(item: { std: number | null }): "success" | "warning" | "danger" | "info" {
-  if (item.std == null) return "info";
-  return item.std >= 0.3 ? "warning" : "success";
-}
+const secondaryEntries = computed(() =>
+  normalizeEmotionEntries(
+    Object.entries(diagnosis.value?.secondaryEmotion ?? {}).map(([label, value]) => ({
+      label,
+      value: Number(value) || 0,
+    })),
+  )
+    .map((entry) => ({ label: entry.label, value: Math.round(toPercent(entry.value)) }))
+    .sort((a, b) => b.value - a.value),
+);
+
+const padRadarItems = computed<PadRadarItem[]>(() =>
+  padItems.value.map((item) => {
+    const mean = item.mean;
+    const std = item.std;
+    return {
+      name: item.name,
+      label: item.label,
+      mean,
+      std,
+      meanText: mean == null ? "--" : signed(mean),
+      stdText: std == null ? "--" : formatNumber(std),
+      stdSub: padStdText({ std }),
+    };
+  }),
+);
+
+/* ==================== PAD 文本 ==================== */
 
 function padStdText(item: { std: number | null }): string {
   if (item.std == null) return "标准差缺失，无法评估波动";
   if (item.std >= 0.3) return "波动较强，情绪起伏明显";
   return item.std >= 0.15 ? "波动中等，情绪较为稳定" : "波动较小，情绪非常稳定";
+}
+
+/* ==================== 反馈滚动 ==================== */
+
+function scrollToFeedback() {
+  document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 /* ==================== 数据加载 ==================== */
@@ -375,108 +418,3 @@ watch(
 
 onMounted(() => void init());
 </script>
-
-<style scoped>
-/* Note: All styles remain scoped as in the original for design consistency */
-.diagnosis-detail-page {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 24px 20px 48px;
-}
-
-.breadcrumb {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: #999; margin-bottom: 16px;
-}
-
-.breadcrumb-link { color: #6c63ff; text-decoration: none; transition: color 0.2s; }
-.breadcrumb-link:hover { color: #3f3d9e; }
-.breadcrumb-current { color: #333; font-weight: 500; }
-
-.panel {
-  background: #fff; border: 1px solid #ececf2; border-radius: 14px;
-  padding: 20px; margin-bottom: 16px;
-}
-
-.panel-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 16px;
-}
-
-.panel-icon { font-size: 16px; }
-
-.grid-2 {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
-}
-
-.para {
-  font-size: 13px; line-height: 1.9; color: #555; margin: 10px 0 0; white-space: pre-wrap;
-}
-
-.summary-text { color: #444; }
-
-/* Bar chart */
-.bar-row {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
-}
-
-.bar-name { width: 56px; font-size: 13px; color: #555; flex-shrink: 0; text-align: right; }
-.bar-track { flex: 1; height: 10px; background: #f2f2f8; border-radius: 5px; overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
-.bar-value { width: 56px; font-size: 12px; font-weight: 600; color: #333; text-align: right; }
-
-/* Trend */
-.trend-badge { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-.trend-icon { font-size: 18px; font-weight: 700; color: #6c63ff; }
-.trend-text { font-size: 14px; font-weight: 600; color: #1a1a2e; flex: 1; }
-.trend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-.trend-label { font-size: 12px; color: #b0b6c4; }
-.trend-value { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
-
-/* PAD */
-.pad-grid { display: grid; gap: 18px; }
-.pad-card { background: #fafafe; border: 1px solid #ececf2; border-radius: 12px; padding: 14px 16px; }
-.pad-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.pad-name { font-size: 13px; color: #666; }
-.pad-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
-.pad-track-labels { display: flex; justify-content: space-between; font-size: 11px; color: #b0b6c4; margin-bottom: 4px; }
-.pad-bar { position: relative; height: 8px; background: #ececf2; border-radius: 4px; }
-.pad-zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #ccc; border-radius: 1px; }
-.pad-fill { position: absolute; top: 0; height: 100%; border-radius: 4px; min-width: 4px; }
-.pad-sub { margin-top: 8px; font-size: 12px; color: #999; }
-
-/* Trigger & Risk */
-.trigger-scene { display: flex; gap: 12px; margin-bottom: 12px; }
-.trigger-icon { font-size: 18px; flex-shrink: 0; }
-.trigger-scene-value { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-top: 4px; }
-.trigger-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; }
-.trigger-desc { font-size: 13px; color: #888; }
-.kv-label { font-size: 12px; color: #9aa0b5; }
-.kv-grid { display: grid; gap: 12px; }
-.kv-item { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-.kv-strong { color: #1a1a2e; }
-.tag-block { margin-top: 10px; }
-.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.kw-tag { margin: 0; }
-
-/* Advice */
-.advice-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.advice-card { background: #fafafe; border: 1px solid #ececf2; border-radius: 12px; padding: 14px; }
-.advice-card p { font-size: 12px; line-height: 1.7; color: #666; margin: 8px 0 0; }
-.advice-head { display: flex; align-items: center; gap: 6px; }
-.advice-icon { font-size: 16px; }
-.advice-title { font-size: 13px; font-weight: 600; color: #1a1a2e; }
-.advice-card.hot { border-color: #6c63ff; background: #f8f7ff; }
-.priority-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; font-size: 13px; border: 1px solid; }
-.priority-banner.success { background: #f6ffed; border-color: #b7eb8f; color: #52c41a; }
-.priority-banner.warning { background: #fffbe6; border-color: #ffe58f; color: #fa8c16; }
-.priority-banner.danger { background: #fff1f0; border-color: #ffa39e; color: #f5222d; }
-.priority-banner.info { background: #f0f5ff; border-color: #adc6ff; color: #1890ff; }
-.priority-icon { font-size: 16px; }
-
-/* Skeleton */
-.skeleton { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
-.sk-line { height: 16px; background: linear-gradient(90deg, #f0f0f5 25%, #e8e8f0 50%, #f0f0f5 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-.error-box { text-align: center; padding: 40px 0; }
-</style>

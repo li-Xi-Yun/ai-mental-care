@@ -1,6 +1,6 @@
 <template>
-  <section class="panel">
-    <div class="panel-title"><span class="panel-icon">✍️</span>我的反馈</div>
+  <section id="feedback" class="es-data-panel">
+    <h4><span class="es-icon">✍️</span>我的反馈</h4>
 
     <div v-if="feedback && !editing" class="fb-summary">
       <div class="fb-stars">
@@ -119,18 +119,6 @@ defineEmits<{
 </script>
 
 <style scoped>
-.panel {
-  background: #fff; border: 1px solid #ececf2; border-radius: 14px;
-  padding: 20px; margin-bottom: 16px;
-}
-
-.panel-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 16px;
-}
-
-.panel-icon { font-size: 16px; }
-
 .fb-summary { display: flex; flex-direction: column; gap: 12px; }
 .fb-stars { display: flex; align-items: center; gap: 8px; }
 .fb-score-text { font-size: 13px; color: #fa8c16; font-weight: 600; }

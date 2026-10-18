@@ -1,11 +1,11 @@
 <template>
-  <section class="stat-strip">
-    <div class="stat-card" v-for="s in statCards" :key="s.label">
-      <div class="stat-label">{{ s.label }}</div>
-      <div class="stat-value">{{ s.value }}</div>
-      <div class="stat-sub">{{ s.sub }}</div>
+  <div class="es-summary-cards">
+    <div class="es-summary-card" v-for="s in statCards" :key="s.label">
+      <span class="label">{{ s.label }}</span>
+      <span class="value" :style="s.valueColor ? { color: s.valueColor } : undefined">{{ s.value }}</span>
+      <span class="sub">{{ s.sub }}</span>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -20,7 +20,20 @@ const props = defineProps<{
   signed: (v?: number | null) => string;
 }>();
 
-const statCards = computed(() => {
+type StatCard = {
+  label: string;
+  value: string;
+  sub: string;
+  valueColor?: string;
+};
+
+const RISK_VALUE_COLOR: Record<string, string> = {
+  danger: "#ff6b6b",
+  warning: "#fa8c16",
+  success: "#4ecdc4",
+};
+
+const statCards = computed<StatCard[]>(() => {
   const d = props.diagnosis;
   return [
     {
@@ -32,6 +45,7 @@ const statCards = computed(() => {
       label: "风险等级",
       value: props.emotionRiskMeta.text,
       sub: `危机预警 ${props.crisisText}`,
+      valueColor: RISK_VALUE_COLOR[props.emotionRiskMeta.type] ?? "#1a1a2e",
     },
     {
       label: "情绪稳定性",
@@ -43,47 +57,11 @@ const statCards = computed(() => {
       value: `P ${props.signed(d?.avgP)}`,
       sub: `A ${props.signed(d?.avgA)} · D ${props.signed(d?.avgD)}`,
     },
+    {
+      label: "整体状态",
+      value: d?.psychologicalState ?? "--",
+      sub: `社会功能 ${d?.socialFunctionImpact ?? "--"}`,
+    },
   ];
 });
 </script>
-
-<style scoped>
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  background: #fff;
-  border: 1px solid #ececf2;
-  border-radius: 14px;
-  padding: 16px 18px;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.stat-card:hover {
-  box-shadow: 0 6px 18px rgba(26, 26, 46, 0.06);
-  transform: translateY(-2px);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #9aa0b5;
-}
-
-.stat-value {
-  margin-top: 6px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a2e;
-  line-height: 1.2;
-}
-
-.stat-sub {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #b0b6c4;
-}
-</style>

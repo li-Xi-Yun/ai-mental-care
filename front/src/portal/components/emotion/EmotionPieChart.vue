@@ -1,8 +1,8 @@
 <template>
-  <section class="panel">
-    <div class="panel-title"><span class="panel-icon">🎭</span>情绪占比分析</div>
-    <div v-if="emotionSegments.length" class="emotion-wrap">
-      <div class="ring-box">
+  <section class="es-data-panel">
+    <h4><span class="es-icon">🎭</span>情绪占比分析</h4>
+    <div v-if="emotionSegments.length || hasRatioData" class="emotion-wrap">
+      <div v-if="emotionSegments.length" class="ring-box">
         <svg viewBox="0 0 100 100" class="ring-svg">
           <circle
             cx="50"
@@ -32,27 +32,22 @@
           <span class="ring-center-sub">{{ coreEmotionShare }}%</span>
         </div>
       </div>
-      <div class="legend">
-        <div class="legend-item" v-for="(e, i) in emotionEntries.slice(0, 5)" :key="e.label">
-          <span class="legend-dot" :style="{ backgroundColor: emotionColor(e.label, i) }"></span>
-          <span class="legend-name">{{ e.label }}</span>
-          <span class="legend-pct">{{ toPercent(e.value).toFixed(0) }}%</span>
+      <div v-else class="ring-empty">暂无核心情绪分布</div>
+      <div class="ratio-legend">
+        <div class="ratio-legend-item" v-for="r in ratioSummary" :key="r.label" :class="{ 'is-selected': selectedRatio === r.label }" role="button" tabindex="0" @click="toggleRatio(r.label)" @keydown.enter="toggleRatio(r.label)">
+          <span class="ratio-dot" :style="{ backgroundColor: r.color }"></span>
+          <span class="ratio-name">{{ r.label }}</span>
+          <span class="ratio-pct">{{ r.value != null ? `${(r.value * 100).toFixed(0)}%` : "--" }}</span>
         </div>
       </div>
     </div>
     <div v-else class="no-emotion">暂无情绪占比数据</div>
-    <div v-if="ratioSummary.length" class="ratio-summary">
-      <span class="ratio-item" v-for="r in ratioSummary" :key="r.label">
-        <i class="ratio-dot" :style="{ backgroundColor: r.color }"></i>
-        {{ r.label }}
-        {{ r.value != null ? `${(r.value * 100).toFixed(0)}%` : "--" }}
-      </span>
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+const props = defineProps<{
   emotionSegments: { label: string; percent: number; start: number }[];
   coreEmotionLabel?: string;
   coreEmotionShare: string;
@@ -63,40 +58,27 @@ defineProps<{
   ringRadius: number;
   ringCircumference: number;
 }>();
+
+const selectedRatio = ref<string | null>(null);
+
+function toggleRatio(label: string): void {
+  selectedRatio.value = selectedRatio.value === label ? null : label;
+}
+
+const hasRatioData = computed(() => props.ratioSummary.some((item) => item.value != null));
 </script>
 
 <style scoped>
-.panel {
-  background: #fff;
-  border: 1px solid #ececf2;
-  border-radius: 14px;
-  padding: 20px;
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 16px;
-}
-
-.panel-icon {
-  font-size: 16px;
-}
-
 .emotion-wrap {
   display: flex;
-  gap: 28px;
+  gap: 24px;
   align-items: center;
 }
 
 .ring-box {
   position: relative;
-  width: 150px;
-  height: 150px;
+  width: 140px;
+  height: 140px;
   flex-shrink: 0;
 }
 
@@ -116,81 +98,81 @@ defineProps<{
 }
 
 .ring-center-label {
-  font-size: 11px;
-  color: #b0b6c4;
+  font-size: 10px;
+  color: #999;
 }
 
 .ring-center-value {
-  font-size: 16px;
+  max-width: 82px;
+  font-size: clamp(11px, 2.8vw, 15px);
   font-weight: 700;
   color: #1a1a2e;
   margin-top: 2px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .ring-center-sub {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #6c63ff;
   margin-top: 2px;
 }
 
-.legend {
+.ratio-legend {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.legend-item {
+.ratio-legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 0;
-  font-size: 13px;
+  font-size: 12px;
   color: #555;
+  padding: 3px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.15s;
 }
 
-.legend-dot {
+.ratio-legend-item:hover,
+.ratio-legend-item.is-selected {
+  background: #f7f5ff;
+}
+
+.ratio-dot {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
-.legend-name {
+.ratio-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.legend-pct {
+.ratio-pct {
+  font-size: 12px;
   font-weight: 600;
   color: #333;
 }
 
+.ring-empty,
 .no-emotion {
+  flex: 1;
   color: #999;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
   padding: 20px 0;
 }
 
-.ratio-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed #e6e8f0;
-}
-
-.ratio-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #666;
-}
-
-.ratio-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
+.no-emotion { display: block; }
 </style>

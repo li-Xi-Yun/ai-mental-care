@@ -8,9 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.ConversationExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.diagnosis.knowledge.KnowledgeMatchRequest;
+import org.lixiyun.server.ai.model.EmbeddingModelResolver;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -36,7 +36,7 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, No
 
     private static final String FILTER_EXPRESSION = "knowledge_type == 2 && deleted == 1";
 
-    private final EmbeddingModel embeddingModel;
+    private final EmbeddingModelResolver embeddingModelResolver;
     private final MilvusUtil milvusUtil;
 
     @Override
@@ -63,8 +63,8 @@ public class DiagnosisStandardRepositoryNode implements NodeActionWithConfig, No
             return Map.of();
         }
 
-        // 1. 文本向量化
-        float[] queryVector = embeddingModel.embed(diagnosisPrompt);
+        // 1. 文本向量化（节点级独立向量模型配置 + 独立重试）
+        float[] queryVector = embeddingModelResolver.embedWithRetry(NODE_NAME, diagnosisPrompt);
         // 2. 构建搜索参数（radius = 1 - similarityThreshold，适用于 COSINE 度量）
         //     radius 单独使用时，返回 distance <= radius 的结果（即相似度 >= threshold）
         Map<String, Object> searchParams = Map.of(

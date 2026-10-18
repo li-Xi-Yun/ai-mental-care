@@ -25,6 +25,11 @@ public class MilvusProperties {
     private String collectionName;
 
     /**
+     * 集合向量维度（对应 yml 里 embedding-dimension，向量模型构建时作为目标维度）
+     */
+    private Integer embeddingDimension;
+
+    /**
      * 客户端连接配置（对应 yml 里的 client 节点）
      */
     private Client client;

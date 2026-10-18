@@ -7,12 +7,12 @@ import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.model.EmbeddingModelResolver;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.reader.FileReader;
 import org.lixiyun.server.ai.rag.transformer.FileTransformer;
 import org.lixiyun.server.ai.rag.writer.FileWriter;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -31,6 +31,9 @@ import java.util.function.Consumer;
 @Component
 public class RagStore {
 
+    /** RAG 文档入库向量模型节点 key（RagStore 按此读取独立配置，供 EmbeddingModelResolver 动态解析） */
+    public static final String NODE = "ragDocumentEmbeddingModel";
+
     @Autowired
     @Qualifier("deepSeekChatModel")
     private ChatModel deepSeekChatModel;
@@ -44,12 +47,7 @@ public class RagStore {
     private ChatModel ollamaChatModel;
 
     @Autowired
-    @Qualifier("ollamaEmbeddingModel")
-    private EmbeddingModel ollamaEmbeddingModel;
-
-    @Autowired
-    @Qualifier("dashscopeEmbeddingModel")
-    private EmbeddingModel dashscopeEmbeddingModel;
+    private EmbeddingModelResolver embeddingModelResolver;
 
     @Autowired
     private FileWriter fileWriter;
@@ -93,7 +91,8 @@ public class RagStore {
 
         fileReader.readLocalFile(filePath, vectorData, documents -> {
             fileTransformer.transformDocuments(documents, interruptedHandler, item -> {
-                fileWriter.writeDocuments(item, dashscopeEmbeddingModel);
+                // 入库向量模型按 ai_node_config 的 ragDocumentEmbeddingModel 节点动态解析（保存即生效）
+                fileWriter.writeDocuments(item, embeddingModelResolver.resolve(NODE));
             });
         });
     }
