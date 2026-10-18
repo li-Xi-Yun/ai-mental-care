@@ -21,6 +21,7 @@ import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.constant.ConversationCacheConstant;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationCacheManager;
+import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.mapper.EmotionAnalysisMapper;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,7 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
     private final ChatModelFactory chatModelFactory;
     private final EmotionAnalysisMapper emotionAnalysisMapper;
     private final ConversationCacheManager conversationCacheManager;
+    private final ConversationWebSocketManager conversationWebSocketManager;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws GraphRunnerException {
@@ -93,6 +95,9 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         log.debug("[情感识别节点] 持久化数据：{}", emotionAnalysis);
         log.info("[情感识别节点] 情感分析结果已持久化，会话ID：{}，轮次：{}", conversation.getId(), conversation.getCurrentRound());
 
+        // 落库后推送轻量事件，通知前端实时刷新情绪分析面板（前端复用列表 REST 拉权威数据）
+        pushEmotionAnalysisUpdated(conversation.getUserId(), conversation.getId(), emotionAnalysis.getId(), conversation.getCurrentRound());
+
         try {
             List<EmotionAnalysis> cachedEmotionAnalyses = (List<EmotionAnalysis>) conversationCacheManager.getCacheMapValue(
                     conversation.getId(), ConversationCacheConstant.HASH_FIELD_EMOTION_ANALYSIS_LIST);
@@ -109,6 +114,18 @@ public class EmotionRecognitionNode implements NodeActionWithConfig {
         }
 
         return result;
+    }
+
+    /**
+     * 推送新情绪分析落库通知（安全封装：内部捕获异常并记录日志，不影响主流程）
+     * <p>在节点内以 try/catch 包裹 WebSocket 管理器发送方法，避免推送异常污染情绪识别主流程。</p>
+     */
+    private void pushEmotionAnalysisUpdated(Long userId, Long conversationId, Long analysisId, Integer roundNum) {
+        try {
+            conversationWebSocketManager.sendEmotionAnalysisUpdated(userId, conversationId, analysisId, roundNum);
+        } catch (Exception e) {
+            log.error("[情感识别节点] 情绪分析WebSocket通知下发失败（不影响主流程），会话ID：{}，错误：{}", conversationId, e.getMessage(), e);
+        }
     }
 
     private String buildPrompt(Conversation conversation,

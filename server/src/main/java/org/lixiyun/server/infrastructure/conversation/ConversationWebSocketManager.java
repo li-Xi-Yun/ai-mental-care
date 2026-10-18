@@ -156,4 +156,34 @@ public class ConversationWebSocketManager {
         sendViaWebSocket(userId, ConversationConstant.QUOTA_REJECTED, conversationId,
                 Map.of("event", "QUOTA_REJECTED", "resourceType", resourceType));
     }
+
+    /**
+     * 发送新情绪分析落库通知（EmotionRecognitionNode 插入 emotion_analysis 后调用）
+     * <p>载荷为轻量事件：{event, id, roundNum}，前端收到后复用既有 REST 列表接口拉取权威数据。</p>
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param analysisId     新情绪分析ID（雪花 Long → 字符串，避免前端精度丢失）
+     * @param roundNum       当前轮次
+     */
+    public void sendEmotionAnalysisUpdated(Long userId, Long conversationId, Long analysisId, Integer roundNum) {
+        log.info("会话WebSocket管理器-情绪分析落库通知下发，会话ID：{}，分析ID：{}，轮次：{}", conversationId, analysisId, roundNum);
+        sendViaWebSocket(userId, ConversationConstant.EMOTION_ANALYSIS_UPDATED, conversationId,
+                Map.of("event", "EMOTION_ANALYSIS_UPDATED", "id", String.valueOf(analysisId), "roundNum", roundNum));
+    }
+
+    /**
+     * 发送新心理评估（诊断书）落库通知（DiagnosisPersistNode 插入 emotion_diagnosis 后调用）
+     * <p>载荷为轻量事件：{event, id, roundNum}，前端收到后复用既有 REST 详情/列表接口拉取权威数据。</p>
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     * @param diagnosisId    新诊断书ID（雪花 Long → 字符串，避免前端精度丢失）
+     * @param roundNum       创建该诊断时的会话轮次
+     */
+    public void sendDiagnosisCreated(Long userId, Long conversationId, Long diagnosisId, Integer roundNum) {
+        log.info("会话WebSocket管理器-心理评估落库通知下发，会话ID：{}，诊断ID：{}，轮次：{}", conversationId, diagnosisId, roundNum);
+        sendViaWebSocket(userId, ConversationConstant.DIAGNOSIS_CREATED, conversationId,
+                Map.of("event", "DIAGNOSIS_CREATED", "id", String.valueOf(diagnosisId), "roundNum", roundNum));
+    }
 }

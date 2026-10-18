@@ -278,6 +278,8 @@ function bindStomp(conversationId: string): void {
     onConversationName: handleConversationNamePush,
     onPendingAction: handlePendingActionPush,
     onQuotaRejected: showQuotaRejected,
+    onEmotionAnalysisUpdated: handleEmotionAnalysisUpdatedPush,
+    onDiagnosisCreated: handleDiagnosisCreatedPush,
   });
 }
 
@@ -322,6 +324,35 @@ function resetAiIdleTimer(): void {
   }, AI_IDLE_MS);
 }
 
+/** 事件载荷守卫：解析轻量事件并校验 event 标识（与后端约定一致） */
+function parsePushEvent(rawJson: string, eventName: string): boolean {
+  if (!rawJson) return false;
+  let payload: { event?: string } | null = null;
+  try {
+    payload = JSON.parse(rawJson) as { event?: string };
+  } catch {
+    return false;
+  }
+  return !!payload && payload.event === eventName;
+}
+
+/** 新情绪分析落库通知：刷新情绪分析面板首屏（事件可能早于/晚于回复完成，与现有刷新幂等共存） */
+function handleEmotionAnalysisUpdatedPush(rawJson: string): void {
+  if (!parsePushEvent(rawJson, "EMOTION_ANALYSIS_UPDATED")) return;
+  const id = currentConversationId.value;
+  if (!id || isLocalConversationId(id)) return;
+  void refreshEmotionList(id);
+}
+
+/** 新心理评估（诊断书）落库通知：立即刷新最新评估入口（先清复检窗口再刷新，查询为空时自动进入复检兜底） */
+function handleDiagnosisCreatedPush(rawJson: string): void {
+  if (!parsePushEvent(rawJson, "DIAGNOSIS_CREATED")) return;
+  const id = currentConversationId.value;
+  if (!id || isLocalConversationId(id)) return;
+  clearDiagnosisRecheck();
+  void refreshLatestDiagnosis(id, true);
+}
+
 /** AI 回复结束（文本空闲/卡片到达）→ memory 对账：以服务端数据整体替换本地流式展示 */
 async function reconcile(): Promise<void> {
   const id = currentConversationId.value;
@@ -341,8 +372,7 @@ async function reconcile(): Promise<void> {
       pendingPushSeen = false;
       thinking.value = false;
       clearNoChunkTimer();
-      await Promise.allSettled([refreshEmotionList(id), loadConversationList(false)]);
-      refreshLatestDiagnosisAfterReply(id);
+      await refreshAfterReply(id);
       return;
     }
     // 仅待处理卡片推送、memory 暂未体现：保留本地 upsert 结果并结束等待
@@ -350,14 +380,28 @@ async function reconcile(): Promise<void> {
       pendingPushSeen = false;
       thinking.value = false;
       clearNoChunkTimer();
-      await Promise.allSettled([refreshEmotionList(id), loadConversationList(false)]);
-      refreshLatestDiagnosisAfterReply(id);
+      await refreshAfterReply(id);
       return;
     }
     scheduleReconcileRetry();
   } catch {
     scheduleReconcileRetry();
   }
+}
+
+/**
+ * 回复完成后的补刷助手：
+ * - WS 在线：emotion-analysis / emotion-diagnosis 已由实时事件推送在收到时刷新过，这里只对账会话列表，
+ *   避免同一回复同时触发「实时推送刷新」与「对账刷新」两波重复请求（进度条反复闪现）；
+ * - WS 不可用/未连接：退回全量刷新兜底（情绪列表 + 会话列表 + 最新评估复检）。
+ */
+async function refreshAfterReply(conversationId: string): Promise<void> {
+  if (stomp.state.value === "connected") {
+    await Promise.allSettled([loadConversationList(false)]);
+    return;
+  }
+  await Promise.allSettled([refreshEmotionList(conversationId), loadConversationList(false)]);
+  refreshLatestDiagnosisAfterReply(conversationId);
 }
 
 function scheduleReconcileRetry(): void {
@@ -662,8 +706,7 @@ function waitForAssistant(conversationId: string, prevAssistantCount: number) {
         aiStream.value = "";
         thinking.value = false;
         clearNoChunkTimer();
-        await Promise.allSettled([refreshEmotionList(conversationId), loadConversationList(false)]);
-        refreshLatestDiagnosisAfterReply(conversationId);
+        await refreshAfterReply(conversationId);
         return;
       }
     } catch {

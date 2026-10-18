@@ -14,6 +14,8 @@ import {
   audioBinaryTopic,
   buildNativeWsUrl,
   conversationNameTopic,
+  diagnosisCreatedTopic,
+  emotionAnalysisUpdatedTopic,
   pendingActionTopic,
   quotaRejectedTopic,
   textReplyTopic,
@@ -42,6 +44,10 @@ export interface ConversationStreamHandlers {
   onPipelineError?: (message: string) => void;
   /** AI 配额拒绝事件（异步资源超限/停用；载荷原始 JSON，由业务层解析） */
   onQuotaRejected?: (rawJson: string) => void;
+  /** 新情绪分析落库通知（载荷原始 JSON，由业务层解析并刷新列表） */
+  onEmotionAnalysisUpdated?: (rawJson: string) => void;
+  /** 新心理评估（诊断书）落库通知（载荷原始 JSON，由业务层解析并刷新） */
+  onDiagnosisCreated?: (rawJson: string) => void;
 }
 
 export interface ConversationStompClientOptions {
@@ -191,6 +197,12 @@ export class ConversationStompClient {
     }
     if (handlers.onQuotaRejected) {
       add(quotaRejectedTopic(conversationId), (m) => handlers.onQuotaRejected?.(m.body ?? ""));
+    }
+    if (handlers.onEmotionAnalysisUpdated) {
+      add(emotionAnalysisUpdatedTopic(conversationId), (m) => handlers.onEmotionAnalysisUpdated?.(m.body ?? ""));
+    }
+    if (handlers.onDiagnosisCreated) {
+      add(diagnosisCreatedTopic(conversationId), (m) => handlers.onDiagnosisCreated?.(m.body ?? ""));
     }
   }
 

@@ -1,13 +1,9 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
-import NProgress from "nprogress";
-import "nprogress/nprogress.css";
 import { SUCCESS_CODE, PAGE_BASE_URL, ADMIN_PAGE_PREFIX } from "./config";
 import type { Result } from "./types";
 import { getToken, getHeaderName, clearTokenInfo, promptUserLogin } from "./auth";
 import { parseJSONWithBigInt, processBigIntFields } from "@/shared/utils/bigint";
 import { processTimeFields } from "@/shared/utils/time";
-
-NProgress.configure({ showSpinner: false });
 
 /** 后台接口路径前缀：/admin/**（含登录） */
 const ADMIN_PATH_PREFIX = `${ADMIN_PAGE_PREFIX}/`;
@@ -60,7 +56,6 @@ function isPlainBody(v: unknown): boolean {
 export function setupRequestInterceptors(instance: AxiosInstance) {
   instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-      NProgress.start();
       attachAuthHeader(config);
 
       // 发送前：本地时间字符串 → UTC 时间字符串；安全范围数字字符串还原为 number（配合响应保护）
@@ -71,7 +66,6 @@ export function setupRequestInterceptors(instance: AxiosInstance) {
       return config;
     },
     (error) => {
-      NProgress.done();
       return Promise.reject(error);
     },
   );
@@ -80,8 +74,6 @@ export function setupRequestInterceptors(instance: AxiosInstance) {
 export function setupResponseInterceptors(instance: AxiosInstance) {
   instance.interceptors.response.use(
     (response: AxiosResponse<Result>) => {
-      NProgress.done();
-
       // 1) 若 axios 已解析出对象：统一走「递归保护大整数 + UTC → 本地」
       if (looksLikeResult(response.data)) {
         const protectedData = processTimeFields(
@@ -117,7 +109,6 @@ export function setupResponseInterceptors(instance: AxiosInstance) {
       return response;
     },
     (error) => {
-      NProgress.done();
       if (error.response?.status === 401) {
         // 401 时按请求来源清除对应模块 token
         const url: string | undefined = error.config?.url;

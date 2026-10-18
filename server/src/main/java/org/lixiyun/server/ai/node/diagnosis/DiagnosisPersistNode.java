@@ -12,6 +12,7 @@ import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
 import org.lixiyun.pojo.bo.conversation.diagnosis.DiagnosisData;
 import org.lixiyun.pojo.entity.emotion.EmotionDiagnosis;
 import org.lixiyun.server.ai.node.NodeExecutionSummary;
+import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.mapper.EmotionDiagnosisMapper;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ public class DiagnosisPersistNode implements NodeActionWithConfig, NodeExecution
     public static final String NODE_NAME = "diagnosisPersistNode";
 
     private final EmotionDiagnosisMapper emotionDiagnosisMapper;
+    private final ConversationWebSocketManager conversationWebSocketManager;
 
     @Override
     public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
@@ -59,6 +61,10 @@ public class DiagnosisPersistNode implements NodeActionWithConfig, NodeExecution
         emotionDiagnosisMapper.insert(emotionDiagnosis);
         log.info("诊断流程-诊断数据持久化-保存成功，会话ID：{}", emotionDiagnosis.getConversationId());
 
+        // 落库后推送轻量事件，通知前端实时刷新心理评估（前端复用详情/列表 REST 拉权威数据）
+        pushDiagnosisCreated(contextBO.getConversation().getUserId(), contextBO.getConversation().getId(),
+                emotionDiagnosis.getId(), emotionDiagnosis.getRoundNum());
+
         return Map.of();
     }
 
@@ -67,6 +73,19 @@ public class DiagnosisPersistNode implements NodeActionWithConfig, NodeExecution
         emotionDiagnosis.setConversationId(contextBO.getConversation().getId());
         emotionDiagnosis.setUserId(contextBO.getConversation().getUserId());
         return emotionDiagnosis;
+    }
+
+    /**
+     * 推送新心理评估（诊断书）落库通知（安全封装：内部捕获异常并记录日志，不影响主流程）
+     * <p>在节点内以 try/catch 包裹 WebSocket 管理器发送方法，避免推送异常污染诊断持久化主流程。</p>
+     */
+    private void pushDiagnosisCreated(Long userId, Long conversationId, Long diagnosisId, Integer roundNum) {
+        try {
+            conversationWebSocketManager.sendDiagnosisCreated(userId, conversationId, diagnosisId, roundNum);
+        } catch (Exception e) {
+            log.error("诊断流程-诊断数据持久化-心理评估WebSocket通知下发失败（不影响主流程），会话ID：{}，错误：{}",
+                    conversationId, e.getMessage(), e);
+        }
     }
 
     @Override

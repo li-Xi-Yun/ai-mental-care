@@ -24,4 +24,10 @@ public interface ConversationConstant {
     /** AI配额拒绝事件推送，需要在后面路径中添加/{conversationId} */
     String QUOTA_REJECTED = "/quota/rejected";
 
+    /** 新情绪分析落库通知，需要在后面路径中添加/{conversationId} */
+    String EMOTION_ANALYSIS_UPDATED = "/emotion/analysis";
+
+    /** 新心理评估（诊断书）落库通知，需要在后面路径中添加/{conversationId} */
+    String DIAGNOSIS_CREATED = "/diagnosis";
+
 }

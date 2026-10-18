@@ -9,8 +9,6 @@
  *   （后端类级 @RequestMapping 不参与 STOMP 映射，此处为 /app 前缀 + @MessageMapping 路径）。
  */
 
-import { PAGE_BASE_URL } from "@/shared/api/config";
-
 /** 上行音频帧目的地（JSON：{ audioMessage: base64(PCM16LE 16k 单声道), conversationId }） */
 export const STOMP_AUDIO_FRAME_DEST = "/app/audio/frame";
 
@@ -32,16 +30,21 @@ export const asrIntermediateTopic = (conversationId: string) => userQueueTopic("
 /** AI 配额拒绝事件（异步资源超限/停用时后端下发；载荷 JSON：{ event:"QUOTA_REJECTED", resourceType: 2|3|4 }） */
 export const quotaRejectedTopic = (conversationId: string) => userQueueTopic("/quota/rejected", conversationId);
 
+/** 新情绪分析落库通知（后端 EmotionRecognitionNode 落库后下发；载荷 JSON：{ event:"EMOTION_ANALYSIS_UPDATED", id, roundNum }） */
+export const emotionAnalysisUpdatedTopic = (conversationId: string) => userQueueTopic("/emotion/analysis", conversationId);
+/** 新心理评估（诊断书）落库通知（后端 DiagnosisPersistNode 落库后下发；载荷 JSON：{ event:"DIAGNOSIS_CREATED", id, roundNum }） */
+export const diagnosisCreatedTopic = (conversationId: string) => userQueueTopic("/diagnosis", conversationId);
+
 /**
  * 用户级错误队列（无会话后缀；后端异常处理器 @SendToUser("/queue/error") 下发业务/管道异常，
  * 例如 ASR 会话失效、适配器不存在 2802）。前端订阅后可在界面提示，避免"静默无反应"。
  */
 export const USER_ERROR_TOPIC = "/user/queue/error";
 
-/** 一次性 wsTicket 接口路径（后端真实路径自带 /api 前缀，前端 vite 代理会 strip，故必须直连后端 origin） */
-export const WS_TICKET_PATH = `${PAGE_BASE_URL}/api/get-ws-ticket`;
-/** 原生 WebSocket 端点（必须原生才能接收 TTS 二进制帧；SockJS 端点 /ws/ai-mental-care 无法承载二进制） */
-export const WS_NATIVE_ENDPOINT = `${PAGE_BASE_URL}/ws-native`;
+/** 一次性 wsTicket 接口路径（后端真实路径为 /api/get-ws-ticket，context-path=/，故不携带 PAGE_BASE_URL 前缀；生产由网关直接转发 /api/get-ws-ticket） */
+export const WS_TICKET_PATH = "/api/get-ws-ticket";
+/** 原生 WebSocket 端点（后端真实路径为 /ws-native，context-path=/，故不携带 PAGE_BASE_URL 前缀；生产由网关直接转发 /ws-native） */
+export const WS_NATIVE_ENDPOINT = "/ws-native";
 
 /** STOMP 心跳（与后端配置对齐：服务端 10s / 客户端 20s） */
 export const WS_HEARTBEAT_INCOMING = 10000;
