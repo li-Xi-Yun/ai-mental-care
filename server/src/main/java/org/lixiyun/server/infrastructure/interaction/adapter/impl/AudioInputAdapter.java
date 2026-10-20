@@ -276,6 +276,10 @@ public class AudioInputAdapter implements InputAdapter {
             @Override
             public void onIntermediateResult(AsrResult result) {
                 String text = result.getText() != null ? result.getText() : "";
+                // 空中间结果不推送：避免把前端已展示的中间文本清空
+                if (text.isBlank()) {
+                    return;
+                }
                 log.debug(" [音频输入适配器] ASR回调-中间识别结果，会话ID：{}，句子编号：{}，文本：{}",
                         conversationId, result.getSentenceIndex(), text);
                 conversationWebSocketManager.sendAsrIntermediateResult(userId, conversationId, text);
@@ -286,6 +290,14 @@ public class AudioInputAdapter implements InputAdapter {
                 String text = result.getText() != null ? result.getText() : "";
                 log.info(" [音频输入适配器] ASR回调-句子识别完成，会话ID：{}，句子编号：{}，文本：{}，置信度：{}",
                         conversationId, result.getSentenceIndex(), text, result.getConfidence());
+
+                // 服务端 VAD 在整轮长连接中仍可能返回无文本分句（utterance.text=null，
+                // 仅词级确认/尾音残留，definite=true）。空文本落库会触发无意义的 AI 回复，直接跳过。
+                if (text.isBlank()) {
+                    log.info(" [音频输入适配器] ASR分句文本为空（VAD尾音/无文本确认），跳过该句，会话ID：{}，句子编号：{}",
+                            conversationId, result.getSentenceIndex());
+                    return;
+                }
 
                 int currentRound = resolveCurrentRound(conversationId);
 

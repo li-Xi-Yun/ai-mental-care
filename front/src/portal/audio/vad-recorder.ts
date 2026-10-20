@@ -9,6 +9,9 @@
  *   说话结束后继续补发 N 帧全零静音（约 1.3s，覆盖服务端
  *   VAD 的 end_window_size=600ms），由服务端自动判停并返回 definite 结果；
  * - 后端没有 /audio/vad-stop 处理器（文档提及但代码不存在），因此不发送"负包"。
+ * - 开口判定带连续帧门限（minSpeechFrames，约 256ms）：连续多帧越阈值才触发
+ *   onSpeechStart / 本地 barge-in，避免单帧环境噪声/回声假阳性把在播 TTS 掐断；
+ *   门限只延迟本地打断，所有说话帧照常上行，不影响 ASR。
  */
 import { downsampleTo16k, rms, zeroPcm } from "./pcm";
 
@@ -34,6 +37,8 @@ export interface VadRecorderOptions {
   calibrationMs?: number;
   /** 说话结束后补发的静音帧数（默认 15，约 1.3s） */
   trailingSilenceFrames?: number;
+  /** 开口判定连续越阈值帧数（默认 3，约 256ms）：连续达标才触发 onSpeechStart/本地 barge-in，防单帧噪声假阳性 */
+  minSpeechFrames?: number;
   /** 每一帧回调（说话中的真实帧 + 结束后的静音补帧） */
   onFrame: (pcm16: Int16Array, info: VadFrameInfo) => void;
   /** 检测到用户开口（用于本地打断 TTS 播放） */
@@ -56,6 +61,7 @@ export class VadRecorder {
   private readonly adaptive: boolean;
   private readonly calibrationMs: number;
   private readonly trailingSilenceFrames: number;
+  private readonly minSpeechFrames: number;
 
   private stream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
@@ -65,6 +71,8 @@ export class VadRecorder {
 
   private inSpeech = false;
   private silenceFrames = 0;
+  /** 连续越阈值帧数（用于开口判定门限） */
+  private voicedFrames = 0;
   /** 最近一帧 16kHz PCM 采样数（补发静音时复用） */
   private frameSamples = 0;
 
@@ -82,6 +90,7 @@ export class VadRecorder {
     this.adaptive = options.adaptiveThreshold ?? false;
     this.calibrationMs = options.calibrationMs ?? 500;
     this.trailingSilenceFrames = options.trailingSilenceFrames ?? 15;
+    this.minSpeechFrames = options.minSpeechFrames ?? 3;
     this.threshold = this.minThreshold;
   }
 
@@ -110,6 +119,7 @@ export class VadRecorder {
     this.calibrating = this.adaptive;
     this.calibSamples = [];
     this.calibElapsedMs = 0;
+    this.voicedFrames = 0;
     this.threshold = this.minThreshold;
 
     const ctx = new AudioContext();
@@ -150,11 +160,14 @@ export class VadRecorder {
 
       if (energy >= this.threshold) {
         this.silenceFrames = 0;
-        if (!this.inSpeech) {
+        this.voicedFrames += 1;
+        if (!this.inSpeech && this.voicedFrames >= this.minSpeechFrames) {
+          // 连续多帧越阈值才判定开口（防单帧环境噪声/回声假阳性触发 barge-in 掐断在播 TTS）
           this.inSpeech = true;
           this.options.onSpeechStart?.();
         }
-        this.options.onFrame(pcm, { speaking: true, rms: energy });
+        // 说话帧照常上行：门限只延迟本地 barge-in/状态切换，不影响 ASR
+        this.options.onFrame(pcm, { speaking: this.inSpeech, rms: energy });
       } else if (this.inSpeech) {
         this.silenceFrames += 1;
         if (this.silenceFrames <= this.trailingSilenceFrames) {
@@ -166,6 +179,9 @@ export class VadRecorder {
           this.silenceFrames = 0;
           this.options.onSpeechEnd?.();
         }
+      } else {
+        // 未入说话态：低能量帧清空连续计数（瞬时尖峰不累计）
+        this.voicedFrames = 0;
       }
     } catch (err) {
       this.options.onError?.(err);
@@ -196,6 +212,7 @@ export class VadRecorder {
     }
     this.inSpeech = false;
     this.silenceFrames = 0;
+    this.voicedFrames = 0;
     this.calibrating = false;
     this.calibSamples = [];
     this.calibElapsedMs = 0;
