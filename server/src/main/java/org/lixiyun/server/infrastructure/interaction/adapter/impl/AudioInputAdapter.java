@@ -25,12 +25,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HexFormat;
 import java.util.List;
 
 /**
@@ -139,19 +135,6 @@ public class AudioInputAdapter implements InputAdapter {
         if (audioMessage == null || audioMessage.length == 0) {
             log.error(" [音频输入适配器] 语音消息数据为空，会话ID：{}", conversationId);
             throw new BusinessException(InputAdapterExceptionEnum.AUDIO_DATA_EMPTY);
-        }
-
-        byte[] head = Arrays.copyOf(audioMessage, 8);
-        // 插入空格分隔
-        String hexWithSpace = HexFormat.of().withDelimiter(" ").formatHex(head);
-        log.debug("头部8字节: {}", hexWithSpace);
-
-        // try-with-resources 自动关闭流
-        try (FileOutputStream fos = new FileOutputStream("audio-temp.pcm")) {
-            fos.write(audioMessage);
-            fos.flush();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
 
         Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
