@@ -297,9 +297,14 @@ public class VolcengineAsrProvider implements IAsrProvider {
                 System.arraycopy(data, 0, audioData, 0, length);
             }
 
-            // 原子发送：失败不消耗序号，避免序号空洞导致服务端校验失败
+            // 原子发送：失败不消耗序号，避免序号空洞导致服务端校验失败；
+            // 失败升级为 WARN（原 DEBUG 到故障时不可见），并计入会话丢弃帧数
             if (!session.sendFrameLocked(MessageType.CLIENT_AUDIO_ONLY_REQUEST, audioData, false)) {
-                log.debug("[火山引擎 ASR] 会话{}连接暂不可用，丢弃音频帧（长度：{}）", sessionId, length);
+                session.droppedFrames.incrementAndGet();
+                log.warn("[火山引擎 ASR] 会话{}连接暂不可用，丢弃音频帧（长度：{}，待发序号：{}）",
+                        sessionId, length, session.sequenceCounter.get());
+            } else {
+                session.sentFrames.incrementAndGet();
             }
         } catch (Exception e) {
             log.error("[火山引擎 ASR] 会话{}发送音频帧失败", sessionId, e);
@@ -450,6 +455,9 @@ public class VolcengineAsrProvider implements IAsrProvider {
 
     /**
      * 构建鉴权请求头
+     * <p>会话关联头 {@code X-Api-Connect-Id}/{@code X-Api-Request-Id} 由火山网关用于把音频流关联到
+     * 本条 WebSocket 链路对应的识别任务（官方示例与工作正常的 TTS Provider 均带此头，文档标注必选）。
+     * 缺失时表现为：握手/鉴权成功、FullClientRequest 被接受，但后续音频不产识别结果。每次建连重新生成。</p>
      */
     private Map<String, String> buildAuthHeaders() {
         Map<String, String> headers = new HashMap<>();
@@ -465,14 +473,21 @@ public class VolcengineAsrProvider implements IAsrProvider {
         if (config.getAccessKey() != null && !config.getAccessKey().isEmpty()) {
             headers.put("X-Api-Access-Key", config.getAccessKey());
         }
+        // 会话关联头：官方 sauc 示例（X-Api-Connect-Id）与 TTS Provider 均有；文档要求任务 ID 头必带
+        headers.put("X-Api-Connect-Id", UUID.randomUUID().toString());
+        headers.put("X-Api-Request-Id", UUID.randomUUID().toString());
         return headers;
     }
 
     /**
      * 构建FullClientRequest的JSON载荷，委托给Config和RequestProperties各自的实例方法序列化
+     * <p>与官方 sauc 示例结构对齐：顶层携带 user 节点（uid 取会话ID），避免基线 payload 的结构差异。</p>
      */
-    private String buildFullClientRequestPayload() throws JsonProcessingException {
+    private String buildFullClientRequestPayload(String sessionId) throws JsonProcessingException {
         ObjectNode root = OBJECT_MAPPER.createObjectNode();
+        ObjectNode user = OBJECT_MAPPER.createObjectNode();
+        user.put("uid", sessionId);
+        root.set("user", user);
         root.set("audio", OBJECT_MAPPER.readTree(config.toAudioJson()));
         root.set("request", OBJECT_MAPPER.readTree(requestProperties.toRequestJson()));
         return OBJECT_MAPPER.writeValueAsString(root);
@@ -482,11 +497,13 @@ public class VolcengineAsrProvider implements IAsrProvider {
      * 发送最后一帧并关闭WebSocket连接
      */
     private void sendLastFrameAndClose(WsSession session, String sessionId) {
+        // 先发结束帧（allowDuringClose 绕过 closed 位），确认后再置关闭态，
+        // 确保服务端收到流结束信号完成最终结算；原实现先 closed=true 导致结束帧被短路拒发
+        boolean sent = session.sendFrameLocked(MessageType.CLIENT_AUDIO_ONLY_REQUEST, new byte[0], true, true);
+        log.info("[火山引擎 ASR] 会话{}发送结束帧：{}", sessionId, sent ? "成功" : "失败/连接不可用");
+        session.logTrafficSummary(sessionId);
         session.closed.set(true);
         cancelKeepAlive(sessionId);
-
-        // 发送最后一个音频分片（负序列号表示结束）；与音频帧共用原子发送路径
-        session.sendFrameLocked(MessageType.CLIENT_AUDIO_ONLY_REQUEST, new byte[0], true);
 
         // 延迟关闭，确保最后一帧被发送
         scheduler.schedule(() -> {
@@ -663,6 +680,14 @@ public class VolcengineAsrProvider implements IAsrProvider {
         final AtomicBoolean sentenceStarted;
         /** 音频帧序号计数器 */
         final AtomicInteger sequenceCounter;
+        /** 成功发送的音频帧数（排重后） */
+        final AtomicLong sentFrames = new AtomicLong();
+        /** 因连接不可用被丢弃的音频帧数 */
+        final AtomicLong droppedFrames = new AtomicLong();
+        /** 已收到并解析的服务端响应数 */
+        final AtomicLong responses = new AtomicLong();
+        /** 流量摘要是否已打印（关闭路径可能多处调用，防重复打印） */
+        final AtomicBoolean summaryLogged = new AtomicBoolean(false);
         /** 最后一次活动时间（毫秒时间戳），用于空闲超时判断 */
         final AtomicLong lastActiveTime;
         /** WebSocket客户端 */
@@ -700,9 +725,27 @@ public class VolcengineAsrProvider implements IAsrProvider {
          * @return true 发送成功
          */
         boolean sendFrameLocked(MessageType type, byte[] payload, boolean negate) {
+            return sendFrameLocked(type, payload, negate, false);
+        }
+
+        /**
+         * 在发送锁内完成「取号 → 组帧 → 发送 → 成功才递增序号」。
+         * <p>发送失败不消耗序号，避免序号出现空洞导致服务端 autoAssignedSequence 校验失败
+         * （历史故障：连接未就绪时丢帧却已取号，FullClientRequest 序号错位被服务端关闭连接）。</p>
+         *
+         * @param type              协议消息类型
+         * @param payload           载荷
+         * @param negate            是否使用负序号（结束帧）
+         * @param allowDuringClose  发送最后结束帧时传入 true，绕过 closed 位校验（结束帧必须在置关闭态前发出）
+         * @return true 发送成功
+         */
+        boolean sendFrameLocked(MessageType type, byte[] payload, boolean negate, boolean allowDuringClose) {
             sendLock.lock();
             try {
-                if (closed.get() || wsClient == null || !wsClient.isOpen()) {
+                if (closed.get() && !allowDuringClose) {
+                    return false;
+                }
+                if (wsClient == null || !wsClient.isOpen()) {
                     return false;
                 }
                 int seq = sequenceCounter.get();
@@ -742,7 +785,7 @@ public class VolcengineAsrProvider implements IAsrProvider {
                             log.warn("[火山引擎 ASR] 会话{}连接已放弃，跳过FullClientRequest", sessionId);
                             return;
                         }
-                        String payload = buildFullClientRequestPayload();
+                        String payload = buildFullClientRequestPayload(sessionId);
                         boolean sent = WsSession.this.sendFrameLocked(
                                 MessageType.CLIENT_FULL_REQUEST,
                                 payload.getBytes(StandardCharsets.UTF_8),
@@ -794,6 +837,7 @@ public class VolcengineAsrProvider implements IAsrProvider {
                             return;
                         }
                         try {
+                            responses.incrementAndGet();
                             VolcengineAsrResult vendorResult = VolcengineAsrConverter.toVendorResult(rawBytes);
                             log.info("[火山引擎 ASR] 会话{} 收到原始响应：{}", sessionId, vendorResult);
                             if (vendorResult.getCode() != VolcengineAsrResult.SUCCESS_CODE) {
@@ -834,6 +878,7 @@ public class VolcengineAsrProvider implements IAsrProvider {
                         // 两参移除：避免误删同ID的新会话（ABA）
                         sessions.remove(sessionId, WsSession.this);
                     }
+                    logTrafficSummary(sessionId);
                     // 兜底唤醒 connect() 的等待，避免失败时白等满超时
                     openedLatch.countDown();
                 }
@@ -848,6 +893,7 @@ public class VolcengineAsrProvider implements IAsrProvider {
                         cancelKeepAlive(sessionId);
                         sessions.remove(sessionId, WsSession.this);
                     }
+                    logTrafficSummary(sessionId);
                     openedLatch.countDown();
                 }
             };
@@ -887,6 +933,14 @@ public class VolcengineAsrProvider implements IAsrProvider {
          */
         void touch() {
             lastActiveTime.set(System.currentTimeMillis());
+        }
+
+        /** 打印会话流量统计摘要（关闭路径可能多处调用，幂等） */
+        void logTrafficSummary(String logId) {
+            if (summaryLogged.compareAndSet(false, true)) {
+                log.info("[火山引擎 ASR] 会话{}流量统计：成功发送帧={}，丢弃帧={}，收到响应={}",
+                        logId, sentFrames.get(), droppedFrames.get(), responses.get());
+            }
         }
     }
 }

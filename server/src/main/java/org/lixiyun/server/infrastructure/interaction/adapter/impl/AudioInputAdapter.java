@@ -25,8 +25,12 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HexFormat;
 import java.util.List;
 
 /**
@@ -70,6 +74,11 @@ public class AudioInputAdapter implements InputAdapter {
     /** 会话级状态：由 init() 注入，适配器实例与单一会话绑定（prototype） */
     private Long userId;
     private Long conversationId;
+
+    /** 音频能量采样：上次打点时间戳（毫秒），0=尚未打点 */
+    private long lastEnergyLogTime = 0;
+    /** 音频能量采样：历史最大 RMS */
+    private double maxEnergySeen = 0;
 
     @Override
     public InputDataType getSupportedType() {
@@ -132,6 +141,19 @@ public class AudioInputAdapter implements InputAdapter {
             throw new BusinessException(InputAdapterExceptionEnum.AUDIO_DATA_EMPTY);
         }
 
+        byte[] head = Arrays.copyOf(audioMessage, 8);
+        // 插入空格分隔
+        String hexWithSpace = HexFormat.of().withDelimiter(" ").formatHex(head);
+        log.debug("头部8字节: {}", hexWithSpace);
+
+        // try-with-resources 自动关闭流
+        try (FileOutputStream fos = new FileOutputStream("audio-temp.pcm")) {
+            fos.write(audioMessage);
+            fos.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         Long userId = UserInfoThreadLocalUtil.getCurrentIdThrow();
         validateConversationExistence(conversationId, userId);
 
@@ -144,6 +166,18 @@ public class AudioInputAdapter implements InputAdapter {
 
         asrConnectionManager.sendAudio(userId, audioMessage);
         log.debug(" [音频输入适配器] 音频数据已发送至ASR引擎，会话ID：{}，用户ID：{}", conversationId, userId);
+
+        // 音频能量采样：首帧与每 ~2s 打点，叠加历史最大 RMS（全程能量≈0 说明是静音/采集侧问题）
+        long now = System.currentTimeMillis();
+        double energy = computePcmRms(audioMessage);
+        if (energy > maxEnergySeen) {
+            maxEnergySeen = energy;
+        }
+        if (lastEnergyLogTime == 0 || now - lastEnergyLogTime >= 2000) {
+            lastEnergyLogTime = now;
+            log.info(" [音频输入适配器] 音频能量采样，会话ID：{}，RMS：{}，历史最大RMS：{}",
+                    conversationId, String.format("%.4f", energy), String.format("%.4f", maxEnergySeen));
+        }
 
         Conversation conversationUpdate = Conversation.builder()
                 .id(conversationId)
@@ -198,6 +232,27 @@ public class AudioInputAdapter implements InputAdapter {
     }
 
     /**
+     * 计算 16bit 小端 PCM 帧的均方根能量（RMS），用于判断真实语音还是静音/无效采集
+     *
+     * @param pcmBytes 待计算 PCM 字节数组
+     * @return RMS 值（约等于 FLOAT32 归一化采样的均方根，静音≈0，正常说话远大于 0）
+     */
+    private double computePcmRms(byte[] pcmBytes) {
+        if (pcmBytes == null || pcmBytes.length == 0) {
+            return 0;
+        }
+        long sumSquares = 0;
+        int samples = pcmBytes.length / 2;
+        for (int i = 0; i < samples; i++) {
+            int lo = pcmBytes[i * 2] & 0xFF;
+            int hi = pcmBytes[i * 2 + 1];
+            short sample = (short) ((hi << 8) | lo);
+            sumSquares += (long) sample * sample;
+        }
+        return Math.sqrt((double) sumSquares / samples);
+    }
+
+    /**
      * 创建ASR识别结果回调实例
      * <p>
      * 实现文本收集与实时弹幕WebSocket推送：
@@ -237,7 +292,6 @@ public class AudioInputAdapter implements InputAdapter {
                 // AI配额（@QuotaLimit 切面拦截）：被拒则未落库、未触发管道，仅推送拒绝事件
                 if (!asrQuotaHandler.commitRecognizedSentence(userId, conversationId, text, currentRound)) {
                     log.info("[AI配额] 用户{}语音识别次数已达上限，丢弃该句，会话ID：{}", userId, conversationId);
-                    return;
                 }
             }
 

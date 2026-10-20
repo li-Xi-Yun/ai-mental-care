@@ -4,7 +4,8 @@
  * 与 temp 参考实现一致：
  * - 无 push-to-talk：start() 后一直采集，说话自动判定、静音自动结束一句；
  * - WebAudio ScriptProcessorNode(4096,1,1) 取帧，重采样到 16kHz Int16；
- * - RMS 能量阈值判定是否说话（默认自适应：启动先采样 500ms 环境噪声底，阈值 = clamp(噪声底×2.5, 0.005, 0.02)）；
+ * - RMS 能量阈值判定是否说话（默认固定阈值 0.012；可选自适应：先采样环境噪声底，
+ *   阈值 = clamp(噪声底×2.5, 下限, 0.02)）；
  *   说话结束后继续补发 N 帧全零静音（约 1.3s，覆盖服务端
  *   VAD 的 end_window_size=600ms），由服务端自动判停并返回 definite 结果；
  * - 后端没有 /audio/vad-stop 处理器（文档提及但代码不存在），因此不发送"负包"。
@@ -23,11 +24,11 @@ export interface VadRecorderOptions {
   /** 采集帧大小（采样数，默认 4096） */
   frameSize?: number;
   /**
-   * RMS 能量阈值下限（默认 0.005）。
-   * 开启自适应时作为地板值；关闭自适应时直接作为判定阈值（旧行为传 0.012）。
+   * RMS 能量阈值。默认固定阈值 0.012（10-12 验证可用行为）。
+   * 开启自适应（adaptiveThreshold=true）时作为地板值。
    */
   energyThreshold?: number;
-  /** 自适应噪声底阈值（默认 true）：启动后先采样环境噪声，阈值 = clamp(噪声底×2.5, 下限, 0.02) */
+  /** 自适应噪声底阈值（默认 false，恢复固定阈值判定）：启动后先采样环境噪声，阈值 = clamp(噪声底×2.5, 下限, 0.02) */
   adaptiveThreshold?: boolean;
   /** 噪声采样时长（毫秒，默认 500） */
   calibrationMs?: number;
@@ -77,8 +78,8 @@ export class VadRecorder {
     this.options = options;
     this.frameSize = options.frameSize ?? 4096;
     this.sampleRate = options.targetSampleRate ?? 16000;
-    this.minThreshold = options.energyThreshold ?? 0.005;
-    this.adaptive = options.adaptiveThreshold ?? true;
+    this.minThreshold = options.energyThreshold ?? 0.012;
+    this.adaptive = options.adaptiveThreshold ?? false;
     this.calibrationMs = options.calibrationMs ?? 500;
     this.trailingSilenceFrames = options.trailingSilenceFrames ?? 15;
     this.threshold = this.minThreshold;
