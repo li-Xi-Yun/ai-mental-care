@@ -6,9 +6,9 @@ import org.lixiyun.common.agent.tts.api.TtsResultCallback;
 import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
 import org.lixiyun.server.infrastructure.ai.annotation.QuotaLimit;
+import org.lixiyun.server.infrastructure.audio.TtsAudioPushBuffer;
 import org.lixiyun.server.infrastructure.audio.TtsConnectionManager;
 import org.lixiyun.server.infrastructure.conversation.ConversationStreamHolder;
-import org.lixiyun.server.infrastructure.conversation.ConversationWebSocketManager;
 import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
@@ -79,7 +79,7 @@ public class TtsOutputNode implements OutputNode {
     }
 
     private final TtsConnectionManager ttsConnectionManager;
-    private final ConversationWebSocketManager conversationWebSocketManager;
+    private final TtsAudioPushBuffer ttsAudioPushBuffer;
     private final ConversationStreamHolder conversationStreamHolder;
 
     /** 会话级状态：由 init() 注入，节点实例与单一会话绑定（prototype） */
@@ -106,12 +106,16 @@ public class TtsOutputNode implements OutputNode {
 
     @Override
     public void destroy() {
+        // 冲洗并移除此会话的音频推送缓冲（尾部不丢 + 防内存泄漏）
+        ttsAudioPushBuffer.remove(conversationId);
         ttsConnectionManager.cancel(userId);
         log.info("[管道-音频输出节点] 节点销毁，会话ID={}，用户ID={}", conversationId, userId);
     }
 
     @Override
     public void interrupt() {
+        // 中断：冲洗已合成的缓冲音频（已生成的内容不丢弃），并保留会话可再次合成
+        ttsAudioPushBuffer.flush(conversationId);
         ttsConnectionManager.interrupt(userId);
         log.info("[管道-音频输出节点] 节点中断，会话ID={}，用户ID={}", conversationId, userId);
     }
@@ -189,24 +193,27 @@ public class TtsOutputNode implements OutputNode {
     }
 
     /**
-     * 创建 TTS 合成结果回调：音频数据推送前端 / 合成结束清理处理标识。
+     * 创建 TTS 合成结果回调：音频数据经推送缓冲合并后发前端 / 合成结束清理处理标识。
      */
     private TtsResultCallback createTtsCallback(Long conversationId, Long userId) {
         return new TtsResultCallback() {
             @Override
             public void onAudioData(byte[] audioData) {
-                log.debug("[TtsNode] TTS回调-音频数据推送，会话ID：{}，数据长度：{}字节", conversationId, audioData.length);
-                conversationWebSocketManager.sendAudioBinary(userId, conversationId, audioData);
+                log.debug("[TtsNode] TTS回调-音频数据入推送缓冲，会话ID：{}，数据长度：{}字节", conversationId, audioData.length);
+                ttsAudioPushBuffer.append(conversationId, userId, audioData);
             }
 
             @Override
             public void onSynthesisComplete() {
-                log.debug("[TtsNode] TTS合成完成，已清理语音处理标识，会话ID：{}", conversationId);
+                // 合成完毕：冲洗剩余缓冲音频（尾部不丢），并清理语音处理标识
+                ttsAudioPushBuffer.flush(conversationId);
+                log.debug("[TtsNode] TTS合成完成，已冲洗音频推送缓冲，会话ID：{}", conversationId);
             }
 
             @Override
             public void onFail(String taskId, String statusText) {
                 log.error("[TtsNode] TTS合成失败，会话ID：{}，任务ID：{}，错误：{}", conversationId, taskId, statusText);
+                ttsAudioPushBuffer.flush(conversationId);
             }
         };
     }

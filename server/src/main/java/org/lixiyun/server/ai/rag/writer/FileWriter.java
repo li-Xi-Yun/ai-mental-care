@@ -10,6 +10,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.server.ai.model.EmbeddingModelResolver;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -40,9 +41,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FileWriter {
 
-    private final MilvusUtil milvusUtil;
+    public static final String NODE_NAME = "fileWriterNode";
 
+    private final MilvusUtil milvusUtil;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
+    private final EmbeddingModelResolver embeddingModelResolver;
 
     private static final Gson GSON = new Gson();
 
@@ -56,7 +59,6 @@ public class FileWriter {
      * 使用 @Retryable 实现自动重试，最多重试3次（退避策略）。
      *
      * @param documents 待存储的VectorData列表，包含完整的文本内容和元数据，不能为null或空
-     * @param embeddingModel 向量嵌入模型，用于将文本转换为向量
      * @throws BusinessException 当文档列表为空或向量存储失败时抛出业务异常
      */
     @Retryable(
@@ -65,7 +67,7 @@ public class FileWriter {
             maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2)
     )
-    public void writeDocuments(List<VectorData> documents, EmbeddingModel embeddingModel) {
+    public void writeDocuments(List<VectorData> documents) {
         if (documents == null || documents.isEmpty()) {
             log.warn("RAG(FileWriter)-待存储的VectorData列表为空，跳过向量存储");
             return;
@@ -78,6 +80,7 @@ public class FileWriter {
                 .map(VectorData::getContent)
                 .collect(Collectors.toList());
 
+        EmbeddingModel embeddingModel = embeddingModelResolver.resolve(NODE_NAME);
         List<float[]> vectors = embeddingModel.embed(texts);
 
         if (vectors.size() != documents.size()) {

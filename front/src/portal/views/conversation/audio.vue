@@ -1,5 +1,5 @@
 <template>
-  <div class="audio-page" :style="{ '--portal-header-height': PORTAL_HEADER_HEIGHT + 'px' }">
+  <div class="audio-page">
     <header class="ap-header">
       <button class="ap-back" title="返回文本对话" @click="handleBack">
         <el-icon :size="18"><ArrowLeft /></el-icon>
@@ -122,7 +122,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { ArrowLeft, ChatDotRound, Microphone, Setting } from "@element-plus/icons-vue";
-import { PORTAL_HEADER_HEIGHT } from "@/shared/api/config";
 import PendingActionCard from "@/portal/components/conversation/PendingActionCard.vue";
 import VoiceModeDialog from "@/portal/components/conversation/VoiceModeDialog.vue";
 import { useAudioConversation } from "@/portal/composables/useAudioConversation";
@@ -316,7 +315,7 @@ onBeforeUnmount(() => {
 /* ==================== 页面与背景（暖橙奶油） ==================== */
 
 .audio-page {
-  height: calc(100vh - var(--portal-header-height));
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;

@@ -70,6 +70,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setHeartbeatValue(new long[]{10000, 20000})
                 // 绑定调度器
                 .setTaskScheduler(this.messageBrokerTaskScheduler);
+
+        // 出站通道为多线程Executor，须按会话保持推送顺序（音频帧乱序直接表现为播放卡顿/爆音）。
+        // 该开关作用于 SimpleBroker 的会话内消息顺序，确保 TTS 音频帧按序到达前端。
+        registry.setPreservePublishOrder(true);
     }
 
     @Override

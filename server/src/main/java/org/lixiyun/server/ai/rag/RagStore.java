@@ -2,19 +2,16 @@ package org.lixiyun.server.ai.rag;
 
 import jakarta.annotation.PreDestroy;
 import jodd.util.concurrent.ThreadFactoryBuilder;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.entity.vector.VectorData;
-import org.lixiyun.server.ai.model.EmbeddingModelResolver;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.reader.FileReader;
 import org.lixiyun.server.ai.rag.transformer.FileTransformer;
 import org.lixiyun.server.ai.rag.writer.FileWriter;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
@@ -29,31 +26,12 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RagStore {
 
-    /** RAG 文档入库向量模型节点 key（RagStore 按此读取独立配置，供 EmbeddingModelResolver 动态解析） */
-    public static final String NODE = "ragDocumentEmbeddingModel";
-
-    @Autowired
-    @Qualifier("deepSeekChatModel")
-    private ChatModel deepSeekChatModel;
-
-    @Autowired
-    @Qualifier("dashScopeChatModel")
-    private ChatModel dashScopeChatModel;
-
-    @Autowired
-    @Qualifier("ollamaChatModel")
-    private ChatModel ollamaChatModel;
-
-    @Autowired
-    private EmbeddingModelResolver embeddingModelResolver;
-
-    @Autowired
-    private FileWriter fileWriter;
-
-    @Autowired
-    private MilvusUtil milvusUtil;
+    private final FileTransformer fileTransformer;
+    private final FileWriter fileWriter;
+    private final MilvusUtil milvusUtil;
 
 
     // RAG文件处理专用线程池
@@ -87,13 +65,9 @@ public class RagStore {
      */
     public void storeFileToVector(String filePath, VectorData vectorData, Consumer<Long> interruptedHandler) {
         FileReader fileReader = new FileReader();
-        FileTransformer fileTransformer = FileTransformer.builder().chatModel(dashScopeChatModel).build();
 
         fileReader.readLocalFile(filePath, vectorData, documents -> {
-            fileTransformer.transformDocuments(documents, interruptedHandler, item -> {
-                // 入库向量模型按 ai_node_config 的 ragDocumentEmbeddingModel 节点动态解析（保存即生效）
-                fileWriter.writeDocuments(item, embeddingModelResolver.resolve(NODE));
-            });
+            fileTransformer.transformDocuments(documents, interruptedHandler, fileWriter::writeDocuments);
         });
     }
 

@@ -489,6 +489,17 @@ asr:
 tts:
   # 厂商选择：alibaba_nls / volcengine
   provider: ${tts.provider:volcengine}
+    # ==================== TTS音频预滚缓冲配置 ====================
+  # 预滚缓冲（jitter buffer）参数：攒够前 N 片/前 M 字节后持续流出，超时兜底强制开播。
+  # 参数从 yaml 提取，可按听感调整；相关实现见 server/infrastructure/audio/TtsAudioPushBuffer
+  push-buffer:
+    # 预滚片段数阈值：攒够 N 个数据片段即开播（默认 3）
+    prefill-frames: ${tts.push-buffer.prefill-frames:3}
+    # 预滚字节阈值：累积达到 M 字节即开播（默认 18000 ≈ 0.375s @24kHz·16bit·mono，
+    # 防止单片段过大时只攒 1~2 片首字延迟失控）
+    prefill-bytes: ${tts.push-buffer.prefill-bytes:18000}
+    # 预滚超时（毫秒）：预滚期长时间无后续片段时强制开播（默认 1000），防首字永远出不来
+    prefill-timeout-ms: ${tts.push-buffer.prefill-timeout-ms:1000}
 
   # ==================== 阿里云NLS配置 ====================
   # provider=alibaba_nls 时生效（@ConditionalOnProperty）

@@ -123,6 +123,13 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
 
         ConversationMetadata conversationMetadata = (ConversationMetadata) request.getContext().get(ConversationMetadata.NAME);
         log.debug("[模型同步调用日志拦截器-模型上下文]: {}", conversationMetadata);
+        if (conversationMetadata == null) {
+            conversationMetadata = ConversationMetadata.builder()
+                    .conversationId(0L)
+                    .userId(0L)
+                    .currentRound(0)
+                    .build();
+        }
 
         record.setModelName(
                 request.getOptions() != null ? request.getOptions().getModel() : "unknown"
@@ -175,10 +182,12 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         Throwable caughtException = null;
         try {
             response = handler.call(request);
-            log.debug("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型调用响应: {}", aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
+            log.debug("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型调用响应: {}",
+                    aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
             if (response.getMessage() instanceof AssistantMessage assistantMessage
                     && (assistantMessage.getText() == null || assistantMessage.getText().isEmpty())) {
-                log.warn("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型响应内容为空", aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound());
+                log.warn("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型响应内容为空",
+                        aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound());
             }
         } catch (Throwable t) {
             caughtException = t;
@@ -202,7 +211,8 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
             try {
                 mapper.insert(record);
             } catch (Exception e) {
-                log.error("[模型同步调用日志拦截器] 模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}", conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
+                log.error("[模型同步调用日志拦截器] 模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}",
+                        conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
             }
         }
 

@@ -1,6 +1,10 @@
 <template>
   <div class="portal-layout">
-    <header class="portal-header" :style="{ height: PORTAL_HEADER_HEIGHT + 'px' }">
+    <header
+      v-if="!route.meta.hidePortalHeader"
+      class="portal-header"
+      :style="{ height: PORTAL_HEADER_HEIGHT + 'px' }"
+    >
       <div class="header-left">
         <router-link to="/" class="header-logo">{{ PLATFORM_NAME }}</router-link>
         <nav class="header-nav">

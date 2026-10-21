@@ -29,7 +29,7 @@ const portalRoutes: RouteRecordRaw[] = [
         path: "conversation/audio",
         name: "PortalConversationAudio",
         component: () => import("@/portal/views/conversation/audio.vue"),
-        meta: { title: "语音对话" },
+        meta: { title: "语音对话", hidePortalHeader: true },
       },
       {
         path: "diagnosis",

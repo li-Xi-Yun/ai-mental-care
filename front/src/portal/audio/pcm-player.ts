@@ -2,6 +2,8 @@
  * 流式 PCM 播放器（TTS 下行）
  *
  * - 下行帧为裸 PCM16LE 单声道 24kHz（STOMP 二进制帧），按序无缝排队播放（nextPlayTime 时间轴）；
+ * - 预滚缓冲（preRollSeconds）：首次入队或发生欠载（帧到达晚于播放）时，重建一小段缓冲再开播，
+ *   吸收 STOMP/网络帧间抖动，避免开口处与续播处的断音卡顿；
  * - bargeIn()：用户开口时本地立即停止全部在播/排队音频（服务端 barge-in 为最终权威，
  *   前端只保证"开口即静音"）；
  * - dispose() 后 enqueue 变为 no-op（避免离开页面后仍收到迟到帧）。
@@ -11,6 +13,8 @@ import { int16leToFloat32 } from "./pcm";
 export interface PcmPlayerOptions {
   /** PCM 采样率（默认 24000，与后端 TTS 配置一致） */
   sampleRate?: number;
+  /** 预滚缓冲时长（毫秒，默认 150）：开播/欠载后先缓冲这一段再播放，吸收帧间抖动 */
+  preRollMs?: number;
 }
 
 type AudioContextCtor = typeof AudioContext;
@@ -25,6 +29,7 @@ const MAX_BACKLOG_SECONDS = 3;
 
 export class PcmStreamPlayer {
   private readonly sampleRate: number;
+  private readonly preRollSeconds: number;
   private ctx: AudioContext | null = null;
   private nextPlayTime = 0;
   private readonly activeSources = new Set<AudioBufferSourceNode>();
@@ -32,6 +37,7 @@ export class PcmStreamPlayer {
 
   constructor(options: PcmPlayerOptions = {}) {
     this.sampleRate = options.sampleRate ?? 24000;
+    this.preRollSeconds = (options.preRollMs ?? 150) / 1000;
   }
 
   /** AudioContext 状态（uninitialized=尚未创建） */
@@ -80,8 +86,14 @@ export class PcmStreamPlayer {
     source.connect(ctx.destination);
 
     const now = ctx.currentTime;
-    if (this.nextPlayTime < now) this.nextPlayTime = now;
-    if (this.nextPlayTime - now > MAX_BACKLOG_SECONDS) this.nextPlayTime = now;
+    if (this.nextPlayTime <= now) {
+      // 首帧或帧到达晚于播放（欠载）：重建一小段预滚缓冲再开播，
+      // 吸收 STOMP/网络帧间抖动，避免开口与续播处的断音卡顿。
+      this.nextPlayTime = now + this.preRollSeconds;
+    } else if (this.nextPlayTime - now > MAX_BACKLOG_SECONDS) {
+      // 积压异常（长时间未消费）：重置时间轴避免越播越迟
+      this.nextPlayTime = now + this.preRollSeconds;
+    }
     source.start(this.nextPlayTime);
     this.nextPlayTime += buffer.duration;
 
