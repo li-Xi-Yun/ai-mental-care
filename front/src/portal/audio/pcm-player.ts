@@ -11,8 +11,9 @@
 import { int16leToFloat32 } from "./pcm";
 
 export interface PcmPlayerOptions {
-  /** PCM 采样率（默认 24000，与后端 TTS 配置一致） */
   sampleRate?: number;
+  /** 发生播放开始/结束状态变化时通知调用方 */
+  onPlaybackStateChange?: (playing: boolean) => void;
   /** 预滚缓冲时长（毫秒，默认 150）：开播/欠载后先缓冲这一段再播放，吸收帧间抖动 */
   preRollMs?: number;
 }
@@ -30,6 +31,7 @@ const MAX_BACKLOG_SECONDS = 3;
 export class PcmStreamPlayer {
   private readonly sampleRate: number;
   private readonly preRollSeconds: number;
+  private readonly onPlaybackStateChange?: (playing: boolean) => void;
   private ctx: AudioContext | null = null;
   private nextPlayTime = 0;
   private readonly activeSources = new Set<AudioBufferSourceNode>();
@@ -38,6 +40,7 @@ export class PcmStreamPlayer {
   constructor(options: PcmPlayerOptions = {}) {
     this.sampleRate = options.sampleRate ?? 24000;
     this.preRollSeconds = (options.preRollMs ?? 150) / 1000;
+    this.onPlaybackStateChange = options.onPlaybackStateChange;
   }
 
   /** AudioContext 状态（uninitialized=尚未创建） */
@@ -98,8 +101,10 @@ export class PcmStreamPlayer {
     this.nextPlayTime += buffer.duration;
 
     this.activeSources.add(source);
+    this.onPlaybackStateChange?.(true);
     source.onended = () => {
       this.activeSources.delete(source);
+      this.onPlaybackStateChange?.(this.activeSources.size > 0);
       try {
         source.disconnect();
       } catch {
@@ -123,6 +128,7 @@ export class PcmStreamPlayer {
       }
     }
     this.activeSources.clear();
+    this.onPlaybackStateChange?.(false);
     if (this.ctx) this.nextPlayTime = this.ctx.currentTime;
   }
 

@@ -72,4 +72,10 @@ public class FileVO implements Serializable {
     @Schema(description = "最后更新时间")
     private LocalDateTime updatedTime;
 
+    @Schema(description = "本次解析开始时间（解析中重进页面以此续计耗时）")
+    private LocalDateTime parseStartTime;
+
+    @Schema(description = "本次解析结束时间（成功/失败/中断时写入；解析中为null）")
+    private LocalDateTime parseEndTime;
+
 }

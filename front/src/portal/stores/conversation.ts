@@ -8,10 +8,15 @@ export const VOICE_INPUT_OPTIONS = [
   { value: "TEXT", label: "文本" },
 ] as const;
 
-/** 语音对话输出方式（与后端 outputTypes 对齐，可多选；两个独立按钮） */
+/**
+ * 语音对话输出方式（与后端 outputTypes 对齐，可多选）。
+ * AVATAR_2D 只能作为附加输出：必须与 TEXT/AUDIO 至少一项共选（VoiceModeDialog 校验），
+ * 未选 AVATAR_2D 时语音页保持原语音球展示。
+ */
 export const VOICE_OUTPUT_OPTIONS = [
   { value: "AUDIO", label: "语音" },
   { value: "TEXT", label: "文本" },
+  { value: "AVATAR_2D", label: "虚拟形象" },
 ] as const;
 
 export const useConversationStore = defineStore(

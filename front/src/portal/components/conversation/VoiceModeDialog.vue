@@ -78,7 +78,12 @@ watch(
   },
 );
 
-const canConfirm = computed(() => inputTypes.value.length > 0 && outputTypes.value.length > 0);
+const canConfirm = computed(
+  () =>
+    inputTypes.value.length > 0 &&
+    // 输出约束：TEXT/AUDIO 至少选一，AVATAR_2D 只能作为附加输出（后端仅在有 TEXT/AUDIO 输出时装配形象节点）
+    (outputTypes.value.includes("TEXT") || outputTypes.value.includes("AUDIO")),
+);
 
 const inputHint = computed(() => {
   const hasAudio = inputTypes.value.includes("AUDIO");
@@ -92,6 +97,14 @@ const inputHint = computed(() => {
 const outputHint = computed(() => {
   const hasAudio = outputTypes.value.includes("AUDIO");
   const hasText = outputTypes.value.includes("TEXT");
+  const hasAvatar = outputTypes.value.includes("AVATAR_2D");
+
+  if (hasAvatar) {
+    if (hasAudio && hasText) return "AI 回复将以语音播报并同步显示文字，同时显示虚拟形象。";
+    if (hasAudio) return "AI 回复仅语音播报，并显示虚拟形象。";
+    if (hasText) return "AI 回复仅显示文字，不播放语音，并显示虚拟形象。";
+    return "虚拟形象需与语音或文本输出搭配使用，请至少选择其中一项。";
+  }
   if (hasAudio && hasText) return "AI 回复将以语音播报并同步显示文字。";
   if (hasAudio) return "AI 回复仅语音播报。";
   if (hasText) return "AI 回复仅显示文字，不播放语音。";

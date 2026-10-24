@@ -13,12 +13,16 @@
     <VectorOverviewCard
       :total="total"
       :chunk-count-l1="chunkCountL1"
+      :chunk-count-l2="chunkCountL2"
       :vector-status="vectorStatus"
       :status-tone="statusTone"
       :status-icon="statusIcon"
       :is-parsing="isParsing"
+      :live-stage="liveStage"
+      :live-progress="liveProgress"
       :elapsed="elapsed"
       :format-elapsed="formatElapsed"
+      :parse-duration="parseDuration"
       :submitting="submitting"
       :deleting="deleting"
       :can-load="canLoad"
@@ -43,7 +47,7 @@
       :format-time="formatTime"
       :pad-idx="padIdx"
       @page-change="handlePageChange"
-      @refresh="loadVectors"
+      @refresh="handleRefresh"
       @view="openDetail"
     />
 
@@ -74,6 +78,8 @@ const {
   // 统计 / 工具栏
   total,
   chunkCountL1,
+  chunkCountL2,
+  parseDuration,
   statusTone,
   statusIcon,
   isParsing,
@@ -85,6 +91,10 @@ const {
   deleting,
   elapsed,
   formatElapsed,
+  handleRefresh,
+  // 实时解析状态
+  liveStage,
+  liveProgress,
   handleLoad,
   handleInterrupt,
   handleDeleteAll,
@@ -94,7 +104,6 @@ const {
   page,
   pageSize,
   emptyText,
-  loadVectors,
   handlePageChange,
   PAGINATION_LAYOUT,
   // 详情弹窗

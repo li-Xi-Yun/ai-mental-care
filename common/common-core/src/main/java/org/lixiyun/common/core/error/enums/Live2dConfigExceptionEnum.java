@@ -28,6 +28,7 @@ public enum Live2dConfigExceptionEnum implements ErrorCode {
     LIVE2D_MODEL_PATH_INVALID("模型文件路径不合法", 3212),
     LIVE2D_MODEL_SIGN_INVALID("模型文件签名无效或已过期", 3213),
     LIVE2D_MODEL_ASSET_NOT_FOUND("模型包中未找到指定的表情/动作清单文件", 3214),
+    LIVE2D_FEATURE_NOT_ENABLED("Live2D虚拟形象功能尚未启用，请不要选择该输出模式", 3215),
 
     ;
 

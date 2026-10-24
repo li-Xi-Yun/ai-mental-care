@@ -31,6 +31,8 @@ src/main/resources/application-prod.yml
 ./prompts/**
 ./conversations/**
 
+live2d-models/**
+
 ./static-resources/**
 static-resources/**
 NUL

@@ -47,7 +47,7 @@ const RECONCILE_MAX_RETRY = 3;
 const BARGE_IN_DISCARD_MS = 1200;
 /** 离开页面的清理超时（避免卡住路由导航） */
 const TEARDOWN_TIMEOUT_MS = 1500;
-/** 初始化完成前缓冲的帧上限（约 5~6 秒，超出丢最旧） */
+/** 初始化完成前缓冲的帧上限（约 15 秒；4096/16kHz ≈ 256ms/帧，超出丢最旧） */
 const MAX_BUFFER_FRAMES = 60;
 /** 发送/说话后无首包的兜底时长 */
 const NO_CHUNK_FALLBACK_MS = 10000;
@@ -63,12 +63,16 @@ export interface UseAudioConversationOptions {
   initialConversationId: string;
   /** 输入类型（AUDIO / TEXT） */
   inputTypes: string[];
-  /** 输出类型（TEXT / TEXT+AUDIO） */
+  /** 输出类型（TEXT / TEXT+AUDIO / +AVATAR_2D） */
   outputTypes: string[];
   /** 从文本页进入：进入时释放旧的 TEXT 生命周期（由本页唯一执行，避免双 DELETE 竞态） */
   releaseOnBoot: boolean;
   /** 生命周期 init 返回真实会话 ID 后回调（用于回写 URL） */
   onConversationIdChange?: (id: string) => void;
+  /** 虚拟形象表情指令（原始 JSON 字符串，输出模式含 AVATAR_2D 时订阅并透传；由页面转发给渲染组件） */
+  onAvatar2dExpression?: (rawJson: string) => void;
+  /** 虚拟形象动作指令（原始 JSON 字符串，输出模式含 AVATAR_2D 时订阅并透传；由页面转发给渲染组件） */
+  onAvatar2dMotion?: (rawJson: string) => void;
 }
 
 export function useAudioConversation(options: UseAudioConversationOptions) {
@@ -127,7 +131,13 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
   let publishRetryAt = 0;
 
   /* ==================== 音频 ==================== */
-  const player = new PcmStreamPlayer({ sampleRate: 24000 });
+  const playerPlaying = ref(false);
+  const player = new PcmStreamPlayer({
+    sampleRate: 24000,
+    onPlaybackStateChange: (playing) => {
+      playerPlaying.value = playing;
+    },
+  });
 
   const stomp = useStompConversation({
     onTransportClose: () => handleTransportError("与服务器的连接已断开"),
@@ -154,6 +164,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       userTextFinal.value = false;
       aiStream.value = "";
       finalReconcileScheduled = false;
+      clearReconcileTimer();
+      reconcileAttempts = 0;
       if (!activeConversationId) {
         // 首次输入才初始化（幂等重建）；缓冲期间不显示"识别中"
         phase.value = "initializing";
@@ -288,34 +300,46 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     };
   }
 
-  const streamHandlers: ConversationStreamHandlers = {
-    onTextReply: (chunk) => handleAiChunk(chunk),
-    onConversationName: (name) => {
-      if (name) conversationName.value = name;
-    },
-    onPendingAction: (raw) => {
-      const item = parsePendingActionPush(raw);
-      if (item) upsertPendingAction(item);
-    },
-    onAudioBinary: (bytes) => handleAudioBinary(bytes),
-    onAsrIntermediate: (text) => {
-      // ASR 中间结果：渐进更新用户文本（定型前）
-      userText.value = text;
-      userTextFinal.value = false;
-      clearWatchdog();
-    },
-    onPipelineError: (message) => {
-      // 服务端业务/管道异常（如 ASR 会话失效、适配器不存在）：轻提示，避免静默无反应。
-      // 后端报文为 Result{code,msg}，解析后展示可读文案（避免直接把 JSON 抛给用户）
-      console.warn("[audio] 服务端管道异常：", message);
-      const text = parsePipelineError(message);
-      if (text) setNotice(text);
-    },
-    onQuotaRejected: (rawJson) => {
-      // AI 配额拒绝（语音识别/合成/形象播报超限或停用）：轻提示对应降级行为
-      showQuotaRejected(rawJson);
-    },
-  };
+  /** 构建会话流处理器；虚拟形象（AVATAR_2D）通道仅在输出模式包含时注入订阅（与后端"仅含 AVATAR_2D 才推送"对齐） */
+  function buildStreamHandlers(): ConversationStreamHandlers {
+    const handlers: ConversationStreamHandlers = {
+      onTextReply: (chunk) => handleAiChunk(chunk),
+      onConversationName: (name) => {
+        if (name) conversationName.value = name;
+      },
+      onPendingAction: (raw) => {
+        const item = parsePendingActionPush(raw);
+        if (item) upsertPendingAction(item);
+      },
+      onAudioBinary: (bytes) => handleAudioBinary(bytes),
+      onAsrIntermediate: (text) => {
+        // ASR 中间结果：渐进更新用户文本（定型前）
+        userText.value = text;
+        userTextFinal.value = false;
+        clearWatchdog();
+      },
+      onPipelineError: (message) => {
+        // 服务端业务/管道异常（如 ASR 会话失效、适配器不存在）：轻提示，避免静默无反应。
+        // 后端报文为 Result{code,msg}，解析后展示可读文案（避免直接把 JSON 抛给用户）
+        console.warn("[audio] 服务端管道异常：", message);
+        const text = parsePipelineError(message);
+        if (text) setNotice(text);
+      },
+      onQuotaRejected: (rawJson) => {
+        // AI 配额拒绝（语音识别/合成/形象播报超限或停用）：轻提示对应降级行为
+        showQuotaRejected(rawJson);
+      },
+    };
+    if (currentModes.outputTypes.includes("AVATAR_2D")) {
+      handlers.onAvatar2dExpression = (raw) => {
+        if (raw) options.onAvatar2dExpression?.(raw);
+      };
+      handlers.onAvatar2dMotion = (raw) => {
+        if (raw) options.onAvatar2dMotion?.(raw);
+      };
+    }
+    return handlers;
+  }
 
   /* ==================== 启动 ==================== */
 
@@ -358,14 +382,16 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       // 4. 输入就绪
       if (isAudioInput.value) {
         phase.value = "requesting-mic";
-        needResume.value = !(await player.ensureReady());
+        const playerReady = currentModes.outputTypes.includes("AUDIO") ? await player.ensureReady() : true;
         // 持续收音：仅在启用语音输入时启动；帧在 init 前先缓冲
         await recorder.start();
+        const recorderReady = await recorder.resume();
+        needResume.value = !playerReady || !recorderReady;
         volume.value = 0;
         phase.value = "listening";
       } else {
-        // 文本输入模式：不申请麦克风；输出含语音时仍需音频上下文就绪（自动播放策略兜底）
-        needResume.value = !(await player.ensureReady());
+        // 文本输入模式：不申请麦克风；仅在输出含语音时准备音频上下文
+        needResume.value = currentModes.outputTypes.includes("AUDIO") && !(await player.ensureReady());
         phase.value = "ready";
       }
       if (tornDown) return;
@@ -401,7 +427,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       conversationId.value = realId;
       conversationStore.setCurrentConversation(realId);
       options.onConversationIdChange?.(realId);
-      stomp.bind(realId, streamHandlers);
+      stomp.bind(realId, buildStreamHandlers());
       baselineAssistantCount = messages.value.filter((m) => m.type === "assistant").length;
       activeConversationId = realId;
       return realId;
@@ -422,6 +448,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     userTextFinal.value = true;
     aiStream.value = "";
     finalReconcileScheduled = false;
+    clearReconcileTimer();
+    reconcileAttempts = 0;
     clearWatchdog();
     const optimistic: MemoryMessage = {
       id: `local-${Date.now()}`,
@@ -471,13 +499,16 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       userText.value = "";
       userTextFinal.value = false;
       await ensureActive();
+      await flushFrameBuffer();
     }
 
     // 3. 采集/阶段就绪
     if (nextAudio) {
-      needResume.value = !(await player.ensureReady());
+      const playerReady = currentModes.outputTypes.includes("AUDIO") ? await player.ensureReady() : true;
       try {
         if (!recorder.active) await recorder.start();
+        const recorderReady = await recorder.resume();
+        needResume.value = !playerReady || !recorderReady;
         volume.value = 0;
         phase.value = "listening";
       } catch (e) {
@@ -516,8 +547,9 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
 
   /** 兜底恢复 AudioContext（"点击继续"遮罩） */
   async function resumeAudio(): Promise<void> {
-    const ok = await player.ensureReady();
-    needResume.value = !ok;
+    const playerReady = currentModes.outputTypes.includes("AUDIO") ? await player.ensureReady() : true;
+    const recorderReady = isAudioInput.value ? await recorder.resume() : true;
+    needResume.value = !playerReady || !recorderReady;
   }
 
   /* ==================== 流式事件 ==================== */
@@ -574,6 +606,13 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       pendingActions.value[idx] = { ...pendingActions.value[idx], ...item };
     } else {
       pendingActions.value = [...pendingActions.value, item];
+    }
+  }
+
+  function clearReconcileTimer(): void {
+    if (reconcileTimer !== null) {
+      window.clearTimeout(reconcileTimer);
+      reconcileTimer = null;
     }
   }
 
@@ -650,6 +689,12 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     try {
       // 1. 若正在说话：先经 onFrame 补发静音帧，让服务端完成最终识别（此时 WS 仍存活）
       await stopCapture(true);
+    } catch {
+      /* ignore */
+    }
+    try {
+      // 给服务端静音判停窗口留出时间，避免尾句尚未返回 definite ASR 就释放连接
+      await sleep(900);
     } catch {
       /* ignore */
     }
@@ -754,6 +799,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     aiStream,
     conversationId,
     conversationName,
+    playerPlaying,
     isAudioInput,
     // 动作
     boot,

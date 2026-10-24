@@ -12,6 +12,8 @@ import { Client, type IMessage, type StompSubscription } from "@stomp/stompjs";
 import {
   asrIntermediateTopic,
   audioBinaryTopic,
+  avatar2dExpressionTopic,
+  avatar2dMotionTopic,
   buildNativeWsUrl,
   conversationNameTopic,
   diagnosisCreatedTopic,
@@ -48,6 +50,10 @@ export interface ConversationStreamHandlers {
   onEmotionAnalysisUpdated?: (rawJson: string) => void;
   /** 新心理评估（诊断书）落库通知（载荷原始 JSON，由业务层解析并刷新） */
   onDiagnosisCreated?: (rawJson: string) => void;
+  /** 虚拟形象表情指令（持续状态；载荷 JSON 字符串 {"expression":"<资产id>"}） */
+  onAvatar2dExpression?: (rawJson: string) => void;
+  /** 虚拟形象动作指令（一次性触发；载荷 JSON 字符串 {"motion":"<资产id>"}） */
+  onAvatar2dMotion?: (rawJson: string) => void;
 }
 
 export interface ConversationStompClientOptions {
@@ -203,6 +209,12 @@ export class ConversationStompClient {
     }
     if (handlers.onDiagnosisCreated) {
       add(diagnosisCreatedTopic(conversationId), (m) => handlers.onDiagnosisCreated?.(m.body ?? ""));
+    }
+    if (handlers.onAvatar2dExpression) {
+      add(avatar2dExpressionTopic(conversationId), (m) => handlers.onAvatar2dExpression?.(m.body ?? ""));
+    }
+    if (handlers.onAvatar2dMotion) {
+      add(avatar2dMotionTopic(conversationId), (m) => handlers.onAvatar2dMotion?.(m.body ?? ""));
     }
   }
 

@@ -6,6 +6,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AI Mental Care — a Spring Boot + Spring AI mental-health platform (Chinese language codebase/comments). Users get an AI companion conversation, per-round emotion analysis, psychological scale (量表) assessments, and a structured diagnosis report (诊断书), exposed through a Vue 3 portal + admin UI. `README.md` (in Chinese) is the authoritative feature/architecture overview; this file records the working details that require reading multiple files to discover.
 
+## Folder index (context-retrieval scope)
+
+**`work/prompt/project-folder/work_prompt_index.md`** is the index of this project's folder-retrieval scope documents. It is duplicated here so Claude Code always knows it exists and what each scope document covers before deciding what to retrieve.
+
+### Code-generation prompts (use when generating code)
+
+- `work/prompt/prompt.txt` — Controller/Service 层代码生成提示词（四层拆分、注解要求、DTO/VO 修饰、分页 POST、`@PreAuthorize` 权限串等，含参考示例）。
+- `work/prompt/common_prompt` — 资深架构师通用规范（命名、四层架构、接口规范、业务编排、六原则、异常处理等）。
+
+### Retrieval-scope documents (`work/prompt/project-folder/`)
+
+| File | Covers |
+| --- | --- |
+| `top_level_folders_overview.md` | 仓库根一级目录总览（应检索 / 按需 / 跳过） |
+| `common_folders_overview.md` | `common/` 20 个公共模块 |
+| `pojo_folders_overview.md` | `pojo/` 数据模型（entity/dto/vo/bo） |
+| `server_folders_overview.md` | `server/` 业务主模块 |
+| `front_folders_overview.md` | `front/` 前端工程 |
+| `server_resources_overview.md` | `server/src/main/resources` 运行时配置（含敏感项标注） |
+| `server_ai_overview.md` | `server/ai` AI 子域（节点↔模型↔处理器链） |
+| `server_infrastructure_overview.md` | `server/infrastructure` 基础设施（会话/语音/配额） |
+
+When asked to work across a folder or to decide whether a path should be retrieved, consult the matching document in `work/prompt/project-folder/` first rather than guessing scope.
+
 **Key stack:** Java 25, Spring Boot 3.5, Spring AI + Alibaba Agent Framework (`spring-ai-alibaba` graph/StateGraph), MyBatis-Plus + dynamic-datasource, Redis/Redisson, Milvus vector DB, WebSocket/STOMP, Spring Security + dual JWT. AI providers: DeepSeek, Alibaba DashScope (Qwen), Ollama, and an OpenAI-compatible gateway (default dev model: `deepseek-v4-flash-vision-exp`).
 
 ## Build & run commands
@@ -74,7 +98,7 @@ The per-round pipeline, in dependency order (read these to understand the whole 
 1. `controller/user/conversation/AdapterController` — HTTP `POST /user/conversation/adapter/text/send` for text (interface rate-limited via `@RateLimit`) and STOMP `/app/audio/frame` for audio. Delegates to `AdapterService`/`AdapterServiceImpl`, which validates conversation ownership (`UserInfoThreadLocalUtil`) and pulls the session's registered adapter from `InputAdapterSessionManager`.
 2. `TextInputAdapter` (prototype bean, one per session, bound to `userId`/`conversationId`): persists the message to `conversation_memory` (STATE unprocessed), updates conversation liveness, writes the timestamp into a Redis ZSet queue, and triggers `ConversationAggregateScheduler.addTask` (Netty `HashedWheelTimer`, resets a ~3s debounce per conversation, submits to a business thread pool).
 3. `ConversationCleanupTask` (scheduled every second) and the scheduler callback both funnel into **`ConversationMessageProcessor`** (the flow orchestrator): acquire processing token (`ConversationProcessTokenManager`, Redis, re-queue on contention) → load cache → query unprocessed messages → assemble `ConversationProcessContextBO` → submit **async** jobs on `diagnosisThreadPoolTaskExecutor` (semantic compression, emotion analysis + diagnosis via `ConversationAiService`, first-round conversation naming) → run **main-thread** `ChatMessageProcessor` (LLM call producing a cold `Flux<NodeOutput>`) → persist state → refresh cache → release token.
-4. `ChatMessageProcessor` streams the LLM output; `ConversationWebSocketManager` pushes chunks to `/user/queue/text/reply/{conversationId}` (client uses idle-debounce to detect end). Output is routed through the session's `OutputPipeline` (nodes: `AvatarOutputNode`, `ModelChatOutputNode`, `TtsOutputNode`).
+4. `ChatMessageProcessor` streams the LLM output; `ConversationWebSocketManager` pushes chunks to `/user/queue/text/reply/{conversationId}` (client uses idle-debounce to detect end). Output is routed through the session's `OutputPipeline` (nodes: `Avatar2DOutputNode`, `ModelChatOutputNode`, `TtsOutputNode`).
 5. `ConversationAiService.analysisAndDiagnosis` runs emotion recognition (per round, persisted + Redis-cached) then executes `DiagnosisGraph`; `DiagnosisPersistNode` writes `EmotionDiagnosis`. New analysis/diagnosis results push `EMOTION_ANALYSIS_UPDATED` / `DIAGNOSIS_CREATED` events over WebSocket.
 6. Semantic compression triggers when history > `MAX_CONTEXT_MESSAGES` (50): `HistoryMessageCompressionNode` + `HistoryAnalysisCompressionNode` summarize and write back as `conversation` summary fields.
 

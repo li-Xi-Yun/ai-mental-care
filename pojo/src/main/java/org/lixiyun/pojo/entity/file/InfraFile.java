@@ -141,6 +141,16 @@ public class InfraFile implements Serializable {
     private Long updatedBy;
 
     /**
+     * 本次解析开始时间（解析中重进页面以此续计耗时）
+     */
+    private LocalDateTime parseStartTime;
+
+    /**
+     * 本次解析结束时间（成功/失败/中断时写入；解析中为 null）
+     */
+    private LocalDateTime parseEndTime;
+
+    /**
      * 是否删除，0-否，1-是
      */
     @TableLogic

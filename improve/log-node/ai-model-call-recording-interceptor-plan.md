@@ -131,7 +131,7 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         AiModelCallRecord record = new AiModelCallRecord();
         record.setCallType("doCall");
 
-        // 从 messages 中分离 system prompt 和 user prompt
+        // 从 messages 中分离 system prompt.txt 和 user prompt.txt
         List<Message> messages = request.getMessages();
         String systemPrompt = null;
         String userPrompt = null;

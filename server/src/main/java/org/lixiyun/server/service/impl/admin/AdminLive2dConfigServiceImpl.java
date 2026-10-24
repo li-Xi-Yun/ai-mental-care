@@ -67,9 +67,10 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long uploadModel(MultipartFile file, String modelName, String expressionFileName, String motionFileName,
-                            String semanticPrompt, Integer sort, String remark) {
-        log.info("[Live2D模型配置] 上传模型包，modelName：{}，原始文件名：{}", modelName, file.getOriginalFilename());
+    public Long uploadModel(MultipartFile file, String modelName, String aliasName, String expressionFileName,
+                            String motionFileName, String semanticPrompt, Integer sort, String remark) {
+        log.info("[Live2D模型配置] 上传模型包，modelName：{}，aliasName：{}，原始文件名：{}",
+                modelName, aliasName, file.getOriginalFilename());
 
         // 1. 基础校验：modelName 白名单 + 大小 + zip 属性
         validateModelName(modelName);
@@ -127,9 +128,9 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
             // 6. 落库：coverImagePath / semanticPrompt 未传一律 null（由管理员编辑时手动录入）
             Live2dConfig config = Live2dConfig.builder()
                     .modelName(modelName)
+                    .aliasName(aliasName)
                     .modelUrl(model3RelativePath)
-                    .modelRelativePath(modelRoot() + modelName + "/")
-                    .coverImagePath(null)
+                    .modelRelativePath(modelRoot() + modelName + "/")                    .coverImagePath(null)
                     .enabled(Live2dConfig.ENABLED_NO)
                     .sort(sort != null ? sort : 0)
                     .semanticPrompt(null)
@@ -153,6 +154,22 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
                 deleteDirectoryQuietly(targetDir);
             }
         }
+    }
+
+    @Override
+    public Live2dConfigAdminVO getDetail(Long id) {
+        log.info("[Live2D模型配置] 获取详情，id：{}", id);
+
+        Live2dConfig config = live2dConfigMapper.selectById(id);
+        if (config == null) {
+            log.error("[Live2D模型配置] 记录不存在，id：{}", id);
+            throw new BusinessException(Live2dConfigExceptionEnum.LIVE2D_CONFIG_NOT_FOUND);
+        }
+
+        Live2dConfigAdminVO vo = new Live2dConfigAdminVO();
+        BeanUtil.copyProperties(config, vo, CopyOptions.create().setIgnoreNullValue(true));
+        log.info("[Live2D模型配置] 获取详情成功，id：{}，modelName：{}", id, vo.getModelName());
+        return vo;
     }
 
     @Override
@@ -244,8 +261,12 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
                 modelName, enabled, pageNum, pageSize);
 
         Page<Live2dConfig> page = new PageQuery(pageSize, pageNum).build();
+        // 关键词同时模糊匹配模型名称与模型别名（单搜索框命中任一即返回）
+        boolean hasKeyword = modelName != null && !modelName.isBlank();
         Page<Live2dConfig> result = live2dConfigMapper.selectPage(page, new LambdaQueryWrapper<Live2dConfig>()
-                .like(modelName != null, Live2dConfig::getModelName, modelName)
+                .and(hasKeyword, w -> w.like(Live2dConfig::getModelName, modelName)
+                        .or()
+                        .like(Live2dConfig::getAliasName, modelName))
                 .eq(enabled != null, Live2dConfig::getEnabled, enabled)
                 .orderByDesc(Live2dConfig::getSort)
                 .orderByDesc(Live2dConfig::getUpdatedTime)
@@ -399,17 +420,24 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
         return filePath.getFileName().toString();
     }
 
-    /** 完整相对路径（{modelRoot}/{modelName}/xxx） */
+    /** 完整相对路径（{modelRoot}/{modelName}/xxx）；toRelativePathUnderModel 已含 {modelName}/ 前缀，禁止再拼 modelName */
     private String toRelativePath(Path p, String modelName) {
-        return modelRoot() + modelName + "/" + toRelativePathUnderModel(p);
+        return modelRoot() + toRelativePathUnderModel(p);
     }
 
     /**
-     * 取文件名去除后缀的 base name（如 hiyori.motion3.json → hiyori）
+     * 取文件名去除资产后缀的 base name：
+     * 优先去双后缀 {.motion3.json / .exp3.json}（与设计文档固定词汇语义一致：haru_g_idle / F01），
+     * 否则去最后一个 .json 后缀（如 xxx.userdata3.json → xxx.userdata3）。
      */
     private String extractBaseName(Path file) {
         String fileName = file.getFileName().toString();
         String lower = fileName.toLowerCase();
+        for (String suffix : new String[]{".motion3.json", ".exp3.json"}) {
+            if (lower.endsWith(suffix)) {
+                return fileName.substring(0, fileName.length() - suffix.length());
+            }
+        }
         int dotIndex = lower.lastIndexOf('.');
         return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
     }

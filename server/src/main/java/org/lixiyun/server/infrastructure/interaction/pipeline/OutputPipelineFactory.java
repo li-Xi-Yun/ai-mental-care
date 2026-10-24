@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.error.enums.OutputPipelineExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
-import org.lixiyun.server.infrastructure.interaction.pipeline.node.AvatarOutputNode;
+import org.lixiyun.server.infrastructure.interaction.pipeline.node.Avatar2DOutputNode;
 import org.lixiyun.server.infrastructure.interaction.pipeline.node.ModelChatOutputNode;
 import org.lixiyun.server.infrastructure.interaction.pipeline.node.TtsOutputNode;
 import org.springframework.beans.factory.ObjectProvider;
@@ -57,7 +57,7 @@ public class OutputPipelineFactory {
     /**
      * AvatarOutputNode 的对象提供者——每次 getObject() 创建该会话独立的节点实例
      */
-    private final ObjectProvider<AvatarOutputNode> avatarOutputNodeProvider;
+    private final ObjectProvider<Avatar2DOutputNode> avatarOutputNodeProvider;
 
     /**
      * TtsNode 的对象提供者——每次 getObject() 创建该会话独立的节点实例

@@ -225,20 +225,21 @@ public class AvatarNode implements NodeActionWithConfig, NodeExecutionSummary {
         List<String> expressionList = config.getExpressionList();
         List<String> motionList = config.getMotionList();
 
-        String validExpression = payload.expression();
-        if (validExpression != null && expressionList != null && !expressionList.isEmpty()) {
-            if (!expressionList.contains(validExpression)) {
-                log.warn("[虚拟形象节点] 表情 {} 不在白名单 {} 中，降级为空", validExpression, expressionList);
-                validExpression = null;
-            }
+        // 校验降级：白名单为空（模型无对应资产）时强制置 null，而非跳过校验——防止模型幻觉输出非白名单资产透传下发
+        String validExpression = null;
+        if (payload.expression() != null && expressionList != null && !expressionList.isEmpty()
+                && expressionList.contains(payload.expression())) {
+            validExpression = payload.expression();
+        } else if (payload.expression() != null) {
+            log.warn("[虚拟形象节点] 表情 {} 不在白名单 {} 中，降级为空", payload.expression(), expressionList);
         }
 
-        String validMotion = payload.motion();
-        if (validMotion != null && motionList != null && !motionList.isEmpty()) {
-            if (!motionList.contains(validMotion)) {
-                log.warn("[虚拟形象节点] 动作 {} 不在白名单 {} 中，降级为空", validMotion, motionList);
-                validMotion = null;
-            }
+        String validMotion = null;
+        if (payload.motion() != null && motionList != null && !motionList.isEmpty()
+                && motionList.contains(payload.motion())) {
+            validMotion = payload.motion();
+        } else if (payload.motion() != null) {
+            log.warn("[虚拟形象节点] 动作 {} 不在白名单 {} 中，降级为空", payload.motion(), motionList);
         }
 
         return new AvatarModel.AvatarCommandPayload(validExpression, validMotion);

@@ -26,6 +26,9 @@ public class Live2dConfigDTO implements Serializable {
     @Schema(description = "模型名称（上传时已确定，一般不修改）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "hiyori")
     private String modelName;
 
+    @Schema(description = "模型别名（中文展示名称，可选；编辑时不传或传 null 不覆盖旧值）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "小阳")
+    private String aliasName;
+
     @Schema(description = ".model3.json 服务器相对路径，前端加载入口（一般由上传接口解析生成，不带前导斜杠）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "static-resources/models/hiyori/hiyori.model3.json")
     private String modelUrl;
 

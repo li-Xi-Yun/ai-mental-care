@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
 import org.lixiyun.common.core.error.enums.FileExceptionEnum;
 import org.lixiyun.common.core.error.enums.SystemExceptionEnum;
 import org.lixiyun.common.core.error.exception.BusinessException;
@@ -13,15 +14,18 @@ import org.lixiyun.common.sql.core.result.PageResult;
 import org.lixiyun.pojo.entity.knowledge.KnowledgeDocument;
 import org.lixiyun.pojo.entity.file.InfraFile;
 import org.lixiyun.pojo.entity.vector.VectorData;
+import org.lixiyun.pojo.vo.admin.file.FileVectorStatsVO;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
 import org.lixiyun.server.ai.rag.RagInterruptManager;
 import org.lixiyun.server.ai.rag.RagStore;
+import org.lixiyun.server.infrastructure.file.FileVectorStatusPublisher;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.mapper.KnowledgeDocumentMapper;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
@@ -43,6 +47,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final RagStore ragStore;
     private final MilvusUtil milvusUtil;
+    private final FileVectorStatusPublisher fileVectorStatusPublisher;
 
     @Override
     // 注意：此处不可加 @Transactional —— 异步任务在本方法内提交，若状态更新（下方 CAS）尚未提交，
@@ -50,6 +55,9 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
     //（历史缺陷：失败后状态卡在解析中、fail_reason 为空）。本方法 DB 写仅一条原子 CAS UPDATE，无需事务包裹。
     public void loadFileVector(Long fileId) {
         log.info("开始文件向量加载，文件ID：{}", fileId);
+
+        // 请求线程内捕获操作人ID（异步回调在 rag 线程池执行，ThreadLocal 会丢失，不能在闭包外再读取）
+        Long operatorId = UserInfoThreadLocalUtil.getCurrentId().orElse(null);
 
         // 1. DB查询判断文件是否存在
         InfraFile infraFile = infraFileMapper.selectById(fileId);
@@ -81,16 +89,20 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         log.debug("文件路径：{}，知识类型：{}", filePath, knowledgeType);
 
         // 5. DB修改文件状态为解析中
+        // parse_start_time 记录本次解析的真实起点，前端解析中重进页面以此续计耗时；先清空历史 parse_end_time
         int updateCount = infraFileMapper.update(null,
                 new LambdaUpdateWrapper<InfraFile>()
                         .eq(InfraFile::getId, fileId)
                         .in(InfraFile::getStatus, InfraFile.STATUS_PENDING, InfraFile.STATUS_PARSE_FAILED)
-                        .set(InfraFile::getStatus, InfraFile.STATUS_PARSING));
+                        .set(InfraFile::getStatus, InfraFile.STATUS_PARSING)
+                        .set(InfraFile::getParseStartTime, LocalDateTime.now())
+                        .set(InfraFile::getParseEndTime, null));
         if (updateCount == 0) {
             log.error("文件向量加载-更新文件状态失败（当前状态不允许加载），文件ID：{}", fileId);
             throw new BusinessException(FileExceptionEnum.FILE_STATUS_NOT_ALLOWED_LOAD);
         }
         log.debug("文件状态已更新为解析中，文件ID：{}", fileId);
+        fileVectorStatusPublisher.publish(operatorId, fileId, "PARSING", null, null, null, "文件解析已启动");
 
         // 6. 构建VectorData对象
         VectorData vectorData = VectorData.builder()
@@ -99,7 +111,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
                 .build();
 
         // 7. 异步向量加载
-        Consumer<Long> interruptedHandler = this::handleInterrupt;
+        Consumer<Long> interruptedHandler = fileIdToInterrupt -> handleInterrupt(operatorId, fileIdToInterrupt);
 
         CompletableFuture<Void> future = ragStore.storeFileToVectorAsync(filePath, vectorData, interruptedHandler);
 
@@ -118,11 +130,13 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
                             .eq(InfraFile::getStatus, InfraFile.STATUS_PARSING)  // 确保只有解析中的文件才能更新为完成
                             .set(InfraFile::getStatus, InfraFile.STATUS_PARSE_COMPLETED)
                             .set(InfraFile::getVectorStatus, InfraFile.VECTOR_STATUS_ENABLE)
+                            .set(InfraFile::getParseEndTime, LocalDateTime.now())
             );
+            fileVectorStatusPublisher.publish(operatorId, fileId, "COMPLETED", 100, null, null, "文件解析完成");
             log.debug("文件状态已更新为解析完成，文件ID：{}", fileId);
         }).exceptionally(ex -> {
             log.error("文件向量加载异步任务异常，文件ID：{}", fileId, ex);
-            handleVectorLoadException(fileId, ex);
+            handleVectorLoadException(operatorId, fileId, ex);
             return null;
         }).whenComplete((result, throwable) -> {
             // 无论成功还是失败，都会清除中断标识
@@ -162,10 +176,13 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
                 .eq(KnowledgeDocument::getFileId, fileId));
 
         // 更新文件状态为待解析，并同步向量状态为未启用（与加载成功路径对称）
+        // 同时清空解析时间，避免「待解析」状态仍残留历史解析耗时
         infraFileMapper.update(null, new LambdaUpdateWrapper<InfraFile>()
                         .eq(InfraFile::getId, fileId)
                         .set(InfraFile::getStatus, InfraFile.STATUS_PENDING)
-                        .set(InfraFile::getVectorStatus, InfraFile.VECTOR_STATUS_DISABLE));
+                        .set(InfraFile::getVectorStatus, InfraFile.VECTOR_STATUS_DISABLE)
+                        .set(InfraFile::getParseStartTime, null)
+                        .set(InfraFile::getParseEndTime, null));
         log.info("文件向量删除完成，文件状态已重置为待解析，文件ID：{}", fileId);
     }
 
@@ -187,9 +204,10 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
             throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
         }
 
-        // 校验文件状态
-        if (!infraFile.isParseCompleted()) {
-            log.debug("文件向量查询-文件未解析完成，返回空分页结果，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
+        // 校验文件状态：仅待解析(0)返回空页；解析中(1)放行——返回已入库的增量分页（数据随批次增长，
+        // 支撑前端「边解析边展示」）；解析失败(2)数据已被清理自然为空；解析完成(3)正常返回
+        if (infraFile.isPending()) {
+            log.debug("文件向量查询-文件尚未开始解析，返回空分页结果，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
             return new PageResult<>(0L, Collections.emptyList());
         }
 
@@ -209,6 +227,43 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
         log.info("文件向量分页查询完成，文件ID：{}，总记录数：{}，当前页记录数：{}",
                 fileId, pageResult.getTotal(), pageResult.getRecords().size());
         return result;
+    }
+
+    @Override
+    public FileVectorStatsVO queryFileVectorStats(Long fileId) {
+        log.info("开始文件向量分块统计，文件ID：{}", fileId);
+
+        // DB查询判断文件是否存在
+        InfraFile infraFile = infraFileMapper.selectById(fileId);
+        if (infraFile == null) {
+            log.error("文件向量分块统计-文件不存在，文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        }
+
+        // 校验文件删除状态
+        if (infraFile.deleteFlat()) {
+            log.error("文件向量分块统计-文件已删除，文件ID：{}", fileId);
+            throw new BusinessException(FileExceptionEnum.FILE_NOT_FOUND);
+        }
+
+        // 待解析(0)：尚未有任何分块；失败(2)/中断后已清理，也返回 0。
+        // 解析中(1)/完成(3)：统计当前已在库分块（解析中随批次增长）。
+        if (infraFile.isPending()) {
+            log.debug("文件向量分块统计-文件尚未开始解析，返回空统计，当前状态：{}，文件ID：{}", infraFile.getStatus(), fileId);
+            return FileVectorStatsVO.builder().level2Count(0L).level1Count(0L).build();
+        }
+
+        // 二级分块数 = 该文件 knowledge_document 行数；一级分块数 = COUNT(DISTINCT chunk_level1_idx)
+        Long level2Count = knowledgeDocumentMapper.selectCount(
+                new LambdaQueryWrapper<KnowledgeDocument>().eq(KnowledgeDocument::getFileId, fileId));
+        Long level1Count = knowledgeDocumentMapper.countDistinctLevel1(fileId);
+
+        FileVectorStatsVO stats = FileVectorStatsVO.builder()
+                .level2Count(level2Count)
+                .level1Count(level1Count)
+                .build();
+        log.info("文件向量分块统计完成，文件ID：{}，一级分块：{}，二级分块：{}", fileId, level1Count, level2Count);
+        return stats;
     }
 
     @Override
@@ -257,7 +312,7 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
      * @param fileId 文件ID
      * @param exception 异常信息
      */
-    private void handleVectorLoadException(Long fileId, Throwable exception) {
+    private void handleVectorLoadException(Long operatorId, Long fileId, Throwable exception) {
         log.error("文件向量加载异常，文件ID：{}", fileId, exception);
 
         try {
@@ -288,12 +343,16 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
                             .eq(InfraFile::getId, fileId)
                             .eq(InfraFile::getStatus, InfraFile.STATUS_PARSING)
                             .set(InfraFile::getStatus, InfraFile.STATUS_PARSE_FAILED)
-                            .set(InfraFile::getFailReason, failReason));
+                            .set(InfraFile::getFailReason, failReason)
+                            .set(InfraFile::getParseEndTime, LocalDateTime.now()));
             if (updated == 0) {
                 log.error("文件失败状态回写未生效（状态已被变更/文件已完成），文件ID：{}，失败原因：{}", fileId, failReason);
             } else {
                 log.debug("文件状态已更新为解析失败，文件ID：{}，失败原因：{}", fileId, failReason);
             }
+
+            // 推送失败状态（操作人已在线程池外捕获）
+            fileVectorStatusPublisher.publish(operatorId, fileId, "FAILED", null, null, null, failReason);
         } catch (Exception e) {
             log.error("更新文件失败状态异常，文件ID：{}", fileId, e);
         }
@@ -303,9 +362,10 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
      * 处理中断请求
      * <p>根据文件ID，物理删除已加载的向量数据，并更新文件状态为待解析</p>
      *
+     * @param operatorId 操作人ID
      * @param fileId 文件ID
      */
-    private void handleInterrupt(Long fileId) {
+    private void handleInterrupt(Long operatorId, Long fileId) {
         log.info("处理向量加载中断请求，文件ID：{}", fileId);
 
         try {
@@ -316,13 +376,17 @@ public class AdminFileVectorServiceImpl implements AdminFileVectorService {
             knowledgeDocumentMapper.delete(new LambdaUpdateWrapper<KnowledgeDocument>()
                     .eq(KnowledgeDocument::getFileId, fileId));
 
-            // 更新文件状态为待解析
+            // 更新文件状态为待解析，并记录中断时刻（便于展示本次中断前实际运行的耗时）
             infraFileMapper.update(null, new LambdaUpdateWrapper<InfraFile>()
                             .eq(InfraFile::getId, fileId)
                             .eq(InfraFile::getStatus, InfraFile.STATUS_PARSING)
-                            .set(InfraFile::getStatus, InfraFile.STATUS_PENDING));
+                            .set(InfraFile::getStatus, InfraFile.STATUS_PENDING)
+                            .set(InfraFile::getParseEndTime, LocalDateTime.now()));
 
             log.info("向量加载中断处理完成，文件ID：{}", fileId);
+
+            // 推送中断状态（操作人已在线程池外捕获）
+            fileVectorStatusPublisher.publish(operatorId, fileId, "INTERRUPTED", null, null, null, "文件解析已中断");
         } catch (Exception e) {
             log.error("处理向量加载中断请求失败，文件ID：{}", fileId, e);
         }

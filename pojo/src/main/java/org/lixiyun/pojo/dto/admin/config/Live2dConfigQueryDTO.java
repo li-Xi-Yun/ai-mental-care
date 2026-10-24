@@ -19,7 +19,7 @@ public class Live2dConfigQueryDTO extends PageBaseDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "模型名称（支持模糊匹配）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "hiyori")
+    @Schema(description = "模型名称（模糊匹配；同时匹配模型别名 alias_name，即关键词命中模型名称或中文别名任一即可）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "hiyori")
     private String modelName;
 
     @NumberOfRanges(min = 0, max = 1)

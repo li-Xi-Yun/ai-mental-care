@@ -43,6 +43,8 @@ static-resources/conversations/**
 logs/*
 server/logs/*
 
+live2d-models/**
+
 # 配置文件中的敏感信息
 **/application-dev.yml
 **/application-test.yml
@@ -53,6 +55,10 @@ server/logs/*
 # 测试相关
 e2e-tests
 
+front/dist
+front/e2e-tests
+front/node_modules
+node_modules
 
 
 ### NetBeans ###

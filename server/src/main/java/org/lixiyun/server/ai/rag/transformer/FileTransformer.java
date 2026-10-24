@@ -2,14 +2,16 @@ package org.lixiyun.server.ai.rag.transformer;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.KnowledgeBaseExceptionEnum;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.entity.config.AiNodeConfig;
 import org.lixiyun.pojo.entity.vector.VectorData;
 import org.lixiyun.server.ai.model.factory.ChatModelFactory;
 import org.lixiyun.server.ai.model.factory.ChatModelType;
 import org.lixiyun.server.ai.model.rag.SemanticSegmentationModel;
 import org.lixiyun.server.ai.rag.RagInterruptManager;
+import org.lixiyun.server.ai.rag.pipeline.BatchCollector;
 import org.lixiyun.server.infrastructure.ai.AiNodeConfigManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -35,7 +37,6 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class FileTransformer {
 
     /** 语义分割模型节点 key（AiNodeConfigManager 按此读取 DB 配置，管理员可编辑、保存即生效） */
@@ -44,6 +45,17 @@ public class FileTransformer {
     private final SemanticSegmentationModel semanticSegmentationModel;
     private final AiNodeConfigManager aiNodeConfigManager;
     private final ChatModelFactory chatModelFactory;
+
+    /**
+     * 构造器注入依赖。
+     */
+    public FileTransformer(SemanticSegmentationModel semanticSegmentationModel,
+                           AiNodeConfigManager aiNodeConfigManager,
+                           ChatModelFactory chatModelFactory) {
+        this.semanticSegmentationModel = semanticSegmentationModel;
+        this.aiNodeConfigManager = aiNodeConfigManager;
+        this.chatModelFactory = chatModelFactory;
+    }
 
     // 单个Document最大字符数限制：超过此值才需要进行语义分割
     private static final int MAX_SEGMENT_CHARS = 2_000;
@@ -63,11 +75,9 @@ public class FileTransformer {
      * 当累积的 VectorData 数量达到 {@link #BATCH_SIZE} 时，通过 Consumer 回调函数批量传递给第三步向量存储。
      *
      * @param documents 第一步粗粒度切割后的VectorData列表，不能为null或空
-     * @param interruptedHandler 中断处理函数，用于处理线程中断时的清理工作
      * @param consumer 消费者接口，接收固定数量的VectorData列表进行向量存储处理，不能为null
      */
     public void transformDocuments(List<VectorData> documents,
-                                   Consumer<Long> interruptedHandler,
                                    Consumer<List<VectorData>> consumer) {
         if (documents == null || documents.isEmpty()) {
             log.warn("RAG(FileTransformer)-待处理的VectorData列表为空，跳过语义分割");
@@ -76,16 +86,13 @@ public class FileTransformer {
 
         log.info("RAG(FileTransformer)-开始对 {} 个VectorData进行细粒度语义分割", documents.size());
 
-        List<VectorData> batchBuffer = new ArrayList<>(BATCH_SIZE);
+        BatchCollector<VectorData> batchCollector = new BatchCollector<>(BATCH_SIZE, consumer);
 
         for (VectorData doc : documents) {
             // 检查Redis中的中断标识
             if (RagInterruptManager.isInterrupted(doc.getFileId())) {
-                long fileId = doc.getFileId();
                 log.warn("RAG(FileTransformer)-检测到中断标识，准备执行中断处理");
-                interruptedHandler.accept(fileId);
-                // 直接返回，不抛出异常
-                return;
+                throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
             }
 
             if (!isValidDocument(doc)) {
@@ -97,29 +104,16 @@ public class FileTransformer {
             if (content.length() <= MAX_SEGMENT_CHARS) {
                 log.debug("RAG(FileTransformer)-VectorData长度{}未超过阈值，直接保留", content.length());
                 doc.setChunkLevel2Idx(0); // 用于识别二次分割的索引
-                batchBuffer.add(doc);
+                batchCollector.add(doc);
             } else {
                 log.debug("RAG(FileTransformer)-VectorData长度{}超过阈值，进行语义分割", content.length());
                 int globalIndex = 0;
                 List<VectorData> secondaryDivisionDocs = semanticSegmentation(doc, globalIndex);
-                batchBuffer.addAll(secondaryDivisionDocs);
-            }
-
-            // 达到批量阈值则触发消费
-            while (batchBuffer.size() >= BATCH_SIZE) {
-                List<VectorData> subList = new ArrayList<>(batchBuffer.subList(0, BATCH_SIZE));
-                log.debug("RAG(FileTransformer)-批量处理 {} 个VectorData", subList.size());
-                consumer.accept(subList);
-                batchBuffer.subList(0, BATCH_SIZE).clear();
+                batchCollector.addAll(secondaryDivisionDocs);
             }
         }
 
-        // 处理剩余的 VectorData
-        if (!batchBuffer.isEmpty()) {
-            log.debug("RAG(FileTransformer)-处理剩余 {} 个VectorData", batchBuffer.size());
-            consumer.accept(new ArrayList<>(batchBuffer));
-            batchBuffer.clear();
-        }
+        batchCollector.flush();
 
         log.info("RAG(FileTransformer)-VectorData细粒度语义分割及批量分发完成");
     }
@@ -145,7 +139,7 @@ public class FileTransformer {
             // 检查Redis中的中断标识
             if (RagInterruptManager.isInterrupted(doc.getFileId())) {
                 log.warn("RAG(FileTransformer)-语义分割前检测到中断标识，放弃处理");
-                return List.of();
+                throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
             }
 
             // 读取 DB 驱动的语义分割节点配置（缺失或禁用时降级为字符截断）
@@ -160,7 +154,7 @@ public class FileTransformer {
             // 再次检查中断标识（防止在读取配置/解析模型过程中被中断）
             if (RagInterruptManager.isInterrupted(doc.getFileId())) {
                 log.warn("RAG(FileTransformer)-调用AI模型前检测到中断标识，放弃处理");
-                return List.of();
+                throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
             }
 
             // 调用 Model 层（结构化输出，内部自带 DB 驱动的指数退避重试）
@@ -178,7 +172,7 @@ public class FileTransformer {
 
             if (RagInterruptManager.isInterrupted(doc.getFileId())) {
                 log.warn("RAG(FileTransformer)-模型调用成功，但检测到中断标识，放弃处理");
-                return List.of();
+                throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
             }
 
             log.info("RAG(FileTransformer)-语义分割成功，将{}字符分割为{}个片段", content.length(), segments.size());
@@ -189,7 +183,7 @@ public class FileTransformer {
                 // 在循环中检查中断标识
                 if (RagInterruptManager.isInterrupted(doc.getFileId())) {
                     log.warn("RAG(FileTransformer)-构建VectorData过程中检测到中断标识，已生成{}个片段后放弃", resultList.size());
-                    return resultList.isEmpty() ? List.of() : resultList;
+                    throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
                 }
                 VectorData newDoc = createVectorDataWithMetadata(segment, doc, globalIndex++);
                 resultList.add(newDoc);
@@ -200,9 +194,30 @@ public class FileTransformer {
             log.warn("RAG(FileTransformer)-语义分割模型调用失败，使用字符截断方式分割", e);
             return splitByCharCount(content, doc, globalIndex);
         } catch (Exception e) {
+            // 中断等 RAG 领域异常直接向上抛出，其他失败降级为字符截断
+            BusinessException be = findRagInterruptedException(e);
+            if (be != null) {
+                throw be;
+            }
             log.error("RAG(FileTransformer)-语义分割失败，使用字符截断方式分割", e);
             return splitByCharCount(content, doc, globalIndex);
         }
+    }
+
+    /**
+     * 在异常链中查找 RAG 领域的中断异常。
+     */
+    private BusinessException findRagInterruptedException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof BusinessException be
+                    && be.getCode() != null
+                    && be.getCode().equals(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED.getCode())) {
+                return be;
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     /**
@@ -230,7 +245,7 @@ public class FileTransformer {
             // 检查Redis中的中断标识
             if (RagInterruptManager.isInterrupted(originalDoc.getFileId())) {
                 log.warn("RAG(FileTransformer)-字符截断过程中检测到中断标识，已生成{}个片段后放弃", result.size());
-                return result.isEmpty() ? List.of() : result;
+                throw new BusinessException(KnowledgeBaseExceptionEnum.FILE_PARSE_INTERRUPTED);
             }
 
             // 计算当前片段的结束位置

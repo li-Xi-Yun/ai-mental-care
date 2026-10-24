@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 const props = defineProps<{
   emotionSegments: { label: string; percent: number; start: number }[];
   coreEmotionLabel?: string;

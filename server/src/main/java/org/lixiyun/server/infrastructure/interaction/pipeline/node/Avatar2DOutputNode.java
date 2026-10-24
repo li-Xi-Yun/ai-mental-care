@@ -3,9 +3,13 @@ package org.lixiyun.server.infrastructure.interaction.pipeline.node;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lixiyun.common.core.error.enums.Live2dConfigExceptionEnum;
+import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.pojo.bo.conversation.ConversationProcessContextBO;
+import org.lixiyun.pojo.entity.config.Live2dConfig;
 import org.lixiyun.pojo.entity.quota.QuotaConfig;
 import org.lixiyun.server.ai.model.pipeline.AvatarModel;
 import org.lixiyun.server.ai.model.processor.api.AgentStreamEvent;
@@ -17,6 +21,7 @@ import org.lixiyun.server.infrastructure.interaction.NodeEndpoint;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputContext;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputDataType;
 import org.lixiyun.server.infrastructure.interaction.pipeline.OutputNode;
+import org.lixiyun.server.mapper.Live2dConfigMapper;
 import org.lixiyun.server.socket.constant.AvatarConstant;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -43,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>在事件流上收集 {@code ModelComplete} 的完整模型文本，流完成后<b>异步</b>调用独立
  *       {@link AvatarNode}（→ {@link AvatarModel}）生成结构化动作/表情指令 → 白名单校验 →
  *       经 WebSocket 下发 {@code /avatar/expression} / {@code /avatar/motion}</li>
- *   <li>正文流<b>直接透传</b>为节点产出（key 为 {@link AvatarOutputNode#NODE_NAME}）写入
+ *   <li>正文流<b>直接透传</b>为节点产出（key 为 {@link Avatar2DOutputNode#NODE_NAME}）写入
  *       {@link OutputContext}：含 `AUDIO` 输出时由 {@code TtsOutputNode} 消费，
  *       不含 `AUDIO` 时本节点作为链尾自行订阅触发</li>
  * </ul>
@@ -70,7 +75,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class AvatarOutputNode implements OutputNode {
+public class Avatar2DOutputNode implements OutputNode {
 
     /** 节点名称 */
     public static final String NODE_NAME = "avatarOutputNode";
@@ -112,6 +117,7 @@ public class AvatarOutputNode implements OutputNode {
     private final ConversationStreamHolder conversationStreamHolder;
     private final ConversationWebSocketManager conversationWebSocketManager;
     private final AvatarNode avatarNode;
+    private final Live2dConfigMapper live2dConfigMapper;
 
     /** 会话级状态：由 init() 注入，节点实例与单一会话绑定（prototype） */
     private Long conversationId;
@@ -128,9 +134,22 @@ public class AvatarOutputNode implements OutputNode {
 
     @Override
     public void init(Long conversationId, Long userId) {
+        Live2dConfig enabledConfig = live2dConfigMapper.selectOne(
+                new LambdaQueryWrapper<Live2dConfig>()
+                        .eq(Live2dConfig::getEnabled, Live2dConfig.ENABLED_YES)
+                        .orderByAsc(Live2dConfig::getSort)
+                        .last("limit 1")
+        );
+        if (enabledConfig == null) {
+            log.warn("[管道-虚拟形象输出节点] Live2D功能未启用，拒绝初始化，会话ID={}，用户ID={}",
+                    conversationId, userId);
+            throw new BusinessException(Live2dConfigExceptionEnum.LIVE2D_FEATURE_NOT_ENABLED);
+        }
+
         this.conversationId = conversationId;
         this.userId = userId;
-        log.info("[管道-虚拟形象输出节点] 节点初始化完成，会话ID={}，用户ID={}", conversationId, userId);
+        log.info("[管道-虚拟形象输出节点] 节点初始化完成，会话ID={}，用户ID={}，模型={}",
+                conversationId, userId, enabledConfig.getModelName());
     }
 
     @Override

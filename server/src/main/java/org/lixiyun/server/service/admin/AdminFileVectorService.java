@@ -1,6 +1,7 @@
 package org.lixiyun.server.service.admin;
 
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.vo.admin.file.FileVectorStatsVO;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
 
 /**
@@ -53,5 +54,16 @@ public interface AdminFileVectorService {
      * @param fileId 文件ID，不能为空
      */
     void interruptFileVectorParsing(Long fileId);
+
+    /**
+     * 文件向量分块统计
+     * <p>统计该文件当前已在库的一级/二级分块数量。解析中也允许查询（数据随批次增长），
+     * 与 {@link #queryFileVector} 门禁保持一致，便于前端「边解析边展示」。</p>
+     *
+     * @param fileId 文件ID，不能为空
+     * @return 分块统计 {@link FileVectorStatsVO}
+     * @throws org.lixiyun.common.core.error.exception.BusinessException 当文件不存在或已删除时抛出
+     */
+    FileVectorStatsVO queryFileVectorStats(Long fileId);
 
 }

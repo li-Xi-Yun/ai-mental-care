@@ -22,6 +22,7 @@ public interface AdminLive2dConfigService {
      *
      * @param file               模型包 zip
      * @param modelName          模型名称（即解压目录名）
+     * @param aliasName          模型别名（中文展示名称，可选；未传则落库 null，由管理员编辑时补录）
      * @param expressionFileName 表情清单文件名（可选；缺省按默认后缀 *.exp3.json 模糊匹配扫描）
      * @param motionFileName     动作清单文件名（可选；缺省按默认后缀 *.motion3.json 模糊匹配扫描）
      * @param semanticPrompt     语义提示词（可选；未传则落库 null，管理员编辑时手动录入）
@@ -29,8 +30,16 @@ public interface AdminLive2dConfigService {
      * @param remark             备注（可选）
      * @return 新增记录ID
      */
-    Long uploadModel(MultipartFile file, String modelName, String expressionFileName, String motionFileName,
-                     String semanticPrompt, Integer sort, String remark);
+    Long uploadModel(MultipartFile file, String modelName, String aliasName, String expressionFileName,
+                     String motionFileName, String semanticPrompt, Integer sort, String remark);
+
+    /**
+     * 获取模型配置详情（单条，含表情/动作白名单、语义提示词）
+     *
+     * @param id 记录ID
+     * @return 模型配置VO
+     */
+    Live2dConfigAdminVO getDetail(Long id);
 
     /**
      * 更新模型配置

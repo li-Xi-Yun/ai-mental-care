@@ -15,6 +15,13 @@
           <div class="stat-label">一级分块 L1</div>
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><el-icon :size="20"><Collection /></el-icon></div>
+        <div class="stat-info">
+          <div class="stat-num">{{ chunkCountL2 }}</div>
+          <div class="stat-label">二级分块 L2</div>
+        </div>
+      </div>
       <div class="stat-card" :class="statusTone">
         <div class="stat-icon">
           <el-icon :size="20" :class="{ 'is-loading': isParsing }"><component :is="statusIcon" /></el-icon>
@@ -22,6 +29,9 @@
         <div class="stat-info">
           <div class="stat-num is-text">{{ vectorStatus.label }}</div>
           <div class="stat-label">加载状态</div>
+          <div v-if="!isParsing && parseDuration !== null" class="stat-cost">
+            解析耗时 {{ formatElapsed(parseDuration ?? 0) }}
+          </div>
         </div>
       </div>
     </div>
@@ -68,12 +78,14 @@
     <div v-if="isParsing" class="parsing-banner">
       <div class="parsing-top">
         <span class="parsing-title">正在向量化解析中</span>
-        <span class="parsing-sub">已耗时 {{ formatElapsed(elapsed) }} · 完成后将自动刷新片段列表</span>
-      </div>
+        <span v-if="liveStage || liveProgress !== null" class="parsing-stage">
+          {{ liveStage || "" }}{{ liveProgress !== null ? ` · ${liveProgress}%` : "" }}
+        </span>
+        <span class="parsing-sub">已耗时 {{ formatElapsed(elapsed) }} · 完成后将自动刷新片段列表</span>      </div>
       <el-progress
         class="parsing-progress"
-        :percentage="100"
-        :indeterminate="true"
+        :percentage="liveProgress !== null ? liveProgress : 100"
+        :indeterminate="liveProgress === null"
         :duration="2"
         :stroke-width="4"
         :show-text="false"
@@ -85,18 +97,21 @@
 
 <script setup lang="ts">
 import type { Component } from "vue";
-import { CollectionTag, Delete, Document, Loading, Refresh, VideoPause, Warning } from "@element-plus/icons-vue";
+import { Collection, CollectionTag, Delete, Document, Loading, Refresh, VideoPause, Warning } from "@element-plus/icons-vue";
 import type { VectorStatusMeta } from "../useFileVector";
 
 defineProps<{
   total: number;
   chunkCountL1: number;
+  chunkCountL2: number;
   vectorStatus: VectorStatusMeta;
   statusTone: string;
   statusIcon: Component;
   isParsing: boolean;
   elapsed: number;
   formatElapsed: (sec: number) => string;
+  /** 解析耗时（秒）；解析中为 null，终态（成功/失败/中断）为 parseEndTime - parseStartTime */
+  parseDuration?: number | null;
   submitting: boolean;
   deleting: boolean;
   canLoad: boolean;
@@ -104,6 +119,10 @@ defineProps<{
   loadLabel: string;
   /** 无法向量化的原因（如知识类型为「无」），非空时展示警告提示 */
   loadBlockedReason?: string;
+  /** WebSocket 实时推送的阶段文案（如“文件读取中”）；无则为 null */
+  liveStage?: string | null;
+  /** WebSocket 实时推送的进度百分比（0-100）；无可靠总量时为 null */
+  liveProgress?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -124,7 +143,7 @@ const emit = defineEmits<{
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -211,6 +230,12 @@ const emit = defineEmits<{
   color: var(--text-muted);
 }
 
+.stat-cost {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -262,6 +287,12 @@ const emit = defineEmits<{
   font-size: 13.5px;
   font-weight: 600;
   color: #3730a3;
+}
+
+.parsing-stage {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6366f1;
 }
 
 .parsing-sub {

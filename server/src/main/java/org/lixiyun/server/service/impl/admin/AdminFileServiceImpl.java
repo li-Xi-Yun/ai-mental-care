@@ -15,6 +15,7 @@ import org.lixiyun.common.core.error.exception.BusinessException;
 import org.lixiyun.common.core.utils.StreamUtils;
 import org.lixiyun.common.file.storage.FileStorage;
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.constant.DeleteConstant;
 import org.lixiyun.pojo.dto.admin.file.FileQueryDTO;
 import org.lixiyun.pojo.dto.admin.file.FileUpdateDTO;
 import org.lixiyun.pojo.entity.file.InfraFile;
@@ -22,7 +23,6 @@ import org.lixiyun.pojo.entity.file.InfraFileCategory;
 import org.lixiyun.pojo.vo.admin.file.FileDownloadVO;
 import org.lixiyun.pojo.vo.admin.file.FileVO;
 import org.lixiyun.server.ai.rag.milvus.MilvusUtil;
-import org.lixiyun.server.ai.rag.RagStore;
 import org.lixiyun.server.mapper.InfraFileCategoryMapper;
 import org.lixiyun.server.mapper.InfraFileMapper;
 import org.lixiyun.server.service.admin.AdminFileService;
@@ -53,7 +53,6 @@ public class AdminFileServiceImpl implements AdminFileService {
     private final InfraFileMapper infraFileMapper;
     private final InfraFileCategoryMapper infraFileCategoryMapper;
     private final FileStorage fileStorage;
-    private final RagStore ragStore;
     private final MilvusUtil milvusUtil;
     private final AdminFileVectorService adminFileVectorService;
     private final PersonNameHelper personNameHelper;
@@ -113,7 +112,7 @@ public class AdminFileServiceImpl implements AdminFileService {
 
                 // 根据文件ID，向量恢复删除元数据信息
                 try {
-                    ragStore.restoreVectorDeletedMetadata(existingFile.getId());
+                    milvusUtil.batchUpdateDeleted(existingFile.getId(), DeleteConstant.DELETE_FLAG_NO);
                 } catch (Exception e) {
                     log.error("恢复向量删除元数据信息失败，文件ID：{}", existingFile.getId(), e);
                     // 静默处理，不影响主流程
@@ -239,7 +238,7 @@ public class AdminFileServiceImpl implements AdminFileService {
             // 解析完成，根据文件ID，向量添加删除元数据信息
             log.info("文件状态为解析完成，添加向量删除元数据，文件ID：{}", fileId);
             try {
-                ragStore.addVectorDeletedMetadata(fileId);
+                milvusUtil.batchUpdateDeleted(fileId, DeleteConstant.DELETE_FLAG_YES);
                 log.info("向量删除元数据添加成功，文件ID：{}", fileId);
             } catch (Exception e) {
                 log.error("添加向量删除元数据失败，文件ID：{}", fileId, e);
@@ -292,7 +291,7 @@ public class AdminFileServiceImpl implements AdminFileService {
                 && InfraFile.VECTOR_STATUS_DISABLE == vectorStatus
                 && InfraFile.VECTOR_STATUS_ENABLE == vectorStatusBeforeUpdate) {
             try {
-                ragStore.addVectorDeletedMetadata(fileId);
+                milvusUtil.batchUpdateDeleted(fileId, DeleteConstant.DELETE_FLAG_YES);
                 log.info("向量状态从启用变为禁用，已更新删除状态，文件ID：{}", fileId);
             } catch (Exception e) {
                 log.error("更新向量删除状态失败，文件ID：{}", fileId, e);

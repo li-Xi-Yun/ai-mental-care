@@ -23,6 +23,8 @@ import java.util.Map;
  * 通过 Redis 校验其有效性（10s TTL + 使用即删），
  * 校验通过后将用户身份存入 WebSocket Session attributes，
  * 后续 STOMP 层 {@code WebSocketInboundInterceptor} 通过 {@code accessor.getUser()} 获取</p>
+ * <p>ticket 值格式：{@code {userId}:{JwtType}}（兼容旧格式纯数字 {@code userId}，视为普通用户），
+ * 握手时按用户类型加载对应的 Redis 用户信息。</p>
  *
  * @author lixiyun
  */
@@ -43,19 +45,29 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
         String redisKey = WebSocketConstant.WS_TICKET_KEY_PREFIX + ticket;
 
-        String userIdStr = RedisUtils.getCacheObject(redisKey);
-        if (StrUtil.isBlank(userIdStr)) {
+        String value = RedisUtils.getCacheObject(redisKey);
+        if (StrUtil.isBlank(value)) {
             log.warn("WebSocket 握手失败：ticket 无效或已过期，ticket={}", ticket);
             return false;
         }
 
         RedisUtils.deleteObject(redisKey);
 
-        Long userId = Long.valueOf(userIdStr);
+        // 解析 ticket 值：新格式 "userId:TYPE"，旧格式纯数字视为 USER
+        Long userId;
+        JwtType jwtType;
+        int sepIdx = value.indexOf(':');
+        if (sepIdx == -1) {
+            userId = Long.valueOf(value);
+            jwtType = JwtType.USER;
+        } else {
+            userId = Long.valueOf(value.substring(0, sepIdx));
+            jwtType = JwtType.valueOf(value.substring(sepIdx + 1));
+        }
 
-        String userStr = JwtUtil.getUserInfoFromRedis(userId, JwtType.USER);
+        String userStr = JwtUtil.getUserInfoFromRedis(userId, jwtType);
         if (StrUtil.isBlank(userStr)) {
-            log.warn("WebSocket 握手失败：Redis 中未找到用户信息，userId={}", userId);
+            log.warn("WebSocket 握手失败：Redis 中未找到用户信息，userId={}，type={}", userId, jwtType);
             return false;
         }
 
@@ -70,7 +82,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
         attributes.put(WebSocketConstant.SIMP_USER_KEY, authentication);
 
-        log.info("WebSocket 握手成功，用户 ID：{}", userId);
+        log.info("WebSocket 握手成功，用户 ID：{}，类型：{}", userId, jwtType);
         return true;
     }
 

@@ -198,6 +198,19 @@ export class VadRecorder {
     this.options.onThreshold?.(this.threshold);
   }
 
+  /** 恢复因浏览器自动播放策略而挂起的采集 AudioContext */
+  async resume(): Promise<boolean> {
+    if (!this.audioContext) return false;
+    if (this.audioContext.state === "suspended") {
+      try {
+        await this.audioContext.resume();
+      } catch {
+        /* 忽略：由调用方保持恢复提示 */
+      }
+    }
+    return this.audioContext.state === "running";
+  }
+
   /**
    * 停止采集。
    * @param options.trailingSilence 为 true 且当前处于说话中时，先补发 15 帧全零静音

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.core.result.Result;
 import org.lixiyun.common.sql.core.result.PageResult;
+import org.lixiyun.pojo.vo.admin.file.FileVectorStatsVO;
 import org.lixiyun.pojo.vo.admin.file.FileVectorVO;
 import org.lixiyun.server.service.admin.AdminFileVectorService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -72,6 +73,16 @@ public class AdminFileVectorController {
         log.info("文件向量解析中断请求接口，文件ID：{}", fileId);
         adminFileVectorService.interruptFileVectorParsing(fileId);
         return Result.success();
+    }
+
+    @GetMapping("/{fileId}/stats")
+    @PreAuthorize("hasAuthority('admin:file:vector:list')")
+    @Operation(summary = "文件向量分块统计", description = "统计文件的一级/二级分块数量，解析中返回当前已入库部分")
+    public Result<FileVectorStatsVO> queryFileVectorStats(
+            @PathVariable @NotNull @Parameter(description = "文件ID", required = true, in = ParameterIn.PATH) Long fileId) {
+        log.info("文件向量分块统计请求接口，文件ID：{}", fileId);
+        FileVectorStatsVO stats = adminFileVectorService.queryFileVectorStats(fileId);
+        return Result.success(stats);
     }
 
 }

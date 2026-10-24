@@ -259,6 +259,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavEntry[] = [
       { key: "ai-node", label: "AI节点配置", route: "/admin/ai-node", icon: "SetUp" },
       { key: "skill", label: "Skill管理", route: "/admin/skill", icon: "MagicStick" },
       { key: "symptom", label: "症状字典", route: "/admin/symptom", icon: "FirstAidKit" },
+      { key: "live2d", label: "Live2D模型", route: "/admin/live2d", icon: "Avatar" },
     ],
   },
 ];

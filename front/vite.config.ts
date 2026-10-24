@@ -50,6 +50,12 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
+      // Live2D 签名下载接口直连：签名 URL 为裸绝对路径 /user/live2d-model/file?...，
+      // 模型文件与 model3 内部子资源均走此路径（不经 /api 前缀）。
+      "/user": {
+        target: "http://localhost:8088",
+        changeOrigin: true,
+      },
     },
   },
   };

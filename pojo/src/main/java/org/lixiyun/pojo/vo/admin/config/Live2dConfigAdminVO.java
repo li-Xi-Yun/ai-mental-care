@@ -31,6 +31,9 @@ public class Live2dConfigAdminVO implements Serializable {
     @Schema(description = "Live2D模型名称", example = "hiyori")
     private String modelName;
 
+    @Schema(description = "模型别名（中文展示名称，可空）", example = "小阳")
+    private String aliasName;
+
     @Schema(description = ".model3.json 服务器相对路径，前端加载入口（不带前导斜杠）", example = "static-resources/models/hiyori/hiyori.model3.json")
     private String modelUrl;
 

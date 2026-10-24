@@ -104,6 +104,18 @@ const adminRoutes: RouteRecordRaw[] = [
         meta: { title: "Skill管理" },
       },
       {
+        path: "live2d",
+        name: "AdminLive2d",
+        component: () => import("@/admin/views/live2d/index.vue"),
+        meta: { title: "Live2D模型" },
+      },
+      {
+        path: "live2d/:id",
+        name: "AdminLive2dDetail",
+        component: () => import("@/admin/views/live2d/detail.vue"),
+        meta: { title: "Live2D模型详情" },
+      },
+      {
         path: "profile",
         name: "AdminProfile",
         component: () => import("@/admin/views/profile/index.vue"),

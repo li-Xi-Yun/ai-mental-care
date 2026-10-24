@@ -21,6 +21,9 @@ public enum KnowledgeBaseExceptionEnum implements ErrorCode {
     KNOWLEDGE_BASE_NOT_PUBLIC("知识库未公开", 1206),
     KNOWLEDGE_BASE_ALREADY_QUOTE("知识库已添加", 1207),
     FILE_PARSE_ERROR("文件解析错误", 1208),
+    FILE_PARSE_INTERRUPTED("文件解析已中断", 1210),
+    FILE_EMBEDDING_ERROR("文本向量化失败", 1211),
+    FILE_VECTOR_STORE_ERROR("向量数据存储失败", 1212),
     CATEGORY_HAS_DATA("该分类下还存在数据，请先删除", 1209),
 
 

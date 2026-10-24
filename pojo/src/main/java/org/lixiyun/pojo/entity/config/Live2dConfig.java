@@ -41,6 +41,9 @@ public class Live2dConfig implements Serializable {
     /** Live2D模型名称 */
     private String modelName;
 
+    /** 模型别名（中文展示名称，可空） */
+    private String aliasName;
+
     /** .model3.json 服务器相对路径，前端加载入口 */
     private String modelUrl;
 

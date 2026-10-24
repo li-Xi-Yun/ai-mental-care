@@ -43,9 +43,20 @@
           </div>
         </div>
 
-        <!-- 中央语音球 -->
+        <!-- 中央：虚拟形象 / 语音球（有启用模型且选中 AVATAR_2D 时展示形象，否则保留语音球） -->
         <div class="ap-orb-zone">
-          <div class="ap-orb" :class="orbClass" :style="orbStyle">
+          <Live2dAvatar
+            v-if="showAvatar"
+            ref="avatarRef"
+            :model-url="signedModelUrl"
+            :expression-list="live2dConfig?.expressionList ?? []"
+            :motion-list="live2dConfig?.motionList ?? []"
+            :volume="volume"
+            :speaking="isSpeaking"
+            @ready="flushAvatarCommands"
+            @load-error="handleAvatarLoadError"
+          />
+          <div v-else class="ap-orb" :class="orbClass" :style="orbStyle">
             <span class="ap-ring"></span>
             <span class="ap-ring ap-ring-2"></span>
             <div class="ap-orb-core">
@@ -122,12 +133,20 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { ArrowLeft, ChatDotRound, Microphone, Setting } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import Live2dAvatar from "@/portal/components/conversation/Live2dAvatar.vue";
 import PendingActionCard from "@/portal/components/conversation/PendingActionCard.vue";
 import VoiceModeDialog from "@/portal/components/conversation/VoiceModeDialog.vue";
 import { useAudioConversation } from "@/portal/composables/useAudioConversation";
 import { useScaleCardActions } from "@/portal/composables/useScaleCardActions";
 import { useUserStore } from "@/portal/stores/user";
 import { useConversationStore } from "@/portal/stores/conversation";
+import {
+  getEnabledLive2dConfig,
+  getSignUrl,
+  parseAvatarCommand,
+  type Live2dConfigVO,
+} from "@/portal/api/live2d/config";
 
 const route = useRoute();
 const router = useRouter();
@@ -143,7 +162,12 @@ function parseTypes(raw: unknown, fallback: string[]): string[] {
   return list.length ? list : fallback;
 }
 const inputTypes = parseTypes(route.query.inputTypes, ["AUDIO"]);
-const outputTypes = parseTypes(route.query.outputTypes, ["TEXT", "AUDIO"]);
+let outputTypes = parseTypes(route.query.outputTypes, ["TEXT", "AUDIO"]);
+// 防御性校验（对话框为第一道闸）：AVATAR_2D 只能作为附加输出，必须与 TEXT/AUDIO 至少一项共选；
+// 若 URL 中出现「仅 AVATAR_2D」（如非法直链/篡改），回退默认 TEXT+AUDIO，避免后端无文本输出管道
+if (outputTypes.includes("AVATAR_2D") && !outputTypes.includes("TEXT") && !outputTypes.includes("AUDIO")) {
+  outputTypes = ["TEXT", "AUDIO"];
+}
 /** 从文本页进入：进入时释放旧 TEXT 生命周期（仅消费一次，消费后从 URL 移除，刷新不再重复释放） */
 const fromText = String(route.query.fromText ?? "") === "1";
 
@@ -166,6 +190,7 @@ const {
   resumeAudio,
   sendText,
   setModes,
+  playerPlaying,
 } = useAudioConversation({
   initialConversationId: String(route.query.conversationId ?? ""),
   inputTypes,
@@ -176,6 +201,20 @@ const {
     const { fromText: _ft, ...rest } = route.query;
     void router.replace({ query: { ...rest, conversationId: id } });
   },
+  onAvatar2dExpression: (raw) => {
+    const id = parseAvatarCommand(raw, "expression");
+    if (id) {
+      if (avatarRef.value) avatarRef.value.applyExpression(id);
+      else pendingAvatarExpressions.push(id);
+    }
+  },
+  onAvatar2dMotion: (raw) => {
+    const id = parseAvatarCommand(raw, "motion");
+    if (id) {
+      if (avatarRef.value) avatarRef.value.applyMotion(id);
+      else pendingAvatarMotions.push(id);
+    }
+  },
 });
 
 /* ==================== 页内修改对话模式 ==================== */
@@ -185,17 +224,122 @@ const currentInputTypes = ref<string[]>([...inputTypes]);
 const currentOutputTypes = ref<string[]>([...outputTypes]);
 const hasTextInput = computed(() => currentInputTypes.value.includes("TEXT"));
 
+/* ==================== Live2D 虚拟形象 ==================== */
+
+/** 当前输出模式是否包含虚拟形象 */
+const hasAvatar = computed(() => currentOutputTypes.value.includes("AVATAR_2D"));
+const avatarRef = ref<InstanceType<typeof Live2dAvatar> | null>(null);
+/** 启用模型配置（config 为 null 时不展示形象） */
+const live2dConfig = ref<Live2dConfigVO | null>(null);
+/** 签名下载 URL（300s 过期，过期后重新签发触发组件重载） */
+const signedModelUrl = ref("");
+/** 形象加载失败/无启用模型：回退语音球（一次性标志，切换模式后重置重试） */
+const avatarFail = ref(false);
+let avatarLoading = false;
+/** 加载失败续签重试次数（签名 300s 过期场景的一次性自愈；超过 1 次仍失败则回落语音球） */
+const avatarRetries = ref(0);
+const pendingAvatarExpressions: string[] = [];
+const pendingAvatarMotions: string[] = [];
+
+/** 拉取启用模型配置并签发签名 URL；失败/无模型统一置 avatarFail 回退语音球 */
+async function loadLive2d() {
+  if (avatarLoading || avatarFail.value) return;
+  avatarLoading = true;
+  try {
+    const cfg = await getEnabledLive2dConfig();
+    live2dConfig.value = cfg;
+    if (!cfg) {
+      signedModelUrl.value = "";
+      avatarFail.value = true;
+      if (hasAvatar.value) {
+        currentOutputTypes.value = currentOutputTypes.value.filter((type) => type !== "AVATAR_2D");
+        await setModes(currentInputTypes.value, currentOutputTypes.value);
+      }
+      return;
+    }
+    signedModelUrl.value = await getSignUrl(cfg.modelUrl);
+  } catch (e) {
+    console.warn("[audio] Live2D 配置加载失败", e);
+    avatarFail.value = true;
+  } finally {
+    avatarLoading = false;
+  }
+}
+
+watch(
+  [hasAvatar, () => userStore.token],
+  ([avatar, token]) => {
+    if (avatar && token) {
+      void loadLive2d();
+    } else if (!avatar) {
+      // 关闭形象模式：清空签名并重置失败/重试计数，下次开启干净重试
+      signedModelUrl.value = "";
+      avatarFail.value = false;
+      avatarRetries.value = 0;
+    }
+  },
+  { immediate: true },
+);
+
+function flushAvatarCommands() {
+  const avatar = avatarRef.value;
+  if (!avatar) return;
+  pendingAvatarExpressions.splice(0).forEach((id) => avatar.applyExpression(id));
+  pendingAvatarMotions.splice(0).forEach((id) => avatar.applyMotion(id));
+}
+
+/** 是否展示虚拟形象：登录 + 选中 AVATAR_2D + 签名 URL 就绪 + 未失败 */
+const showAvatar = computed(
+  () => userStore.token && hasAvatar.value && !!signedModelUrl.value && !avatarFail.value,
+);
+const isSpeaking = computed(() => playerPlaying.value);
+
+/** 模型加载失败：签名 300s 过期场景重签一次自愈，仍失败才回落语音球 */
+async function handleAvatarLoadError() {
+  if (avatarFail.value) return;
+  const cfg = live2dConfig.value;
+  if (cfg && avatarRetries.value < 2) {
+    avatarRetries.value += 1;
+    try {
+      const fresh = await getSignUrl(cfg.modelUrl);
+      if (fresh) {
+        console.warn("[audio] Live2D 模型加载失败，重新签发签名 URL 重试");
+        signedModelUrl.value = fresh; // 变化触发组件 reload
+        return;
+      }
+    } catch (e) {
+      console.warn("[audio] Live2D 签名续签失败", e);
+    }
+  }
+  console.warn("[audio] Live2D 模型加载失败，回退语音球");
+  avatarFail.value = true;
+}
+
+/* ==================== 页内修改对话模式 ==================== */
+
 const modeDialogVisible = ref(false);
 
 async function handleModeConfirm(inputs: string[], outputs: string[]) {
-  conversationStore.setVoiceModes(inputs, outputs);
-  currentInputTypes.value = [...inputs];
-  currentOutputTypes.value = [...outputs];
-  const { fromText: _ft, ...rest } = route.query;
-  await router.replace({
-    query: { ...rest, inputTypes: inputs.join(","), outputTypes: outputs.join(",") },
-  });
-  await setModes(inputs, outputs);
+  if (outputs.includes("AVATAR_2D") && !live2dConfig.value) {
+    outputs = outputs.filter((type) => type !== "AVATAR_2D");
+    ElMessage.warning("当前没有启用 Live2D 模型，已切换为普通输出");
+  }
+  const previousInputs = [...currentInputTypes.value];
+  const previousOutputs = [...currentOutputTypes.value];
+  try {
+    await setModes(inputs, outputs);
+    conversationStore.setVoiceModes(inputs, outputs);
+    currentInputTypes.value = [...inputs];
+    currentOutputTypes.value = [...outputs];
+    const { fromText: _ft, ...rest } = route.query;
+    await router.replace({
+      query: { ...rest, inputTypes: inputs.join(","), outputTypes: outputs.join(",") },
+    });
+  } catch (e) {
+    currentInputTypes.value = previousInputs;
+    currentOutputTypes.value = previousOutputs;
+    ElMessage.error((e as Error)?.message || "对话模式切换失败");
+  }
 }
 
 /* ==================== 文本输入 ==================== */

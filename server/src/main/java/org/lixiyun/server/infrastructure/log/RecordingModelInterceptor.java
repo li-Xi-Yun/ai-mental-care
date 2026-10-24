@@ -138,11 +138,16 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         AiNodeConfig aiNodeConfig = (AiNodeConfig) request.getContext().get(AiNodeConfig.NAME);
         log.debug("[模型同步调用日志拦截器-节点配置]: {}", aiNodeConfig);
 
-        if (aiNodeConfig != null) {
-            record.setNodeKey(aiNodeConfig.getNodeKey());
-            record.setNodeName(aiNodeConfig.getNodeName());
-            record.setModelProvider(ChatModelType.fromType(aiNodeConfig.getModelType()).factoryKey);
+        // 能取到节点配置就提取，取不到（如语义分割等直连模型调用路径）用占位值兜底，取值本身不抛异常
+        String nodeKey = aiNodeConfig != null ? aiNodeConfig.getNodeKey() : "unknown";
+        String nodeName = aiNodeConfig != null ? aiNodeConfig.getNodeName() : "unknown";
+        String modelProvider = aiNodeConfig != null
+                ? ChatModelType.fromType(aiNodeConfig.getModelType()).factoryKey : "unknown";
+        record.setNodeKey(nodeKey);
+        record.setNodeName(nodeName);
+        record.setModelProvider(modelProvider);
 
+        if (aiNodeConfig != null) {
             Map<String, Object> modelParams = new HashMap<>();
             if (aiNodeConfig.getTemperature() != null) {
                 modelParams.put("temperature", aiNodeConfig.getTemperature());
@@ -173,7 +178,8 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         Long traceId = null;
         if (conversationMetadata != null) {
             traceId = flowExecutionContextManager.getTraceId(conversationMetadata.getConversationId());
-            record.setTraceId(traceId);
+            // trace_id 表字段为 NOT NULL，取不到（无会话上下文/Redis key 过期）补 0，避免约束失败
+            record.setTraceId(traceId != null ? traceId : 0L);
             log.debug("[模型同步调用日志拦截器-traceId]: {}", traceId);
         }
 
@@ -183,11 +189,11 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
         try {
             response = handler.call(request);
             log.debug("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型调用响应: {}",
-                    aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
+                    nodeName, conversationMetadata.getCurrentRound(), JsonUtils.toJsonString(response));
             if (response.getMessage() instanceof AssistantMessage assistantMessage
                     && (assistantMessage.getText() == null || assistantMessage.getText().isEmpty())) {
                 log.warn("[模型同步调用日志拦截器] 节点名称：{}, 轮次：{}, 模型响应内容为空",
-                        aiNodeConfig.getNodeName(), conversationMetadata.getCurrentRound());
+                        nodeName, conversationMetadata.getCurrentRound());
             }
         } catch (Throwable t) {
             caughtException = t;
@@ -197,22 +203,23 @@ public class RecordingModelInterceptor extends BaseModelInterceptor {
             record.setDurationMs(durationMs);
             record.setFinishedAt(LocalDateTime.now());
 
-            if (caughtException == null) {
-                extractOutput(response, record);
-                record.setStatus(AiModelCall.STATUS_COMPLETED);
-                extractUsage(response, record);
-            } else {
-                record.setStatus(AiModelCall.STATUS_FAILED);
-                record.setErrorCode(caughtException.getClass().getSimpleName());
-                String msg = caughtException.getMessage();
-                record.setErrorMessage(msg != null && msg.length() > 2000 ? msg.substring(0, 2000) : msg);
-            }
-
+            // 日志记录层异常安全：构建记录 + 落库整体包裹，任一步失败仅 WARN + 静默结束，
+            // 绝不影响模型调用结果向上返回（能取到的上下文照常取用，取不到的用占位值）
             try {
+                if (caughtException == null) {
+                    extractOutput(response, record);
+                    record.setStatus(AiModelCall.STATUS_COMPLETED);
+                    extractUsage(response, record);
+                } else {
+                    record.setStatus(AiModelCall.STATUS_FAILED);
+                    record.setErrorCode(caughtException.getClass().getSimpleName());
+                    String msg = caughtException.getMessage();
+                    record.setErrorMessage(msg != null && msg.length() > 2000 ? msg.substring(0, 2000) : msg);
+                }
                 mapper.insert(record);
-            } catch (Exception e) {
-                log.error("[模型同步调用日志拦截器] 模型调用记录持久化失败, 会话ID: {}, traceId:{}, 节点名称: {}, 节点key: {}",
-                        conversationMetadata.getConversationId(), traceId, aiNodeConfig.getNodeName(), aiNodeConfig.getNodeKey(), e);
+            } catch (Throwable t) {
+                log.warn("[模型同步调用日志拦截器] 模型调用记录持久化失败，已静默跳过。nodeKey={}, nodeName={}, traceId={}, error: {}",
+                        nodeKey, nodeName, traceId, t.getMessage());
             }
         }
 

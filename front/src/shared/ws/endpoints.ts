@@ -30,10 +30,20 @@ export const asrIntermediateTopic = (conversationId: string) => userQueueTopic("
 /** AI 配额拒绝事件（异步资源超限/停用时后端下发；载荷 JSON：{ event:"QUOTA_REJECTED", resourceType: 2|3|4 }） */
 export const quotaRejectedTopic = (conversationId: string) => userQueueTopic("/quota/rejected", conversationId);
 
+/** 虚拟形象表情指令（持续状态；载荷 JSON 字符串 {"expression":"<资产id>"}） */
+export const avatar2dExpressionTopic = (conversationId: string) => userQueueTopic("/avatar-2d/expression", conversationId);
+/** 虚拟形象动作指令（一次性触发；载荷 JSON 字符串 {"motion":"<资产id>"}） */
+export const avatar2dMotionTopic = (conversationId: string) => userQueueTopic("/avatar-2d/motion", conversationId);
+
 /** 新情绪分析落库通知（后端 EmotionRecognitionNode 落库后下发；载荷 JSON：{ event:"EMOTION_ANALYSIS_UPDATED", id, roundNum }） */
 export const emotionAnalysisUpdatedTopic = (conversationId: string) => userQueueTopic("/emotion/analysis", conversationId);
 /** 新心理评估（诊断书）落库通知（后端 DiagnosisPersistNode 落库后下发；载荷 JSON：{ event:"DIAGNOSIS_CREATED", id, roundNum }） */
 export const diagnosisCreatedTopic = (conversationId: string) => userQueueTopic("/diagnosis", conversationId);
+
+/** 文件向量解析状态推送（管理端；载荷 JSON：{ fileId, status, progress?, message?, sequence, timestamp }） */
+export function fileVectorStatusTopic(fileId: string): string {
+  return `/user/queue/file/vector/status/${fileId}`;
+}
 
 /**
  * 用户级错误队列（无会话后缀；后端异常处理器 @SendToUser("/queue/error") 下发业务/管道异常，
@@ -43,6 +53,8 @@ export const USER_ERROR_TOPIC = "/user/queue/error";
 
 /** 一次性 wsTicket 接口路径（后端真实路径为 /api/get-ws-ticket，context-path=/，故不携带 PAGE_BASE_URL 前缀；生产由网关直接转发 /api/get-ws-ticket） */
 export const WS_TICKET_PATH = "/api/get-ws-ticket";
+/** 管理员一次性 wsTicket 接口路径（管理端 WebSocket 实时通知用，请求头携带 admin-token） */
+export const ADMIN_WS_TICKET_PATH = "/admin/get-ws-ticket";
 /** 原生 WebSocket 端点（后端真实路径为 /ws-native，context-path=/，故不携带 PAGE_BASE_URL 前缀；生产由网关直接转发 /ws-native） */
 export const WS_NATIVE_ENDPOINT = "/ws-native";
 

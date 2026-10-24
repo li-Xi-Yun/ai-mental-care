@@ -324,18 +324,6 @@ file-url:
     skills: "${web.url}/${file-url.basic}/skills/"
     prompts: "${web.url}/${file-url.basic}/prompts/"
 
-# Live2D 模型配置
-#   model-root-path：模型文件根目录（相对运行目录或绝对路径），不入库 static-resources 静态映射，
-#                     模型访问统一走 /user/live2d-model/file 签名下载接口，裸链 404
-#   file-sign.secret：HMAC-SHA256 签名密钥（必配，生产环境务必覆盖，浏览器前端不可见；
-#                     为空时由 ModelFileSigner 兜底内置默认密钥并告警，但默认值属公开约定，会削弱签名安全性）
-#   file-sign.expire-seconds：签名默认有效期（秒），决定一次会话内模型子资源 URL 的可用时长
-live2d:
-  model-root-path: live2d-models/
-  file-sign:
-    secret: ""
-    expire-seconds: 300
-
 url:
   permit-all-urls:
     - /user/account/register
@@ -621,3 +609,15 @@ ai:
   evaluation:
     recording:
       enabled: ${ai.evaluation.recording.enabled}
+
+# Live2D 模型配置
+#   model-root-path：模型文件根目录（相对运行目录或绝对路径），不入库 static-resources 静态映射，
+#                     模型访问统一走 /user/live2d-model/file 签名下载接口，裸链 404
+#   file-sign.secret：HMAC-SHA256 签名密钥（必配，生产环境务必覆盖，浏览器前端不可见；
+#                     为空时由 ModelFileSigner 兜底内置默认密钥并告警，但默认值属公开约定，会削弱签名安全性）
+#   file-sign.expire-seconds：签名默认有效期（秒），决定一次会话内模型子资源 URL 的可用时长
+live2d:
+  model-root-path: live2d-models/
+  file-sign:
+    secret: ""
+    expire-seconds: 300

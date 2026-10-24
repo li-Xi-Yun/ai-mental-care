@@ -43,16 +43,26 @@ public class AdminLive2dConfigController {
     public Result<Long> uploadModel(
             @RequestParam("file") @Parameter(description = "Live2D模型包 zip 文件", required = true) MultipartFile file,
             @RequestParam("modelName") @Parameter(description = "模型名称（即解压目录名，仅支持字母/数字/下划线/中划线）", required = true) String modelName,
+            @RequestParam(value = "aliasName", required = false) @Parameter(description = "模型别名（中文展示名称，可选，未传则为 null 由编辑补录）") String aliasName,
             @RequestParam(value = "expressionFileName", required = false) @Parameter(description = "表情清单文件名（可选，缺省按默认后缀 *.exp3.json 模糊匹配）") String expressionFileName,
             @RequestParam(value = "motionFileName", required = false) @Parameter(description = "动作清单文件名（可选，缺省按默认后缀 *.motion3.json 模糊匹配）") String motionFileName,
             @RequestParam(value = "semanticPrompt", required = false) @Parameter(description = "语义提示词（可选，缺省为 null 由管理员手动录入）") String semanticPrompt,
             @RequestParam(value = "sort", required = false) @Parameter(description = "排序值（可选，缺省 0）") Integer sort,
             @RequestParam(value = "remark", required = false) @Parameter(description = "备注（可选）") String remark) {
-        log.info("上传Live2D模型包，modelName：{}，expressionFileName：{}，motionFileName：{}，原始文件名：{}",
-                modelName, expressionFileName, motionFileName, file.getOriginalFilename());
-        Long id = adminLive2dConfigService.uploadModel(file, modelName, expressionFileName, motionFileName,
+        log.info("上传Live2D模型包，modelName：{}，aliasName：{}，expressionFileName：{}，motionFileName：{}，原始文件名：{}",
+                modelName, aliasName, expressionFileName, motionFileName, file.getOriginalFilename());
+        Long id = adminLive2dConfigService.uploadModel(file, modelName, aliasName, expressionFileName, motionFileName,
                 semanticPrompt, sort, remark);
         return Result.success(id);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('live2d:config:list')")
+    @Operation(summary = "获取Live2D模型配置详情", description = "根据主键ID获取完整配置（含表情/动作白名单、语义提示词）")
+    public Result<Live2dConfigAdminVO> getDetail(
+            @PathVariable @NotNull @Parameter(description = "模型配置ID", required = true, in = ParameterIn.PATH) Long id) {
+        log.info("获取Live2D模型配置详情，id：{}", id);
+        return Result.success(adminLive2dConfigService.getDetail(id));
     }
 
     @PutMapping("/{id}")
