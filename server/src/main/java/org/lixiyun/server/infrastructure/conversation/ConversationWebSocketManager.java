@@ -186,4 +186,18 @@ public class ConversationWebSocketManager {
         sendViaWebSocket(userId, ConversationConstant.DIAGNOSIS_CREATED, conversationId,
                 Map.of("event", "DIAGNOSIS_CREATED", "id", String.valueOf(diagnosisId), "roundNum", roundNum));
     }
+
+    /**
+     * 发送会话空闲超时回收通知（ConversationIdleTimeoutTask 判定超时后调用）
+     * <p>载荷为轻量事件：{event}。前端收到后主动释放本地资源并提示/跳转，
+     * 覆盖「页面挂起/前台节流导致前端定时器不触发」的场景。</p>
+     *
+     * @param userId         目标用户ID
+     * @param conversationId 会话ID
+     */
+    public void sendSessionTimeout(Long userId, Long conversationId) {
+        log.warn("会话WebSocket管理器-空闲超时回收通知下发，会话ID：{}，用户ID：{}", conversationId, userId);
+        sendViaWebSocket(userId, ConversationConstant.SESSION_TIMEOUT, conversationId,
+                Map.of("event", "SESSION_TIMEOUT"));
+    }
 }

@@ -30,9 +30,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -223,7 +222,7 @@ public class Avatar2DOutputNode implements OutputNode {
 
         // 收集完整模型输出文本（ModelComplete 携带完整回复），流完成后异步生成表情/动作
         AtomicReference<String> modelText = new AtomicReference<>("");
-        context.getFlux(ModelChatOutputNode.FLUX_KEY, NodeOutput.class)
+        Flux<NodeOutput> nodeOutputFlux = context.getFlux(ModelChatOutputNode.FLUX_KEY, NodeOutput.class)
                 .doOnNext(output -> {
                     if (!(output instanceof StreamingOutput streamingOutput)) {
                         // 到这里说明是普通的NodeOutput类型
@@ -239,19 +238,22 @@ public class Avatar2DOutputNode implements OutputNode {
                             log.debug("[管道-虚拟形象输出节点] 已捕获完整模型输出，长度：{}，会话ID：{}", modelText.get().length(), conversationId);
                         }
                     }
-                })
-                .doOnComplete(() -> {
-                    // 流完成后再异步生成表情/动作：不阻塞正文完成信号，异常降级为日志
-                    Mono.fromRunnable(() -> {
-                        try {
-                            AvatarModel.AvatarCommandPayload command = avatarNode.apply(modelText.get(), processContext);
-                            publishCommand(command);
-                        } catch (Exception e) {
-                            log.warn("[管道-虚拟形象输出节点] 表情/动作生成失败（不影响正文与TTS），会话ID：{}，原因：{}",
-                                    conversationId, e.getMessage(), e);
-                        }
-                    }).subscribeOn(Schedulers.boundedElastic()).subscribe();
-                }).subscribe();
+                });
+
+        // 同步阻塞等待模型输出流全部完成，不再异步subscribe，超时10秒
+        try {
+            nodeOutputFlux.blockLast(Duration.ofSeconds(10));
+        } catch (Exception e) {
+            log.warn("[管道-虚拟形象输出节点] 模型输出流消费异常，会话ID：{}", conversationId, e);
+        }
+
+        try {
+            AvatarModel.AvatarCommandPayload command = avatarNode.apply(modelText.get(), processContext);
+            publishCommand(command);
+        } catch (Exception e) {
+            log.warn("[管道-虚拟形象输出节点] 表情/动作生成失败（不影响正文与TTS），会话ID：{}，原因：{}",
+                    conversationId, e.getMessage(), e);
+        }
 
         // 透传正文流到下游（TTS），由链尾唯一订阅触发；putFlux 自动 .cache() 保证共享同一实例
         context.putFlux(NODE_NAME, context.getFlux(inputFluxKey, AgentStreamEvent.class));

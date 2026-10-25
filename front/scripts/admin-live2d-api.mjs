@@ -161,11 +161,11 @@ try {
     assert("AP-6 字段完整", !!hiyori?.modelUrl && !!haru?.modelUrl, `hiyoriUrl=${hiyori?.modelUrl}`);
     results.hiyori = hiyori;
     results.haru = haru;
-    // 白名单断言（文件名退化预期）
-    const hiyMotions = hiyori.motionList ?? [];
-    const hiyExpr = hiyori.expressionList ?? [];
-    const haruMotions = haru.motionList ?? [];
-    const haruExpr = haru.expressionList ?? [];
+    // 白名单断言（文件名退化预期；管理端 VO 已是 Map：key=资产id，value=中文含义）
+    const hiyMotions = Object.keys(hiyori.motionList ?? {});
+    const hiyExpr = Object.keys(hiyori.expressionList ?? {});
+    const haruMotions = Object.keys(haru.motionList ?? {});
+    const haruExpr = Object.keys(haru.expressionList ?? {});
     assert("AP-6 Hiyori motionList=10", hiyMotions.length === 10 && hiyMotions.includes("Hiyori_m01") && hiyMotions.includes("Hiyori_m10"), `len=${hiyMotions.length} ${JSON.stringify(hiyMotions.slice(0, 3))}`);
     assert("AP-6 Hiyori expressionList 为空(负向)", hiyExpr.length === 0, `len=${hiyExpr.length}`);
     assert("AP-6 Haru motionList 含 haru_g_idle", haruMotions.includes("haru_g_idle"), JSON.stringify(haruMotions.slice(0, 4)));
@@ -187,6 +187,23 @@ try {
     const p = await api("POST", "/admin/live2d-model/page", adminAuth, { pageNum: 1, pageSize: 10, modelName: "Hiyori" });
     const row = p.body.data?.records?.[0];
     assert("AP-9 remark 已更新", row?.remark === "测试备注-updated" && row?.sort === 5 && row?.semanticPrompt === "F01=平静,F02=关切", `remark=${row?.remark} sort=${row?.sort}`);
+  }
+
+  console.log("== AP-9b 白名单中文标签（Map value）+ 新 key 忽略 ==");
+  {
+    const putDto = {
+      id: haruId,
+      expressionList: { F01: "平静", F05: "开心", FAKE_KEY: "伪造" },
+      motionList: { haru_g_idle: "待机", haru_g_m15: "" },
+    };
+    let r = await api("PUT", `/admin/live2d-model/${haruId}`, adminAuth, putDto);
+    assert("AP-9b 更新成功", r.body.code === 200, `code=${r.body.code}`);
+    r = await api("GET", `/admin/live2d-model/${haruId}`, adminAuth);
+    const map = r.body.data?.expressionList ?? {};
+    assert("AP-9b expressionList 为 Map", typeof map === "object" && !Array.isArray(map), `type=${typeof map}`);
+    assert("AP-9b 中文 value 已保存", map["F01"] === "平静" && map["F05"] === "开心", JSON.stringify(map));
+    assert("AP-9b 白名单外新 key 被忽略", !("FAKE_KEY" in map), JSON.stringify(map));
+    assert("AP-9b 白名单内空 value 保留 key", "haru_g_m15" in (r.body.data?.motionList ?? {}), JSON.stringify(r.body.data?.motionList));
   }
 
   console.log("== AP-10 启用互斥 ==");

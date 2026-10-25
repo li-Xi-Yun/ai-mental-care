@@ -17,6 +17,7 @@ import {
   buildNativeWsUrl,
   conversationNameTopic,
   diagnosisCreatedTopic,
+  sessionTimeoutTopic,
   emotionAnalysisUpdatedTopic,
   pendingActionTopic,
   quotaRejectedTopic,
@@ -50,6 +51,8 @@ export interface ConversationStreamHandlers {
   onEmotionAnalysisUpdated?: (rawJson: string) => void;
   /** 新心理评估（诊断书）落库通知（载荷原始 JSON，由业务层解析并刷新） */
   onDiagnosisCreated?: (rawJson: string) => void;
+  /** 会话空闲超时回收通知（载荷原始 JSON，由业务层触发提示/跳转；后端已释放资源） */
+  onSessionTimeout?: (rawJson: string) => void;
   /** 虚拟形象表情指令（持续状态；载荷 JSON 字符串 {"expression":"<资产id>"}） */
   onAvatar2dExpression?: (rawJson: string) => void;
   /** 虚拟形象动作指令（一次性触发；载荷 JSON 字符串 {"motion":"<资产id>"}） */
@@ -209,6 +212,9 @@ export class ConversationStompClient {
     }
     if (handlers.onDiagnosisCreated) {
       add(diagnosisCreatedTopic(conversationId), (m) => handlers.onDiagnosisCreated?.(m.body ?? ""));
+    }
+    if (handlers.onSessionTimeout) {
+      add(sessionTimeoutTopic(conversationId), (m) => handlers.onSessionTimeout?.(m.body ?? ""));
     }
     if (handlers.onAvatar2dExpression) {
       add(avatar2dExpressionTopic(conversationId), (m) => handlers.onAvatar2dExpression?.(m.body ?? ""));

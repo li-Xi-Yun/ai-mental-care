@@ -10,7 +10,7 @@ import org.lixiyun.pojo.constant.DeleteConstant;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Live2D模型配置表(Live2dConfig)实体类
@@ -62,13 +62,17 @@ public class Live2dConfig implements Serializable {
     /** 语义解析说明，发给大模型的提示词 */
     private String semanticPrompt;
 
-    /** 动作JSON中固定词汇List */
+    /**
+     * 动作固定词汇 Map：key=动作 id（白名单，上传解析生成，不可编辑删除），value=中文含义（后台可编辑，可为空串）
+     */
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<String> motionList;
+    private Map<String, String> motionList;
 
-    /** 表情JSON中固定词汇List */
+    /**
+     * 表情固定词汇 Map：key=表情 id（白名单，上传解析生成，不可编辑删除），value=中文含义（后台可编辑，可为空串）
+     */
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<String> expressionList;
+    private Map<String, String> expressionList;
 
     /** 备注 */
     private String remark;

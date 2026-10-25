@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Live2D 模型配置管理端 VO（列表/详情）
@@ -52,11 +52,11 @@ public class Live2dConfigAdminVO implements Serializable {
     @Schema(description = "语义解析说明，发给大模型的提示词", example = "F01=平静，F02=关切，F03=鼓励")
     private String semanticPrompt;
 
-    @Schema(description = "动作固定词汇白名单", example = "[\"haru_g_idle\",\"haru_g_m01\"]")
-    private List<String> motionList;
+    @Schema(description = "动作固定词汇Map：key=动作id（白名单固定），value=中文含义", example = "{\"haru_g_idle\":\"待机\"}")
+    private Map<String, String> motionList;
 
-    @Schema(description = "表情固定词汇白名单", example = "[\"F01\",\"F02\",\"F03\"]")
-    private List<String> expressionList;
+    @Schema(description = "表情固定词汇Map：key=表情id（白名单固定），value=中文含义", example = "{\"F01\":\"平静\"}")
+    private Map<String, String> expressionList;
 
     @Schema(description = "备注", example = "默认虚拟形象")
     private String remark;

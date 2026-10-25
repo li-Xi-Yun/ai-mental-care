@@ -388,6 +388,14 @@ thread-pool:
   # 线程池维护线程所允许的空闲时间
   keepAliveSeconds: 300
 
+--- # 会话空闲超时回收配置
+conversation:
+  idle-timeout:
+    # 空闲超时阈值（秒）：会话无任何消息上行/下行持续超过该时长即回收生命周期资源
+    seconds: 300
+    # 兜底扫描间隔（毫秒）：后端定时任务每轮扫描已注册生命周期会话的 lastActiveTime
+    scan-interval: 30000
+
 --- # 分布式锁 lock4j 全局配置
 lock4j:
   # 获取分布式锁超时时间，默认为 3000 毫秒

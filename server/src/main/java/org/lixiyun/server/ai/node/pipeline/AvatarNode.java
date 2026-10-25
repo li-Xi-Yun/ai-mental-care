@@ -125,8 +125,8 @@ public class AvatarNode implements NodeActionWithConfig, NodeExecutionSummary {
      * @param currentUserMessages 本轮用户输入内容
      * @param modelText           本轮模型输出内容
      * @param semanticPrompt      Live2D 语义提示词（语义规则描述）
-     * @param expressionList      Live2D 表情候选固定词汇
-     * @param motionList          Live2D 动作候选固定词汇
+     * @param expressionMap       Live2D 表情候选固定词汇（key=资产id，value=中文含义）
+     * @param motionMap           Live2D 动作候选固定词汇（key=资产id，value=中文含义）
      * @return 拼接后的提示词
      */
     private String buildPrompt(List<ConversationMemory> historicalContext,
@@ -134,8 +134,8 @@ public class AvatarNode implements NodeActionWithConfig, NodeExecutionSummary {
                                List<ConversationMemory> currentUserMessages,
                                String modelText,
                                String semanticPrompt,
-                               List<String> expressionList,
-                               List<String> motionList) {
+                               Map<String, String> expressionMap,
+                               Map<String, String> motionMap) {
         StringBuilder promptBuilder = new StringBuilder();
 
         // 1. 历史会话上下文：过往对话记录，帮助模型理解用户背景、话题脉络与既往表达方式
@@ -183,21 +183,21 @@ public class AvatarNode implements NodeActionWithConfig, NodeExecutionSummary {
 
         // 5. Live2D 语义提示词与候选词汇：约束模型必须从固定词汇中输出，且两字段不要求同时存在
         if ((semanticPrompt != null && !semanticPrompt.isBlank())
-                || (expressionList != null && !expressionList.isEmpty())
-                || (motionList != null && !motionList.isEmpty())) {
+                || (expressionMap != null && !expressionMap.isEmpty())
+                || (motionMap != null && !motionMap.isEmpty())) {
             promptBuilder.append("【Live2D 语义提示词与候选词汇】\n");
             promptBuilder.append("说明：该虚拟形象模型的动作（motion）与表情（expression）只能从下方候选固定词汇中选取，"
                     + "不得使用候选词汇以外的任何内容；两类不要求同时出现，可以只输出其中一类。\n");
             if (semanticPrompt != null && !semanticPrompt.isBlank()) {
                 promptBuilder.append("语义规则：").append(semanticPrompt).append("\n");
             }
-            if (expressionList != null && !expressionList.isEmpty()) {
+            if (expressionMap != null && !expressionMap.isEmpty()) {
                 promptBuilder.append("可选表情固定词汇（expression）：")
-                        .append(String.join("、", expressionList)).append("\n");
+                        .append(String.join("、", expressionMap.keySet())).append("\n");
             }
-            if (motionList != null && !motionList.isEmpty()) {
+            if (motionMap != null && !motionMap.isEmpty()) {
                 promptBuilder.append("可选动作固定词汇（motion）：")
-                        .append(String.join("、", motionList)).append("\n");
+                        .append(String.join("、", motionMap.keySet())).append("\n");
             }
             promptBuilder.append("输出约束：expression 与 motion 必须严格从上方对应候选词汇中选择；"
                     + "若无合适匹配项则对应字段输出 null；二者可只输出其一，也可都为空。");
@@ -222,24 +222,24 @@ public class AvatarNode implements NodeActionWithConfig, NodeExecutionSummary {
      */
     private AvatarModel.AvatarCommandPayload validateAndFallback(
             AvatarModel.AvatarCommandPayload payload, Live2dConfig config) {
-        List<String> expressionList = config.getExpressionList();
-        List<String> motionList = config.getMotionList();
+        Map<String, String> expressionMap = config.getExpressionList();
+        Map<String, String> motionMap = config.getMotionList();
 
         // 校验降级：白名单为空（模型无对应资产）时强制置 null，而非跳过校验——防止模型幻觉输出非白名单资产透传下发
         String validExpression = null;
-        if (payload.expression() != null && expressionList != null && !expressionList.isEmpty()
-                && expressionList.contains(payload.expression())) {
+        if (payload.expression() != null && expressionMap != null && !expressionMap.isEmpty()
+                && expressionMap.containsKey(payload.expression())) {
             validExpression = payload.expression();
         } else if (payload.expression() != null) {
-            log.warn("[虚拟形象节点] 表情 {} 不在白名单 {} 中，降级为空", payload.expression(), expressionList);
+            log.warn("[虚拟形象节点] 表情 {} 不在白名单 {} 中，降级为空", payload.expression(), expressionMap);
         }
 
         String validMotion = null;
-        if (payload.motion() != null && motionList != null && !motionList.isEmpty()
-                && motionList.contains(payload.motion())) {
+        if (payload.motion() != null && motionMap != null && !motionMap.isEmpty()
+                && motionMap.containsKey(payload.motion())) {
             validMotion = payload.motion();
         } else if (payload.motion() != null) {
-            log.warn("[虚拟形象节点] 动作 {} 不在白名单 {} 中，降级为空", payload.motion(), motionList);
+            log.warn("[虚拟形象节点] 动作 {} 不在白名单 {} 中，降级为空", payload.motion(), motionMap);
         }
 
         return new AvatarModel.AvatarCommandPayload(validExpression, validMotion);

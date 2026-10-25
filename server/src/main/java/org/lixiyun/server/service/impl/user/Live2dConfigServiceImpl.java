@@ -10,7 +10,9 @@ import org.lixiyun.server.mapper.Live2dConfigMapper;
 import org.lixiyun.server.service.user.Live2dConfigService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户端 Live2D 模型配置服务实现类
@@ -61,6 +63,7 @@ public class Live2dConfigServiceImpl implements Live2dConfigService {
 
     /**
      * 实体转用户端 VO
+     * <p>白名单在库内为 Map（key=资产id，value=中文含义，后台编辑用），用户端只下发资产 id 集合。</p>
      */
     private Live2dConfigVO toVO(Live2dConfig config) {
         return Live2dConfigVO.builder()
@@ -68,8 +71,13 @@ public class Live2dConfigServiceImpl implements Live2dConfigService {
                 .modelName(config.getModelName())
                 .modelUrl(config.getModelUrl())
                 .coverImagePath(config.getCoverImagePath())
-                .expressionList(config.getExpressionList())
-                .motionList(config.getMotionList())
+                .expressionList(assetIds(config.getExpressionList()))
+                .motionList(assetIds(config.getMotionList()))
                 .build();
+    }
+
+    /** 取白名单 Map 的 keySet 作为用户端资产 id 列表（null → null） */
+    private List<String> assetIds(Map<String, String> assetMap) {
+        return assetMap == null ? null : new ArrayList<>(assetMap.keySet());
     }
 }

@@ -39,6 +39,8 @@ export const avatar2dMotionTopic = (conversationId: string) => userQueueTopic("/
 export const emotionAnalysisUpdatedTopic = (conversationId: string) => userQueueTopic("/emotion/analysis", conversationId);
 /** 新心理评估（诊断书）落库通知（后端 DiagnosisPersistNode 落库后下发；载荷 JSON：{ event:"DIAGNOSIS_CREATED", id, roundNum }） */
 export const diagnosisCreatedTopic = (conversationId: string) => userQueueTopic("/diagnosis", conversationId);
+/** 会话空闲超时回收通知（后端 ConversationIdleTimeoutTask 判定超时后下发；载荷 JSON：{ event:"SESSION_TIMEOUT" }） */
+export const sessionTimeoutTopic = (conversationId: string) => userQueueTopic("/session/timeout", conversationId);
 
 /** 文件向量解析状态推送（管理端；载荷 JSON：{ fileId, status, progress?, message?, sequence, timestamp }） */
 export function fileVectorStatusTopic(fileId: string): string {

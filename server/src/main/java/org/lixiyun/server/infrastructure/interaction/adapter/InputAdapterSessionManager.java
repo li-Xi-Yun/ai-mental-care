@@ -110,6 +110,19 @@ public class InputAdapterSessionManager {
     }
 
     /**
+     * 获取当前已注册生命周期（持有资源）的所有会话ID
+     *
+     * <p>供空闲超时兜底扫描任务使用：枚举「已 init 输入适配器」的会话，
+     * 与输出管道在 {@code ConversationLifecycleServiceImpl.initSession} 中成对注册，
+     * 故该 keySet 即等价于所有持有多媒体资源的活跃生命周期会话。</p>
+     *
+     * @return 已注册适配器的会话ID集合
+     */
+    public Set<Long> getActiveConversationIds() {
+        return sessionAdapters.keySet();
+    }
+
+    /**
      * 销毁会话——取出所有 Adapter 并逆序销毁，同时移除会话记录
      * <p>会话身份由各适配器 init() 时写入的实例字段提供，无需再传参。</p>
      *

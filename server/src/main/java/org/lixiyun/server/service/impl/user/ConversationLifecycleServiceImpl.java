@@ -1,6 +1,7 @@
 package org.lixiyun.server.service.impl.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lixiyun.common.authentication.utils.UserInfoThreadLocalUtil;
@@ -28,6 +29,7 @@ import org.lixiyun.server.service.ai.QuotaService;
 import org.lixiyun.server.service.user.ConversationLifecycleService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -83,7 +85,14 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
         // 2. 输出层：工厂组装节点链 → 校验类型 → 初始化 → 绑定到会话
         outputPipelineSessionManager.initSession(conversationId, userId, outputTypes);
 
-        // 3. 构建客户端所需的 Socket 端点路径
+        // 3. 会话生命周期建立视为活跃：刷新最后活跃时间，
+        //    供空闲超时判定从「本次打开/进入会话」起算（复用既有会话时 lastActiveTime 可能远早于本次 init）
+        conversationMapper.update(null,
+                new LambdaUpdateWrapper<Conversation>()
+                        .eq(Conversation::getId, conversationId)
+                        .set(Conversation::getLastActiveTime, LocalDateTime.now()));
+
+        // 4. 构建客户端所需的 Socket 端点路径
         List<NodeEndpoint> inputEndpoints = inputAdapterSessionManager.buildEndpointInfo(conversationId);
         List<NodeEndpoint> outputEndpoints = outputPipelineSessionManager.buildEndpointInfo(conversationId);
 
@@ -112,18 +121,41 @@ public class ConversationLifecycleServiceImpl implements ConversationLifecycleSe
             throw new BusinessException(ConversationExceptionEnum.CONVERSATION_NOT_EXIST);
         }
 
-        // 输入层和输出层各自独立销毁，一方失败不影响另一方
+        destroySessionResources(conversationId);
+        deleteEmptyConversation(conversationId, userId);
+
+        log.info("[对话生命周期] 销毁完成，会话ID：{}，用户ID：{}", conversationId, userId);
+    }
+
+    @Override
+    public void releaseIdleSession(Long conversationId) {
+        log.info("[对话生命周期] 空闲超时开始回收，会话ID：{}", conversationId);
+
+        destroySessionResources(conversationId);
+
+        // 会话可能已被前端 teardown 删除（并发竞态），仅残留会话时按空会话规则清理
+        Conversation conversation = conversationRepository.getConversationById(conversationId);
+        if (conversation != null) {
+            deleteEmptyConversation(conversationId, conversation.getUserId());
+        }
+
+        log.info("[对话生命周期] 空闲超时回收完成，会话ID：{}", conversationId);
+    }
+
+    /**
+     * 销毁输入/输出层资源并清理调度队列（endSession 与 releaseIdleSession 共用）
+     * <p>输入层和输出层各自独立销毁，一方失败不影响另一方；
+     * 同时清理时间轮聚合任务与 Redis ZSet 队列，避免到期任务重复触发空管道或残留会话ID。</p>
+     *
+     * @param conversationId 会话ID
+     */
+    private void destroySessionResources(Long conversationId) {
         inputAdapterSessionManager.endSession(conversationId);
         outputPipelineSessionManager.endSession(conversationId);
 
         // 清理时间轮聚合任务与 Redis ZSet 队列，避免到期任务重复触发空管道或残留会话ID
         aggregateScheduler.cancelTask(conversationId);
         conversationCacheManager.removeCacheZSetValue(conversationId);
-
-        // 会话无有效数据消息时删除（本次对话未产生任何消息，视为空会话）
-        deleteEmptyConversation(conversationId, userId);
-
-        log.info("[对话生命周期] 销毁完成，会话ID：{}，用户ID：{}", conversationId, userId);
     }
 
     /**

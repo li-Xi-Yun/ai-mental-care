@@ -8,6 +8,8 @@
  */
 import { ref } from "vue";
 import dayjs, { FORMAT_DATETIME } from "@/shared/utils/dayjs";
+import { API_BASE_URL } from "@/shared/api/config";
+import { getAuthHeaders } from "@/shared/api/auth";
 import { fetchRoundMemory, parsePendingActionPush } from "@/portal/api/conversation/dialogue";
 import {
   initConversation,
@@ -57,6 +59,8 @@ const WATCHDOG_TIMEOUT_MS = 10000;
 const NOTICE_DURATION_MS = 6000;
 /** 短重试耗尽后的最终对账延迟（覆盖"流式只推了一半、落库较晚"的场景） */
 const FINAL_RECONCILE_DELAY_MS = 5000;
+/** 会话空闲超时（毫秒）：无任何消息上行/下行持续超过该时长 → 提示并返回文本对话页 */
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 export interface UseAudioConversationOptions {
   /** URL query 中的会话 ID（空则新建） */
@@ -73,6 +77,8 @@ export interface UseAudioConversationOptions {
   onAvatar2dExpression?: (rawJson: string) => void;
   /** 虚拟形象动作指令（原始 JSON 字符串，输出模式含 AVATAR_2D 时订阅并透传；由页面转发给渲染组件） */
   onAvatar2dMotion?: (rawJson: string) => void;
+  /** 会话空闲超时回调：生命周期已释放（前端定时器或后端 SESSION_TIMEOUT 事件触发），由页面提示并返回文本对话页 */
+  onIdleTimeout?: () => void;
 }
 
 export function useAudioConversation(options: UseAudioConversationOptions) {
@@ -129,6 +135,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
   let flushing = false;
   /** 发布失败重连限频时间戳 */
   let publishRetryAt = 0;
+  /** 会话空闲超时倒计时（无上行/下行活动到期后释放并返回文本页） */
+  let idleTimer: number | null = null;
 
   /* ==================== 音频 ==================== */
   const playerPlaying = ref(false);
@@ -200,6 +208,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     const id = activeConversationId;
     if (!id) return;
     if (!stomp.publishAudioFrame(base64, id)) handlePublishFailure();
+    // 说话上行即活跃：重置空闲超时倒计时
+    resetIdleTimer();
   }
 
   /** 发布失败（通道未连接）：限频重连 + 轻提示；重连失败则进入错误态 */
@@ -260,6 +270,37 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     }
   }
 
+  /* ==================== 会话空闲超时 ==================== */
+
+  /** 重置空闲超时倒计时（有任何上行/下行活动时调用）；到期后释放生命周期并返回文本页 */
+  function resetIdleTimer(): void {
+    clearIdleTimer();
+    idleTimer = window.setTimeout(() => {
+      idleTimer = null;
+      void fireIdleTimeout();
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  function clearIdleTimer(): void {
+    if (idleTimer !== null) {
+      window.clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
+
+  /**
+   * 空闲超时处理：提示 → 释放生命周期资源（幂等）→ 回调页面返回文本对话页。
+   * 前端定时器触发与后端 SESSION_TIMEOUT 事件共用此入口（后端兜底先释放时前端重复 teardown 无害）。
+   */
+  async function fireIdleTimeout(): Promise<void> {
+    if (tornDown || phase.value === "error") return;
+    clearIdleTimer();
+    console.warn("[audio] 会话空闲超时，释放生命周期并返回文本对话页");
+    setNotice("会话已超时结束，正在返回文本对话…");
+    await teardown();
+    options.onIdleTimeout?.();
+  }
+
   /** 解析 /user/queue/error 的 Result{code,msg} 报文，返回可读文案 */
   function parsePipelineError(raw: string): string {
     if (!raw) return "";
@@ -317,6 +358,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
         userText.value = text;
         userTextFinal.value = false;
         clearWatchdog();
+        // ASR 中间结果下行即活跃：重置空闲超时倒计时
+        resetIdleTimer();
       },
       onPipelineError: (message) => {
         // 服务端业务/管道异常（如 ASR 会话失效、适配器不存在）：轻提示，避免静默无反应。
@@ -324,6 +367,10 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
         console.warn("[audio] 服务端管道异常：", message);
         const text = parsePipelineError(message);
         if (text) setNotice(text);
+      },
+      onSessionTimeout: () => {
+        // 后端兜底判定空闲超时并已释放资源：前端不再依赖本地定时器，主动回到文本对话页
+        void fireIdleTimeout();
       },
       onQuotaRejected: (rawJson) => {
         // AI 配额拒绝（语音识别/合成/形象播报超限或停用）：轻提示对应降级行为
@@ -394,6 +441,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
         needResume.value = currentModes.outputTypes.includes("AUDIO") && !(await player.ensureReady());
         phase.value = "ready";
       }
+      // 进入聆听/就绪即开始空闲倒计时（首次输入 init 后由 ensureActive 重新 reset）
+      resetIdleTimer();
       if (tornDown) return;
     } catch (e) {
       setError(micErrorMessage(e) || (e instanceof Error ? e.message : "语音对话启动失败，请重试"));
@@ -430,6 +479,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       stomp.bind(realId, buildStreamHandlers());
       baselineAssistantCount = messages.value.filter((m) => m.type === "assistant").length;
       activeConversationId = realId;
+      // 生命周期建立后重新起算空闲超时（以 init 时刻为准，避免历史会话 lastActiveTime 过期即触发）
+      resetIdleTimer();
       return realId;
     })().catch((e) => {
       activePromise = null;
@@ -460,6 +511,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     };
     messages.value = [...messages.value, optimistic];
     phase.value = "replying";
+    // 文本上行即活跃：重置空闲超时倒计时
+    resetIdleTimer();
     try {
       const id = await ensureActive();
       baselineAssistantCount = messages.value.filter((m) => m.type === "assistant").length;
@@ -521,6 +574,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
       userTextFinal.value = false;
       phase.value = "ready";
     }
+    // 切换模式属于用户主动操作：重新起算空闲超时倒计时
+    resetIdleTimer();
   }
 
   /** 强制重试：释放可能已建立的管道后完整重跑 boot */
@@ -533,6 +588,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     flushing = false;
     activeConversationId = "";
     activePromise = null;
+    clearIdleTimer();
     clearWatchdog();
     clearNoChunkTimer();
     notice.value = "";
@@ -567,6 +623,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     clearWatchdog();
     aiStream.value += chunk;
     phase.value = "replying";
+    // AI 文本下行即活跃：重置空闲超时倒计时
+    resetIdleTimer();
     resetAiIdleTimer();
   }
 
@@ -598,6 +656,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     // barge-in 丢弃窗口：忽略服务端在途/迟到的 TTS 帧，避免被打断的语音复播
     if (performance.now() < discardAudioUntil) return;
     player.enqueue(bytes);
+    // TTS 音频下行即活跃：重置空闲超时倒计时
+    resetIdleTimer();
   }
 
   function upsertPendingAction(item: PendingActionItem) {
@@ -702,6 +762,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     frameBuffer.length = 0;
     flushing = false;
     clearAiIdleTimer();
+    clearIdleTimer();
     clearNoChunkTimer();
     clearWatchdog();
     if (noticeTimer !== null) {
@@ -735,6 +796,26 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     }
   }
 
+  /**
+   * 页面卸载兜底（关闭标签页 / 刷新 / 跨文档离开不缓存时由 pagehide 调用）：
+   * fire-and-forget 轻量释放，不等待。teardown() 的 900ms 尾帧等待在卸载场景不可行，
+   * 这里直接用原生 fetch(keepalive) 保证请求在页面销毁后仍发出。
+   * 幂等可重复调用；不置 tornDown（正常的 teardown 仍由路由取消链路负责）。
+   */
+  function disposeOnUnload(): void {
+    const id = conversationId.value;
+    if (id && !isLocalConversationId(id)) {
+      const headers = getAuthHeaders("user");
+      const url = `${API_BASE_URL}/user/conversation/lifecycle/${id}`;
+      fetch(url, { method: "DELETE", keepalive: true, headers }).catch(() => {
+        /* 卸载兜底失败可接受：服务端靠 TCP 断开 / 心跳回收 */
+      });
+    }
+    void player.dispose();
+    void stomp.dispose();
+    clearIdleTimer();
+  }
+
   function handleTransportError(text: string) {
     if (tornDown) return;
     void stopCapture();
@@ -745,6 +826,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
   function setError(text: string) {
     phase.value = "error";
     errorText.value = text;
+    clearIdleTimer();
   }
 
   function clearAiIdleTimer() {
@@ -805,6 +887,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     boot,
     retry,
     teardown,
+    disposeOnUnload,
     resumeAudio,
     sendText,
     setModes,

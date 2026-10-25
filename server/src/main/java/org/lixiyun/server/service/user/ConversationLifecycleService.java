@@ -38,4 +38,14 @@ public interface ConversationLifecycleService {
      * @param conversationId 会话ID
      */
     void endSession(Long conversationId);
+
+    /**
+     * 空闲超时回收对话生命周期（内部定时任务调用，无用户上下文）
+     *
+     * <p>与 {@link #endSession} 资源清理一致，但<b>不做归属校验</b>
+     * （定时任务线程无 ThreadLocal 用户，会话归属已在超时判定前由任务层确认）。</p>
+     *
+     * @param conversationId 会话ID
+     */
+    void releaseIdleSession(Long conversationId);
 }

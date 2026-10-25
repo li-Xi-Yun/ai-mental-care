@@ -30,4 +30,7 @@ public interface ConversationConstant {
     /** 新心理评估（诊断书）落库通知，需要在后面路径中添加/{conversationId} */
     String DIAGNOSIS_CREATED = "/diagnosis";
 
+    /** 会话空闲超时回收通知，需要在后面路径中添加/{conversationId} */
+    String SESSION_TIMEOUT = "/session/timeout";
+
 }

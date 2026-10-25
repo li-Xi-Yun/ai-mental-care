@@ -9,6 +9,7 @@ import org.lixiyun.common.validation.group.AddGroup;
 import org.lixiyun.common.validation.group.UpdateGroup;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Live2D模型配置新增/修改DTO
@@ -47,6 +48,12 @@ public class Live2dConfigDTO implements Serializable {
 
     @Schema(description = "排序值，越大越靠前", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1")
     private Integer sort;
+
+    @Schema(description = "动作固定词汇Map：key=动作id（白名单固定，不可增删），value=中文含义（后台可编辑）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "{\"haru_g_idle\":\"待机\"}")
+    private Map<String, String> motionList;
+
+    @Schema(description = "表情固定词汇Map：key=表情id（白名单固定，不可增删），value=中文含义（后台可编辑）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "{\"F01\":\"平静\"}")
+    private Map<String, String> expressionList;
 
     @Schema(description = "备注信息", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "默认虚拟形象")
     private String remark;

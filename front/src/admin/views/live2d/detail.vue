@@ -94,31 +94,22 @@
         </div>
       </div>
 
-      <!-- 表情 / 动作白名单 -->
-      <div class="asset-grid">
-        <div class="info-card">
-          <div class="card-title">
-            表情白名单
-            <span class="card-count">{{ (detail.expressionList ?? []).length }}</span>
-          </div>
-          <div v-if="detail.expressionList?.length" class="tag-wrap">
-            <el-tag v-for="e in detail.expressionList" :key="e" size="small" type="success">
-              {{ e }}
-            </el-tag>
-          </div>
-          <div v-else class="value-empty">暂无表情资产</div>
-        </div>
-
-        <div class="info-card">
-          <div class="card-title">
-            动作白名单
-            <span class="card-count">{{ (detail.motionList ?? []).length }}</span>
-          </div>
-          <div v-if="detail.motionList?.length" class="tag-wrap">
-            <el-tag v-for="m in detail.motionList" :key="m" size="small">{{ m }}</el-tag>
-          </div>
-          <div v-else class="value-empty">暂无动作资产</div>
-        </div>
+      <!-- 表情 / 动作白名单（宫格卡片，含中文含义标签，可编辑） -->
+      <div class="asset-panel">
+        <AssetWhitelistCard
+          title="表情白名单"
+          kind="expression"
+          :entries="expressionEntries"
+          empty-text="暂无表情资产"
+          @edit="handleOpenLabelEditor"
+        />
+        <AssetWhitelistCard
+          title="动作白名单"
+          kind="motion"
+          :entries="motionEntries"
+          empty-text="暂无动作资产"
+          @edit="handleOpenLabelEditor"
+        />
       </div>
 
       <!-- 语义提示词（内联编辑） -->
@@ -127,6 +118,16 @@
         :saving="savingPrompt"
         @cancel="handleCancelPrompt"
         @save="handleSavePrompt"
+      />
+
+      <!-- 白名单中文含义编辑器 -->
+      <AssetLabelEditor
+        v-model="labelEditorVisible"
+        :submitting="labelSaving"
+        :semantic-prompt="promptText"
+        :expression-list="detail.expressionList ?? {}"
+        :motion-list="detail.motionList ?? {}"
+        @save="handleSaveLabels"
       />
 
       <!-- 编辑弹窗（复用） -->
@@ -142,12 +143,15 @@
 
 <script setup lang="ts">
 import { Edit, Delete } from "@element-plus/icons-vue";
+import { computed } from "vue";
 import { FORMAT_DATETIME } from "@/shared/utils/dayjs";
 import { formatTime } from "@/admin/composables/useTimeFormat";
 import { resolveResourceUrl } from "@/shared/utils/resource";
 import { useLive2dDetail } from "./useLive2dDetail";
 import Live2dEditDialog from "./components/Live2dEditDialog.vue";
 import SemanticPromptCard from "./components/SemanticPromptCard.vue";
+import AssetLabelEditor from "./components/AssetLabelEditor.vue";
+import AssetWhitelistCard from "./components/AssetWhitelistCard.vue";
 
 const {
   pageLoading,
@@ -156,6 +160,10 @@ const {
   editVisible,
   editSubmitting,
   editForm,
+  labelEditorVisible,
+  labelSaving,
+  handleOpenLabelEditor,
+  handleSaveLabels,
   promptText,
   savingPrompt,
   handleCancelPrompt,
@@ -168,6 +176,10 @@ const {
   handleStatusToggle,
   handleDelete,
 } = useLive2dDetail();
+
+/** 表情/动作白名单 entries（id → 中文含义），模板渲染 id + label */
+const expressionEntries = computed(() => Object.entries(detail.value?.expressionList ?? {}));
+const motionEntries = computed(() => Object.entries(detail.value?.motionList ?? {}));
 </script>
 
 <style scoped>
@@ -260,7 +272,6 @@ const {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px 24px;
 }
-
 .info-item {
   min-width: 0;
 }
@@ -296,17 +307,11 @@ const {
   color: #94a3b8;
 }
 
-/* ---------- 白名单 ---------- */
-.asset-grid {
+/* ---------- 白名单（宫格卡片容器） ---------- */
+.asset-panel {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 20px;
-}
-
-.tag-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 .value-empty {

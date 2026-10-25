@@ -41,6 +41,11 @@ export function useLive2dDetail() {
     remark: "",
   });
 
+  /* ==================== 白名单中文标签编辑状态 ==================== */
+
+  const labelEditorVisible = ref(false);
+  const labelSaving = ref(false);
+
   /* ==================== 派生状态 ==================== */
 
   const enabledTagType = computed<"success" | "info">(() =>
@@ -163,6 +168,34 @@ export function useLive2dDetail() {
     }
   }
 
+  /* ==================== 白名单中文标签（AssetLabelEditor） ==================== */
+
+  function handleOpenLabelEditor() {
+    labelEditorVisible.value = true;
+  }
+
+  async function handleSaveLabels(payload: {
+    expressionList: Record<string, string>;
+    motionList: Record<string, string>;
+  }) {
+    const id = editForm.id ?? detail.value?.id;
+    if (id == null) {
+      ElMessage.error("缺少模型ID，无法保存标签");
+      return;
+    }
+    labelSaving.value = true;
+    try {
+      await updateLive2dModel(id, { id, expressionList: payload.expressionList, motionList: payload.motionList });
+      ElMessage.success("中文含义已保存");
+      labelEditorVisible.value = false;
+      await loadDetail();
+    } catch (e) {
+      ElMessage.error((e as Error)?.message || "标签保存失败，请稍后重试");
+    } finally {
+      labelSaving.value = false;
+    }
+  }
+
   /* ==================== 启用 / 禁用 ==================== */
 
   async function handleStatusToggle() {
@@ -228,6 +261,11 @@ export function useLive2dDetail() {
     editForm,
     handleEdit,
     handleEditSubmit,
+    // 白名单中文标签
+    labelEditorVisible,
+    labelSaving,
+    handleOpenLabelEditor,
+    handleSaveLabels,
     // 语义提示词
     promptText,
     savingPrompt,

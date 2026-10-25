@@ -27,10 +27,10 @@ export interface Live2dConfigAdminVO {
   sort?: number | null;
   /** 语义解析说明（发给大模型的提示词） */
   semanticPrompt?: string | null;
-  /** 动作固定词汇白名单 */
-  motionList?: string[] | null;
-  /** 表情固定词汇白名单 */
-  expressionList?: string[] | null;
+  /** 动作固定词汇 Map：key=动作id（白名单固定，不可增删），value=中文含义（后台可编辑） */
+  motionList?: Record<string, string> | null;
+  /** 表情固定词汇 Map：key=表情id（白名单固定，不可增删），value=中文含义（后台可编辑） */
+  expressionList?: Record<string, string> | null;
   /** 备注 */
   remark?: string | null;
   /** 创建时间 */
@@ -48,6 +48,10 @@ export interface Live2dConfigUpdateDTO {
   modelRelativePath?: string | null;
   coverImagePath?: string | null;
   semanticPrompt?: string | null;
+  /** 动作 id → 中文含义（仅 key 在白名单内的 value 生效，新增 key 被忽略） */
+  motionList?: Record<string, string> | null;
+  /** 表情 id → 中文含义（仅 key 在白名单内的 value 生效，新增 key 被忽略） */
+  expressionList?: Record<string, string> | null;
   enabled?: number | null;
   sort?: number | null;
   remark?: string | null;

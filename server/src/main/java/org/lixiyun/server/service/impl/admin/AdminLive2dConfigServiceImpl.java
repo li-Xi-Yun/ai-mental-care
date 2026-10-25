@@ -33,7 +33,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -134,8 +136,8 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
                     .enabled(Live2dConfig.ENABLED_NO)
                     .sort(sort != null ? sort : 0)
                     .semanticPrompt(null)
-                    .motionList(motionList)
-                    .expressionList(expressionList)
+                    .motionList(toAssetMap(motionList))
+                    .expressionList(toAssetMap(expressionList))
                     .remark(remark)
                     .build();
             int insert = live2dConfigMapper.insert(config);
@@ -195,6 +197,15 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
         Live2dConfig newConfig = new Live2dConfig();
         BeanUtil.copyProperties(dto, newConfig, CopyOptions.create().setIgnoreNullValue(true));
         newConfig.setId(id);
+
+        // 白名单 Map 只合并中文 value：以库内 keySet 为基准逐 key 取提交 value，新增 key 忽略、key 不可删
+        // （copy 会整体带过提交 map，这里按库内白名单回写，保证资产 id 上传后固定）
+        if (dto.getExpressionList() != null) {
+            newConfig.setExpressionList(mergeLabels(dto.getExpressionList(), oldConfig.getExpressionList()));
+        }
+        if (dto.getMotionList() != null) {
+            newConfig.setMotionList(mergeLabels(dto.getMotionList(), oldConfig.getMotionList()));
+        }
 
         int row = live2dConfigMapper.updateById(newConfig);
         if (row == 0) {
@@ -440,6 +451,41 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
         }
         int dotIndex = lower.lastIndexOf('.');
         return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
+    }
+
+    /**
+     * 白名单 List → Map（key=资产id，value=空串中文含义，待后台编辑）
+     */
+    private Map<String, String> toAssetMap(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String id : ids) {
+            map.put(id, "");
+        }
+        return map;
+    }
+
+    /**
+     * 编辑提交的标签 Map 与库内白名单合并：
+     * <ul>
+     *   <li>key 以库内白名单（existing）为基准——提交中新增的 key 忽略、库内 key 不可删除；</li>
+     *   <li>value 取自提交 map（中文含义可增删改）；提交未含某 key 或值为 null/空串 → 中文清空保留 key。</li>
+     * </ul>
+     */
+    private Map<String, String> mergeLabels(Map<String, String> submitted, Map<String, String> existing) {
+        Map<String, String> merged = new LinkedHashMap<>();
+        if (existing != null) {
+            merged.putAll(existing);
+        }
+        for (Map.Entry<String, String> entry : submitted.entrySet()) {
+            if (merged.containsKey(entry.getKey())) {
+                // 白名单 key 命中才写 value（null → 空串，语义为清空中文）
+                merged.put(entry.getKey(), entry.getValue() == null ? "" : entry.getValue());
+            }
+        }
+        return merged;
     }
 
     /**

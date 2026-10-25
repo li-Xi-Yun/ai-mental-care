@@ -27,7 +27,7 @@
         <!-- 渐进文本区（上方） -->
         <div class="ap-text-zone">
           <p v-if="userText" class="ap-user-text" :class="{ 'is-final': userTextFinal }">{{ userText }}</p>
-          <p v-if="aiStream" class="ap-ai-text">{{ aiStream }}<span class="stream-cursor"></span></p>
+          <p v-if="aiStream" class="ap-ai-text">{{ aiStream }}<span v-if="phase === 'replying'" class="stream-cursor"></span></p>
           <p v-if="!userText && !aiStream" class="ap-idle-hint">{{ idleHint }}</p>
 
           <!-- 量表推荐卡片（可操作，不属于历史消息） -->
@@ -187,6 +187,7 @@ const {
   boot,
   retry,
   teardown,
+  disposeOnUnload,
   resumeAudio,
   sendText,
   setModes,
@@ -214,6 +215,10 @@ const {
       if (avatarRef.value) avatarRef.value.applyMotion(id);
       else pendingAvatarMotions.push(id);
     }
+  },
+  onIdleTimeout: () => {
+    ElMessage.warning("会话已超时结束，已返回文本对话");
+    void router.push({ name: "PortalConversation" });
   },
 });
 
@@ -429,7 +434,32 @@ async function handleResume() {
   await resumeAudio();
 }
 
+/* ==================== 页面卸载 / BFCache 恢复兜底 ==================== */
+
+/**
+ * pagehide：关闭标签页 / 刷新 / 跨文档离开不缓存 → 轻量释放（keepalive DELETE）。
+ * 进入 BFCache（e.persisted=true，跨文档回退被缓存）→ 不释放，等 pageshow 恢复时统一处理。
+ * SPA 内导航离开不触发 pagehide（同 document），仍由 onBeforeRouteLeave/onBeforeUnmount 释放。
+ */
+const handlePageHide = (e: PageTransitionEvent) => {
+  if (e.persisted) return;
+  disposeOnUnload();
+};
+
+/**
+ * pageshow：从 BFCache 恢复（跨文档回退再前进回来）时，
+ * 回退操作视为语音对话结束，强制回到文本对话页；
+ * 组件卸载走 onBeforeRouteLeave/onBeforeUnmount → teardown 释放。
+ */
+const handlePageShow = (e: PageTransitionEvent) => {
+  if (e.persisted) {
+    void router.replace({ name: "PortalConversation" });
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener("pagehide", handlePageHide);
+  window.addEventListener("pageshow", handlePageShow);
   // 消费 fromText 后立即从 URL 移除：刷新/前进后退不再重复释放旧生命周期
   if (fromText) {
     const { fromText: _ft, ...rest } = route.query;
@@ -451,6 +481,8 @@ watch(
 onBeforeRouteLeave(() => teardown());
 
 onBeforeUnmount(() => {
+  window.removeEventListener("pagehide", handlePageHide);
+  window.removeEventListener("pageshow", handlePageShow);
   void teardown();
 });
 </script>
