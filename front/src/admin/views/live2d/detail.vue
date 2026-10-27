@@ -120,6 +120,18 @@
         @save="handleSavePrompt"
       />
 
+      <!-- 待机配置 -->
+      <IdleConfigCard
+        v-model:idle-expression-list="idleForm.idleExpressionList"
+        v-model:idle-motion-list="idleForm.idleMotionList"
+        v-model:idle-interval-seconds="idleForm.idleIntervalSeconds"
+        v-model:idle-auto-play="idleForm.idleAutoPlay"
+        :saving="idleSaving"
+        :detail="detail"
+        @save="handleSaveIdle"
+        @reset="handleResetIdle"
+      />
+
       <!-- 白名单中文含义编辑器 -->
       <AssetLabelEditor
         v-model="labelEditorVisible"
@@ -152,6 +164,7 @@ import Live2dEditDialog from "./components/Live2dEditDialog.vue";
 import SemanticPromptCard from "./components/SemanticPromptCard.vue";
 import AssetLabelEditor from "./components/AssetLabelEditor.vue";
 import AssetWhitelistCard from "./components/AssetWhitelistCard.vue";
+import IdleConfigCard from "./components/IdleConfigCard.vue";
 
 const {
   pageLoading,
@@ -168,6 +181,10 @@ const {
   savingPrompt,
   handleCancelPrompt,
   handleSavePrompt,
+  idleForm,
+  idleSaving,
+  handleSaveIdle,
+  handleResetIdle,
   enabledTagType,
   enabledLabel,
   handleReload,

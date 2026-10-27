@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -57,6 +58,18 @@ public class Live2dConfigAdminVO implements Serializable {
 
     @Schema(description = "表情固定词汇Map：key=表情id（白名单固定），value=中文含义", example = "{\"F01\":\"平静\"}")
     private Map<String, String> expressionList;
+
+    @Schema(description = "待机表情id列表（白名单子集；空数组/0 表示未启用待机配置）", example = "[\"F01\",\"F05\"]")
+    private List<String> idleExpressionList;
+
+    @Schema(description = "待机动作id列表（白名单子集；空数组/0 表示未启用待机配置）", example = "[\"haru_g_idle\"]")
+    private List<String> idleMotionList;
+
+    @Schema(description = "待机操作间隔（秒）；0=不启用", example = "10")
+    private Integer idleIntervalSeconds;
+
+    @Schema(description = "是否启用pixi-live2d-display自带自动待机(模型Idle组)：1-是(库自动播)，0-否(按后台待机设置；未设置则静止)", example = "1")
+    private Integer idleAutoPlay;
 
     @Schema(description = "备注", example = "默认虚拟形象")
     private String remark;

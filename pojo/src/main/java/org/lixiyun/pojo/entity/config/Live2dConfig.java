@@ -10,6 +10,7 @@ import org.lixiyun.pojo.constant.DeleteConstant;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -73,6 +74,28 @@ public class Live2dConfig implements Serializable {
      */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, String> expressionList;
+
+    /**
+     * 待机表情 id 列表（可空；须为 expressionList 白名单的子集，后台编辑时过滤）。未配置（空列表）时前端回退现有待机行为。
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> idleExpressionList;
+
+    /**
+     * 待机动作 id 列表（可空；须为 motionList 白名单的子集，后台编辑时过滤）。未配置（空列表）时前端回退现有待机行为。
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> idleMotionList;
+
+    /** 待机操作间隔（秒）；<=0 或待机列表为空时待机配置不启用，前端回退现有待机行为 */
+    private Integer idleIntervalSeconds;
+
+    /**
+     * 是否启用 pixi-live2d-display 自带的自动待机（模型自带 Idle 分组）：1-是（库自动播 Idle 组），
+     * 0-否（禁用库自动 Idle，仅按 {@link #idleExpressionList}/{@link #idleMotionList}/{@link #idleIntervalSeconds}
+     * 后台待机设置播放；后台未设置则静止）
+     */
+    private Integer idleAutoPlay;
 
     /** 备注 */
     private String remark;

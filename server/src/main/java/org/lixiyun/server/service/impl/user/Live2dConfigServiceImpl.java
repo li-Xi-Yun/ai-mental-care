@@ -63,7 +63,8 @@ public class Live2dConfigServiceImpl implements Live2dConfigService {
 
     /**
      * 实体转用户端 VO
-     * <p>白名单在库内为 Map（key=资产id，value=中文含义，后台编辑用），用户端只下发资产 id 集合。</p>
+     * <p>白名单在库内为 Map（key=资产id，value=中文含义，后台编辑用），用户端只下发资产 id 集合；
+     * 待机配置（id 列表 + 间隔）原样透传，供前端待机循环消费。</p>
      */
     private Live2dConfigVO toVO(Live2dConfig config) {
         return Live2dConfigVO.builder()
@@ -73,11 +74,20 @@ public class Live2dConfigServiceImpl implements Live2dConfigService {
                 .coverImagePath(config.getCoverImagePath())
                 .expressionList(assetIds(config.getExpressionList()))
                 .motionList(assetIds(config.getMotionList()))
+                .idleExpressionList(assetIds(config.getIdleExpressionList()))
+                .idleMotionList(assetIds(config.getIdleMotionList()))
+                .idleIntervalSeconds(config.getIdleIntervalSeconds())
+                .idleAutoPlay(config.getIdleAutoPlay())
                 .build();
     }
 
-    /** 取白名单 Map 的 keySet 作为用户端资产 id 列表（null → null） */
+    /** 取白名单/待机列表 Map 数组（null → null） */
     private List<String> assetIds(Map<String, String> assetMap) {
         return assetMap == null ? null : new ArrayList<>(assetMap.keySet());
+    }
+
+    /** 待机 id 列表原样透传（null → null） */
+    private List<String> assetIds(List<String> list) {
+        return list == null ? null : new ArrayList<>(list);
     }
 }

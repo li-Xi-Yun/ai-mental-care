@@ -21,6 +21,14 @@ export interface Live2dConfigVO {
   expressionList: string[];
   /** 动作固定词汇白名单 */
   motionList: string[];
+  /** 待机表情 id 列表（白名单子集；空数组/0 = 未启用待机配置） */
+  idleExpressionList?: string[] | null;
+  /** 待机动作 id 列表（白名单子集；空数组/0 = 未启用待机配置） */
+  idleMotionList?: string[] | null;
+  /** 待机操作间隔（秒）；0=不启用 */
+  idleIntervalSeconds?: number | null;
+  /** 是否启用 pixi-live2d-display 自带自动待机(模型 Idle 组)：1-是(库自动播)，0-否(按后台待机设置；未设置则静止) */
+  idleAutoPlay?: number | null;
 }
 
 /**

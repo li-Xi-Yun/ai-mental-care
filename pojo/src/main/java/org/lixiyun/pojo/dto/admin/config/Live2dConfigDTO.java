@@ -9,6 +9,7 @@ import org.lixiyun.common.validation.group.AddGroup;
 import org.lixiyun.common.validation.group.UpdateGroup;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,6 +55,20 @@ public class Live2dConfigDTO implements Serializable {
 
     @Schema(description = "表情固定词汇Map：key=表情id（白名单固定，不可增删），value=中文含义（后台可编辑）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "{\"F01\":\"平静\"}")
     private Map<String, String> expressionList;
+
+    @Schema(description = "待机表情id列表（须为 expressionList 白名单子集，越权 id 被忽略）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "[\"F01\",\"F05\"]")
+    private List<String> idleExpressionList;
+
+    @Schema(description = "待机动作id列表（须为 motionList 白名单子集，越权 id 被忽略）", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "[\"haru_g_idle\"]")
+    private List<String> idleMotionList;
+
+    @NumberOfRanges(min = 0, max = 3600)
+    @Schema(description = "待机操作间隔（秒）；0=不启用待机配置，前端回退现有待机行为", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "10")
+    private Integer idleIntervalSeconds;
+
+    @NumberOfRanges(min = 0, max = 1)
+    @Schema(description = "是否启用pixi-live2d-display自带自动待机(模型Idle组)：1-是(库自动播)，0-否(按后台待机设置；未设置则静止)", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "1")
+    private Integer idleAutoPlay;
 
     @Schema(description = "备注信息", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "默认虚拟形象")
     private String remark;

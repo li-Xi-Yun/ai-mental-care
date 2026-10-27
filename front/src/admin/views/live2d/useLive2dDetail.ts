@@ -46,6 +46,21 @@ export function useLive2dDetail() {
   const labelEditorVisible = ref(false);
   const labelSaving = ref(false);
 
+  /* ==================== 待机配置编辑状态 ==================== */
+
+  const idleForm = reactive<{
+    idleExpressionList: string[];
+    idleMotionList: string[];
+    idleIntervalSeconds: number;
+    idleAutoPlay: number;
+  }>({
+    idleExpressionList: [],
+    idleMotionList: [],
+    idleIntervalSeconds: 0,
+    idleAutoPlay: 1,
+  });
+  const idleSaving = ref(false);
+
   /* ==================== 派生状态 ==================== */
 
   const enabledTagType = computed<"success" | "info">(() =>
@@ -70,6 +85,13 @@ export function useLive2dDetail() {
       remark: data.remark ?? "",
     });
     promptText.value = data.semanticPrompt ?? "";
+    // 待机配置初始值：仅保留在白名单内的 id（后端同规则，前端先滤一次避免展示越权项）
+    const exprKeys = new Set(Object.keys(data.expressionList ?? {}));
+    const motionKeys = new Set(Object.keys(data.motionList ?? {}));
+    idleForm.idleExpressionList = (data.idleExpressionList ?? []).filter((id) => exprKeys.has(id));
+    idleForm.idleMotionList = (data.idleMotionList ?? []).filter((id) => motionKeys.has(id));
+    idleForm.idleIntervalSeconds = data.idleIntervalSeconds ?? 0;
+    idleForm.idleAutoPlay = data.idleAutoPlay ?? 1;
   }
 
   async function loadDetail() {
@@ -196,6 +218,44 @@ export function useLive2dDetail() {
     }
   }
 
+  /* ==================== 待机配置（IdleConfigCard） ==================== */
+
+  async function handleSaveIdle() {
+    const id = editForm.id ?? detail.value?.id;
+    if (id == null) {
+      ElMessage.error("缺少模型ID，无法保存待机配置");
+      return;
+    }
+    idleSaving.value = true;
+    try {
+      await updateLive2dModel(id, {
+        id,
+        idleExpressionList: idleForm.idleExpressionList,
+        idleMotionList: idleForm.idleMotionList,
+        idleIntervalSeconds: idleForm.idleIntervalSeconds,
+        idleAutoPlay: idleForm.idleAutoPlay,
+      });
+      ElMessage.success("待机配置已保存");
+      await loadDetail();
+    } catch (e) {
+      ElMessage.error((e as Error)?.message || "待机配置保存失败，请稍后重试");
+    } finally {
+      idleSaving.value = false;
+    }
+  }
+
+  function handleResetIdle() {
+    // 未保存即重置 → 回填服务端当前值（等于重新 applyDetail 的待机部分）
+    if (detail.value) applyDetail(detail.value);
+    else {
+      idleForm.idleExpressionList = [];
+      idleForm.idleMotionList = [];
+      idleForm.idleIntervalSeconds = 0;
+      idleForm.idleAutoPlay = 1;
+    }
+    ElMessage.info("待机配置已重置为服务端当前值");
+  }
+
   /* ==================== 启用 / 禁用 ==================== */
 
   async function handleStatusToggle() {
@@ -271,6 +331,11 @@ export function useLive2dDetail() {
     savingPrompt,
     handleCancelPrompt,
     handleSavePrompt,
+    // 待机配置
+    idleForm,
+    idleSaving,
+    handleSaveIdle,
+    handleResetIdle,
     // 派生
     enabledTagType,
     enabledLabel,

@@ -138,6 +138,10 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
                     .semanticPrompt(null)
                     .motionList(toAssetMap(motionList))
                     .expressionList(toAssetMap(expressionList))
+                    .idleExpressionList(new ArrayList<>())
+                    .idleMotionList(new ArrayList<>())
+                    .idleIntervalSeconds(0)
+                    .idleAutoPlay(Live2dConfig.ENABLED_YES)
                     .remark(remark)
                     .build();
             int insert = live2dConfigMapper.insert(config);
@@ -206,6 +210,15 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
         if (dto.getMotionList() != null) {
             newConfig.setMotionList(mergeLabels(dto.getMotionList(), oldConfig.getMotionList()));
         }
+
+        // 待机配置：列表仅保留「提交 ∩ 白名单 keySet」（去重保序、上限），避免越权待机白名单外资产
+        if (dto.getIdleExpressionList() != null) {
+            newConfig.setIdleExpressionList(sanitizeIdleList(dto.getIdleExpressionList(), oldConfig.getExpressionList()));
+        }
+        if (dto.getIdleMotionList() != null) {
+            newConfig.setIdleMotionList(sanitizeIdleList(dto.getIdleMotionList(), oldConfig.getMotionList()));
+        }
+        // idleIntervalSeconds 走整体 copy（setIgnoreNullValue：null 不覆盖旧值；范围由 DTO @NumberOfRanges 校验）
 
         int row = live2dConfigMapper.updateById(newConfig);
         if (row == 0) {
@@ -465,6 +478,32 @@ public class AdminLive2dConfigServiceImpl implements AdminLive2dConfigService {
             map.put(id, "");
         }
         return map;
+    }
+
+    /** 待机 id 列表最大长度（防异常大数据写入） */
+    private static final int MAX_IDLE_LIST_SIZE = 50;
+
+    /**
+     * 待机 id 列表清洗：只保留「提交 ∩ 对应白名单 keySet」的 id，去重保序、超限截断。
+     * 空列表返回空列表（清空待机配置）；null 由调用方（setIgnoreNullValue）决定是否覆盖。
+     */
+    private List<String> sanitizeIdleList(List<String> submitted, Map<String, String> whitelist) {
+        Set<String> whitelistKeys = whitelist == null ? Set.of() : whitelist.keySet();
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        int limit = 0;
+        for (String id : submitted) {
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            if (limit >= MAX_IDLE_LIST_SIZE) {
+                break;
+            }
+            if (whitelistKeys.contains(id)) {
+                result.add(id);
+                limit += 1;
+            }
+        }
+        return new ArrayList<>(result);
     }
 
     /**

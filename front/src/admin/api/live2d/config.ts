@@ -31,6 +31,14 @@ export interface Live2dConfigAdminVO {
   motionList?: Record<string, string> | null;
   /** 表情固定词汇 Map：key=表情id（白名单固定，不可增删），value=中文含义（后台可编辑） */
   expressionList?: Record<string, string> | null;
+  /** 待机表情 id 列表（白名单子集；空数组/0 表示未启用待机配置） */
+  idleExpressionList?: string[] | null;
+  /** 待机动作 id 列表（白名单子集；空数组/0 表示未启用待机配置） */
+  idleMotionList?: string[] | null;
+  /** 待机操作间隔（秒）；0=不启用 */
+  idleIntervalSeconds?: number | null;
+  /** 是否启用 pixi-live2d-display 自带自动待机(模型 Idle 组)：1-是(库自动播)，0-否(按后台待机设置；未设置则静止) */
+  idleAutoPlay?: number | null;
   /** 备注 */
   remark?: string | null;
   /** 创建时间 */
@@ -52,6 +60,14 @@ export interface Live2dConfigUpdateDTO {
   motionList?: Record<string, string> | null;
   /** 表情 id → 中文含义（仅 key 在白名单内的 value 生效，新增 key 被忽略） */
   expressionList?: Record<string, string> | null;
+  /** 待机表情 id 列表（仅白名单子集生效，越权 id 被忽略；[] 清空） */
+  idleExpressionList?: string[] | null;
+  /** 待机动作 id 列表（仅白名单子集生效，越权 id 被忽略；[] 清空） */
+  idleMotionList?: string[] | null;
+  /** 待机操作间隔（秒）；0=不启用 */
+  idleIntervalSeconds?: number | null;
+  /** 是否启用 pixi-live2d-display 自带自动待机(模型 Idle 组)：1-是(库自动播)，0-否(按后台待机设置；未设置则静止) */
+  idleAutoPlay?: number | null;
   enabled?: number | null;
   sort?: number | null;
   remark?: string | null;
