@@ -38,7 +38,8 @@ export type AudioPhase =
   | "listening" // 持续聆听
   | "speech" // 用户说话/识别中
   | "replying" // AI 回复中
-  | "error"; // 失败（可重试）
+  | "error" // 失败（可重试）
+  | "expired"; // 空闲超时已自动退出（终止态）
 
 /** AI 文本空闲判定（最后一个 chunk 后超过该时长视为回复结束） */
 const AI_IDLE_MS = 2000;
@@ -140,7 +141,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
 
   /* ==================== 音频 ==================== */
   const playerPlaying = ref(false);
-  const player = new PcmStreamPlayer({
+  // let：超时自动退出后「重新进入」需换掉已 dispose 的播放器；所有闭包捕获此绑定，替换后自动指向新实例
+  let player = new PcmStreamPlayer({
     sampleRate: 24000,
     onPlaybackStateChange: (playing) => {
       playerPlaying.value = playing;
@@ -289,15 +291,17 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
   }
 
   /**
-   * 空闲超时处理：提示 → 释放生命周期资源（幂等）→ 回调页面返回文本对话页。
+   * 空闲超时处理：提示 → 释放生命周期资源（幂等）→ 页面进入终止态（"expired"）→ 回调页面弹窗提示。
    * 前端定时器触发与后端 SESSION_TIMEOUT 事件共用此入口（后端兜底先释放时前端重复 teardown 无害）。
    */
   async function fireIdleTimeout(): Promise<void> {
     if (tornDown || phase.value === "error") return;
     clearIdleTimer();
-    console.warn("[audio] 会话空闲超时，释放生命周期并返回文本对话页");
-    setNotice("会话已超时结束，正在返回文本对话…");
+    console.warn("[audio] 会话空闲超时，释放生命周期并停留在语音页提示");
+    setNotice("会话已超时，请重新进入继续对话");
     await teardown();
+    // 无论用户后续选择「重新进入」还是关闭弹窗，页面都已是终止态（不再假装在聆听）
+    phase.value = "expired";
     options.onIdleTimeout?.();
   }
 
@@ -601,6 +605,67 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     await boot();
   }
 
+  /**
+   * 超时后的页面内恢复：「重新进入」入口。
+   * 空闲超时已 teardown（释放 lifecycle / 断 STOMP / dispose 播放器），
+   * 此处重置可恢复状态并重跑 boot，保留 conversationId 续聊同一会话。
+   */
+  async function reboot(): Promise<void> {
+    if (!tornDown && !teardownStarted) {
+      await boot();
+      return;
+    }
+
+    console.warn("[audio] 用户选择重新进入，重建语音会话");
+    // dispose 后的播放器不可复用，必须创建新实例；其余闭包会捕获新的 let 绑定
+    await player.dispose().catch(() => {});
+    player = new PcmStreamPlayer({
+      sampleRate: 24000,
+      onPlaybackStateChange: (playing) => {
+        playerPlaying.value = playing;
+      },
+    });
+    if (import.meta.env.DEV) {
+      const debug = (window as unknown as { __audioDebug?: { player?: PcmStreamPlayer } }).__audioDebug;
+      if (debug) debug.player = player;
+    }
+
+    // 复位关闭/激活状态，确保不会复用已释放的通道和生命周期 Promise
+    tornDown = false;
+    teardownStarted = false;
+    booting = false;
+    activeConversationId = "";
+    activePromise = null;
+    frameBuffer.length = 0;
+    flushing = false;
+    discardAudioUntil = 0;
+    publishRetryAt = 0;
+
+    // 复位对账状态，避免旧会话基线影响重新进入后的回复对账
+    baselineAssistantCount = 0;
+    reconcileAttempts = 0;
+    finalReconcileScheduled = false;
+
+    // 复位页面展示状态；boot 会按 conversationId 重新拉取历史
+    messages.value = [];
+    pendingActions.value = [];
+    errorText.value = "";
+    needResume.value = false;
+    volume.value = 0;
+    userText.value = "";
+    userTextFinal.value = false;
+    aiStream.value = "";
+    notice.value = "";
+
+    clearAiIdleTimer();
+    clearIdleTimer();
+    clearNoChunkTimer();
+    clearWatchdog();
+    clearReconcileTimer();
+
+    await boot();
+  }
+
   /** 兜底恢复 AudioContext（"点击继续"遮罩） */
   async function resumeAudio(): Promise<void> {
     const playerReady = currentModes.outputTypes.includes("AUDIO") ? await player.ensureReady() : true;
@@ -803,6 +868,8 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
    * 幂等可重复调用；不置 tornDown（正常的 teardown 仍由路由取消链路负责）。
    */
   function disposeOnUnload(): void {
+    // 空闲超时已释放（tornDown）：pagehide/刷新不再重复发幂等 DELETE，静默跳过
+    if (tornDown) return;
     const id = conversationId.value;
     if (id && !isLocalConversationId(id)) {
       const headers = getAuthHeaders("user");
@@ -885,6 +952,7 @@ export function useAudioConversation(options: UseAudioConversationOptions) {
     isAudioInput,
     // 动作
     boot,
+    reboot,
     retry,
     teardown,
     disposeOnUnload,

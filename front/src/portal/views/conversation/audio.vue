@@ -88,7 +88,7 @@
     </div>
 
     <footer class="ap-footer">
-      <template v-if="userStore.token && phase !== 'error'">
+      <template v-if="userStore.token && phase !== 'error' && phase !== 'expired'">
         <!-- 文本输入模式：输入框发送 -->
         <div v-if="hasTextInput" class="ap-text-row">
           <el-input
@@ -144,7 +144,8 @@
         长时间无操作，语音会话已自动退出，请重新进入语音对话继续交流。
       </div>
       <template #footer>
-        <el-button type="primary" @click="handleCloseTimeoutDialog">知道了</el-button>
+        <el-button @click="handleCloseTimeoutDialog">知道了</el-button>
+        <el-button type="primary" @click="handleReenterTimeoutDialog">重新进入</el-button>
       </template>
     </el-dialog>
   </div>
@@ -206,6 +207,7 @@ const {
   conversationName,
   isAudioInput,
   boot,
+  reboot,
   retry,
   teardown,
   disposeOnUnload,
@@ -351,6 +353,13 @@ const timeoutDialogVisible = ref(false);
 
 function handleCloseTimeoutDialog() {
   timeoutDialogVisible.value = false;
+  // 仅关闭弹窗：阶段已由 fireIdleTimeout 置为 expired（终止态，底部输入区隐藏）
+}
+
+/** 重新进入：关闭弹窗后在语音页内重建会话（无需刷新/离开页面） */
+async function handleReenterTimeoutDialog() {
+  timeoutDialogVisible.value = false;
+  await reboot();
 }
 
 async function handleModeConfirm(inputs: string[], outputs: string[]) {
@@ -412,6 +421,8 @@ const statusText = computed(() => {
       return "AI 回复中…";
     case "error":
       return errorText.value || "出错了";
+    case "expired":
+      return "会话已结束";
     default:
       return "未登录";
   }
@@ -429,6 +440,8 @@ const badgeText = computed(() => {
       return "回复中";
     case "error":
       return "异常";
+    case "expired":
+      return "已结束";
     case "idle":
       return "未开始";
     default:
@@ -443,7 +456,7 @@ const orbClass = computed(() => `phase-${phase.value}`);
 const orbStyle = computed(() => ({ "--ap-level": String(volume.value) }));
 
 const idleHint = computed(() => {
-  if (phase.value === "error") return "";
+  if (phase.value === "error" || phase.value === "expired") return "";
   if (phase.value === "connecting" || phase.value === "initializing" || phase.value === "requesting-mic") return "";
   if (isAudioInput.value) return "直接开口说话，我会一直在这里倾听";
   return "在上方输入框写下你的心事";
