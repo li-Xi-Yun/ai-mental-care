@@ -155,6 +155,7 @@ function clearStageModel() {
     app.ticker.remove(mouthTicker);
     mouthTicker = null;
   }
+  lastIdleId = null;
   const children = app?.stage.children.slice() ?? [];
   children.forEach((child) => {
     app?.stage.removeChild(child);
@@ -240,11 +241,79 @@ function applyIdleGating() {
   // 保留 pose（手臂遮挡层）
 }
 
+/* ==================== 待机回合柔和复位 ==================== */
+
+/**
+ * 柔和停止当前动作（并强制结束 Loop）：
+ * 引擎对 Loop=true 动作永不 self-finish，且到了 Duration 会重置起点回卷再播——
+ * 因此必须先 startFadeOut（让 fade 权重回落）再 stopAllMotions（硬清队列），
+ * 否则停在 loop 转折点会「卡住」并立刻重播。
+ */
+function softStopCurrentMotion(fadeMs = 500) {
+  const mm = model?.internalModel?.motionManager as unknown as {
+    queueManager?: { _motions?: Array<{ _motion?: unknown; isFinished?: () => boolean; startFadeOut?: (s: number, t: number) => void }> };
+    expressionManager?: { resetExpression?: () => void };
+    stopAllMotions?: () => void;
+  } | null;
+  if (!mm) return;
+  try {
+    const now = performance.now() / 1000;
+    const entries = mm.queueManager?._motions ?? [];
+    for (const e of entries) {
+      if (e?._motion && !(e.isFinished?.() ?? false)) {
+        e.startFadeOut?.(fadeMs / 1000, now);
+      }
+    }
+    mm.expressionManager?.resetExpression?.();
+    // fade 触发后仍需硬清队列：否则 Loop 动作在 fadeOut 结束处仍会回卷再播，形成"卡住+重复"
+    window.setTimeout(() => {
+      if (disposed || !model) return;
+      try { mm.stopAllMotions?.(); } catch { /* ignore */ }
+    }, fadeMs + 80);
+  } catch {
+    /* 复位失败不阻塞 */
+  }
+}
+
+/** 上一轮已播的资产 id（同 kind 排除，候选>1 时避免立刻复读） */
+let lastIdleId: string | null = null;
+
+/** 随机挑一项；候选>1 时在「并集层面」排除 excludeId（表情/动作互相可替换），避免立刻复读刚播过的 id */
+function pickRandomIdleExcluding(excludeId: string | null): { kind: "expression" | "motion"; id: string } | null {
+  const exprs = props.idleExpressionList.filter((id) => props.expressionList.includes(id));
+  const motions = props.idleMotionList.filter((id) => props.motionList.includes(id));
+  const total = exprs.length + motions.length;
+  if (!total) return null;
+  if (excludeId && total > 1) {
+    // 并集排除：上一轮播过 id 的（无论表情还是动作）本轮不选，表情/动作互相可替换
+    const items: { kind: "expression" | "motion"; id: string }[] = [];
+    exprs.forEach((id) => items.push({ kind: "expression", id }));
+    motions.forEach((id) => items.push({ kind: "motion", id }));
+    const remaining = items.filter((it) => it.id !== excludeId);
+    return remaining[Math.floor(Math.random() * remaining.length)];
+  }
+  const idx = Math.floor(Math.random() * total);
+  return idx < exprs.length ? { kind: "expression", id: exprs[idx] } : { kind: "motion", id: motions[idx - exprs.length] };
+}
+
 /* ==================== 资产查找（白名单是文件名不带后缀） ==================== */
 
 function assetBaseName(path: string, suffix: RegExp): string | undefined {
-  const cleanPath = path.split(/[?#]/, 1)[0];
-  return cleanPath.split("/").pop()?.replace(suffix, "");
+  // model3.json 内部子资源经后端 ModelFileSigner 改写为签名 URL：
+  //   /user/live2d-model/file?path=live2d-models/Mao/Mao/motions/mtn_01.motion3.json&expires=...&sign=...
+  // 直接从 URL 取 path 段，否则取到的是接口名 `file`，与白名单 id (mtn_01) 匹配不上 → 动作/表情找不到。
+  let raw = path;
+  if (path.startsWith("/user/live2d-model/file?")) {
+    try {
+      const q = path.slice(path.indexOf("?") + 1);
+      raw = new URLSearchParams(q).get("path") ?? path.split(/[?#]/, 1)[0];
+    } catch {
+      raw = path.split(/[?#]/, 1)[0];
+    }
+  } else {
+    raw = path.split(/[?#]/, 1)[0];
+  }
+  return raw.split("/").pop()?.replace(suffix, "");
 }
 
 function motionIndexFromModel(assetId: string): MotionTarget | null {
@@ -321,9 +390,7 @@ function pickRandomIdle(): { kind: "expression" | "motion"; id: string } | null 
   const idx = Math.floor(Math.random() * total);
   if (idx < exprs.length) return { kind: "expression", id: exprs[idx] };
   return { kind: "motion", id: motions[idx - exprs.length] };
-}
-
-function setTimeoutAsync(ms: number): Promise<void> {
+}function setTimeoutAsync(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
@@ -338,35 +405,69 @@ async function playMotionFireAndForget(target: MotionTarget): Promise<boolean> {
     .catch(() => false);
 }
 
-let idleCycleActive = false;
+/**
+ * 估算已发起动作的播放时长（毫秒）。
+ * Loop 动作引擎永不 self-finish、达到 Duration 会回卷重播；这里读当前队列 motion 对象的
+ * `getLoopDuration?.()`（Loop 时返回 `_loopDurationSeconds`，非 Loop 返回 -1）。
+ * 返回 null 表示无法获取，调用方用 interval 兜底。
+ */
+async function motionHoldDurationMs(): Promise<number | null> {
+  const mm = model?.internalModel?.motionManager as unknown as {
+    queueManager?: { _motions?: Array<{ _motion?: { getLoopDuration?: () => number; getDuration?: () => number } }> };
+  } | null;
+  const entry = mm?.queueManager?._motions?.find((e) => e?._motion != null);
+  if (!entry?._motion) return Promise.resolve(null);
+  let secs = entry._motion.getLoopDuration?.();
+  if (!(secs != null && secs > 0)) secs = entry._motion.getDuration?.();
+  // 兜底：签名 URL 路径中取文件名 → 精确文件名（motion3），但不做网络读取，仅当队首即目标时才可靠；
+  // 这里对队首 motion 取时长即可（刚发起的就是队首）
+  if (secs == null || secs <= 0 || Number.isNaN(secs)) return Promise.resolve(null);
+  return Promise.resolve(Math.min(secs * 1000, 15000));
+}
+
 async function startIdleMotion(generation: number) {
   if (!model || disposed || generation !== loadGeneration) return;
 
   // 未配置待机 → 保持静止（不播任何默认待机动作/表情）；
   // 启用库自动待机（idleAutoPlay）时，待机交给库的 Idle 机制，这里不叠加
   if (!idleConfigured.value || props.idleAutoPlay) return;
-  idleCycleActive = true;
-
-  // 可配置待机：每 interval 秒随机挑一个已勾选表情/动作播放；
-  // 动作 fire-and-forget（不等待 Loop 动作结束），表情即时生效；说话中跳过本轮（不覆盖口型）
   const token = idleToken;
-  while (token === idleToken && generation === loadGeneration && model && !disposed) {
-    await setTimeoutAsync(props.idleIntervalSeconds * 1000);
-    if (token !== idleToken || generation !== loadGeneration || !model || disposed) break;
-    if (props.speaking) continue; // 不打断口型
-    const picked = pickRandomIdle();
-    if (!picked) break;
-    if (picked.kind === "motion") {
-      const target = motionIndexFromModel(picked.id);
-      if (target) {
-        const started = await playMotionFireAndForget(target);
-        if (!started) break;
+  try {
+    // 回合式待机：柔和停止上一轮 → 停留窗口 → 随机播一个（排除刚播过） → 播放其时长后柔和截断
+    while (token === idleToken && generation === loadGeneration && model && !disposed) {
+      // 说话中不播放也不复位（口型由外部 ticker 驱动）
+      if (props.speaking) { await setTimeoutAsync(1000); continue; }
+      softStopCurrentMotion(500); // 先柔和停止上一轮（fadeOut + 随后 stopAllMotions）
+      await setTimeoutAsync(700); // 归位窗口（fade + 中立），避免刚停又播
+      let picked = pickRandomIdleExcluding(lastIdleId); // 排除刚播过的 id（表情/动作互相替换）
+      if (!picked) {
+        lastIdleId = null;
+        picked = pickRandomIdle();
+        if (!picked) break;
       }
-    } else {
-      playExpressionFromIdle(picked.id);
+      lastIdleId = picked.id;
+      if (picked.kind === "motion") {
+        const target = motionIndexFromModel(picked.id);
+        if (target) {
+          const started = await playMotionFireAndForget(target);
+          if (!started) break;
+          // Loop 动作不会自然结束（到 Duration 回卷再播 → 卡住+重复）。
+          // 播放本动作时长（读 motion 对象 Loop 时长；失败兜底 interval）后主动柔和截断。
+          const holdMs = (await motionHoldDurationMs()) ?? props.idleIntervalSeconds * 1000;
+          await setTimeoutAsync(holdMs);
+          if (token !== idleToken || generation !== loadGeneration || !model || disposed) break;
+          softStopCurrentMotion(500); // 定时截断，避免 loop 回卷
+        }
+      } else {
+        playExpressionFromIdle(picked.id);
+        await setTimeoutAsync(props.idleIntervalSeconds * 1000); // 表情保持一个间隔
+      }
     }
+  } finally {
+    // 只有仍由本待机循环主导（token 未变、无 AI 抢占）时才柔和归位；
+    // AI 指令会先 idleToken+=1 再播放，此处 token!==idleToken → 跳过，保留 AI 表现
+    if (token === idleToken && model && !disposed) softStopCurrentMotion(500);
   }
-  idleCycleActive = false;
 }
 
 /* ==================== 表情 / 动作指令（对外暴露） ==================== */
@@ -522,6 +623,7 @@ onBeforeUnmount(() => {
   disposed = true;
   loadGeneration += 1;
   idleToken += 1;
+  lastIdleId = null;
   if (mouthTicker && app) {
     app.ticker.remove(mouthTicker);
     mouthTicker = null;
@@ -537,26 +639,6 @@ onBeforeUnmount(() => {
 defineExpose({
   applyExpression,
   applyMotion,
-  _dbgMotionState: () => {
-    const st = model?.internalModel?.motionManager?.state as { currentGroup?: unknown; currentIndex?: unknown; currentPriority?: unknown } | null;
-    const mgr = model?.internalModel?.motionManager as { definitions?: Record<string, unknown[]>; groups?: { idle?: unknown } } | null;
-    const defs = mgr?.definitions ?? {};
-    return {
-      ...(st ? { cg: st.currentGroup, ci: st.currentIndex, cp: st.currentPriority } : {}),
-      defKeys: Object.keys(defs),
-      idleDefs: (defs["Idle"] ?? []).length,
-      idleGroup: mgr?.groups?.idle,
-    };
-  },
-  _dbgPlay: (id: string): Promise<unknown> => {
-    if (!model) return Promise.resolve("no-model");
-    const target = motionIndexFromModel(id);
-    return model.motion(target?.group ?? "", target?.index ?? 0).then(
-      (r) => ({ ok: r, t: target }),
-      (e) => ({ err: String(e) }),
-    );
-  },
-  _dbgIdleEntered: () => idleCycleActive,
 });
 </script>
 

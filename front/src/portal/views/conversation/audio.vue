@@ -130,6 +130,23 @@
       :output-types="currentOutputTypes"
       @confirm="handleModeConfirm"
     />
+
+    <!-- 会话空闲超时提示：不跳转文本页，页面内弹窗告知已自动退出 -->
+    <el-dialog
+      v-model="timeoutDialogVisible"
+      title="会话已超时"
+      width="380px"
+      align-center
+      :close-on-click-modal="false"
+      :show-close="false"
+    >
+      <div class="timeout-tip">
+        长时间无操作，语音会话已自动退出，请重新进入语音对话继续交流。
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="handleCloseTimeoutDialog">知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -221,8 +238,8 @@ const {
     }
   },
   onIdleTimeout: () => {
-    ElMessage.warning("会话已超时结束，已返回文本对话");
-    void router.push({ name: "PortalConversation" });
+    // 超时不跳转文本页：留在语音页弹窗提示「长时间无操作已自动退出」
+    timeoutDialogVisible.value = true;
   },
 });
 
@@ -327,6 +344,14 @@ async function handleAvatarLoadError() {
 /* ==================== 页内修改对话模式 ==================== */
 
 const modeDialogVisible = ref(false);
+
+/* ==================== 会话空闲超时提示 ==================== */
+
+const timeoutDialogVisible = ref(false);
+
+function handleCloseTimeoutDialog() {
+  timeoutDialogVisible.value = false;
+}
 
 async function handleModeConfirm(inputs: string[], outputs: string[]) {
   if (outputs.includes("AVATAR_2D") && !live2dConfig.value) {
@@ -1026,5 +1051,14 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: #7a6558;
   margin: 0 0 14px;
+}
+
+/* ---------- 会话空闲超时提示弹窗 ---------- */
+.timeout-tip {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.7;
+  text-align: center;
+  padding: 6px 4px;
 }
 </style>
